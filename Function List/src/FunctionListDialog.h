@@ -1,11 +1,11 @@
 /*
-this file is part of Function List Plugin for Notepad++
-Copyright (C)2005 Jens Lorenz <jens.plugin.npp@gmx.de>
+This file is part of Function List Plugin for Notepad++
+Copyright (C)2005-2007 Jens Lorenz <jens.plugin.npp@gmx.de>
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either
-version 2 of the License, or (at your option) any later version.
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,8 +14,9 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
+
 
 #ifndef FUNCLISTDLG_DEFINE_H
 #define FUNCLISTDLG_DEFINE_H
@@ -40,6 +41,11 @@ using namespace std;
 #define UNDOCK  false
 
 
+extern	HANDLE	hThread[2];
+extern	HANDLE	hEvent[3];
+extern	BOOL	bThreadRun;
+extern	BOOL	bInterupt;
+
 
 class FunctionListDialog : public DockingDlgInterface
 {
@@ -51,7 +57,9 @@ public:
 
     void setBoxSelection(void);
 	string getFunctionParams(unsigned int iVec);
-    void usedDocTypeChanged(LangType typeDoc);
+    void usedDocTypeChanged(LangType typeDoc) {
+		_typeDoc = typeDoc;
+	};
 
 	void destroy(void)
 	{
@@ -89,27 +97,51 @@ public:
 		_sortByNames = sortByNames;
 		_ToolBar.setCheck(IDM_EX_SORTDOC, !sortByNames);
 		_ToolBar.setCheck(IDM_EX_SORTNAME, sortByNames);
-		processList();
+		sortList();
+		updateBox();
+		setBoxSelection();
 	};
 
 
-	void parsingTest(void)
-	{
-		//_parsing->execute();
-	}
-
-	void processList(void)
+	void parsingList(void)
 	{
 		if (!_noProcess && isVisible())
 		{
-			SaveFindParams();
-			_commList.getComments();
-			updateFuncList();
-			RestoreFindParams();
-			sortList();
-			updateBox();
+			if (_commList.getComments() == FALSE)
+			{
+				setProgress(50);
+				if (updateFuncList() == FALSE)
+				{
+					setProgress(100);
+					sortList();
+					updateBox();
+					setBoxSelection();
+				}
+				else
+				{
+					::PulseEvent(hEvent[2]);
+				}
+			}
+			else
+			{
+				::PulseEvent(hEvent[2]);
+			}
 		}
+	}
+
+	void processList(UINT uDelay = 10)
+	{
+	   ::KillTimer(_hSelf, IDC_FUNCTION_LIST_TIMER);
+	   ::SetTimer(_hSelf, IDC_FUNCTION_LIST_TIMER, uDelay, NULL);
 	};
+
+	void setCaptionText(char* pszAddInfo)
+	{
+		strcpy(_pszAddInfo, pszAddInfo);
+		updateDockingDlg();
+	};
+
+	void setParsingRules(void);
 
 protected :
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
@@ -122,13 +154,11 @@ protected :
 
 
 	void sortList(void);
-	void updateFuncList(void);
+	BOOL updateFuncList(void);
 	void updateBox(void);
 	bool testFunctionBrace(unsigned int iVec, string strRegEx, unsigned int posOpBRC, unsigned int posClBRC);
 	unsigned int getCntKeyword(string keyWordList, int beginPos, int endPos, bool withComm);
 	unsigned int NextBraceEndPoint(unsigned int iVecSearchSyn, bool withComm);
-	void SaveFindParams(void);
-	void RestoreFindParams(void);
 	string getFuncName(SyntaxList searchSyn, unsigned int startPos, unsigned int endPos);
 
 	void GetNameStrFromCmd(UINT resID, char** tip);
@@ -140,6 +170,9 @@ private:
 	NppData				_nppData;
     RECT				_dlgPos;
 	tTbData				_data;
+
+	/* additional information */
+	char				_pszAddInfo[6];
 
 	/* classes */
 	ToolBar				_ToolBar;
@@ -171,6 +204,8 @@ private:
 	bool				_noProcess;
 
 	unsigned int		_fontWidth;
+
+	LangType			_typeDoc;
 };
 
 

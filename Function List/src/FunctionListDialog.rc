@@ -29,24 +29,7 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 // Dialog
 //
 
-IDD_HELP_DEMODLG DIALOGEX 36, 44, 321, 71
-STYLE DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
-EXSTYLE WS_EX_TOOLWINDOW
-CAPTION "Find/Replace Demo"
-FONT 8, "MS Shell Dlg", 0, 0, 0x1
-BEGIN
-    PUSHBUTTON      "Close",IDOK,264,50,50,14
-    PUSHBUTTON      "Find",IDC_BTN_FIND,264,7,50,14
-    PUSHBUTTON      "Replace",IDC_BTN_REPLACE,264,27,50,14
-    EDITTEXT        IDC_EDIT_FIND,42,7,206,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_EDIT_REPLACE,42,25,206,14,ES_AUTOHSCROLL
-    CONTROL         "RegEx",IDC_REGEXP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
-                    42,46,63,10
-    LTEXT           "Find",IDC_STATIC,7,10,14,8
-    LTEXT           "Replace",IDC_STATIC,7,27,28,8
-END
-
-IDD_FUNCTION_LIST_DLG DIALOGEX 36, 44, 162, 358
+IDD_FUNCTION_LIST_DLG DIALOGEX 64536, 0, 162, 358
 STYLE DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | 
     WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 EXSTYLE WS_EX_TOOLWINDOW
@@ -59,7 +42,7 @@ END
 
 IDD_HELP_DLG DIALOGEX 0, 0, 230, 201
 STYLE DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Shell Dlg"
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,89,180,50,14
     LTEXT           "jens.plugin.npp@gmx.de",IDC_EMAIL_LINK,65,41,80,8
@@ -68,12 +51,12 @@ BEGIN
     LTEXT           "eMail:",IDC_STATIC,12,41,21,8
     CTEXT           "At first, I would like to thank Don for his great program and his support to create this plugin.",
                     IDC_STATIC,7,59,216,18
-    LTEXT           "View list\t\t\tViews the Function List Box.\nGoto previous position\tSteps to the previous cursor positions.\nGoto next position\tSteps to the next cursor positions.",
+    LTEXT           "List...\t\t\tViews the Function List Box.\nGoto previous position\tSteps to the previous cursor positions.\nGoto next position\tSteps to the next cursor positions.",
                     IDC_STATIC,15,99,203,24
-    CTEXT           "Function List Plugin for Notepad++ v4.0                 v1.1",
+    CTEXT           "Function List Plugin for Notepad++ v4.0                 v1.2",
                     IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
                     WS_EX_TRANSPARENT
-    LTEXT           "View all functions\tViews all functions. Also commented\n\t\t\tfunctions.\nSort by names\t\tSorts the list in alphabeticaly order.\nUser Rules\t\tPossibility to set his own Function List\n\t\t\tParsing Rules.\nHelp\t\t\tShows this help dialog.",
+    LTEXT           "View all functions\tViews all functions. Also commented\n\t\t\tfunctions.\nSort by names\t\tSorts the list in alphabeticaly order.\nUser Rules...\t\tPossibility to set his own Function List\n\t\t\tParsing Rules.\nHelp...\t\t\tShows this help dialog.",
                     IDC_STATIC,15,123,203,50
 END
 
@@ -81,11 +64,11 @@ IDD_USER_DLG DIALOGEX 0, 0, 314, 342
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Function List Parsing Rules"
-FONT 8, "MS Sans Serif", 0, 0, 0x1
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     COMBOBOX        IDC_COMBO_LANG,49,11,163,58,CBS_DROPDOWNLIST | 
                     CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
-    DEFPUSHBUTTON   "Edit rule",IDC_ADD_RULES,224,10,83,14
+    DEFPUSHBUTTON   "Edit Rule",IDC_ADD_RULES,224,10,83,14
     CONTROL         "&Match Case",IDC_CHECK_MC,"Button",BS_AUTOCHECKBOX | 
                     BS_LEFTTEXT | BS_RIGHT | WS_DISABLED | WS_TABSTOP,134,32,
                     77,10
@@ -94,8 +77,8 @@ BEGIN
     CONTROL         "Spin1",IDC_SPIN_SEC,"msctls_updown32",UDS_SETBUDDYINT | 
                     UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS | 
                     WS_DISABLED | WS_TABSTOP,135,62,11,13
-    PUSHBUTTON      "&Add rule",IDC_ADD_SECRULE,176,61,58,14,WS_DISABLED
-    PUSHBUTTON      "&Delete rule",IDC_DEL_SECRULE,241,61,58,14,WS_DISABLED
+    PUSHBUTTON      "&Add Rule",IDC_ADD_SECRULE,176,61,58,14,WS_DISABLED
+    PUSHBUTTON      "&Delete Rule",IDC_DEL_SECRULE,241,61,58,14,WS_DISABLED
     EDITTEXT        IDC_EDIT_FUNCB,107,84,192,12,ES_AUTOHSCROLL | 
                     WS_DISABLED
     EDITTEXT        IDC_EDIT_FUNCN,107,100,192,12,ES_AUTOHSCROLL | 
@@ -110,8 +93,8 @@ BEGIN
     CONTROL         "Spin1",IDC_SPIN_COM,"msctls_updown32",UDS_SETBUDDYINT | 
                     UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS | 
                     WS_DISABLED | WS_TABSTOP,135,200,11,13
-    PUSHBUTTON      "&Add rule",IDC_ADD_COMRULE,176,199,58,14,WS_DISABLED
-    PUSHBUTTON      "&Delete rule",IDC_DEL_COMRULE,241,199,58,14,WS_DISABLED
+    PUSHBUTTON      "Add &Rule",IDC_ADD_COMRULE,176,199,58,14,WS_DISABLED
+    PUSHBUTTON      "D&elete Rule",IDC_DEL_COMRULE,241,199,58,14,WS_DISABLED
     EDITTEXT        IDC_EDIT_COMMB,107,221,192,12,ES_AUTOHSCROLL | 
                     WS_DISABLED
     EDITTEXT        IDC_EDIT_COMME,107,237,192,12,ES_AUTOHSCROLL | 
@@ -131,29 +114,29 @@ BEGIN
     LTEXT           "Language",IDC_STATIC,7,13,33,8
     GROUPBOX        "Keyword forwarding",IDC_STATIC,7,260,300,54,BS_LEFT | 
                     BS_NOTIFY | WS_DISABLED
-    LTEXT           "Function end to body begin",IDC_STATIC_0,15,279,87,12,
+    LTEXT           "Function End to Body Begin",IDC_STATIC_0,15,279,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
-    LTEXT           "Body begin to body end",IDC_STATIC_1,15,295,76,12,
+    LTEXT           "Body Begin to Body End",IDC_STATIC_1,15,295,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
     GROUPBOX        "Comment Rules",IDC_STATIC,7,186,300,71,BS_LEFT | 
                     WS_DISABLED
-    LTEXT           "Multiline begin / Singleline",IDC_STATIC_2,15,221,87,12,
+    LTEXT           "Multiline Begin / Singleline",IDC_STATIC_2,15,221,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
-    LTEXT           "Multiline end",IDC_STATIC_3,15,237,76,12,SS_CENTERIMAGE | 
+    LTEXT           "Multiline End",IDC_STATIC_3,15,237,92,12,SS_CENTERIMAGE | 
                     WS_DISABLED
     GROUPBOX        "Section Rules",IDC_STATIC,7,48,300,135,BS_LEFT | 
                     WS_DISABLED
-    LTEXT           "Function begin",IDC_STATIC_4,15,84,92,12,SS_CENTERIMAGE | 
+    LTEXT           "Function Begin",IDC_STATIC_4,15,84,92,12,SS_CENTERIMAGE | 
                     WS_DISABLED
     LTEXT           "Function List Name",IDC_STATIC_5,15,100,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
-    LTEXT           "Function end",IDC_STATIC_6,15,116,92,12,SS_CENTERIMAGE | 
+    LTEXT           "Function End",IDC_STATIC_6,15,116,92,12,SS_CENTERIMAGE | 
                     WS_DISABLED
-    LTEXT           "Body begin",IDC_STATIC_7,15,148,92,12,SS_CENTERIMAGE | 
+    LTEXT           "Body Begin",IDC_STATIC_7,15,148,92,12,SS_CENTERIMAGE | 
                     WS_DISABLED
-    LTEXT           "Body end",IDC_STATIC_8,15,164,92,12,SS_CENTERIMAGE | 
+    LTEXT           "Body End",IDC_STATIC_8,15,164,92,12,SS_CENTERIMAGE | 
                     WS_DISABLED
-    LTEXT           "Seperator between",IDC_STATIC_9,15,132,92,12,
+    LTEXT           "Seperator Between",IDC_STATIC_9,15,132,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
 END
 
@@ -161,7 +144,7 @@ IDD_HELP_USERDLG DIALOGEX 0, 0, 321, 222
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Help for Function List Parsing Rules"
-FONT 8, "MS Sans Serif", 0, 0, 0x1
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     CTEXT           "This help will get you to understand the basics of Scinitilla and how Notepad++/\n'Function List Parsing Rules' work:",
                     IDC_STATIC,14,12,293,18
@@ -211,14 +194,6 @@ END
 #ifdef APSTUDIO_INVOKED
 GUIDELINES DESIGNINFO DISCARDABLE 
 BEGIN
-    IDD_HELP_DEMODLG, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 314
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 64
-    END
-
     IDD_FUNCTION_LIST_DLG, DIALOG
     BEGIN
         LEFTMARGIN, 6
@@ -272,8 +247,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,0,0
- PRODUCTVERSION 1,1,0,0
+ FILEVERSION 1,2,0,0
+ PRODUCTVERSION 1,2,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -288,17 +263,17 @@ BEGIN
     BEGIN
         BLOCK "040704b0"
         BEGIN
-            VALUE "Comments", "\0"
+            VALUE "Comments", "Visit https://sourceforge.net/projects/npp-plugins\0"
             VALUE "CompanyName", "jens.plugin.npp@gmx.de\0"
             VALUE "FileDescription", "Notepad++ : a free (GNU) source code editor\0"
-            VALUE "FileVersion", "1.1\0"
+            VALUE "FileVersion", "1.2\0"
             VALUE "InternalName", "Function List for npp.exe\0"
-            VALUE "LegalCopyright", "Copyright 2006 by Jens Lorenz\0"
+            VALUE "LegalCopyright", "Copyright 2005-2007 by Jens Lorenz\0"
             VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "FunctionListPlugin.dll\0"
+            VALUE "OriginalFilename", "FunctionList.dll\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "Function List Plugin\0"
-            VALUE "ProductVersion", "1.1\0"
+            VALUE "ProductVersion", "1.2\0"
             VALUE "SpecialBuild", "\0"
         END
     END

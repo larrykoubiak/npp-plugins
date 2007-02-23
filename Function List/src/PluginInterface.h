@@ -220,7 +220,10 @@ typedef struct {
 
 void initMenu(void);
 
-bool SystemUpdate(void);
+void copyBuffer(void);
+HWND getCurrentHScintilla(int which);
+void setProgress(UINT iProgress);
+BOOL SystemUpdate(void);
 UINT ScintillaMsg(UINT message, WPARAM wParam = 0, LPARAM lParam = 0);
 void ScintillaGetText(char *text, int start, int end);
 void ScintillaSelectFunction(unsigned int pos, bool savePos = TRUE);

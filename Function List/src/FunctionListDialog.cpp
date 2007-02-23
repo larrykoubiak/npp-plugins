@@ -1,19 +1,22 @@
-//this file is part of Function List Plugin for Notepad++
-//Copyright (C)2005 Jens Lorenz <jens.plugin.npp@gmx.de>
-//
-//This program is free software; you can redistribute it and/or
-//modify it under the terms of the GNU General Public License
-//as published by the Free Software Foundation; either
-//version 2 of the License, or (at your option) any later version.
-//
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU General Public License for more details.
-//
-//You should have received a copy of the GNU General Public License
-//along with this program; if not, write to the Free Software
-//Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+/*
+This file is part of Function List Plugin for Notepad++
+Copyright (C)2005-2007 Jens Lorenz <jens.plugin.npp@gmx.de>
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+*/
+
 
 #include "FunctionListDialog.h"
 #include "PluginInterface.h"
@@ -38,6 +41,13 @@
 ToolTip		toolTip;
 
 
+HANDLE		hThread[2]	= {NULL};
+HANDLE		hEvent[3]	= {NULL};
+BOOL		bThreadRun	= FALSE;
+BOOL		bInterupt	= FALSE;
+
+
+
 static ToolBarButtonUnit toolBarIcons[] = {
 	
 	{IDM_EX_UNDO,			IDI_SEPARATOR_ICON,		IDI_SEPARATOR_ICON,		IDI_SEPARATOR_ICON, -1},
@@ -60,12 +70,12 @@ static ToolBarButtonUnit toolBarIcons[] = {
 static int stdIcons[] = {IDB_EX_UNDO, IDB_EX_REDO, IDB_EX_SORTDOC, IDB_EX_SORTNAME, IDB_EX_COPY};
 
 
-static char* szToolTip[23] = {
-	"Goto last function",
-	"Goto next function",
-	"Sort in document order",
-	"Sort alphabetically",
-	"Copy to clipboard"
+static char* szToolTip[20] = {
+	"Goto Last Function",
+	"Goto Next Function",
+	"Sort in Sequence",
+	"Sort Alphabetically",
+	"Copy to Clipboard"
 };
 
 
@@ -74,10 +84,56 @@ void FunctionListDialog::GetNameStrFromCmd(UINT resID, char** tip)
 	*tip = szToolTip[resID - IDM_EX_UNDO];
 }
 
-
-
-FunctionListDialog::FunctionListDialog(void) : DockingDlgInterface(IDD_FUNCTION_LIST_DLG), _status(UNDOCK)
+DWORD WINAPI ThreadSignalQue(LPVOID lpParam)
 {
+	while (1)
+	{
+		DWORD dwWaitResult = ::WaitForSingleObject(hEvent[0], INFINITE);
+
+		if (dwWaitResult == WAIT_OBJECT_0)
+		{
+			/* wait on parsing when it is in run mode */
+			while (bThreadRun == TRUE)
+			{
+				bInterupt = TRUE;
+				::WaitForSingleObject(hEvent[2], INFINITE);
+			}
+			bInterupt = FALSE;
+
+			::PulseEvent(hEvent[1]);
+		}
+	}
+
+	return 0;
+}
+
+DWORD WINAPI ThreadParsing(LPVOID lpParam)
+{
+	FunctionListDialog*	func	= (FunctionListDialog*)lpParam;
+
+	while (1)
+	{
+		DWORD dwWaitResult = ::WaitForSingleObject(hEvent[1], INFINITE);
+
+		if (dwWaitResult == WAIT_OBJECT_0)
+		{
+			bThreadRun = TRUE;
+			copyBuffer();
+			func->setParsingRules();
+			func->parsingList();
+			bThreadRun = FALSE;
+		}
+	}
+
+	return 0;
+}
+
+
+
+FunctionListDialog::FunctionListDialog(void) : DockingDlgInterface(IDD_FUNCTION_LIST_DLG), 
+	_status(UNDOCK)
+{
+	_pszAddInfo[0]	= '\0';
 }
 
 FunctionListDialog::~FunctionListDialog(void)
@@ -87,12 +143,33 @@ FunctionListDialog::~FunctionListDialog(void)
 
 void FunctionListDialog::init(HINSTANCE hInst, NppData nppData, bool listAllFunc, bool sortByNames)
 {
+	DWORD	dwThreadId	= 0;
+
 	_nppData = nppData;
 	DockingDlgInterface::init(hInst, nppData._nppHandle);
 
 	_listAllFunc = listAllFunc;
 	_sortByNames = sortByNames;
-	processList();
+
+
+	hThread[0] = ::CreateThread(NULL, 0, ThreadParsing, this, 0, &dwThreadId);
+	hThread[1] = ::CreateThread(NULL, 0, ThreadSignalQue, NULL, 0, &dwThreadId);
+
+	if ((hThread[0] == NULL) || (hThread[1] == NULL))
+	{
+		printf("CreateThread error: %d\n", GetLastError());
+	}
+	else
+	{
+		hEvent[0] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+		hEvent[1] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+		hEvent[2] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+
+		if ((hEvent[0] == NULL) || (hEvent[1] == NULL) || (hEvent[2] == NULL))
+		{
+			printf("CreateEvent error: %d\n", GetLastError());
+		}
+	}
 }
 
 
@@ -115,9 +192,10 @@ void FunctionListDialog::doDialog(bool willBeShown)
 		_ToolBar.enable(IDM_EX_COPY, false);
 
 		// define the default docking behaviour
-		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB;
+		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB | DWS_ADDINFO;
 		_data.hIconTab		= (HICON)::LoadImage(_hInst, MAKEINTRESOURCE(IDI_TABICON), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		_data.pszModuleName	= getPluginFileName();
+		_data.pszAddInfo	= _pszAddInfo;
 		_data.dlgID			= DOCKABLE_INDEX;
 		::SendMessage(_hParent, WM_DMM_REGASDCKDLG, 0, (LPARAM)&_data);
 	}
@@ -170,12 +248,7 @@ BOOL CALLBACK FunctionListDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARA
 					case LBN_SELCHANGE:
 					{
 /*
-						SaveFindParams();
-						_commList.getComments();
-						updateFuncList();
-						RestoreFindParams();
-						sortList();
-						updateBox();
+						::PulseEvent(hEvent[0]);
 */
 						break;
 					}
@@ -238,8 +311,7 @@ BOOL CALLBACK FunctionListDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARA
 			if (wParam == IDC_FUNCTION_LIST_TIMER)
 			{
 				::KillTimer(_hSelf, IDC_FUNCTION_LIST_TIMER);
-				processList();
-				setBoxSelection();
+				::PulseEvent(hEvent[0]);
 			}
 			return TRUE;
 		}
@@ -250,6 +322,12 @@ BOOL CALLBACK FunctionListDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARA
 		}
 		case WM_DESTROY:
 		{
+			::CloseHandle(hEvent[0]);
+			::CloseHandle(hEvent[1]);
+			::CloseHandle(hEvent[2]);
+			::CloseHandle(hThread[0]);
+			::CloseHandle(hThread[1]);
+
 			::DestroyIcon(_data.hIconTab);
 			break;
 		}
@@ -282,7 +360,7 @@ LRESULT FunctionListDialog::runProcList(HWND hwnd, UINT message, WPARAM wParam, 
 		}
 		case WM_KEYUP:
 		{
-			if (LOWORD(wParam) == VK_RETURN)
+			if ((LOWORD(wParam) == VK_RETURN) && (_noProcess == FALSE))
 			{
 				int sel = ::SendMessage(hwnd, LB_GETCURSEL, 0, 0);
 				ScintillaSelectFunction(getElementPos(sel));
@@ -313,10 +391,10 @@ LRESULT FunctionListDialog::runProcList(HWND hwnd, UINT message, WPARAM wParam, 
 			HMENU	hMenu = ::CreatePopupMenu();
 
 			::AppendMenu(hMenu, MF_STRING | (sel < _funcList.size() ? 0:MF_GRAYED), 1, "Copy");
-			::AppendMenu(hMenu, MF_STRING | (sel < _funcList.size() ? 0:MF_GRAYED), 2, "Insert to position");
+			::AppendMenu(hMenu, MF_STRING | (sel < _funcList.size() ? 0:MF_GRAYED), 2, "Insert to Position");
 			::AppendMenu(hMenu, MF_SEPARATOR, 0, "");
-			::AppendMenu(hMenu, MF_STRING | (showAllFunc?MF_CHECKED:0), 3, "View all functions");
-			::AppendMenu(hMenu, MF_STRING | (_sortByNames?MF_CHECKED:0), 4, "Sort by names");
+			::AppendMenu(hMenu, MF_STRING | (showAllFunc?MF_CHECKED:0), 3, "Show All Functions");
+			::AppendMenu(hMenu, MF_STRING | (_sortByNames?MF_CHECKED:0), 4, "Sort Alphabetically");
 
 
 			/* create menu */
@@ -330,7 +408,7 @@ LRESULT FunctionListDialog::runProcList(HWND hwnd, UINT message, WPARAM wParam, 
 				case 2:
 				{
 					extern HWND g_hSource;
-					ScintillaMsg(SCI_REPLACESEL, 0, (LPARAM)_funcList[sel].name.c_str());
+					::SendMessage(g_hSource, SCI_REPLACESEL, 0, (LPARAM)_funcList[sel].name.c_str());
 					::SetFocus(g_hSource);
 					break;
 				}
@@ -551,25 +629,26 @@ void FunctionListDialog::tb_cmd(UINT message)
 	}
 }
 
-void FunctionListDialog::updateFuncList(void)
+BOOL FunctionListDialog::updateFuncList(void)
 {
-	extern bool	sortByNames;
-	bool		sortByNamesBuf;
-    bool        isFuncBrace = FALSE;
-    bool        isBodyBrace = FALSE;
-    string      strRegEx;
-    string      strFunc;
-    FuncInfo    functionInfo;
-    int         endPosition = ScintillaMsg(SCI_GETLENGTH);
-    int         flags = SCFIND_WHOLEWORD | SCFIND_REGEXP | SCFIND_POSIX | _matchCase;
-    int         startBrace, endBrace;
+	extern bool			sortByNames;
+	bool				sortByNamesBuf;
+    bool				isFuncBrace = FALSE;
+    bool				isBodyBrace = FALSE;
+    string				strRegEx;
+    string				strFunc;
+    FuncInfo			functionInfo;
+    int					endPosition = ScintillaMsg(SCI_GETLENGTH);
+    int					flags = SCFIND_WHOLEWORD | SCFIND_REGEXP | SCFIND_POSIX | _matchCase;
+    int					startBrace, endBrace;
+	int					iProgressDiv = 50 / _searchSyn.size();
         
     /* delete old list */
     _funcListParse.clear();
 
     /* set search params */
     ScintillaMsg(SCI_SETSEARCHFLAGS, flags);
-    for (unsigned int iVec = 0; iVec < _searchSyn.size(); iVec++)
+    for (unsigned int iVec = 0; (iVec < _searchSyn.size()) && (bInterupt == FALSE); iVec++)
     {
         /* set search params */
         ScintillaMsg(SCI_SETTARGETSTART, 0);
@@ -591,7 +670,7 @@ void FunctionListDialog::updateFuncList(void)
 
         /* search for entries in document */
         int posFind = ScintillaMsg(SCI_SEARCHINTARGET, strRegEx.size(), (LPARAM)strRegEx.c_str());
-        while (posFind != -1)
+        while ((posFind != -1) && (bInterupt == FALSE))
         {
             bool   isFunction  = TRUE;
             
@@ -759,13 +838,22 @@ void FunctionListDialog::updateFuncList(void)
             ScintillaMsg(SCI_SETTARGETSTART, functionInfo.endPos);
             ScintillaMsg(SCI_SETTARGETEND, endPosition);
             posFind = ScintillaMsg(SCI_SEARCHINTARGET, strRegEx.size(), (LPARAM)strRegEx.c_str());
+
+			setProgress(((functionInfo.endPos * iProgressDiv) / endPosition) + 50);
         }
     }
+
+	if (bInterupt == TRUE)
+	{
+		return TRUE;
+	}
 
 	sortByNamesBuf = sortByNames;
 	sortByNames	= FALSE;
 	sort(_funcListParse.begin(),_funcListParse.end());	
 	sortByNames = sortByNamesBuf;
+
+	return FALSE;
 }
 
 void FunctionListDialog::sortList(void)
@@ -874,8 +962,6 @@ bool FunctionListDialog::testFunctionBrace(unsigned int iVec,
  */
 string FunctionListDialog::getFunctionParams(unsigned int iVec)
 {
-	SaveFindParams();
-
 	string		 strParams;
     unsigned int lineOpen   = ScintillaMsg(SCI_LINEFROMPOSITION, _funcList[iVec].beginPos);
 	unsigned int lineClose  = ScintillaMsg(SCI_LINEFROMPOSITION, _funcList[iVec].nameEnd);
@@ -930,7 +1016,6 @@ string FunctionListDialog::getFunctionParams(unsigned int iVec)
 		}
 	}
 	strParams.resize(strParams.size()-1);
-	RestoreFindParams();
 
 	return strParams;
 }
@@ -1113,19 +1198,21 @@ void FunctionListDialog::updateBox(void)
  */
 void FunctionListDialog::setBoxSelection(void)
 {
+	extern
+	HWND	g_hSource;
 	bool    isOutOfFunc = true;
 	int     maxElements = _funcList.size();
 	int     curSel      = ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_GETCURSEL, 0, 0);
-	int     curPos      = ScintillaMsg(SCI_GETCURRENTPOS);
-	int     curLine     = ScintillaMsg(SCI_LINEFROMPOSITION, curPos);
-	int		curVLine	= ScintillaMsg(SCI_VISIBLEFROMDOCLINE, curLine);
-	int     firstVLine  = ScintillaMsg(SCI_GETFIRSTVISIBLELINE);
-	int     nVLines     = ScintillaMsg(SCI_LINESONSCREEN);
+	int     curPos      = ::SendMessage(g_hSource, SCI_GETCURRENTPOS, 0, 0);
+	int     curLine     = ::SendMessage(g_hSource, SCI_LINEFROMPOSITION, curPos, 0);
+	int		curVLine	= ::SendMessage(g_hSource, SCI_VISIBLEFROMDOCLINE, curLine, 0);
+	int     firstVLine  = ::SendMessage(g_hSource, SCI_GETFIRSTVISIBLELINE, 0, 0);
+	int     nVLines     = ::SendMessage(g_hSource, SCI_LINESONSCREEN, 0, 0);
 
 	if (curVLine < firstVLine || curVLine > (firstVLine + nVLines))
 	{
-		int	firstLine = ScintillaMsg(SCI_DOCLINEFROMVISIBLE, firstVLine);
-		curPos = ScintillaMsg(SCI_POSITIONFROMLINE, firstLine);
+		int	firstLine = ::SendMessage(g_hSource, SCI_DOCLINEFROMVISIBLE, firstVLine, 0);
+		curPos = ::SendMessage(g_hSource, SCI_POSITIONFROMLINE, firstLine, 0);
 	}
 
 	for (int iElement = 0; iElement < maxElements && isOutOfFunc == TRUE; iElement++)
@@ -1150,31 +1237,11 @@ void FunctionListDialog::setBoxSelection(void)
 
 
 /***
- *	SaveFindParams(), RestoreFindParams()
- *
- *	The following both functions save and restores the search settings
- */
-void FunctionListDialog::SaveFindParams(void)
-{
-	_oldParamStart  = ScintillaMsg(SCI_GETTARGETSTART);
-	_oldParamEnd    = ScintillaMsg(SCI_GETTARGETEND);
-	_oldParamSearch = ScintillaMsg(SCI_GETSEARCHFLAGS);
-}
-
-void FunctionListDialog::RestoreFindParams(void)
-{
-	ScintillaMsg(SCI_SETTARGETSTART, _oldParamStart);
-	ScintillaMsg(SCI_SETTARGETEND,   _oldParamEnd);
-	ScintillaMsg(SCI_SETSEARCHFLAGS, _oldParamSearch);
-}
-
-
-/***
  *	usedDocTypeChanged()
  *
  *	Here are set the global searching params for the language type
  */
-void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
+void FunctionListDialog::setParsingRules(void)
 {
 	FuncInfo		funcInfo;
     SyntaxList		bufSyntax;
@@ -1182,7 +1249,7 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
     _searchSyn.clear();
 	_commList.deleteList();
 
-    switch (typeDoc)
+    switch (_typeDoc)
     {
         case L_C:
         case L_CPP:
@@ -1199,7 +1266,7 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
             bufSyntax.strRegExFunc  = "~*[0-9A-Za-z_]+[ =<>+\\-\\*/\\[\\]]*";
             bufSyntax.strBodyBegin  = "\\{";
             bufSyntax.strBodyEnd    = "\\}";
-            bufSyntax.strSep        = "[;\\)]";
+            bufSyntax.strSep        = "[;\\)\\\"]";
             _searchSyn.push_back(bufSyntax);
 			break;
 		}
@@ -1232,11 +1299,11 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
 			_commList.addParam("//");
 			_commList.addParam("/\\*", "\\*/");
             bufSyntax.strRegExBegin = "\\<";
-            bufSyntax.strRegExEnd   = "[ \\t]*\\([0-9A-Za-z_<>\\[\\], \\t]*\\)";
+            bufSyntax.strRegExEnd   = "[ \\t]*\\([0-9A-Za-z_\\.<>\\[\\], \\t]*\\)";
             bufSyntax.strRegExFunc  = "~*[0-9A-Za-z_]+";
             bufSyntax.strBodyBegin  = "\\{";
             bufSyntax.strBodyEnd    = "\\}";
-            bufSyntax.strSep        = ";";
+            bufSyntax.strSep        = ";|\\]";
             _searchSyn.push_back(bufSyntax);
             break;
         }
@@ -1279,7 +1346,7 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
 			_commList.addParam("//");
 			_commList.addParam("/\\*", "\\*/");
             bufSyntax.strRegExBegin = "function[ \\t&]+";
-			bufSyntax.strRegExEnd   = "[ \\t]*\\([0-9A-Za-z_#$&='/\",;:<> \\t()]*\\)";
+			bufSyntax.strRegExEnd   = "[ \\t]*\\([0-9A-Za-z_\\-\\*#$&='/\",;:<> \\t()]*\\)";
             bufSyntax.strRegExFunc  = "[\"0-9A-Za-z_]+";
             bufSyntax.strBodyBegin  = "\\{";
             bufSyntax.strBodyEnd    = "\\}";
@@ -1304,7 +1371,7 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
             bufSyntax.strSep        = ";";
             _searchSyn.push_back(bufSyntax);
             bufSyntax.strRegExBegin = "^[ \\t]*";
-            bufSyntax.strRegExEnd   = "[ \\t]*=[ \\t]*function[ \\t]*\\([0-9A-Za-z_$&=', \\t]*\\)";
+            bufSyntax.strRegExEnd   = "[ \\t]*[=:][ \\t]*function[ \\t]*\\([0-9A-Za-z_$&=', \\t]*\\)";
             bufSyntax.strRegExFunc  = "[\"0-9A-Za-z_.]+";
             _searchSyn.push_back(bufSyntax);
             bufSyntax.strRegExBegin = "^[ \\t]*var[ \\t]*";
@@ -1535,6 +1602,17 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
             bufSyntax.strRegExBegin = "^SubSection\\>.*[ \\t]+";
             bufSyntax.strBodyEnd    = "\\<SubSectionEnd\\>";
             _searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExBegin = "^Function\\>[ \\t]*\\\"";
+            bufSyntax.strRegExFunc  = "[-.0-9A-Za-z_ ]+";
+            bufSyntax.strRegExEnd   = "\\\"$";
+            bufSyntax.strBodyEnd    = "\\<FunctionEnd\\>";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExBegin = "^Section\\>[ \\t]*\\\"";
+            bufSyntax.strBodyEnd    = "\\<SectionEnd\\>";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExBegin = "^SubSection\\>[ \\t]*\\\"";
+            bufSyntax.strBodyEnd    = "\\<SubSectionEnd\\>";
+            _searchSyn.push_back(bufSyntax);
             break;
         }
 		case L_VHDL :
@@ -1728,24 +1806,25 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
         case L_CSS :
 		case L_SCHEME :
         case L_TEX :
+		case L_INNO :
         case L_NFO :  /* Dos Style */
         case L_TXT :
         {
             ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_RESETCONTENT, 0, 0);
-            ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_ADDSTRING, 0, (LPARAM)"Feature not supported");
+            ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_ADDSTRING, 0, (LPARAM)"Feature unsupported");
 			_noProcess = TRUE;
             return;
         }
         default:
         {
             ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_RESETCONTENT, 0, 0);
-            ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_ADDSTRING, 0, (LPARAM)"Language not supported");
+            ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_ADDSTRING, 0, (LPARAM)"Language unsupported");
 			_noProcess = TRUE;
             return;
         }
     }
 
 	_noProcess = FALSE;
-	processList();
+//	processList();
 }
 

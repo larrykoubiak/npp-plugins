@@ -1,5 +1,22 @@
-// NppInsertPlugin.cpp : Defines the entry point for the DLL application.
-//
+/*
+This file is part of Function List Plugin for Notepad++
+Copyright (C)2005-2007 Jens Lorenz <jens.plugin.npp@gmx.de>
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+*/
+
 
 
 /* include files */
@@ -11,6 +28,7 @@
 #include "HelpDialog.h"
 #include "ToolTip.h"
 #include "SysMsg.h"
+#include "Scintilla.h"
 #include <stdlib.h>
 
 #include <shlwapi.h>
@@ -20,11 +38,8 @@
 const int	nbFunc	= 10;
 
 
-
-
-
 /* informations for notepad */
-const char PLUGIN_NAME[] = "Function List";
+const char PLUGIN_NAME[] = "&Function List";
 
 char       iniFilePath[MAX_PATH];
 
@@ -48,6 +63,9 @@ WNDPROC	wndProcUserDlg = NULL;
 
 /* get system information */
 BOOL	isDragFullWin = FALSE;
+
+/* get system information */
+BOOL	isNotepadCreated	= FALSE;
 
 
 /* create classes */
@@ -73,6 +91,10 @@ RECT	rcDragDlg	 = {0, 0, 0, 0};
 char	_oldPath[MAX_PATH];
 int		_oldDocType = 0;
 
+
+SciFnDirect pSciMsgCurrent	= NULL;
+sptr_t      pSciWndData		= NULL;
+HWND		hSciParser		= NULL;
 
 
 BOOL APIENTRY DllMain( HANDLE hModule, 
@@ -127,16 +149,16 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			funcItem[9]._pFunc = openHelpDlg;
 			
 			/* Fill menu names */
-			strcpy(funcItem[0]._itemName, "View List");
+			strcpy(funcItem[0]._itemName, "&List...");
 			strcpy(funcItem[1]._itemName, "-----------");
-			strcpy(funcItem[2]._itemName, "Goto previous position");
-			strcpy(funcItem[3]._itemName, "Goto next position");
+			strcpy(funcItem[2]._itemName, "Goto &Last Function");
+			strcpy(funcItem[3]._itemName, "Goto &Next Function");
 			strcpy(funcItem[4]._itemName, "-----------");
-			strcpy(funcItem[5]._itemName, "View all functions");
-			strcpy(funcItem[6]._itemName, "Sort by names");
+			strcpy(funcItem[5]._itemName, "&Show All Functions");
+			strcpy(funcItem[6]._itemName, "Sort &Alphabetically");
 			strcpy(funcItem[7]._itemName, "-----------");
-			strcpy(funcItem[8]._itemName, "User Rules");
-			strcpy(funcItem[9]._itemName, "Help");
+			strcpy(funcItem[8]._itemName, "&User Rules...");
+			strcpy(funcItem[9]._itemName, "&Help...");
 
 			/* Set shortcuts */
 			funcItem[0]._pShKey = new ShortcutKey;
@@ -194,6 +216,9 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			SetWindowLong(nppData._nppHandle, GWL_WNDPROC, (LONG)wndProcNotepad);
 			if (wndProcUserDlg != NULL)
 				SetWindowLong(g_hUserDlg, GWL_WNDPROC, (LONG)wndProcUserDlg);
+
+			/* destroy scintilla hanlde */
+			::SendMessage(nppData._nppHandle, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSciParser);
 			break;
 		}
 		case DLL_THREAD_ATTACH:
@@ -259,17 +284,16 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 					if (notifyCode->modificationType & SC_MOD_INSERTTEXT ||
 						notifyCode->modificationType & SC_MOD_DELETETEXT)
 					{
-					   ::KillTimer(functionDlg.getHSelf(), IDC_FUNCTION_LIST_TIMER);
-					   ::SetTimer(functionDlg.getHSelf(), IDC_FUNCTION_LIST_TIMER, 20, NULL);
+						functionDlg.processList(1000);
 					}
 					break;
 				case SCN_PAINTED:
 					SystemUpdate();
+					functionDlg.setBoxSelection();
 					break;
 				default:
 					break;
 			}
-			functionDlg.setBoxSelection();
 		}
 	}
 	if (notifyCode->nmhdr.hwndFrom == nppData._nppHandle)
@@ -278,6 +302,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		{
 			g_TBList.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_TB_LIST), IMAGE_BITMAP, 0, 0, (LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 			::SendMessage(nppData._nppHandle, WM_ADDTOOLBARICON, (WPARAM)funcItem[0]._cmdID, (LPARAM)&g_TBList);
+		}
+		if (notifyCode->nmhdr.code == NPPN_READY)
+		{
+			isNotepadCreated = TRUE;
 		}
 	}
 }
@@ -303,9 +331,24 @@ extern "C" __declspec(dllexport) void messageProc(UINT Message, WPARAM wParam, L
  */
 void initMenu(void)
 {
-	::ModifyMenu(::GetMenu(nppData._nppHandle), funcItem[1]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-	::ModifyMenu(::GetMenu(nppData._nppHandle), funcItem[4]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
-	::ModifyMenu(::GetMenu(nppData._nppHandle), funcItem[7]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+	HMENU	hMenu = ::GetMenu(nppData._nppHandle);
+
+	::ModifyMenu(hMenu, funcItem[1]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+	::ModifyMenu(hMenu, funcItem[4]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+	::ModifyMenu(hMenu, funcItem[7]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+	::CheckMenuItem(hMenu, funcItem[6]._cmdID, MF_BYCOMMAND | (sortByNames?MF_CHECKED:MF_UNCHECKED));
+}
+
+
+
+/***
+ *	Interface function to set the status bar information
+ */
+void setProgress(UINT iProgress)
+{
+	char	text[6];
+	sprintf(text, "%d %%", iProgress);
+	functionDlg.setCaptionText(text);
 }
 
 
@@ -317,19 +360,51 @@ void initMenu(void)
 HWND getCurrentHScintilla(int which)
 {
 	return (which == 0)?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
-}	
+}
+
+
+/***
+ *	Copy current buffer in a temporary buffer to parse the information
+ */
+void copyBuffer()
+{
+	UINT	length  = 0;
+	char*	buffer  = NULL;
+	HWND	hwnd	= functionDlg.getHSelf();
+
+	if (hwnd != NULL)
+	{
+		/* create own parser buffer */
+		hSciParser = (HWND)::SendMessage(nppData._nppHandle, WM_CREATESCINTILLAHANDLE, 0, (LPARAM)hwnd);
+
+		/* create direct access to buffer (for better performance) */
+		pSciMsgCurrent	= (SciFnDirect)SendMessage(hSciParser, SCI_GETDIRECTFUNCTION, 0, 0);
+		pSciWndData		= (sptr_t)SendMessage(hSciParser, SCI_GETDIRECTPOINTER, 0, 0);
+	}
+
+	/* get text of current scintilla and copy to buffer for parsing */
+	length = ::SendMessage(g_hSource, SCI_GETTEXTLENGTH, 0, 0) + 1;
+	buffer = (char*)new char[length];
+	::SendMessage(g_hSource, SCI_GETTEXT, length, (LPARAM)buffer);
+	ScintillaMsg(SCI_CLEARALL);
+	ScintillaMsg(SCI_ADDTEXT, length, (LPARAM)buffer);
+	delete [] buffer;
+}
 
 /***
  *	SystemUpdate()
  *
  *	If the user selects/opens an other document this function will be called
  */
-bool SystemUpdate()
+BOOL SystemUpdate()
 {
+	if (isNotepadCreated == FALSE)
+		return FALSE;
+
 	int		docType;
 	int		currentEdit;
 	char	path[MAX_PATH];
-	bool	ret = FALSE;
+	BOOL	ret = FALSE;
 
 	::SendMessage(nppData._nppHandle, WM_GET_FULLCURRENTPATH, 0, (LPARAM)path);
 	::SendMessage(nppData._nppHandle, WM_GETCURRENTLANGTYPE, 0, (LPARAM)&docType);
@@ -364,7 +439,7 @@ bool SystemUpdate()
 
 		/* update function list box */
 		functionDlg.usedDocTypeChanged((LangType)docType);
-		functionDlg.setBoxSelection();
+		functionDlg.processList();
 
 		ret = TRUE;
 	}
@@ -373,7 +448,7 @@ bool SystemUpdate()
 	{
 		/* select doctype and save it */
 		functionDlg.usedDocTypeChanged((LangType)docType);
-		functionDlg.setBoxSelection();
+		functionDlg.processList();
 		_oldDocType = docType;
 
 		if (docType == L_USER)
@@ -395,7 +470,10 @@ bool SystemUpdate()
  */
 UINT ScintillaMsg(UINT message, WPARAM wParam, LPARAM lParam)
 {
-	return ::SendMessage(g_hSource, message, wParam, lParam);
+	if ((pSciWndData == NULL) || (pSciMsgCurrent == NULL))
+		return 0;
+	else
+		return pSciMsgCurrent(pSciWndData, message, wParam, lParam);
 }
 
 
@@ -428,17 +506,16 @@ void ScintillaSelectFunction(unsigned int pos, bool savePos)
 		if (savePos == TRUE)
 		{
 			posReminder.pop();
-			posReminder.push(ScintillaMsg(SCI_GETCURRENTPOS));
+			posReminder.push(::SendMessage(g_hSource, SCI_GETCURRENTPOS, 0, 0));
 		}
 
-
-		ScintillaMsg(SCI_DOCUMENTEND);
-		ScintillaMsg(SCI_GOTOLINE, line);
-		if (!ScintillaMsg(SCI_GETLINEVISIBLE, line))
+		::SendMessage(g_hSource, SCI_DOCUMENTEND, 0, 0);
+		::SendMessage(g_hSource, SCI_GOTOLINE, line, 0);
+		if (!::SendMessage(g_hSource, SCI_GETLINEVISIBLE, line, 0))
 		{
-			ScintillaMsg(SCI_TOGGLEFOLD, line);
+			::SendMessage(g_hSource, SCI_TOGGLEFOLD, line, 0);
 		}
-		ScintillaMsg(SCI_SETSEL, pos, pos);
+		::SendMessage(g_hSource, SCI_SETSEL, pos, pos);
 
 		if (savePos == TRUE)
 		{
@@ -488,14 +565,14 @@ void redo(void)
 void toggleFunctionView(void)
 {
 	showAllFunc = !showAllFunc;
-	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[7]._cmdID, MF_BYCOMMAND | (showAllFunc?MF_CHECKED:MF_UNCHECKED));
+	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[5]._cmdID, MF_BYCOMMAND | (showAllFunc?MF_CHECKED:MF_UNCHECKED));
 	functionDlg.listAllFunc(showAllFunc);
 }
 
 void toggleSortByNames(void)
 {
 	sortByNames = !sortByNames;
-	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[8]._cmdID, MF_BYCOMMAND | (sortByNames?MF_CHECKED:MF_UNCHECKED));
+	::CheckMenuItem(::GetMenu(nppData._nppHandle), funcItem[6]._cmdID, MF_BYCOMMAND | (sortByNames?MF_CHECKED:MF_UNCHECKED));
 	functionDlg.sortByNames(sortByNames);
 }
 
