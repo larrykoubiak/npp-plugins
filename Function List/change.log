@@ -2,6 +2,17 @@
 Change-log for FunctionList.dll
 
 ------------------------------------------------------------------------------------
+07/02/18  v1.2 :
+------------------------------------------------------------------------------------
+	Fix: Crashing on ENTER when "Feature not supported"
+	Fix: All dialogs now use standard font
+	Fix: Java-Script function recognition "funcname: function()"
+	Fix: PHP detects also functions with a predefined param "-"
+	Fix: C# don't recognise blocks as function anymore "[AttributeDefinition(1)]"
+	Fix: NSIS detects function-, section- and subsection-names with quotes
+	New: Parsing in seperate threads (Notepad isn't blocked during parsing)
+
+------------------------------------------------------------------------------------
 07/02/04  v1.1 :
 ------------------------------------------------------------------------------------
 	Fix the bug of wrong toolbar stat while closing Function List dialog by X button
