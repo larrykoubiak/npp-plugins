@@ -96,7 +96,7 @@ DWORD WINAPI ThreadSignalQue(LPVOID lpParam)
 			while (bThreadRun == TRUE)
 			{
 				bInterupt = TRUE;
-				::WaitForSingleObject(hEvent[2], INFINITE);
+				::WaitForSingleObject(hEvent[2], 1000);
 			}
 			bInterupt = FALSE;
 
@@ -131,7 +131,7 @@ DWORD WINAPI ThreadParsing(LPVOID lpParam)
 
 
 FunctionListDialog::FunctionListDialog(void) : DockingDlgInterface(IDD_FUNCTION_LIST_DLG), 
-	_status(UNDOCK)
+	_status(UNDOCK), _isMenu(false)
 {
 	_pszAddInfo[0]	= '\0';
 }
@@ -396,6 +396,8 @@ LRESULT FunctionListDialog::runProcList(HWND hwnd, UINT message, WPARAM wParam, 
 			::AppendMenu(hMenu, MF_STRING | (showAllFunc?MF_CHECKED:0), 3, "Show All Functions");
 			::AppendMenu(hMenu, MF_STRING | (_sortByNames?MF_CHECKED:0), 4, "Sort Alphabetically");
 
+			/* prevent automatic selection of current function */
+			_isMenu = true;
 
 			/* create menu */
 			::GetCursorPos(&pt);
@@ -421,6 +423,8 @@ LRESULT FunctionListDialog::runProcList(HWND hwnd, UINT message, WPARAM wParam, 
 			}
 
 			::DestroyMenu(hMenu);
+			_isMenu = false;
+			setBoxSelection();
 			break;
 		}
 		case WM_MOUSEMOVE:
@@ -1157,36 +1161,10 @@ void FunctionListDialog::updateBox(void)
 		maxElements++;
     }
 
-    /* update list */
+	::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_RESETCONTENT, 0, 0);
     for (iElements = 0; iElements < maxElements; iElements++)
     {
-        char *pFunc = (char*) new char[::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_GETTEXTLEN, iElements, 0)+1];
-        if (::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_GETTEXT, iElements, (LPARAM)pFunc) != LB_ERR)
-		{
-			if (strcmp(pFunc, _funcList[iElements].name.c_str()) != 0)
-			{
-				int pos = ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_FINDSTRING, iElements, (LPARAM)pFunc);
-				if (pos >= iElements)
-				{
-					pos++;
-					for (pos -= iElements; pos > 0; pos--)
-						::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_DELETESTRING, iElements, 0);
-				}
-				::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_INSERTSTRING ,iElements, (LPARAM)_funcList[iElements].name.c_str());
-			}
-		}
-		else
-		{
-			::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_INSERTSTRING, iElements, (LPARAM)_funcList[iElements].name.c_str());
-		}
-        delete pFunc;
-    }
-
-	int cnt = ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_GETCOUNT, 0, 0);
-	while (iElements < cnt)
-	{
-		::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_DELETESTRING, iElements, 0);
-		cnt--;
+		::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_INSERTSTRING, iElements, (LPARAM)_funcList[iElements].name.c_str());
 	}
 }
 
@@ -1198,6 +1176,9 @@ void FunctionListDialog::updateBox(void)
  */
 void FunctionListDialog::setBoxSelection(void)
 {
+	if (_isMenu)
+		return;
+
 	extern
 	HWND	g_hSource;
 	bool    isOutOfFunc = true;
