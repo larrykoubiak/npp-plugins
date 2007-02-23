@@ -1,0 +1,73 @@
+<html>
+<body>
+<pre>
+<h1>Erstellungsprotokoll</h1>
+<h3>
+--------------------Konfiguration: Function List - Win32 Release--------------------
+</h3>
+<h3>Befehlszeilen</h3>
+Creating command line "rc.exe /l 0x407 /fo"Release/FunctionListDialog.res" /i "\Visual Studio Projects\NppPlugins\Function List\src" /d "NDEBUG" "D:\Visual Studio Projects\NppPlugins\Function List\src\FunctionListDialog.rc"" 
+Erstellen der temporären Datei  "C:\DOKUME~1\Jens\LOKALE~1\Temp\RSP105.tmp" mit Inhalten
+[
+/nologo /MT /W3 /GX /I "..\..\src\\" /I "..\..\src\HelpDlg\\" /I "..\..\src\MISC\\" /I "..\..\src\UserDefineDlg\\" /I "..\..\src\Toolbar\\" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "FUNCTIONLIST_EXPORTS" /FR"Release/" /Fo"Release/" /Fd"Release/" /FD /c 
+"D:\Visual Studio Projects\NppPlugins\Function List\src\FunctionListDialog.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\PluginInterface.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\StaticDialog.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\stdafx.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\SysMsg.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\HelpDlg\HelpDialog.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\HelpDlg\URLCtrl.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\MISC\CommentList.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\MISC\PosReminder.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\MISC\ToolTip.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\Toolbar\ImageListSet.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\Toolbar\ToolBar.cpp"
+"D:\Visual Studio Projects\NppPlugins\Function List\src\UserDefineDlg\UserDefineDialog.cpp"
+]
+Creating command line "cl.exe @C:\DOKUME~1\Jens\LOKALE~1\Temp\RSP105.tmp" 
+Erstellen der temporären Datei  "C:\DOKUME~1\Jens\LOKALE~1\Temp\RSP106.tmp" mit Inhalten
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib shlwapi.lib comctl32.lib /nologo /dll /incremental:no /pdb:"Release/FunctionList.pdb" /machine:I386 /out:"C:/Programme/Notepad++/Plugins/FunctionList.dll" /implib:"Release/FunctionList.lib" 
+".\Release\FunctionListDialog.obj"
+".\Release\FunctionListDialog.res"
+".\Release\PluginInterface.obj"
+".\Release\StaticDialog.obj"
+".\Release\stdafx.obj"
+".\Release\SysMsg.obj"
+".\Release\HelpDialog.obj"
+".\Release\URLCtrl.obj"
+".\Release\CommentList.obj"
+".\Release\PosReminder.obj"
+".\Release\ToolTip.obj"
+".\Release\ImageListSet.obj"
+".\Release\ToolBar.obj"
+".\Release\UserDefineDialog.obj"
+]
+Erstellen der Befehlzeile "link.exe @C:\DOKUME~1\Jens\LOKALE~1\Temp\RSP106.tmp"
+<h3>Ausgabefenster</h3>
+Ressourcen werden kompiliert...
+Kompilierung läuft...
+FunctionListDialog.cpp
+PluginInterface.cpp
+StaticDialog.cpp
+stdafx.cpp
+SysMsg.cpp
+HelpDialog.cpp
+URLCtrl.cpp
+CommentList.cpp
+PosReminder.cpp
+ToolTip.cpp
+ImageListSet.cpp
+ToolBar.cpp
+UserDefineDialog.cpp
+Generieren von Code...
+Linker-Vorgang läuft...
+   Bibliothek Release/FunctionList.lib und Objekt Release/FunctionList.exp wird erstellt
+
+
+
+<h3>Ergebnisse</h3>
+FunctionList.dll - 0 Fehler, 0 Warnung(en)
+</pre>
+</body>
+</html>
