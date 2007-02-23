@@ -202,6 +202,7 @@ private:
 	/* window params */
 	bool				_status;
 	bool				_noProcess;
+	bool				_isMenu;
 
 	unsigned int		_fontWidth;
 
