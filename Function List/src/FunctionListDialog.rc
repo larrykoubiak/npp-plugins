@@ -1,0 +1,347 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "windows.h"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+#include "functionlistresource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Deutsch (Deutschland) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
+#ifdef _WIN32
+LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_HELP_DEMODLG DIALOGEX 36, 44, 321, 71
+STYLE DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "Find/Replace Demo"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Close",IDOK,264,50,50,14
+    PUSHBUTTON      "Find",IDC_BTN_FIND,264,7,50,14
+    PUSHBUTTON      "Replace",IDC_BTN_REPLACE,264,27,50,14
+    EDITTEXT        IDC_EDIT_FIND,42,7,206,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_REPLACE,42,25,206,14,ES_AUTOHSCROLL
+    CONTROL         "RegEx",IDC_REGEXP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    42,46,63,10
+    LTEXT           "Find",IDC_STATIC,7,10,14,8
+    LTEXT           "Replace",IDC_STATIC,7,27,28,8
+END
+
+IDD_FUNCTION_LIST_DLG DIALOGEX 36, 44, 162, 358
+STYLE DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CAPTION | 
+    WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "Function List"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LISTBOX         IDC_FUNCTION_LIST,6,6,150,345,LBS_NOINTEGRALHEIGHT | 
+                    WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+END
+
+IDD_HELP_DLG DIALOGEX 0, 0, 230, 222
+STYLE DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,89,201,50,14
+    LTEXT           "jens.plugin.npp@gmx.de",IDC_EMAIL_LINK,65,41,80,8
+    LTEXT           "Author:\t\tJens Lorenz",IDC_STATIC,12,31,183,9
+    GROUPBOX        "Menu entries",IDC_STATIC,7,84,216,110
+    LTEXT           "eMail:",IDC_STATIC,12,41,21,8
+    CTEXT           "At first, I would like to thank Don for his great program and his support to create this plugin.",
+                    IDC_STATIC,7,59,216,18
+    LTEXT           "View list\t\t\tViews the Function List Box.\nGoto previous position\tSteps to the previous cursor positions.\nGoto next position\tSteps to the next cursor positions.\nDock list\t\tDocks the list to Notepad.\nDock on left\t\tDocks the list to Notepad on left side.",
+                    IDC_STATIC,15,99,203,40
+    CTEXT           "Function List Plugin for Notepad++ v4.0                 v1.0",
+                    IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
+                    WS_EX_TRANSPARENT
+    LTEXT           "View all functions\tViews all functions. Also commented\n\t\t\tfunctions.\nSort by names\t\tSorts the list in alphabeticaly order.\nUser Rules\t\tPossibility to set his own Function List\n\t\t\tParsing Rules.\nHelp\t\t\tShows this help dialog.",
+                    IDC_STATIC,15,139,203,50
+END
+
+IDD_USER_DLG DIALOGEX 0, 0, 314, 342
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "Function List Parsing Rules"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    COMBOBOX        IDC_COMBO_LANG,49,11,163,58,CBS_DROPDOWNLIST | 
+                    CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "Edit rule",IDC_ADD_RULES,224,10,83,14
+    CONTROL         "&Match Case",IDC_CHECK_MC,"Button",BS_AUTOCHECKBOX | 
+                    BS_LEFTTEXT | BS_RIGHT | WS_DISABLED | WS_TABSTOP,134,32,
+                    77,10
+    EDITTEXT        IDC_EDIT_SECNUM,107,62,28,13,ES_CENTER | ES_READONLY | 
+                    ES_NUMBER | WS_DISABLED
+    CONTROL         "Spin1",IDC_SPIN_SEC,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS | 
+                    WS_DISABLED | WS_TABSTOP,135,62,11,13
+    PUSHBUTTON      "&Add rule",IDC_ADD_SECRULE,176,61,58,14,WS_DISABLED
+    PUSHBUTTON      "&Delete rule",IDC_DEL_SECRULE,241,61,58,14,WS_DISABLED
+    EDITTEXT        IDC_EDIT_FUNCB,107,84,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    EDITTEXT        IDC_EDIT_FUNCN,107,100,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    EDITTEXT        IDC_EDIT_FUNCE,107,116,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    EDITTEXT        IDC_EDIT_SEP,107,132,192,12,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDIT_BB,107,148,192,12,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDIT_BE,107,164,192,12,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDIT_COMNUM,107,200,28,13,ES_CENTER | ES_READONLY | 
+                    ES_NUMBER | WS_DISABLED
+    CONTROL         "Spin1",IDC_SPIN_COM,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS | 
+                    WS_DISABLED | WS_TABSTOP,135,200,11,13
+    PUSHBUTTON      "&Add rule",IDC_ADD_COMRULE,176,199,58,14,WS_DISABLED
+    PUSHBUTTON      "&Delete rule",IDC_DEL_COMRULE,241,199,58,14,WS_DISABLED
+    EDITTEXT        IDC_EDIT_COMMB,107,221,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    EDITTEXT        IDC_EDIT_COMME,107,237,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    EDITTEXT        IDC_EDIT_KWBB,107,279,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    EDITTEXT        IDC_EDIT_KWBE,107,295,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    PUSHBUTTON      "&Try!",IDC_TEST,146,321,50,14
+    PUSHBUTTON      "&Ok",IDOK,202,321,50,14
+    PUSHBUTTON      "&Cancel",IDCANCEL,257,321,50,14
+    PUSHBUTTON      "&Help",IDC_USERHELP,224,30,83,14
+    CONTROL         "T&ransparency",IDC_TRANSPARENT_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,325,58,10
+    CONTROL         "",IDC_PERCENTAGE_SLIDER,"msctls_trackbar32",TBS_BOTH | 
+                    TBS_NOTICKS | WS_TABSTOP,67,325,53,10
+    LTEXT           "Language",IDC_STATIC,7,13,33,8
+    GROUPBOX        "Keyword forwarding",IDC_STATIC,7,260,300,54,BS_LEFT | 
+                    BS_NOTIFY | WS_DISABLED
+    LTEXT           "Function end to body begin",IDC_STATIC_0,15,279,87,12,
+                    SS_CENTERIMAGE | WS_DISABLED
+    LTEXT           "Body begin to body end",IDC_STATIC_1,15,295,76,12,
+                    SS_CENTERIMAGE | WS_DISABLED
+    GROUPBOX        "Comment Rules",IDC_STATIC,7,186,300,71,BS_LEFT | 
+                    WS_DISABLED
+    LTEXT           "Multiline begin / Singleline",IDC_STATIC_2,15,221,87,12,
+                    SS_CENTERIMAGE | WS_DISABLED
+    LTEXT           "Multiline end",IDC_STATIC_3,15,237,76,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    GROUPBOX        "Section Rules",IDC_STATIC,7,48,300,135,BS_LEFT | 
+                    WS_DISABLED
+    LTEXT           "Function begin",IDC_STATIC_4,15,84,92,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    LTEXT           "Function List Name",IDC_STATIC_5,15,100,92,12,
+                    SS_CENTERIMAGE | WS_DISABLED
+    LTEXT           "Function end",IDC_STATIC_6,15,116,92,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    LTEXT           "Body begin",IDC_STATIC_7,15,148,92,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    LTEXT           "Body end",IDC_STATIC_8,15,164,92,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    LTEXT           "Seperator between",IDC_STATIC_9,15,132,92,12,
+                    SS_CENTERIMAGE | WS_DISABLED
+END
+
+IDD_HELP_USERDLG DIALOGEX 0, 0, 321, 222
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "Help for Function List Parsing Rules"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
+BEGIN
+    CTEXT           "This help will get you to understand the basics of Scinitilla and how Notepad++/\n'Function List Parsing Rules' work:",
+                    IDC_STATIC,14,12,293,18
+    CTEXT           "http://scintilla.sourceforge.net",IDC_SCINTILLA_URL,14,
+                    35,293,8
+    GROUPBOX        "Description of dialog entries",IDC_STATIC,7,50,307,165
+    EDITTEXT        IDC_EDIT_HELP,14,64,293,144,ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_READONLY | ES_WANTRETURN | NOT 
+                    WS_BORDER | WS_VSCROLL | NOT WS_TABSTOP
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""windows.h""\r\n"
+    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""functionlistresource.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_HELP_DEMODLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 314
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 64
+    END
+
+    IDD_FUNCTION_LIST_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 6
+        RIGHTMARGIN, 156
+        TOPMARGIN, 6
+        BOTTOMMARGIN, 351
+        HORZGUIDE, 351
+    END
+
+    IDD_HELP_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 223
+        VERTGUIDE, 15
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 215
+    END
+
+    IDD_USER_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 307
+        VERTGUIDE, 15
+        VERTGUIDE, 107
+        VERTGUIDE, 135
+        VERTGUIDE, 212
+        VERTGUIDE, 224
+        VERTGUIDE, 299
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 335
+    END
+
+    IDD_HELP_USERDLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 314
+        VERTGUIDE, 14
+        VERTGUIDE, 307
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 215
+        HORZGUIDE, 208
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040704b0"
+        BEGIN
+            VALUE "Comments", "\0"
+            VALUE "CompanyName", "jens.plugin.npp@gmx.de\0"
+            VALUE "FileDescription", "Notepad++ : a free (GNU) source code editor\0"
+            VALUE "FileVersion", "1.0\0"
+            VALUE "InternalName", "Function List for npp.exe\0"
+            VALUE "LegalCopyright", "Copyright 2006 by Jens Lorenz\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "FunctionListPlugin.dll\0"
+            VALUE "PrivateBuild", "\0"
+            VALUE "ProductName", "Function List Plugin\0"
+            VALUE "ProductVersion", "1.0\0"
+            VALUE "SpecialBuild", "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x407, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_EX_UNDO             BITMAP  MOVEABLE PURE   "..\\res\\undo.bmp"
+IDB_EX_REDO             BITMAP  MOVEABLE PURE   "..\\res\\redo.bmp"
+IDB_EX_SORTDOC          BITMAP  MOVEABLE PURE   "..\\res\\sortDoc.bmp"
+IDB_EX_SORTNAME         BITMAP  MOVEABLE PURE   "..\\res\\sortName.bmp"
+IDB_EX_COPY             BITMAP  MOVEABLE PURE   "..\\res\\copy.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_TABICON             ICON    DISCARDABLE     "..\\res\\Tab.ico"
+#endif    // Deutsch (Deutschland) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
