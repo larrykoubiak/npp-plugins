@@ -35,12 +35,12 @@ const char sortNamesCh[] = "Sort by names";
 
 
 /* global values */
-NppData		nppData;
-HANDLE		g_hModule;
-HWND		g_hSource;
-HWND		g_hUserDlg;
-FuncItem	funcItem[nbFunc];
-
+NppData			nppData;
+HANDLE			g_hModule;
+HWND			g_hSource;
+HWND			g_hUserDlg;
+FuncItem		funcItem[nbFunc];
+toolbarIcons	g_TBList;
 
 /* for subclassing */
 WNDPROC	wndProcNotepad = NULL;
@@ -127,7 +127,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			funcItem[9]._pFunc = openHelpDlg;
 			
 			/* Fill menu names */
-			strcpy(funcItem[0]._itemName, "View list");
+			strcpy(funcItem[0]._itemName, "View List");
 			strcpy(funcItem[1]._itemName, "-----------");
 			strcpy(funcItem[2]._itemName, "Goto previous position");
 			strcpy(funcItem[3]._itemName, "Goto next position");
@@ -184,6 +184,11 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			delete funcItem[0]._pShKey;
 			delete funcItem[2]._pShKey;
 			delete funcItem[3]._pShKey;
+
+			if (g_TBList.hToolbarBmp)
+				::DeleteObject(g_TBList.hToolbarBmp);
+			if (g_TBList.hToolbarIcon)
+				::DestroyIcon(g_TBList.hToolbarIcon);
 
 			/* restore subclasses */
 			SetWindowLong(nppData._nppHandle, GWL_WNDPROC, (LONG)wndProcNotepad);
@@ -265,6 +270,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 					break;
 			}
 			functionDlg.setBoxSelection();
+		}
+	}
+	if (notifyCode->nmhdr.hwndFrom == nppData._nppHandle)
+	{
+		if (notifyCode->nmhdr.code == NPPN_TB_MODIFICATION)
+		{
+			g_TBList.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_TB_LIST), IMAGE_BITMAP, 0, 0, (LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+			::SendMessage(nppData._nppHandle, WM_ADDTOOLBARICON, (WPARAM)funcItem[0]._cmdID, (LPARAM)&g_TBList);
 		}
 	}
 }
@@ -442,7 +455,8 @@ void ScintillaSelectFunction(unsigned int pos, bool savePos)
 
 void toggleFunctionListDialog(void)
 {
-	functionDlg.doDialog();
+	UINT state = ::GetMenuState(::GetMenu(nppData._nppHandle), funcItem[DOCKABLE_INDEX]._cmdID, MF_BYCOMMAND);
+	functionDlg.doDialog(state & MF_CHECKED ? false : true);
 }
 
 void undo(void)
@@ -494,6 +508,7 @@ void openHelpDlg(void)
 {
 	helpDlg.doDialog();
 }
+
 
 
 /**************************************************************************

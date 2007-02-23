@@ -134,6 +134,7 @@ protected :
 	void GetNameStrFromCmd(UINT resID, char** tip);
 	void tb_cmd(UINT message);
 
+
 private:
 	/* Handles */
 	NppData				_nppData;

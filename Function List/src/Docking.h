@@ -48,11 +48,13 @@ typedef struct {
 	HWND		hClient;		// client Window Handle
 	char*		pszName;		// name of plugin (shown in window)
 	int			dlgID;			// a funcItem provides the function pointer to start a dialog. Please parse here these ID
+
 	/* user modifications */
 	UINT		uMask;			// mask params: look to above defines
 	HICON		hIconTab;		// icon for tabs
-	HICON		hIconBar;		// icon for icon bar (currently not supported)
 	char*		pszAddInfo;		// for plugin to display additional informations
+
+	/* internal data, do not use !!! */
 	RECT		rcFloat;		// floating position
 	int			iPrevCont;		// stores the privious container (toggling between float and dock)
 	const char*	pszModuleName;	// it's the plugin file name. It's used to identify the plugin
@@ -61,9 +63,16 @@ typedef struct {
 
 
 /* messages of docking */
-#define LMM_CLOSE                       0x5001
-#define LMM_DOCK                        0x5002
-#define LMM_FLOAT                       0x5003
+#define DMN_FIRST 1050
+	#define DMN_CLOSE					(DMN_FIRST + 1)
+	//nmhdr.code = DWORD(DMN_CLOSE, 0));
+	//nmhdr.hwndFrom = hwndNpp;
+	//nmhdr.idFrom = ctrlIdNpp;
 
+	#define DMN_DOCK		            (DMN_FIRST + 2)
+    #define DMN_FLOAT					(DMN_FIRST + 3)
+	//nmhdr.code = DWORD(DMN_XXX, int newContainer);
+	//nmhdr.hwndFrom = hwndNpp;
+	//nmhdr.idFrom = ctrlIdNpp;
 
 #endif // DOCKING_H

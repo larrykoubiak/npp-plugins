@@ -2,6 +2,14 @@
 Change-log for FunctionList.dll
 
 ------------------------------------------------------------------------------------
+07/02/04  v1.1 :
+------------------------------------------------------------------------------------
+	Fix the bug of wrong toolbar stat while closing Function List dialog by X button
+	Fix C++ "operator[]" recognition 
+	Fix Pascal method recognition 
+	Add TCL support 
+	
+------------------------------------------------------------------------------------
 07/01/07  v1.0 :
 ------------------------------------------------------------------------------------
 	Add docking functionality

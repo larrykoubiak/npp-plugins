@@ -24,6 +24,7 @@
 #ifndef PLUGININTERFACE_H
 #define PLUGININTERFACE_H
 
+#define DOCKABLE_INDEX		0
 #define TITLETIP_CLASSNAME "MyToolTip"
 
 
@@ -112,13 +113,52 @@ static char cDBG[256];
 	#define WM_DMM_SHOW					(NOTEPADPLUS_USER + 30)
 	#define WM_DMM_HIDE					(NOTEPADPLUS_USER + 31)
 	#define WM_DMM_UPDATEDISPINFO		(NOTEPADPLUS_USER + 32)
-	#define WM_REGASDCKDLG				(NOTEPADPLUS_USER + 33)
+	//void WM_DMM_xxx(0, tTbData->hClient)
+
+	#define WM_DMM_REGASDCKDLG			(NOTEPADPLUS_USER + 33)
+	//void WM_DMM_REGASDCKDLG(0, &tTbData)
+
 	#define WM_LOADSESSION				(NOTEPADPLUS_USER + 34)
-	#define WM_VIEWOTHERTAB				(NOTEPADPLUS_USER + 35)
+	//void WM_LOADSESSION(0, const char* file name)
+
+	#define WM_DMM_VIEWOTHERTAB			(NOTEPADPLUS_USER + 35)
+	//void WM_DMM_VIEWOTHERTAB(0, tTbData->hClient)
+
+	#define WM_RELOADFILE				(NOTEPADPLUS_USER + 36)
+	//BOOL WM_RELOADFILE(BOOL withAlert, char *filePathName2Reload)
+
+	#define WM_SWITCHTOFILE				(NOTEPADPLUS_USER + 37)
+	//BOOL WM_SWITCHTOFILE(0, char *filePathName2switch)
+
+	#define WM_SAVECURRENTFILE			(NOTEPADPLUS_USER + 38)
+	//BOOL WM_SWITCHCURRENTFILE(0, 0)
+
+	#define WM_SAVEALLFILES				(NOTEPADPLUS_USER + 39)
+	//BOOL WM_SAVEALLFILES(0, 0)
+
+	#define WM_PIMENU_CHECK				(NOTEPADPLUS_USER + 40)
+	//void WM_PIMENU_CHECK(UINT	funcItem[X]._cmdID, TRUE/FALSE)
+
+	#define WM_ADDTOOLBARICON			(NOTEPADPLUS_USER + 41)
+	//void WM_ADDTOOLBARICON(UINT funcItem[X]._cmdID, toolbarIcons icon)
+		struct toolbarIcons {
+			HBITMAP	hToolbarBmp;
+			HICON	hToolbarIcon;
+		};
+
 
 // Notification code
 #define NPPN_FIRST			1000
 	#define NPPN_READY					(NPPN_FIRST + 1)
+	//scnNotification->nmhdr.code = NPPN_READY;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
+	#define NPPN_TB_MODIFICATION		(NPPN_FIRST + 2)
+	//scnNotification->nmhdr.code = NPPN_TB_MODIFICATION;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
 
 #define	RUNCOMMAND_USER    (WM_USER + 3000)
 	#define WM_GET_FULLCURRENTPATH		(RUNCOMMAND_USER + FULL_CURRENT_PATH)
@@ -141,47 +181,14 @@ static char cDBG[256];
 #define SC_SECHANDLE	1
 
 
-enum LangType {	
-	L_TXT,
-	L_PHP, 
-	L_C, 
-	L_CPP, 
-	L_CS, 
-	L_OBJC, 
-	L_JAVA, 
-	L_RC, 
-	L_HTML, 
-	L_XML, 
-	L_MAKEFILE, 
-	L_PASCAL, 
-	L_BATCH, 
-	L_INI, 
-	L_NFO,
-	L_USER, 
-	L_ASP, 
-	L_SQL, 
-	L_VB,
-	L_JS, 
-	L_CSS, 
-	L_PERL, 
-	L_PYTHON, 
-	L_LUA, 
-	L_TEX, 
-	L_FORTRAN, 
-	L_BASH, 
-	L_FLASH, 
-	L_NSIS, 
-	L_TCL,
-    L_LISP,
-	L_SCHEME, 
-	L_ASM, 
-	L_DIFF, 
-	L_PROPS, 
-	L_PS, 
-	L_RUBY, 
-	L_SMALLTALK, 
-	L_VHDL
-};
+enum LangType {	L_TXT, L_PHP , L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_RC,\
+			    L_HTML, L_XML, L_MAKEFILE, L_PASCAL, L_BATCH, L_INI, L_NFO, L_USER,\
+			    L_ASP, L_SQL, L_VB, L_JS, L_CSS, L_PERL, L_PYTHON, L_LUA,\
+			    L_TEX, L_FORTRAN, L_BASH, L_FLASH, L_NSIS, L_TCL, L_LISP, L_SCHEME,\
+			    L_ASM, L_DIFF, L_PROPS, L_PS, L_RUBY, L_SMALLTALK, L_VHDL, L_KIX, L_AU3,\
+			    L_CAML, L_ADA, L_VERILOG, L_MATLAB, L_HASKELL, L_INNO,\
+			    // The end of enumated language type, so it should be always at the end
+			    L_END};
 
 const char localConfFile[] = "doLocalConf.xml";
 
@@ -226,6 +233,8 @@ void toggleFunctionView(void);
 void toggleSortByNames(void);
 void openUserDlg(void);
 void openHelpDlg(void);
+
+void onCloseList(void);
 
 void CALLBACK timerHnd(HWND hWnd, UINT message, WPARAM wParam, DWORD lParam);
 LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);

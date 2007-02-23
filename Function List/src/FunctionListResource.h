@@ -25,6 +25,7 @@
 #define IDB_EX_SORTNAME					104
 #define IDB_EX_COPY						105
 #define IDI_TABICON                     106
+#define IDB_TB_LIST                     107
 
 
 #define IDM_EX_UNDO						1001
@@ -32,6 +33,7 @@
 #define IDM_EX_SORTDOC					1003
 #define IDM_EX_SORTNAME					1004
 #define IDM_EX_COPY						1005
+
 
 
 

@@ -51,8 +51,7 @@ public:
 		data->uMask			= 0;
 
 		/* icons */
-		//data->hIconBar	= ::LoadIcon(hInst, IDB_CLOSE_DOWN);
-		//data->hIconTab	= ::LoadIcon(hInst, IDB_CLOSE_DOWN);
+		data->hIconTab		= NULL;
 
 		/* additional info */
 		data->pszAddInfo	= NULL;
@@ -69,12 +68,16 @@ public:
     };
 
 	virtual void display(bool toShow = true) const {
+		extern FuncItem funcItem[];
 		::SendMessage(_hParent, toShow?WM_DMM_SHOW:WM_DMM_HIDE, 0, (LPARAM)_hSelf);
+		if (_data != NULL)
+			::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)toShow);
 	};
 
 	const char * getPluginFileName() const {
 		return _moduleName;
 	};
+
 
 protected :
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam)
@@ -88,22 +91,22 @@ protected :
 
 				if (pnmh->hwndFrom == _hParent)
 				{
-					switch (pnmh->code)
+					switch (LOWORD(pnmh->code))
 					{
-						case LMM_CLOSE:
+						case DMN_CLOSE:
 						{
-							//::MessageBox(_hSelf, "Close Dialog", "Plugin Message", MB_OK);
-							break;
+							extern FuncItem funcItem[];
+							if (_data != NULL)
+								::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)FALSE);
+							return TRUE;
 						}
-						case LMM_FLOAT:
+						case DMN_FLOAT:
 						{
-							//::MessageBox(_hSelf, "Float Dialog", "Plugin Message", MB_OK);
 							_isFloating = true;
 							break;
 						}
-						case LMM_DOCK:
+						case DMN_DOCK:
 						{
-							//::MessageBox(_hSelf, "Dock Dialog", "Plugin Message", MB_OK);
 							_isFloating = false;
 							break;
 						}

@@ -47,8 +47,8 @@ BEGIN
 END
 
 IDD_FUNCTION_LIST_DLG DIALOGEX 36, 44, 162, 358
-STYLE DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_CAPTION | 
-    WS_SYSMENU | WS_THICKFRAME
+STYLE DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | 
+    WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Function List"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -57,24 +57,24 @@ BEGIN
                     WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
 END
 
-IDD_HELP_DLG DIALOGEX 0, 0, 230, 222
+IDD_HELP_DLG DIALOGEX 0, 0, 230, 201
 STYLE DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
-FONT 8, "MS Sans Serif", 0, 0, 0x1
+FONT 8, "MS Sans Serif"
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,89,201,50,14
+    DEFPUSHBUTTON   "OK",IDOK,89,180,50,14
     LTEXT           "jens.plugin.npp@gmx.de",IDC_EMAIL_LINK,65,41,80,8
     LTEXT           "Author:\t\tJens Lorenz",IDC_STATIC,12,31,183,9
-    GROUPBOX        "Menu entries",IDC_STATIC,7,84,216,110
+    GROUPBOX        "Menu entries",IDC_STATIC,7,84,216,91
     LTEXT           "eMail:",IDC_STATIC,12,41,21,8
     CTEXT           "At first, I would like to thank Don for his great program and his support to create this plugin.",
                     IDC_STATIC,7,59,216,18
-    LTEXT           "View list\t\t\tViews the Function List Box.\nGoto previous position\tSteps to the previous cursor positions.\nGoto next position\tSteps to the next cursor positions.\nDock list\t\tDocks the list to Notepad.\nDock on left\t\tDocks the list to Notepad on left side.",
-                    IDC_STATIC,15,99,203,40
-    CTEXT           "Function List Plugin for Notepad++ v4.0                 v1.0",
+    LTEXT           "View list\t\t\tViews the Function List Box.\nGoto previous position\tSteps to the previous cursor positions.\nGoto next position\tSteps to the next cursor positions.",
+                    IDC_STATIC,15,99,203,24
+    CTEXT           "Function List Plugin for Notepad++ v4.0                 v1.1",
                     IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
                     WS_EX_TRANSPARENT
     LTEXT           "View all functions\tViews all functions. Also commented\n\t\t\tfunctions.\nSort by names\t\tSorts the list in alphabeticaly order.\nUser Rules\t\tPossibility to set his own Function List\n\t\t\tParsing Rules.\nHelp\t\t\tShows this help dialog.",
-                    IDC_STATIC,15,139,203,50
+                    IDC_STATIC,15,123,203,50
 END
 
 IDD_USER_DLG DIALOGEX 0, 0, 314, 342
@@ -234,7 +234,7 @@ BEGIN
         RIGHTMARGIN, 223
         VERTGUIDE, 15
         TOPMARGIN, 7
-        BOTTOMMARGIN, 215
+        BOTTOMMARGIN, 194
     END
 
     IDD_USER_DLG, DIALOG
@@ -272,8 +272,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION 1,1,0,0
+ PRODUCTVERSION 1,1,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -291,14 +291,14 @@ BEGIN
             VALUE "Comments", "\0"
             VALUE "CompanyName", "jens.plugin.npp@gmx.de\0"
             VALUE "FileDescription", "Notepad++ : a free (GNU) source code editor\0"
-            VALUE "FileVersion", "1.0\0"
+            VALUE "FileVersion", "1.1\0"
             VALUE "InternalName", "Function List for npp.exe\0"
             VALUE "LegalCopyright", "Copyright 2006 by Jens Lorenz\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "FunctionListPlugin.dll\0"
             VALUE "PrivateBuild", "\0"
             VALUE "ProductName", "Function List Plugin\0"
-            VALUE "ProductVersion", "1.0\0"
+            VALUE "ProductVersion", "1.1\0"
             VALUE "SpecialBuild", "\0"
         END
     END
@@ -321,6 +321,7 @@ IDB_EX_REDO             BITMAP  MOVEABLE PURE   "..\\res\\redo.bmp"
 IDB_EX_SORTDOC          BITMAP  MOVEABLE PURE   "..\\res\\sortDoc.bmp"
 IDB_EX_SORTNAME         BITMAP  MOVEABLE PURE   "..\\res\\sortName.bmp"
 IDB_EX_COPY             BITMAP  MOVEABLE PURE   "..\\res\\copy.bmp"
+IDB_TB_LIST             BITMAP  DISCARDABLE     "..\\res\\toolbar.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //

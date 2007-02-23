@@ -34,8 +34,6 @@
 #define AUTOHSCROLL_PROP    "AutoHScroll"
 
 
-#define DOCKABLE_INDEX		0
-
 
 ToolTip		toolTip;
 
@@ -118,10 +116,10 @@ void FunctionListDialog::doDialog(bool willBeShown)
 
 		// define the default docking behaviour
 		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB;
-		_data.hIconTab		= ::LoadIcon(_hInst, MAKEINTRESOURCE(IDI_TABICON));
+		_data.hIconTab		= (HICON)::LoadImage(_hInst, MAKEINTRESOURCE(IDI_TABICON), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= DOCKABLE_INDEX;
-		::SendMessage(_hParent, WM_REGASDCKDLG, 0, (LPARAM)&_data);
+		::SendMessage(_hParent, WM_DMM_REGASDCKDLG, 0, (LPARAM)&_data);
 	}
 
     display(willBeShown);
@@ -208,6 +206,15 @@ BOOL CALLBACK FunctionListDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARA
 				GetNameStrFromCmd(resId, &tip);
 				lpttt->lpszText = tip;
 			}
+			else
+			{
+				// return = 0; // anything else than 0 to avoid closing of plugin
+				// ::SetWindowLong(_hSelf, DWL_MSGRESULT, return);
+				// return TRUE;
+
+				DockingDlgInterface::run_dlgProc(Message, wParam, lParam);
+			}
+
 		    return FALSE;
 		}
 		case WM_SIZE:
@@ -241,6 +248,13 @@ BOOL CALLBACK FunctionListDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARA
 			toggleFunctionListDialog();
 			break;
 		}
+		case WM_DESTROY:
+		{
+			::DestroyIcon(_data.hIconTab);
+			break;
+		}
+		default:
+			break;
 	}
 	return FALSE;
 }
@@ -266,7 +280,7 @@ LRESULT FunctionListDialog::runProcList(HWND hwnd, UINT message, WPARAM wParam, 
 			}
 			break;
 		}
-		case WM_KEYDOWN:
+		case WM_KEYUP:
 		{
 			if (LOWORD(wParam) == VK_RETURN)
 			{
@@ -274,7 +288,6 @@ LRESULT FunctionListDialog::runProcList(HWND hwnd, UINT message, WPARAM wParam, 
 				ScintillaSelectFunction(getElementPos(sel));
 			}
 		}
-		case WM_SYSKEYDOWN:
 		case WM_LBUTTONDOWN:
 		case WM_MBUTTONDOWN:
 		case WM_MOUSEWHEEL:
@@ -1182,11 +1195,11 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
 			_commList.addParam("/\\*", "\\*/");
             // bufSyntax.strRegExBegin = "[0-9A-Za-z_&\\*]+[ \\t]*::[ \\t]*";
             bufSyntax.strRegExBegin = "";
-            bufSyntax.strRegExEnd   = "[ \\t]*\\([:0-9A-Za-z_&<>/\\*, \\t.\\[\\]\\(\\)=]*\\)[ \\t]*[const]*";
-            bufSyntax.strRegExFunc  = "~*[0-9A-Za-z_]+[ =<>+\\-\\*/]*";
+            bufSyntax.strRegExEnd   = "[ \\t]*\\([:0-9A-Za-z_\\-&<>/\\*, \\t.\\[\\]\\(\\)=]*\\)[ \\t]*[const]*";
+            bufSyntax.strRegExFunc  = "~*[0-9A-Za-z_]+[ =<>+\\-\\*/\\[\\]]*";
             bufSyntax.strBodyBegin  = "\\{";
             bufSyntax.strBodyEnd    = "\\}";
-            bufSyntax.strSep        = ";";
+            bufSyntax.strSep        = "[;\\)]";
             _searchSyn.push_back(bufSyntax);
 			break;
 		}
@@ -1266,7 +1279,7 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
 			_commList.addParam("//");
 			_commList.addParam("/\\*", "\\*/");
             bufSyntax.strRegExBegin = "function[ \\t&]+";
-			bufSyntax.strRegExEnd   = "[ \\t]*\\([0-9A-Za-z_$&='\",;:<> \\t()]*\\)";
+			bufSyntax.strRegExEnd   = "[ \\t]*\\([0-9A-Za-z_#$&='/\",;:<> \\t()]*\\)";
             bufSyntax.strRegExFunc  = "[\"0-9A-Za-z_]+";
             bufSyntax.strBodyBegin  = "\\{";
             bufSyntax.strBodyEnd    = "\\}";
@@ -1290,9 +1303,11 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
             bufSyntax.strBodyEnd    = "\\}";
             bufSyntax.strSep        = ";";
             _searchSyn.push_back(bufSyntax);
-            bufSyntax.strRegExBegin = "^[var \\t]*";
+            bufSyntax.strRegExBegin = "^[ \\t]*";
             bufSyntax.strRegExEnd   = "[ \\t]*=[ \\t]*function[ \\t]*\\([0-9A-Za-z_$&=', \\t]*\\)";
             bufSyntax.strRegExFunc  = "[\"0-9A-Za-z_.]+";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExBegin = "^[ \\t]*var[ \\t]*";
             _searchSyn.push_back(bufSyntax);
             break;
         }
@@ -1349,24 +1364,22 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
             _matchCase		= 0;
 			_commList.addParam("//");
 			_commList.addParam("'", "'");
+			_commList.addParam("{", "}");
 			_commList.addParam("\\(\\*", "\\*\\)");
             bufSyntax.strRegExBegin = "procedure[ \\t]+";
-            bufSyntax.strRegExEnd   = "[ \\t]*;";
-            bufSyntax.strRegExFunc  = "[0-9A-Za-z_]+";
+//          bufSyntax.strRegExEnd   = "[ \\t]*;";
+            bufSyntax.strRegExEnd   = "[ \\t]*.*;";
+            bufSyntax.strRegExFunc  = "[0-9A-Za-z_]*\\.*[0-9A-Za-z_]+";
+//          bufSyntax.strRegExFunc  = "[0-9A-Za-z_.]+";
             bufSyntax.strBodyBegin  = "\\<begin\\>";
             bufSyntax.strBodyEnd    = "\\<end\\>";
             bufSyntax.strSep        = "function|procedure|destructor|constructor|";
             _searchSyn.push_back(bufSyntax);
-            bufSyntax.strRegExEnd   = "[ \\t]*\\(.*\\).*;";
-            bufSyntax.strRegExFunc  = "[0-9A-Za-z_]*\\.*[0-9A-Za-z_]+";
-            _searchSyn.push_back(bufSyntax);
             bufSyntax.strRegExBegin = "function[ \\t]+";
             _searchSyn.push_back(bufSyntax);
             bufSyntax.strRegExBegin = "constructor[ \\t]+";
-            bufSyntax.strRegExEnd   = "[ \\t]*;";
             _searchSyn.push_back(bufSyntax);
             bufSyntax.strRegExBegin = "destructor[ \\t]+";
-            bufSyntax.strRegExEnd   = "[ \\t]*;";
             _searchSyn.push_back(bufSyntax);
             break;
         }
@@ -1460,19 +1473,44 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
 			_strKeyWBEnd	= "";
             _matchCase		= 0;
 			_commList.addParam("^C");
-            bufSyntax.strRegExBegin = "[ \\t]+subroutine[ \\t]+";
-            bufSyntax.strRegExEnd   = "$";
+            bufSyntax.strRegExEnd   = "[ \\t]*\\(.*\\)";
+            bufSyntax.strRegExBegin = "[ \\t]*subroutine[ \\t]*";
             bufSyntax.strRegExFunc  = REGEX_SPLUS;
             bufSyntax.strBodyBegin  = "";
-            bufSyntax.strBodyEnd    = "^[ \\t]+end$";
+            bufSyntax.strBodyEnd    = "^[ \\t]*end";
             bufSyntax.strSep        = "";
             _searchSyn.push_back(bufSyntax);
-            bufSyntax.strBodyEnd    = "^[ \\t]+end[ \\t]+subroutine";
+            bufSyntax.strBodyEnd    = "^[ \\t]*end[ \\t]*subroutine";
             _searchSyn.push_back(bufSyntax);
-            bufSyntax.strRegExBegin = "[ \\t]+program[ \\t]+";
-            bufSyntax.strBodyEnd    = "^[ \\t]+end$";
+            bufSyntax.strRegExBegin = "[ \\t]*function[ \\t]*";
+            bufSyntax.strBodyEnd    = "^[ \\t]*end";
+			_searchSyn.push_back(bufSyntax);
+            bufSyntax.strBodyEnd    = "^[ \\t]*end[ \\t]*function";
+			_searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExBegin = "[ \\t]*program[ \\t]*";
+            bufSyntax.strBodyEnd    = "^[ \\t]*end";
             _searchSyn.push_back(bufSyntax);
-            bufSyntax.strBodyEnd    = "^[ \\t]+end[ \\t]+program";
+            bufSyntax.strBodyEnd    = "^[ \\t]*end[ \\t]*program";
+            _searchSyn.push_back(bufSyntax);
+
+			bufSyntax.strRegExEnd   = "";
+            bufSyntax.strRegExBegin = "[ \\t]*subroutine[ \\t]*";
+            bufSyntax.strRegExFunc  = REGEX_SPLUS;
+            bufSyntax.strBodyBegin  = "";
+            bufSyntax.strBodyEnd    = "^[ \\t]*end";
+            bufSyntax.strSep        = "";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strBodyEnd    = "^[ \\t]*end[ \\t]*subroutine";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExBegin = "[ \\t]*function[ \\t]*";
+            bufSyntax.strBodyEnd    = "^[ \\t]*end";
+			_searchSyn.push_back(bufSyntax);
+            bufSyntax.strBodyEnd    = "^[ \\t]*end[ \\t]*function";
+			_searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExBegin = "[ \\t]*program[ \\t]*";
+            bufSyntax.strBodyEnd    = "^[ \\t]*end";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strBodyEnd    = "^[ \\t]*end[ \\t]*program";
             _searchSyn.push_back(bufSyntax);
             break;
         }
@@ -1613,6 +1651,29 @@ void FunctionListDialog::usedDocTypeChanged(LangType typeDoc)
             _searchSyn.push_back(bufSyntax);
             break;
         }
+		case L_TCL:
+		{
+			_strKeyWBBeg	= "";
+			_strKeyWBEnd	= "\\<if\\>|\\<switch\\>|\\<while\\>|\\<foreach\\>|\\<for\\>";
+            _matchCase		= SCFIND_MATCHCASE;
+			_commList.addParam("#");
+			_commList.addParam("\"", "\"");
+            bufSyntax.strRegExBegin = "^[ \\t]*proc[ \\t]+";
+            bufSyntax.strRegExEnd   = "[ \\t]+\\{[0-9A-Za-z_\\-$&='/\" \\t\\{\\}]+\\}";
+            bufSyntax.strRegExFunc  = "[0-9A-Za-z_\\-+&|]+";
+            bufSyntax.strBodyBegin  = "\\{";
+            bufSyntax.strBodyEnd    = "\\}";
+            bufSyntax.strSep        = ":";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExEnd   = "[ \\t]+[0-9A-Za-z_\\-+$&='/\" \\t]*";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExBegin = "^[ \\t]*proc[ \\t]+[0-9A-Za-z_\\-+&|]+[ \\t]*::[ \\t]*";
+            bufSyntax.strRegExEnd   = "[ \\t]+\\{[0-9A-Za-z_\\-$&='/\" \\t\\{\\}]+\\}";
+            _searchSyn.push_back(bufSyntax);
+            bufSyntax.strRegExEnd   = "[ \\t]+[0-9A-Za-z_\\-+$&='/\" \\t]*";
+            _searchSyn.push_back(bufSyntax);
+			break;
+		}
         case L_USER :
         {
 			UINT		i;

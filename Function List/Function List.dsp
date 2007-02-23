@@ -266,6 +266,10 @@ SOURCE=.\res\Tab.ico
 # End Source File
 # Begin Source File
 
+SOURCE=.\res\toolbar.bmp
+# End Source File
+# Begin Source File
+
 SOURCE=.\res\undo.bmp
 # End Source File
 # End Group
