@@ -96,11 +96,11 @@ DWORD WINAPI ThreadSignalQue(LPVOID lpParam)
 			while (bThreadRun == TRUE)
 			{
 				bInterupt = TRUE;
-				::WaitForSingleObject(hEvent[2], 1000);
+				::WaitForSingleObject(hEvent[2], INFINITE);
 			}
 			bInterupt = FALSE;
 
-			::PulseEvent(hEvent[1]);
+			::SetEvent(hEvent[1]);
 		}
 	}
 
@@ -113,16 +113,20 @@ DWORD WINAPI ThreadParsing(LPVOID lpParam)
 
 	while (1)
 	{
-		DWORD dwWaitResult = ::WaitForSingleObject(hEvent[1], INFINITE);
+		BOOL	bRet			= TRUE;
+		DWORD	dwWaitResult	= ::WaitForSingleObject(hEvent[1], INFINITE);
 
 		if (dwWaitResult == WAIT_OBJECT_0)
 		{
 			bThreadRun = TRUE;
 			copyBuffer();
 			func->setParsingRules();
-			func->parsingList();
+			bRet = func->parsingList();
 			bThreadRun = FALSE;
 		}
+
+		if (bRet == FALSE)
+			::SetEvent(hEvent[2]);
 	}
 
 	return 0;
@@ -1134,7 +1138,7 @@ string FunctionListDialog::getFuncName(SyntaxList searchSyn, unsigned int startP
 	cName = (char*) new char[endName - begName + 1];
 	ScintillaGetText(cName, begName, endName);
 	funcName = cName;
-	delete cName;
+	delete [] cName;
 	
 	/* restore positions */ 
 	ScintillaMsg(SCI_SETTARGETSTART, startPos);
@@ -1327,7 +1331,7 @@ void FunctionListDialog::setParsingRules(void)
 			_commList.addParam("//");
 			_commList.addParam("/\\*", "\\*/");
             bufSyntax.strRegExBegin = "function[ \\t&]+";
-			bufSyntax.strRegExEnd   = "[ \\t]*\\([0-9A-Za-z_\\-\\*#$&='/\",;:<> \\t()]*\\)";
+			bufSyntax.strRegExEnd   = "[ \\t]*\\([0-9A-Za-z_\\-\\*#$&='/\",;:<> \\t()\\.]*\\)";
             bufSyntax.strRegExFunc  = "[\"0-9A-Za-z_]+";
             bufSyntax.strBodyBegin  = "\\{";
             bufSyntax.strBodyEnd    = "\\}";
