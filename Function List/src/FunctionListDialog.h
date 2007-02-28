@@ -103,8 +103,10 @@ public:
 	};
 
 
-	void parsingList(void)
+	BOOL parsingList(void)
 	{
+		BOOL	bRet = TRUE;
+
 		if (!_noProcess && isVisible())
 		{
 			if (_commList.getComments() == FALSE)
@@ -119,14 +121,15 @@ public:
 				}
 				else
 				{
-					::PulseEvent(hEvent[2]);
+					bRet = FALSE;
 				}
 			}
 			else
 			{
-				::PulseEvent(hEvent[2]);
+				bRet = FALSE;
 			}
 		}
+		return bRet;
 	}
 
 	void processList(UINT uDelay = 10)
