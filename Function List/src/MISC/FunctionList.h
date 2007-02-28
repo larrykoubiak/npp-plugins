@@ -75,6 +75,7 @@ public:
     friend const bool operator<(const FuncInfo & x, const FuncInfo & y)
     {
 		bool			ret;
+		int				result;
 		extern bool		sortByNames;
 
 		if (!sortByNames)
@@ -90,7 +91,9 @@ public:
 			}
 			else
 			{
-				ret = x.name < y.name;
+//				ret = x.name < y.name;
+				result = stricmp(x.name.c_str(), y.name.c_str());
+				ret = result < 0;
 			}
 		}
         return ret;
