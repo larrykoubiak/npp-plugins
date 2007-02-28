@@ -7,9 +7,10 @@ Change-log for FunctionList.dll
 	Fix: Crashing on ENTER when "Feature not supported"
 	Fix: All dialogs now use standard font
 	Fix: Java-Script function recognition "funcname: function()"
-	Fix: PHP detects also functions with a predefined param "-"
+	Fix: PHP detects also functions with a predefined param "-" and "."
 	Fix: C# don't recognise blocks as function anymore "[AttributeDefinition(1)]"
 	Fix: NSIS detects function-, section- and subsection-names with quotes
+	New: Lowercase sorting on "Sort Alphabetically"
 	New: Parsing in seperate threads (Notepad isn't blocked during parsing)
 
 ------------------------------------------------------------------------------------
