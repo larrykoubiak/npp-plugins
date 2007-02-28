@@ -19,6 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="..\..\src\,..\..\src\HelpDlg\,..\..\src\MISC\,..\..\src\UserDefineDlg\,..\..\src\Toolbar\"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FUNCTIONLIST_EXPORTS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -31,7 +32,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="$(OutDir)/Function List.dll"
+				AdditionalDependencies="shlwapi.lib comctl32.lib"
+				OutputFile="C:\Programme\Notepad++\plugins\FunctionList.dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/Function List.pdb"
@@ -61,8 +63,9 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="1"
+				Optimization="3"
 				InlineFunctionExpansion="1"
+				FavorSizeOrSpeed="2"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="..\..\src\,..\..\src\HelpDlg\,..\..\src\MISC\,..\..\src\UserDefineDlg\,..\..\src\Toolbar\"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FUNCTIONLIST_EXPORTS"
