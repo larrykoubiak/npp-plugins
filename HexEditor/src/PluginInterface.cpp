@@ -34,7 +34,7 @@
 #include <shlobj.h>
 
 
-const int	nbFunc	= 7;
+const INT	nbFunc	= 7;
 
 
 /* for subclassing */
@@ -79,7 +79,7 @@ char			hexMask[256][3];
 HexEdit*		_curHexEdit = NULL;
 
 
-int				state = 0;
+INT				state = 0;
 
 /* get system information */
 BOOL	isNotepadCreated	= FALSE;
@@ -238,7 +238,7 @@ extern "C" __declspec(dllexport) const char * getName()
 	return PLUGIN_NAME;
 }
 
-extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF)
+extern "C" __declspec(dllexport) FuncItem * getFuncsArray(INT *nbF)
 {
 	*nbF = nbFunc;
 	return funcItem;
@@ -407,7 +407,7 @@ UINT ScintillaMsg(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
  *
  *	API-Wrapper
  */
-void ScintillaGetText(char *text, int start, int end) 
+void ScintillaGetText(char *text, INT start, INT end) 
 {
 	TextRange tr;
 	tr.chrg.cpMin = start;
@@ -415,7 +415,7 @@ void ScintillaGetText(char *text, int start, int end)
 	tr.lpstrText  = text;
 	ScintillaMsg(SCI_GETTEXTRANGE, 0, reinterpret_cast<LPARAM>(&tr));
 }
-void ScintillaGetText(HWND hWnd, char *text, int start, int end)
+void ScintillaGetText(HWND hWnd, char *text, INT start, INT end)
 {
 	g_HSource = hWnd;
 	ScintillaGetText(text, start, end);
@@ -854,7 +854,7 @@ void ChangeClipboardDataToHex(tClipboard *clipboard)
 	clipboard->text		= (char*) new char[clipboard->length];
 
 	strcpy(clipboard->text, hexMask[(UCHAR)text[0]]);
-	for (int i = 1; i < length; i++)
+	for (INT i = 1; i < length; i++)
 	{
 		strcat(clipboard->text, " ");
 		strcat(clipboard->text, hexMask[(UCHAR)text[i]]);
@@ -944,11 +944,11 @@ eError replaceLittleToBig(HWND hSource, INT startPos, INT lengthOld, INT lengthN
 		}
 	}
 
-	char*	text = (char*)new char[lengthNew];
+	char*	text = (char*)new char[lengthNew+1];
 
 	/* get new text */
 	::SendMessage(hSource, SCI_SETSELECTIONSTART, startPos, 0);
-	::SendMessage(hSource, SCI_SETSELECTIONEND, startPos + lengthNew, 0);
+	::SendMessage(hSource, SCI_SETSELECTIONEND, startPos + lengthNew - 1, 0);
 	::SendMessage(hSource, SCI_GETSELTEXT, 0, (LPARAM)text);
 
 	/* set in target */
