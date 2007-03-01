@@ -231,6 +231,27 @@
 			<File
 				RelativePath="..\..\src\FunctionListDialog.rc">
 			</File>
+			<File
+				RelativePath="..\..\res\Tab.ico">
+			</File>
+			<File
+				RelativePath="..\..\res\copy.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\redo.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\sortDoc.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\sortName.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\toolbar.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\undo.bmp">
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
