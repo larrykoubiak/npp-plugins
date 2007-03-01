@@ -122,7 +122,7 @@ BOOL CALLBACK PatternDlg::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LP
 BOOL PatternDlg::onInsert(void)
 {
 	_pCombo->getText(&_pattern);
-	if (_pattern.text[0] == 0)
+	if (_pattern.length == 0)
 	{
 		::MessageBox(_hSelf, "Pattern not set!", "HexEdit", MB_OK);
 		return FALSE;
@@ -130,9 +130,9 @@ BOOL PatternDlg::onInsert(void)
 
 	HWND		hSCI;
 	tHexProp	prop;
-	int			count = 0;
-	int			lines = 0;
-	int			pos   = 0;
+	INT			count = 0;
+	INT			lines = 0;
+	INT			pos   = 0;
 	char		buffer[128];
 
 	/* copy data into scintilla handle (encoded if necessary) */
@@ -168,8 +168,8 @@ BOOL PatternDlg::onInsert(void)
 
 
 	/* Values are ok -> create pattern */
-	int	patSize = 0;
-	int	cntPat	= 0;
+	INT	patSize = 0;
+	INT	cntPat	= 0;
 
 	do {
 		patSize += _pattern.length;
@@ -178,7 +178,7 @@ BOOL PatternDlg::onInsert(void)
 
 	/* fill data */
 	char*	pattern = new char[patSize+1];
-	for (int i = 0; i < cntPat; i++)
+	for (INT i = 0; i < cntPat; i++)
 	{
 		memcpy(&pattern[i*_pattern.length], _pattern.text, _pattern.length);
 	}
@@ -216,10 +216,10 @@ BOOL PatternDlg::onReplace(void)
 {
 	HWND		hSCI;
 	tHexProp	prop;
-	int			count  = 0;
-	int			lines  = 0;
-	int			posBeg = 0;
-	int			posEnd = 0;
+	INT			count  = 0;
+	INT			lines  = 0;
+	INT			posBeg = 0;
+	INT			posEnd = 0;
 
 	/* test if something is selected */
 	::SendMessage(_hParentHandle, HEXM_GETSEL, (WPARAM)&posBeg, (LPARAM)&posEnd);
@@ -231,7 +231,7 @@ BOOL PatternDlg::onReplace(void)
 
 	/* test if pattern is set */
 	_pCombo->getText(&_pattern);
-	if (_pattern.text[0] == 0)
+	if (_pattern.length == 0)
 	{
 		::MessageBox(_hSelf, "Pattern is not set correctly!", "HexEdit", MB_OK);
 		return FALSE;
@@ -263,7 +263,7 @@ BOOL PatternDlg::onReplace(void)
 		posEnd = posBeg + _pattern.length;
 
 		/* replace pattern in lines */
-		for (int i = 0; i < count; i += _pattern.length)
+		for (INT i = 0; i < count; i += _pattern.length)
 		{
 			ScintillaMsg(hSCI, SCI_SETSEL, posBeg, posEnd);
 			ScintillaMsg(hSCI, SCI_TARGETFROMSELECTION);
@@ -298,8 +298,8 @@ BOOL PatternDlg::onReplace(void)
 		lines = abs(prop.anchorItem - prop.cursorItem);
 
 		/* create pattern */
-		int	patSize = 0;
-		int	cntPat	= 0;
+		INT	patSize = 0;
+		INT	cntPat	= 0;
 
 		do {
 			patSize += _pattern.length;
@@ -308,7 +308,7 @@ BOOL PatternDlg::onReplace(void)
 
 		/* fill data */
 		char*	pattern = new char[patSize+1];
-		for (int i = 0; i < cntPat; i++)
+		for (INT i = 0; i < cntPat; i++)
 		{
 			memcpy(&pattern[i*_pattern.length], _pattern.text, _pattern.length);
 		}
