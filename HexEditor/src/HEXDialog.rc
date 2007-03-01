@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -16,7 +16,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Deutsch (Deutschland) resources
+// German (Germany) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
 #ifdef _WIN32
@@ -29,8 +29,8 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 // Dialog
 //
 
-IDD_HEX_DLG DIALOG DISCARDABLE  0, 0, 153, 103
-STYLE WS_CHILD
+IDD_HEX_DLG DIALOG  0, 0, 153, 103
+STYLE DS_SETFONT | WS_CHILD
 FONT 10, "Courier New"
 BEGIN
     CONTROL         "List1",IDC_HEX_LIST,"SysListView32",LVS_REPORT | 
@@ -39,7 +39,8 @@ BEGIN
 END
 
 IDD_COLUMN_DLG DIALOGEX 36, 44, 99, 22
-STYLE DS_3DLOOK | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_3DLOOK | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | 
+    WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "HexEdit column count"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -50,9 +51,9 @@ BEGIN
 END
 
 IDD_HELP_DLG DIALOGEX 0, 0, 230, 193
-STYLE DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_BORDER
+STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_BORDER
 EXSTYLE WS_EX_TOOLWINDOW
-FONT 8, "MS Shell Dlg"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "Ok",IDOK,93,172,50,14
     LTEXT           "jens.plugin.npp@gmx.de",IDC_EMAIL_LINK,65,41,80,8
@@ -63,7 +64,7 @@ BEGIN
                     IDC_STATIC,7,57,216,25
     LTEXT           "Swaps between Hex and ANSI view.\nGives the possibility to add columns\nfilled with a pattern.\nReplace a box selection with pattern.\nChange standard properties of Hex- \nEditor here.\nShows this help dialog.",
                     IDC_STATIC,97,102,123,59
-    CTEXT           "HEX-Editor Plugin for Notepad++ v3.9                            v0.7",
+    CTEXT           "HEX-Editor Plugin for Notepad++ v4.0.2                    v0.7 Beta 1",
                     IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
                     WS_EX_TRANSPARENT
     LTEXT           "View in HEX\nInsert Columns...\n\nPattern Repleace...\nOptions...\n\nHelp...",
@@ -71,7 +72,8 @@ BEGIN
 END
 
 IDD_OPTION_DLG DIALOGEX 0, 0, 225, 107
-STYLE DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "HexEdit Options"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -112,7 +114,8 @@ BEGIN
 END
 
 IDD_GOTO_DLG DIALOGEX 26, 41, 269, 67
-STYLE DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Go To Line #"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -131,7 +134,8 @@ BEGIN
 END
 
 IDD_FINDREPLACE_DLG DIALOGEX 36, 44, 317, 118
-STYLE DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Find"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -177,7 +181,8 @@ BEGIN
 END
 
 IDD_PATTERN_DLG DIALOGEX 0, 0, 254, 44
-STYLE DS_SYSMODAL | DS_3DLOOK | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SYSMODAL | DS_SETFONT | DS_3DLOOK | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Replace Pattern/Insert Column"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -203,12 +208,12 @@ END
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE DISCARDABLE 
+1 TEXTINCLUDE 
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE DISCARDABLE 
+2 TEXTINCLUDE 
 BEGIN
     "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
     "#include ""windows.h""\r\n"
@@ -217,7 +222,7 @@ BEGIN
     "\0"
 END
 
-3 TEXTINCLUDE DISCARDABLE 
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -232,7 +237,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
+GUIDELINES DESIGNINFO 
 BEGIN
     IDD_COLUMN_DLG, DIALOG
     BEGIN
@@ -289,7 +294,6 @@ END
 #endif    // APSTUDIO_INVOKED
 
 
-#ifndef _MAC
 /////////////////////////////////////////////////////////////////////////////
 //
 // Version
@@ -312,18 +316,14 @@ BEGIN
     BEGIN
         BLOCK "040704b0"
         BEGIN
-            VALUE "Comments", "\0"
-            VALUE "CompanyName", "jens.plugin.npp@gmx.de\0"
-            VALUE "FileDescription", "Notepad++ Plugin : a free (GNU) source code hex editor\0"
-            VALUE "FileVersion", "0.7\0"
-            VALUE "InternalName", "HexEditor for npp.exe\0"
-            VALUE "LegalCopyright", "Copyright 2006-2007 by Jens Lorenz\0"
-            VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "HexEditor.dll\0"
-            VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Hex Edit Plugin\0"
-            VALUE "ProductVersion", "0.7\0"
-            VALUE "SpecialBuild", "\0"
+            VALUE "CompanyName", "jens.plugin.npp@gmx.de"
+            VALUE "FileDescription", "Notepad++ Plugin : a free (GNU) source code hex editor"
+            VALUE "FileVersion", "0.7"
+            VALUE "InternalName", "HexEditor for npp.exe"
+            VALUE "LegalCopyright", "Copyright 2006-2007 by Jens Lorenz"
+            VALUE "OriginalFilename", "HexEditor.dll"
+            VALUE "ProductName", "Hex Edit Plugin"
+            VALUE "ProductVersion", "0.7"
         END
     END
     BLOCK "VarFileInfo"
@@ -332,16 +332,14 @@ BEGIN
     END
 END
 
-#endif    // !_MAC
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Bitmap
 //
 
-IDB_TB_HEX              BITMAP  DISCARDABLE     "..\\res\\hex.bmp"
-#endif    // Deutsch (Deutschland) resources
+IDB_TB_HEX              BITMAP                  "..\\res\\hex.bmp"
+#endif    // German (Germany) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

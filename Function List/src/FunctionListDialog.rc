@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
 
@@ -16,7 +16,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Deutsch (Deutschland) resources
+// German (Germany) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
 #ifdef _WIN32
@@ -30,8 +30,8 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 //
 
 IDD_FUNCTION_LIST_DLG DIALOGEX 64536, 0, 162, 358
-STYLE DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE | 
-    WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | 
+    WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Function List"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -41,8 +41,8 @@ BEGIN
 END
 
 IDD_HELP_DLG DIALOGEX 0, 0, 230, 201
-STYLE DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
-FONT 8, "MS Shell Dlg"
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,89,180,50,14
     LTEXT           "jens.plugin.npp@gmx.de",IDC_EMAIL_LINK,65,41,80,8
@@ -53,7 +53,7 @@ BEGIN
                     IDC_STATIC,7,59,216,18
     LTEXT           "List...\t\t\tViews the Function List Box.\nGoto previous position\tSteps to the previous cursor positions.\nGoto next position\tSteps to the next cursor positions.",
                     IDC_STATIC,15,99,203,24
-    CTEXT           "Function List Plugin for Notepad++ v4.0                 v1.2",
+    CTEXT           "Function List Plugin for Notepad++ v4.0                 v1.2 Beta 1",
                     IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
                     WS_EX_TRANSPARENT
     LTEXT           "View all functions\tViews all functions. Also commented\n\t\t\tfunctions.\nSort by names\t\tSorts the list in alphabeticaly order.\nUser Rules...\t\tPossibility to set his own Function List\n\t\t\tParsing Rules.\nHelp...\t\t\tShows this help dialog.",
@@ -61,7 +61,7 @@ BEGIN
 END
 
 IDD_USER_DLG DIALOGEX 0, 0, 314, 342
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Function List Parsing Rules"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -141,7 +141,7 @@ BEGIN
 END
 
 IDD_HELP_USERDLG DIALOGEX 0, 0, 321, 222
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Help for Function List Parsing Rules"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
@@ -163,12 +163,12 @@ END
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE DISCARDABLE 
+1 TEXTINCLUDE 
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE DISCARDABLE 
+2 TEXTINCLUDE 
 BEGIN
     "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
     "#include ""windows.h""\r\n"
@@ -177,7 +177,7 @@ BEGIN
     "\0"
 END
 
-3 TEXTINCLUDE DISCARDABLE 
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -192,7 +192,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO DISCARDABLE 
+GUIDELINES DESIGNINFO 
 BEGIN
     IDD_FUNCTION_LIST_DLG, DIALOG
     BEGIN
@@ -240,7 +240,6 @@ END
 #endif    // APSTUDIO_INVOKED
 
 
-#ifndef _MAC
 /////////////////////////////////////////////////////////////////////////////
 //
 // Version
@@ -263,18 +262,15 @@ BEGIN
     BEGIN
         BLOCK "040704b0"
         BEGIN
-            VALUE "Comments", "Visit https://sourceforge.net/projects/npp-plugins\0"
-            VALUE "CompanyName", "jens.plugin.npp@gmx.de\0"
-            VALUE "FileDescription", "Notepad++ : a free (GNU) source code editor\0"
-            VALUE "FileVersion", "1.2\0"
-            VALUE "InternalName", "Function List for npp.exe\0"
-            VALUE "LegalCopyright", "Copyright 2005-2007 by Jens Lorenz\0"
-            VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "FunctionList.dll\0"
-            VALUE "PrivateBuild", "\0"
-            VALUE "ProductName", "Function List Plugin\0"
-            VALUE "ProductVersion", "1.2\0"
-            VALUE "SpecialBuild", "\0"
+            VALUE "Comments", "Visit https://sourceforge.net/projects/npp-plugins"
+            VALUE "CompanyName", "jens.plugin.npp@gmx.de"
+            VALUE "FileDescription", "Notepad++ : a free (GNU) source code editor"
+            VALUE "FileVersion", "1.2"
+            VALUE "InternalName", "Function List for npp.exe"
+            VALUE "LegalCopyright", "Copyright 2005-2007 by Jens Lorenz"
+            VALUE "OriginalFilename", "FunctionList.dll"
+            VALUE "ProductName", "Function List Plugin"
+            VALUE "ProductVersion", "1.2"
         END
     END
     BLOCK "VarFileInfo"
@@ -283,20 +279,18 @@ BEGIN
     END
 END
 
-#endif    // !_MAC
-
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Bitmap
 //
 
-IDB_EX_UNDO             BITMAP  MOVEABLE PURE   "..\\res\\undo.bmp"
-IDB_EX_REDO             BITMAP  MOVEABLE PURE   "..\\res\\redo.bmp"
-IDB_EX_SORTDOC          BITMAP  MOVEABLE PURE   "..\\res\\sortDoc.bmp"
-IDB_EX_SORTNAME         BITMAP  MOVEABLE PURE   "..\\res\\sortName.bmp"
-IDB_EX_COPY             BITMAP  MOVEABLE PURE   "..\\res\\copy.bmp"
-IDB_TB_LIST             BITMAP  DISCARDABLE     "..\\res\\toolbar.bmp"
+IDB_EX_UNDO             BITMAP                  "..\\res\\undo.bmp"
+IDB_EX_REDO             BITMAP                  "..\\res\\redo.bmp"
+IDB_EX_SORTDOC          BITMAP                  "..\\res\\sortDoc.bmp"
+IDB_EX_SORTNAME         BITMAP                  "..\\res\\sortName.bmp"
+IDB_EX_COPY             BITMAP                  "..\\res\\copy.bmp"
+IDB_TB_LIST             BITMAP                  "..\\res\\toolbar.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -305,8 +299,8 @@ IDB_TB_LIST             BITMAP  DISCARDABLE     "..\\res\\toolbar.bmp"
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_TABICON             ICON    DISCARDABLE     "..\\res\\Tab.ico"
-#endif    // Deutsch (Deutschland) resources
+IDI_TABICON             ICON                    "..\\res\\Tab.ico"
+#endif    // German (Germany) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
