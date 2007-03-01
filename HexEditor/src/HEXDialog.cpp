@@ -248,22 +248,22 @@ BOOL CALLBACK HexEdit::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 		}
 		case HEXM_SETSEL :
 		{
-			SetSelection((int)wParam, (int)lParam);
+			SetSelection((INT)wParam, (INT)lParam);
 			break;
 		}
 		case HEXM_GETSEL :
 		{
-			GetSelection((int*)wParam, (int*)lParam);
+			GetSelection((INT*)wParam, (INT*)lParam);
 			break;
 		}
 		case HEXM_SETPOS :
 		{
-			SetPosition((int)lParam, _pCurProp->isLittle);
+			SetPosition((INT)lParam, _pCurProp->isLittle);
 			break;
 		}
 		case HEXM_GETPOS :
 		{
-			*((int*)lParam) = GetCurrentPos();
+			*((INT*)lParam) = GetCurrentPos();
 			break;
 		}
 		case HEXM_ENSURE_VISIBLE :
@@ -969,8 +969,8 @@ void HexEdit::Copy(void)
 	if (_pCurProp->isSel == TRUE)
 	{
 		HWND		hSCI;
-		int			posBeg;
-		int			posEnd;
+		INT			posBeg;
+		INT			posEnd;
 		tClipboard	clipboard;
 
 		/* store selection */
@@ -1079,8 +1079,8 @@ void HexEdit::Cut(void)
 	if (_pCurProp->isSel == TRUE)
 	{
 		HWND		hSCI;
-		int			posBeg;
-		int			posEnd;
+		INT			posBeg;
+		INT			posEnd;
 		tClipboard	clipboard;
 
 
@@ -1151,7 +1151,7 @@ void HexEdit::Cut(void)
 				clipboard.length = clipboard.stride*(last-first+1);
 				clipboard.text = (char*)new char[clipboard.length+1];
 
-				int	tempBeg = posBeg;
+				INT	tempBeg = posBeg;
 				posEnd = posBeg + clipboard.stride;
 				for (UINT i = 0; i < clipboard.items; i++)
 				{
@@ -1229,14 +1229,14 @@ void HexEdit::Paste(void)
 			char*	p_buffer	= NULL;
 			char*	p_target	= target;
 			bool	isOk		= TRUE;
-			int		expLine		= 0;
+			INT		expLine		= 0;
 
 			while ((posFind != -1) && (isOk))
 			{
-				int		posBeg  = ScintillaMsg(hSCI, SCI_GETTARGETSTART);
-				int		posEnd  = ScintillaMsg(hSCI, SCI_GETTARGETEND);
-				int		size	= posEnd - posBeg;
-				int		curLine = ScintillaMsg(hSCI, SCI_LINEFROMPOSITION, posBeg);
+				INT		posBeg  = ScintillaMsg(hSCI, SCI_GETTARGETSTART);
+				INT		posEnd  = ScintillaMsg(hSCI, SCI_GETTARGETEND);
+				INT		size	= posEnd - posBeg;
+				INT		curLine = ScintillaMsg(hSCI, SCI_LINEFROMPOSITION, posBeg);
 				ScintillaGetText(hSCI, buffer, posBeg, posEnd-1);
 				buffer[size-1] = 0;
 
@@ -1253,7 +1253,7 @@ void HexEdit::Paste(void)
 					while (i < (UINT)(p_end-p_buffer))
 					{
 						*p_target = 0;
-						for (int j = 0; j < 2; j++)
+						for (INT j = 0; j < 2; j++)
 						{
 							*p_target <<= 4;
 							*p_target |= decMask[*p_buffer];
@@ -1511,7 +1511,7 @@ void HexEdit::AddressConvert(LPTSTR text, INT length)
 		if (_pCurProp->isBin)
 		{
 			strcpy(text, binMask[(UCHAR)temp[--length]]);
-			for (int i = length-1; i >= 0; --i)
+			for (INT i = length-1; i >= 0; --i)
 			{
 				strcat(text, binMask[(UCHAR)temp[i]]);
 			}
@@ -1519,7 +1519,7 @@ void HexEdit::AddressConvert(LPTSTR text, INT length)
 		else
 		{
 			strcpy(text, hexMask[(UCHAR)temp[--length]]);
-			for (int i = length-1; i >= 0; --i)
+			for (INT i = length-1; i >= 0; --i)
 			{
 				strcat(text, hexMask[(UCHAR)temp[i]]);
 			}
@@ -1530,7 +1530,7 @@ void HexEdit::AddressConvert(LPTSTR text, INT length)
 		if (_pCurProp->isBin)
 		{
 			strcpy(text, binMask[(UCHAR)temp[0]]);
-			for (int i = 1; i < length; i++)
+			for (INT i = 1; i < length; i++)
 			{
 				strcat(text, binMask[(UCHAR)temp[i]]);
 			}
@@ -1538,7 +1538,7 @@ void HexEdit::AddressConvert(LPTSTR text, INT length)
 		else
 		{
 			strcpy(text, hexMask[(UCHAR)temp[0]]);
-			for (int i = 1; i < length; i++)
+			for (INT i = 1; i < length; i++)
 			{
 				strcat(text, hexMask[(UCHAR)temp[i]]);
 			}
@@ -1552,7 +1552,7 @@ void HexEdit::DumpConvert(LPTSTR text, UINT length)
 	if (_pCurProp->isLittle == FALSE)
 	{
 		/* i must be unsigned */
-		for (int i = length - 1; i >= 0; --i)
+		for (INT i = length - 1; i >= 0; --i)
 		{
 			text[i] = ascii[(UCHAR)text[i]];
 		}
@@ -1596,17 +1596,17 @@ void HexEdit::DumpConvert(LPTSTR text, UINT length)
 }
 
 
-void HexEdit::BinHexConvert(char *text, int length)
+void HexEdit::BinHexConvert(char *text, INT length)
 {
 	char *temp = (char*)new char[length+1];
 	memcpy(temp, text, length);
 
 	if (_pCurProp->isBin == FALSE)
 	{
-		for (int i = length - 1; i >= 0; --i)
+		for (INT i = length - 1; i >= 0; --i)
 		{
 			text[i] = 0;
-			for (int j = 0; j < 2; j++)
+			for (INT j = 0; j < 2; j++)
 			{
 				text[i] <<= 4;
 				text[i] |= decMask[temp[2*i+j]];
@@ -1616,10 +1616,10 @@ void HexEdit::BinHexConvert(char *text, int length)
 	else
 	{
 		char*	pText = temp;
-		for (int i = 0; i < length; i++ )
+		for (INT i = 0; i < length; i++ )
 		{
 			text[i] = 0;
-			for (int j = 0; j < 8; j++)
+			for (INT j = 0; j < 8; j++)
 			{
 				text[i] <<= 1;
 				text[i] |= (*pText & 0x01);
@@ -1634,7 +1634,7 @@ void HexEdit::BinHexConvert(char *text, int length)
 	if (_pCurProp->isLittle == TRUE)
 	{
 		memcpy(temp, text, length);
-		for (int i = 0; i < length; i++)
+		for (INT i = 0; i < length; i++)
 		{
 			text[i] = temp[length-1-i];
 		}
@@ -1899,7 +1899,7 @@ void HexEdit::OnDeleteBlock(void)
 
 
 
-void HexEdit::SelectItem(UINT iItem, UINT iSubItem, int iCursor)
+void HexEdit::SelectItem(UINT iItem, UINT iSubItem, INT iCursor)
 {
 	UINT	editMax = iItem * VIEW_ROW + iSubItem * _pCurProp->bits;
 
@@ -2185,10 +2185,10 @@ void HexEdit::DrawItemText(HDC hDc, DWORD item, INT subItem)
 	}
 	else
 	{
-		int		firstCur  = _pCurProp->anchorPos;
-		int		lastCur   = _pCurProp->cursorPos;
-		int		firstSub  = _pCurProp->anchorSubItem;
-		int		lastSub   = _pCurProp->cursorSubItem;
+		INT		firstCur  = _pCurProp->anchorPos;
+		INT		lastCur   = _pCurProp->cursorPos;
+		INT		firstSub  = _pCurProp->anchorSubItem;
+		INT		lastSub   = _pCurProp->cursorSubItem;
 		DWORD	firstItem = _pCurProp->anchorItem;
 		DWORD	lastItem  = _pCurProp->cursorItem;
 
@@ -2217,8 +2217,8 @@ void HexEdit::DrawItemText(HDC hDc, DWORD item, INT subItem)
 		}
 
 		HBRUSH		hbrush	 = SELECTION_COLOR;
-		int			factor1  = (firstCur % _pCurProp->bits) * FACTOR;
-		int			factor2  = (lastCur  % _pCurProp->bits) * FACTOR;
+		INT			factor1  = (firstCur % _pCurProp->bits) * FACTOR;
+		INT			factor2  = (lastCur  % _pCurProp->bits) * FACTOR;
 
 		/* set text color to white and calculate cursor position */
 		::SetTextColor(hDc, RGB(0xFF,0xFF,0xFF));
@@ -2361,7 +2361,7 @@ void HexEdit::SelectDump(INT iItem, INT iCursor)
 		if ((editMax == _currLength + 1) && (iCursor == 0) &&
 			((_currLength / VIEW_ROW) == ListView_GetItemCount(_hListCtrl)))
 		{
-			int itemCnt = ListView_GetItemCount(_hListCtrl);
+			INT itemCnt = ListView_GetItemCount(_hListCtrl);
 			ListView_SetItemCountEx(_hListCtrl, itemCnt + 1, 0);
 		}
 		ListView_EnsureVisible(_hListCtrl, iItem, TRUE);
@@ -2578,12 +2578,12 @@ void HexEdit::DrawDumpText(HDC hDc, DWORD item, INT subItem)
 	}
 	else
 	{
-		int		length    = 0;
-		int		begText	  = 0;
+		INT		length    = 0;
+		INT		begText	  = 0;
 		DWORD	firstItem = _pCurProp->anchorItem;
 		DWORD	lastItem  = _pCurProp->cursorItem;
-		int		firstCur  = _pCurProp->anchorPos;
-		int		lastCur   = _pCurProp->cursorPos - 1;
+		INT		firstCur  = _pCurProp->anchorPos;
+		INT		lastCur   = _pCurProp->cursorPos - 1;
 
 		/* change first item last item sequence */
 		if (firstItem > lastItem)
@@ -2678,7 +2678,7 @@ void HexEdit::DrawDumpText(HDC hDc, DWORD item, INT subItem)
 
 
 
-int HexEdit::CalcCursorPos(LV_HITTESTINFO info)
+INT HexEdit::CalcCursorPos(LV_HITTESTINFO info)
 {
 	RECT			rc;
 	SIZE			size;
@@ -2924,8 +2924,8 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 
 void HexEdit::SelectionKeys(WPARAM wParam, LPARAM lParam)
 {
-	int		posBeg;
-	int		posEnd;
+	INT		posBeg;
+	INT		posEnd;
 	bool	isMenu  = ((0x80 & ::GetKeyState(VK_MENU)) == 0x80);
 	eSel	selection = (isMenu ? HEX_SEL_BLOCK:HEX_SEL_NORM);
 
