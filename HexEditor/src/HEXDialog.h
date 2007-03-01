@@ -236,7 +236,7 @@ private:
 	void SelectDump(INT iItem, INT iCursor);
 	void DrawDumpText(HDC hDc, DWORD item, INT subItem);
 
-	int  CalcCursorPos(LV_HITTESTINFO info);
+	INT  CalcCursorPos(LV_HITTESTINFO info);
 	void GlobalKeys(WPARAM wParam, LPARAM lParam);
 	void SelectionKeys(WPARAM wParam, LPARAM lParam);
 	void SetPosition(UINT pos, BOOL isLittle = FALSE);
@@ -249,7 +249,7 @@ private:
 	void GrayEncoding(void);
 
 
-	int CalcStride(INT posBeg, INT posEnd)
+	INT CalcStride(INT posBeg, INT posEnd)
 	{
 		if (posEnd > posBeg)
 			return posEnd - posBeg;
@@ -350,7 +350,7 @@ private:
 	/******************************* virables of list *********************************/
 
 	/* current file */
-	int					_openDoc;
+	INT					_openDoc;
 	UINT				_currLength;
 
 	/* current font size */
