@@ -1165,10 +1165,36 @@ void FunctionListDialog::updateBox(void)
 		maxElements++;
     }
 
-	::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_RESETCONTENT, 0, 0);
+    /* update list */
     for (iElements = 0; iElements < maxElements; iElements++)
     {
-		::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_INSERTSTRING, iElements, (LPARAM)_funcList[iElements].name.c_str());
+        char *pFunc = (char*) new char[::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_GETTEXTLEN, iElements, 0)+1];
+        if (::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_GETTEXT, iElements, (LPARAM)pFunc) != LB_ERR)
+		{
+			if (strcmp(pFunc, _funcList[iElements].name.c_str()) != 0)
+			{
+				int pos = ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_FINDSTRING, iElements, (LPARAM)pFunc);
+				if (pos >= iElements)
+				{
+					pos++;
+					for (pos -= iElements; pos > 0; pos--)
+						::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_DELETESTRING, iElements, 0);
+				}
+				::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_INSERTSTRING ,iElements, (LPARAM)_funcList[iElements].name.c_str());
+			}
+		}
+		else
+		{
+			::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_INSERTSTRING, iElements, (LPARAM)_funcList[iElements].name.c_str());
+		}
+        delete pFunc;
+    }
+
+	int cnt = ::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_GETCOUNT, 0, 0);
+	while (iElements < cnt)
+	{
+		::SendDlgItemMessage(_hSelf, IDC_FUNCTION_LIST, LB_DELETESTRING, iElements, 0);
+		cnt--;
 	}
 }
 
