@@ -233,6 +233,9 @@
 			<File
 				RelativePath="..\..\src\HEXDialog.rc">
 			</File>
+			<File
+				RelativePath="..\..\res\hex.bmp">
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
