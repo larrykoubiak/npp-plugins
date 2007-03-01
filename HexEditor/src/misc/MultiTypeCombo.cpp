@@ -152,9 +152,9 @@ LRESULT MultiTypeCombo::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM l
 void MultiTypeCombo::addText(tComboInfo info)
 {
 	/* find item */
-	size_t	count		= _comboItems.size();
-	size_t	i			= 0;
-	LONG	hasFoundOn	= -1;
+	INT		count		= (INT)_comboItems.size();
+	INT		i			= 0;
+	INT		hasFoundOn	= -1;
 
 	for (; i < count; i++)
 	{
@@ -207,8 +207,8 @@ eCodingType MultiTypeCombo::setCodingType(eCodingType code)
 	/* change data type and update filds */
 	_currDataType = code;
 
-	size_t	i		= 0;
-	size_t	count	= _comboItems.size() - 1;
+	INT		i		= 0;
+	INT		count	= _comboItems.size() - 1;
 	INT		currSel = (INT)::SendMessage(_hCombo, CB_GETCURSEL, 0, 0);
 
 	::SendMessage(_hCombo, CB_RESETCONTENT, 0, 0);
@@ -352,7 +352,7 @@ void MultiTypeCombo::decode(tComboInfo* info, eCodingType type)
 		}
 		case HEX_CODE_HEX:
 		{
-			size_t length = strlen(info->text);
+			INT	length = (INT)strlen(info->text);
 
 			char *temp	= (char*)new char[length+1];
 			char *corr	= (char*)new char[length+1];
@@ -379,10 +379,10 @@ void MultiTypeCombo::decode(tComboInfo* info, eCodingType type)
 				length--;
 			}
 
-			for (size_t i = length - 1; i >= 0; --i)
+			for (INT i = length - 1; i >= 0; --i)
 			{
 				info->text[i] = 0;
-				for (int j = 0; j < 2; j++)
+				for (INT j = 0; j < 2; j++)
 				{
 					info->text[i] <<= 4;
 					info->text[i] |= decMask[temp[2*i+j]];
@@ -463,7 +463,7 @@ void MultiTypeCombo::encode(tEncComboInfo* info, eCodingType type)
 				memcpy(temp, info->text, info->length);
 
 				strcpy(info->text, hexMask[(UCHAR)temp[0]]);
-				for (int i = 1; (i < info->length) && ((i*3) < COMBO_STR_MAX); i++)
+				for (INT i = 1; (i < info->length) && ((i*3) < COMBO_STR_MAX); i++)
 				{
 					strcat(info->text, " ");
 					strcat(info->text, hexMask[(UCHAR)temp[i]]);
