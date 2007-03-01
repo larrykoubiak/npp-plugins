@@ -252,7 +252,7 @@ void FindReplaceDlg::updateDialog(void)
 
 	if (info.length != 0)
 	{
-		char	*text	= (char*)new char[info.length];
+		char	*text	= (char*)new char[info.length+1];
 
 		/* convert and select and get the text */
 		LittleEndianChange(_hSCI, getCurrentHScintilla());
@@ -358,7 +358,7 @@ void FindReplaceDlg::onReplace(void)
 	ScintillaMsg(_hSCI, SCI_SETSELECTIONEND, posEnd, 0);
 
 	UINT	length  = abs(posEnd-posBeg);
-	char*	text	= (char*)new char[length];
+	char*	text	= (char*)new char[length+1];
 
 	ScintillaMsg(_hSCI, SCI_GETSELTEXT, 0, (LPARAM)text);
 
