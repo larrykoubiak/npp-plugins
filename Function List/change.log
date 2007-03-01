@@ -2,7 +2,7 @@
 Change-log for FunctionList.dll
 
 ------------------------------------------------------------------------------------
-07/02/18  v1.2 :
+07/03/01  v1.2 :
 ------------------------------------------------------------------------------------
 	Fix: Crashing on ENTER when "Feature not supported"
 	Fix: All dialogs now use standard font
