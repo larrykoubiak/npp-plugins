@@ -43,11 +43,10 @@ WNDPROC	wndProcNotepad = NULL;
 /* informations for notepad */
 const char  PLUGIN_NAME[] = "HEX-Editor";
 
-char        iniFilePath[MAX_PATH];
-
-
 /* current used file */
-char		currentPath[MAX_PATH];
+TCHAR		currentPath[MAX_PATH];
+TCHAR		configPath[MAX_PATH];
+TCHAR		iniFilePath[MAX_PATH];
 UINT		currentSC	= SC_MAINHANDLE;
 
 
@@ -104,8 +103,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
     {
 		case DLL_PROCESS_ATTACH:
 		{
-			char	nppPath[MAX_PATH];
-			char	localConfPath[MAX_PATH];
+			TCHAR	nppPath[MAX_PATH];
 
 			GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
             // remove the module name : get plugins directory path
@@ -115,24 +113,37 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			PathRemoveFileSpec(nppPath);
  
 			// Make localConf.xml path
-			strcpy(localConfPath, nppPath);
-			PathAppend(localConfPath, localConfFile);
+			TCHAR	localConfPath[MAX_PATH];
+			_tcscpy(localConfPath, nppPath);
+			PathAppend(localConfPath, NPP_LOCAL_XML);
  
 			// Test if localConf.xml exist
 			if (PathFileExists(localConfPath) == TRUE)
 			{
-				strcpy(iniFilePath, nppPath);
-				PathAppend(iniFilePath, "insertExt.ini");
+				/* make ini file path if not exist */
+				_tcscpy(configPath, nppPath);
+				_tcscat(configPath, CONFIG_PATH);
+				if (PathFileExists(configPath) == FALSE)
+				{
+					::CreateDirectory(configPath, NULL);
+				}
 			}
 			else
 			{
 				ITEMIDLIST *pidl;
 				SHGetSpecialFolderLocation(NULL, CSIDL_APPDATA, &pidl);
-				SHGetPathFromIDList(pidl, iniFilePath);
+				SHGetPathFromIDList(pidl, configPath);
  
-				PathAppend(iniFilePath, "Notepad++\\insertExt.ini");
+				PathAppend(configPath, NPP);
 			}
-		   
+
+			_tcscpy(iniFilePath, configPath);
+			_tcscat(iniFilePath, HEXEDIT_INI);
+			if (PathFileExists(iniFilePath) == FALSE)
+			{
+				::CloseHandle(::CreateFile(iniFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL));
+			}
+
 			/* Set function pointers */
 			funcItem[0]._pFunc = toggleHexEdit;
 			funcItem[1]._pFunc = toggleHexEdit;			/* ------- */
@@ -475,8 +486,7 @@ void openPropDlg(void)
 	if (propDlg.doDialog(&prop) == IDOK)
 	{
 		setHexMask();
-		hexEdit1.doDialog();
-		hexEdit2.doDialog();
+		SystemUpdate();
 	}
 }
 
@@ -626,13 +636,13 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 
 					if (_curHexEdit == &hexEdit1)
 					{
-						hexEdit2.doDialog();
+//						hexEdit2.doDialog();
 						hexEdit1.SetHexProp(prop);
 						hexEdit1.doDialog();
 					}
 					else
 					{
-						hexEdit1.doDialog();
+//						hexEdit1.doDialog();
 						hexEdit2.SetHexProp(prop);
 						hexEdit2.doDialog();
 					}
@@ -665,7 +675,7 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				{
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					SystemUpdate();
-					_curHexEdit->doDialog();
+//					_curHexEdit->doDialog();
 					break;
 				}
 				case TCN_TABDROPPED:
@@ -714,7 +724,7 @@ void SystemUpdate(void)
 		return;
 
 	UINT		oldSC	= currentSC;
-	char*		pszNewPath	= (char*)new char[MAX_PATH];
+	char		pszNewPath[MAX_PATH];
 
 	/* update open files */
 	UpdateCurrentHScintilla();
@@ -722,6 +732,9 @@ void SystemUpdate(void)
 
 	if ((strcmp(pszNewPath, currentPath) != 0) || (oldSC != currentSC))
 	{
+		/* set new file */
+		strcpy(currentPath, pszNewPath);
+
 		INT		i = 0;
 		INT		docCnt1;
 		INT		docCnt2;
@@ -742,13 +755,13 @@ void SystemUpdate(void)
 		if (::SendMessage(nppData._nppHandle, WM_GETOPENFILENAMES_PRIMARY, (WPARAM)fileNames1, (LPARAM)docCnt1))
 		{
 			INT openDoc1 = (INT)::SendMessage(nppData._nppHandle, WM_GETCURRENTDOCINDEX, 0, 0);
-			hexEdit1.UpdateDocs((LPCTSTR*)fileNames1, docCnt1, openDoc1);
+			hexEdit1.UpdateDocs(fileNames1, docCnt1, openDoc1);
 		}
 
 		if (::SendMessage(nppData._nppHandle, WM_GETOPENFILENAMES_SECOND, (WPARAM)fileNames2, (LPARAM)docCnt2))
 		{
 			INT openDoc2 = (INT)::SendMessage(nppData._nppHandle, WM_GETCURRENTDOCINDEX, 0, 1);
-			hexEdit2.UpdateDocs((LPCTSTR*)fileNames2, docCnt2, openDoc2);
+			hexEdit2.UpdateDocs(fileNames2, docCnt2, openDoc2);
 		}
 
 		for (i = 0; i < docCnt1; i++)
@@ -758,33 +771,32 @@ void SystemUpdate(void)
 		delete [] fileNames1;
 		delete [] fileNames2;
 
-		/* set new file */
-		strcpy(currentPath, pszNewPath);
-
 		/* update edit */
 		if (currentSC == SC_MAINHANDLE)
 			_curHexEdit = &hexEdit1;
 		else
 			_curHexEdit = &hexEdit2;
 
-		/* activate correct window */
-		if (currentSC == SC_MAINHANDLE)
-		{
-			::SendMessage(hexEdit1.getHSelf(), WM_ACTIVATE, TRUE, 0);
-			::SendMessage(hexEdit2.getHSelf(), WM_ACTIVATE, FALSE, 0);
-		}
-		else
-		{
-			::SendMessage(hexEdit1.getHSelf(), WM_ACTIVATE, FALSE, 0);
-			::SendMessage(hexEdit2.getHSelf(), WM_ACTIVATE, TRUE, 0);
-		}
+		ActivateWindow();
 		setMenu();
 	}
 	DialogUpdate();
-
-	delete [] pszNewPath;
 }
 
+void ActivateWindow(void)
+{
+	/* activate correct window */
+	if (currentSC == SC_MAINHANDLE)
+	{
+		::SendMessage(hexEdit1.getHSelf(), WM_ACTIVATE, TRUE, 0);
+		::SendMessage(hexEdit2.getHSelf(), WM_ACTIVATE, FALSE, 0);
+	}
+	else
+	{
+		::SendMessage(hexEdit1.getHSelf(), WM_ACTIVATE, FALSE, 0);
+		::SendMessage(hexEdit2.getHSelf(), WM_ACTIVATE, TRUE, 0);
+	}
+}
 
 void DialogUpdate(void)
 {
@@ -851,7 +863,7 @@ void ChangeClipboardDataToHex(tClipboard *clipboard)
 	INT		length	= clipboard->length;
 
 	clipboard->length	= length * 3;
-	clipboard->text		= (char*) new char[clipboard->length];
+	clipboard->text		= (char*) new char[clipboard->length+1];
 
 	strcpy(clipboard->text, hexMask[(UCHAR)text[0]]);
 	for (INT i = 1; i < length; i++)
@@ -869,6 +881,9 @@ void LittleEndianChange(HWND hTarget, HWND hSource)
 	UINT		length  = 0;
 	char*		buffer  = NULL;
 	tHexProp	prop	= {0};
+
+	/* for buffer UNDO */
+	ScintillaMsg(hTarget, SCI_BEGINUNDOACTION);
 
 	prop = _curHexEdit->GetHexProp();
 
@@ -916,8 +931,9 @@ void LittleEndianChange(HWND hTarget, HWND hSource)
 	}
 
 	/* set text in target */
-	::SendMessage(hTarget, SCI_CLEARALL, 0, 0);
-	::SendMessage(hTarget, SCI_ADDTEXT, length, (LPARAM)buffer);
+	ScintillaMsg(hTarget, SCI_CLEARALL, 0, 0);
+	ScintillaMsg(hTarget, SCI_ADDTEXT, length, (LPARAM)buffer);
+	ScintillaMsg(hTarget, SCI_ENDUNDOACTION);
 	delete [] buffer;
 }
 

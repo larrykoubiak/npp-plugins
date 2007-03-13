@@ -30,19 +30,27 @@
 
 #include "PluginInterface.h"
 #include <windows.h>
+#include <TCHAR.h>
 
 
 /* notepad definitions */
 
 
-const char dlgEditor[]  = "HEX-Editor";
-const char columns[]    = "Columns";
-const char bits[]		= "Bits";
-const char bin[]		= "Binary";
-const char little[]		= "Little";
-const char capital[]	= "Capitel";
-const char gotoProp[]   = "GotoIsHex";
-const char extensions[] = "Extensions";
+const TCHAR dlgEditor[]		= _T("HEX-Editor");
+const TCHAR columns[]		= _T("Columns");
+const TCHAR bits[]			= _T("Bits");
+const TCHAR bin[]			= _T("Binary");
+const TCHAR little[]		= _T("Little");
+const TCHAR capital[]		= _T("Capitel");
+const TCHAR gotoProp[]		= _T("GotoIsHex");
+const TCHAR extensions[]	= _T("Extensions");
+
+
+const TCHAR HEXEDIT_INI[]	= _T("\\HexEditor.ini");
+const TCHAR CONFIG_PATH[]	= _T("\\plugins\\Config");
+const TCHAR NPP[]			= _T("\\Notepad++");
+const TCHAR NPP_LOCAL_XML[]	= _T("\\doLocalConf.xml");
+
 
 
 
@@ -250,14 +258,11 @@ enum LangType {
 	L_VHDL
 };
 
-const char localConfFile[] = "doLocalConf.xml";
-
 struct NppData {
 	HWND _nppHandle;
 	HWND _scintillaMainHandle;
 	HWND _scintillaSecondHandle;
 };
-
 
 struct ShortcutKey { 
 	bool _isCtrl; 
@@ -320,7 +325,7 @@ typedef struct
 
 typedef struct
 {	
-	TCHAR	pszFileName[MAX_PATH];	// identifier of struct
+	char	pszFileName[MAX_PATH];	// identifier of struct
 	BOOL	isModified;				// stores the modification state
 	BOOL	isVisible;				// is current file visible
 	SHORT	columns;				// number of columns
@@ -408,6 +413,7 @@ void replacePatternDlg(void);
 void openHelpDlg(void);
 LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 void setMenu(void);
+void ActivateWindow(void);
 void SystemUpdate(void);
 void GetSecondFileName(void);
 void DialogUpdate(void);
