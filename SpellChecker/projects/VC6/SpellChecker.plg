@@ -1,0 +1,64 @@
+<html>
+<body>
+<pre>
+<h1>Erstellungsprotokoll</h1>
+<h3>
+--------------------Konfiguration: SpellChecker - Win32 Release--------------------
+</h3>
+<h3>Befehlszeilen</h3>
+Erstellen der temporären Datei  "C:\DOKUME~1\julia\LOKALE~1\Temp\RSP46.tmp" mit Inhalten
+[
+/nologo /MT /W3 /GX /O2 /I "../../src" /I "../../src/aspell" /I "../../src/HelpDlg" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SPELLCHECKER_EXPORTS" /Fp"Release/SpellChecker.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"c:\NppPlugins\SpellChecker\src\Aspell\aspell.cpp"
+"c:\NppPlugins\SpellChecker\src\HelpDlg\HelpDialog.cpp"
+"c:\NppPlugins\SpellChecker\src\HelpDlg\NotAvailableDialog.cpp"
+"c:\NppPlugins\SpellChecker\src\PluginInterface.cpp"
+"c:\NppPlugins\SpellChecker\src\StaticDialog.cpp"
+"c:\NppPlugins\SpellChecker\src\stdafx.cpp"
+"c:\NppPlugins\SpellChecker\src\SysMsg.cpp"
+"c:\NppPlugins\SpellChecker\src\HelpDlg\URLCtrl.cpp"
+]
+Creating command line "cl.exe @C:\DOKUME~1\julia\LOKALE~1\Temp\RSP46.tmp" 
+Erstellen der temporären Datei  "C:\DOKUME~1\julia\LOKALE~1\Temp\RSP47.tmp" mit Inhalten
+[
+/nologo /MT /W3 /GX /O2 /I "../../src" /I "../../src/aspell" /I "../../src/HelpDlg" /I "../../src/aspell/" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "SPELLCHECKER_EXPORTS" /Fp"Release/SpellChecker.pch" /YX /Fo"Release/" /Fd"Release/" /FD /c 
+"c:\NppPlugins\SpellChecker\src\SpellCheckerDialog.cpp"
+]
+Creating command line "cl.exe @C:\DOKUME~1\julia\LOKALE~1\Temp\RSP47.tmp" 
+Erstellen der temporären Datei  "C:\DOKUME~1\julia\LOKALE~1\Temp\RSP48.tmp" mit Inhalten
+[
+kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib shlwapi.lib /nologo /dll /incremental:no /pdb:"Release/SpellChecker.pdb" /machine:I386 /out:"c:\Programme\Notepad++\plugins\SpellChecker.dll" /implib:"Release/SpellChecker.lib" 
+.\Release\aspell.obj
+.\Release\HelpDialog.obj
+.\Release\NotAvailableDialog.obj
+.\Release\PluginInterface.obj
+.\Release\SpellCheckerDialog.obj
+.\Release\StaticDialog.obj
+.\Release\stdafx.obj
+.\Release\SysMsg.obj
+.\Release\URLCtrl.obj
+.\Release\SpellChecker.res
+]
+Erstellen der Befehlzeile "link.exe @C:\DOKUME~1\julia\LOKALE~1\Temp\RSP48.tmp"
+<h3>Ausgabefenster</h3>
+Kompilierung läuft...
+aspell.cpp
+HelpDialog.cpp
+NotAvailableDialog.cpp
+PluginInterface.cpp
+StaticDialog.cpp
+stdafx.cpp
+SysMsg.cpp
+URLCtrl.cpp
+Kompilierung läuft...
+SpellCheckerDialog.cpp
+Linker-Vorgang läuft...
+   Bibliothek Release/SpellChecker.lib und Objekt Release/SpellChecker.exp wird erstellt
+
+
+
+<h3>Ergebnisse</h3>
+SpellChecker.dll - 0 Fehler, 0 Warnung(en)
+</pre>
+</body>
+</html>
