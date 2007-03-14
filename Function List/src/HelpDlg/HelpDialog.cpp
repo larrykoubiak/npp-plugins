@@ -42,6 +42,9 @@ BOOL CALLBACK HelpDlg::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
             _emailLink.init(_hInst, _hSelf);
             _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), "mailto:jens.plugin.npp@gmx.de");
 
+            _urlNppPlugins.init(_hInst, _hSelf);
+            _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), "http://sourceforge.net/projects/npp-plugins/");
+
 			return TRUE;
 		}
 		case WM_COMMAND : 
@@ -49,6 +52,7 @@ BOOL CALLBACK HelpDlg::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 			switch (wParam)
 			{
 				case IDOK :
+				case IDCANCEL :
 					display(FALSE);
 					return TRUE;
 

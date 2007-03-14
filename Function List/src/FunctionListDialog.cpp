@@ -41,10 +41,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ToolTip		toolTip;
 
 
-HANDLE		hThread[2]	= {NULL};
-HANDLE		hEvent[3]	= {NULL};
-BOOL		bThreadRun	= FALSE;
-BOOL		bInterupt	= FALSE;
+HANDLE		hThread[2]				= {NULL};
+HANDLE		hEvent[EID_MAX_EVENTS]	= {NULL};
+BOOL		bThreadRun				= FALSE;
+BOOL		bInterupt				= FALSE;
 
 
 
@@ -88,19 +88,19 @@ DWORD WINAPI ThreadSignalQue(LPVOID lpParam)
 {
 	while (1)
 	{
-		DWORD dwWaitResult = ::WaitForSingleObject(hEvent[0], INFINITE);
+		DWORD dwWaitResult = ::WaitForSingleObject(hEvent[EID_STARTSIGNAL], INFINITE);
 
 		if (dwWaitResult == WAIT_OBJECT_0)
 		{
-			/* wait on parsing when it is in run mode */
-			while (bThreadRun == TRUE)
+			if (bThreadRun == TRUE)
 			{
+				/* wait on parsing when it is in run mode */
 				bInterupt = TRUE;
-				::WaitForSingleObject(hEvent[2], INFINITE);
+				::WaitForSingleObject(hEvent[EID_SIGNALNEXT], 1000);
 			}
 			bInterupt = FALSE;
 
-			::SetEvent(hEvent[1]);
+			::SetEvent(hEvent[EID_STARTPARSING]);
 		}
 	}
 
@@ -109,12 +109,12 @@ DWORD WINAPI ThreadSignalQue(LPVOID lpParam)
 
 DWORD WINAPI ThreadParsing(LPVOID lpParam)
 {
+	BOOL				bRet	= TRUE;
 	FunctionListDialog*	func	= (FunctionListDialog*)lpParam;
 
 	while (1)
 	{
-		BOOL	bRet			= TRUE;
-		DWORD	dwWaitResult	= ::WaitForSingleObject(hEvent[1], INFINITE);
+		DWORD	dwWaitResult	= ::WaitForSingleObject(hEvent[EID_STARTPARSING], INFINITE);
 
 		if (dwWaitResult == WAIT_OBJECT_0)
 		{
@@ -122,11 +122,16 @@ DWORD WINAPI ThreadParsing(LPVOID lpParam)
 			copyBuffer();
 			func->setParsingRules();
 			bRet = func->parsingList();
+
+			if (bRet == FALSE)
+				::SetEvent(hEvent[EID_SIGNALNEXT]);
+
 			bThreadRun = FALSE;
 		}
-
-		if (bRet == FALSE)
-			::SetEvent(hEvent[2]);
+		else
+		{
+			DEBUG("ThreadParsing: dwWaitResult != WAIT_OBJECT_0");
+		}
 	}
 
 	return 0;
@@ -156,22 +161,22 @@ void FunctionListDialog::init(HINSTANCE hInst, NppData nppData, bool listAllFunc
 	_sortByNames = sortByNames;
 
 
-	hThread[0] = ::CreateThread(NULL, 0, ThreadParsing, this, 0, &dwThreadId);
-	hThread[1] = ::CreateThread(NULL, 0, ThreadSignalQue, NULL, 0, &dwThreadId);
+	hEvent[EID_STARTSIGNAL] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+	hEvent[EID_STARTPARSING] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+	hEvent[EID_SIGNALNEXT] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
 
-	if ((hThread[0] == NULL) || (hThread[1] == NULL))
+	if ((hEvent[EID_STARTSIGNAL] == NULL) || (hEvent[EID_STARTPARSING] == NULL) || (hEvent[EID_SIGNALNEXT] == NULL))
 	{
-		printf("CreateThread error: %d\n", GetLastError());
+		printf("CreateEvent error: %d\n", GetLastError());
 	}
 	else
 	{
-		hEvent[0] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
-		hEvent[1] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
-		hEvent[2] = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+		hThread[0] = ::CreateThread(NULL, 0, ThreadParsing, this, 0, &dwThreadId);
+		hThread[1] = ::CreateThread(NULL, 0, ThreadSignalQue, NULL, 0, &dwThreadId);
 
-		if ((hEvent[0] == NULL) || (hEvent[1] == NULL) || (hEvent[2] == NULL))
+		if ((hThread[0] == NULL) || (hThread[1] == NULL))
 		{
-			printf("CreateEvent error: %d\n", GetLastError());
+			printf("CreateThread error: %d\n", GetLastError());
 		}
 	}
 }
@@ -252,7 +257,7 @@ BOOL CALLBACK FunctionListDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARA
 					case LBN_SELCHANGE:
 					{
 /*
-						::PulseEvent(hEvent[0]);
+						::PulseEvent(hEvent[EID_STARTSIGNAL]);
 */
 						break;
 					}
@@ -315,7 +320,7 @@ BOOL CALLBACK FunctionListDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARA
 			if (wParam == IDC_FUNCTION_LIST_TIMER)
 			{
 				::KillTimer(_hSelf, IDC_FUNCTION_LIST_TIMER);
-				::PulseEvent(hEvent[0]);
+				::PulseEvent(hEvent[EID_STARTSIGNAL]);
 			}
 			return TRUE;
 		}
@@ -326,15 +331,21 @@ BOOL CALLBACK FunctionListDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARA
 		}
 		case WM_DESTROY:
 		{
-			::CloseHandle(hEvent[0]);
-			::CloseHandle(hEvent[1]);
-			::CloseHandle(hEvent[2]);
 			::CloseHandle(hThread[0]);
 			::CloseHandle(hThread[1]);
+			::CloseHandle(hEvent[EID_STARTSIGNAL]);
+			::CloseHandle(hEvent[EID_STARTPARSING]);
+			::CloseHandle(hEvent[EID_SIGNALNEXT]);
 
 			::DestroyIcon(_data.hIconTab);
 			break;
 		}
+        case FLWM_UPDATE :
+        {
+			updateBox();
+			setBoxSelection();
+            return TRUE;
+        }
 		default:
 			break;
 	}
@@ -760,15 +771,20 @@ BOOL FunctionListDialog::updateFuncList(void)
 									if (_searchSyn[iVec].strBodyBegin == "\\{")
 									{
 										/* if body starts with brace take scintilla function to get end of body ... */
-										isBodyBrace = TRUE;
 										startBrace = ScintillaMsg(SCI_GETTARGETEND)-1;
 										endBrace = ScintillaMsg(SCI_BRACEMATCH, startBrace, 0);
 										if (endBrace == -1)
 										{
-											isFunction = FALSE;
+											/* store only begin of body */
+											isBodyBrace = FALSE;
+											startBrace = ScintillaMsg(SCI_GETTARGETEND);
+											ScintillaMsg(SCI_SETTARGETSTART, startBrace);
+											ScintillaMsg(SCI_SETTARGETEND, endPosition);
 										}
 										else
 										{
+											/* end brace is found */
+											isBodyBrace = TRUE;
 											functionInfo.endPos = endBrace + 1;
 										}
 									}
@@ -1266,18 +1282,19 @@ void FunctionListDialog::setParsingRules(void)
         case L_CPP:
 		{
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "";
+			_strKeyWBEnd	= "\\{";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("#");
 			_commList.addParam("//");
 			_commList.addParam("/\\*", "\\*/");
+			_commList.addParam("\"", "\"");
             // bufSyntax.strRegExBegin = "[0-9A-Za-z_&\\*]+[ \\t]*::[ \\t]*";
             bufSyntax.strRegExBegin = "";
             bufSyntax.strRegExEnd   = "[ \\t]*\\([:0-9A-Za-z_\\-&<>/\\*, \\t.\\[\\]\\(\\)=]*\\)[ \\t]*[const]*";
             bufSyntax.strRegExFunc  = "~*[0-9A-Za-z_]+[ =<>+\\-\\*/\\[\\]]*";
             bufSyntax.strBodyBegin  = "\\{";
             bufSyntax.strBodyEnd    = "\\}";
-            bufSyntax.strSep        = "[;\\)\\\"]";
+            bufSyntax.strSep        = "[;\\\"]";
             _searchSyn.push_back(bufSyntax);
 			break;
 		}
@@ -1305,7 +1322,7 @@ void FunctionListDialog::setParsingRules(void)
         case L_CS :
         {
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "";
+			_strKeyWBEnd	= "\\{";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("//");
 			_commList.addParam("/\\*", "\\*/");
@@ -1351,7 +1368,7 @@ void FunctionListDialog::setParsingRules(void)
         case L_PHP :
         {
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "";
+			_strKeyWBEnd	= "\\{";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("#");
 			_commList.addParam("//");
@@ -1369,7 +1386,7 @@ void FunctionListDialog::setParsingRules(void)
         case L_JS :
         {
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "";
+			_strKeyWBEnd	= "\\{";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("#");
 			_commList.addParam("//");
@@ -1392,7 +1409,7 @@ void FunctionListDialog::setParsingRules(void)
         case L_FLASH:
         {
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "";
+			_strKeyWBEnd	= "\\{";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("#");
 			_commList.addParam("//");
@@ -1479,7 +1496,7 @@ void FunctionListDialog::setParsingRules(void)
         case L_PERL :
         {
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "";
+			_strKeyWBEnd	= "\\{";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("#");
             bufSyntax.strRegExBegin = "\\<sub[ \\t]+";
@@ -1494,7 +1511,7 @@ void FunctionListDialog::setParsingRules(void)
         case L_OBJC :
         {
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "";
+			_strKeyWBEnd	= "\\{";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("//");
 			_commList.addParam("/\\*", "\\*/");
@@ -1725,7 +1742,7 @@ void FunctionListDialog::setParsingRules(void)
         case L_BASH : /* Shell */
         {
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "";
+			_strKeyWBEnd	= "\\{";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("#");
             bufSyntax.strRegExBegin = "^[ \\t]*function[ \\t]+";
@@ -1743,7 +1760,7 @@ void FunctionListDialog::setParsingRules(void)
 		case L_TCL:
 		{
 			_strKeyWBBeg	= "";
-			_strKeyWBEnd	= "\\<if\\>|\\<switch\\>|\\<while\\>|\\<foreach\\>|\\<for\\>";
+			_strKeyWBEnd	= "\\{>";
             _matchCase		= SCFIND_MATCHCASE;
 			_commList.addParam("#");
 			_commList.addParam("\"", "\"");

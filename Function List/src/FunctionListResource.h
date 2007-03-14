@@ -89,6 +89,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define    IDD_HELP_DLG			  30200
     #define IDC_EMAIL_LINK                  (IDD_HELP_DLG + 1)
+	#define IDC_NPP_PLUGINS_URL				(IDD_HELP_DLG + 2)
 
 #define    IDD_HELP_USERDLG       30300
 	#define IDC_EDIT_HELP                   (IDD_HELP_USERDLG +  1)
@@ -100,6 +101,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 	#define	IDC_EDIT_REPLACE				(IDD_HELP_DEMODLG +  3)
 	#define	IDC_BTN_REPLACE					(IDD_HELP_DEMODLG +  4)
 	#define	IDC_REGEXP		    			(IDD_HELP_DEMODLG +  5)
+
+#define    FL_WINDOW_MESSAGES     40000
+    #define FLWM_UPDATE                     (FL_WINDOW_MESSAGES +  1)
 
     
 #endif // FUNCTIONLISTDEFINE_RC_H

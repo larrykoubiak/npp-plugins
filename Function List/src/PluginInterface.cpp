@@ -368,9 +368,7 @@ HWND getCurrentHScintilla(int which)
  */
 void copyBuffer()
 {
-	static
 	char*	buffer  = NULL;
-	static
 	UINT	length  = 0;
 	HWND	hwnd	= functionDlg.getHSelf();
 
@@ -385,17 +383,12 @@ void copyBuffer()
 	}
 
 	/* get text of current scintilla and copy to buffer for parsing */
-	UINT lengthBuf = ::SendMessage(g_hSource, SCI_GETTEXTLENGTH, 0, 0)+1;
-	if (lengthBuf > length)
-	{
-		length = lengthBuf;
-		if (buffer != NULL) delete [] buffer;
-		buffer = (char*)new char[length];
-	}
-	::SendMessage(g_hSource, SCI_GETTEXT, lengthBuf, (LPARAM)buffer);
-	ScintillaMsg(SCI_SETSEL, 0, -1);
-	ScintillaMsg(SCI_TARGETFROMSELECTION);
-	ScintillaMsg(SCI_REPLACETARGET, lengthBuf-1, (LPARAM)buffer);
+	length = ::SendMessage(g_hSource, SCI_GETTEXTLENGTH, 0, 0)+1;
+	buffer = (char*)new char[length];
+	::SendMessage(g_hSource, SCI_GETTEXT, length, (LPARAM)buffer);
+	ScintillaMsg(SCI_UNDO);
+	ScintillaMsg(SCI_ADDTEXT, length, (LPARAM)buffer);
+	delete [] buffer;
 }
 
 /***

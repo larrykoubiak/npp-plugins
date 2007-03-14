@@ -2,7 +2,16 @@
 Change-log for FunctionList.dll
 
 ------------------------------------------------------------------------------------
-07/03/01  v1.2 :
+07/03/13  v1.2 :
+------------------------------------------------------------------------------------
+	Fix: Resourc leak removed
+	Fix: Thread parsing freezed when user switched fast between documents
+	Fix: Flickering/Dancing on list update
+	Fix: C++ constructor now detects correctly
+	New: Better detection of function when body in curly brackets
+
+------------------------------------------------------------------------------------
+07/03/01  v1.2 Beta 1 :
 ------------------------------------------------------------------------------------
 	Fix: Crashing on ENTER when "Feature not supported"
 	Fix: All dialogs now use standard font

@@ -41,8 +41,17 @@ using namespace std;
 #define UNDOCK  false
 
 
+typedef enum {
+	EID_STARTSIGNAL = 0,
+	EID_STARTPARSING,
+	EID_SIGNALNEXT,
+	EID_MAX_EVENTS
+} eEventID;
+
+
+
 extern	HANDLE	hThread[2];
-extern	HANDLE	hEvent[3];
+extern	HANDLE	hEvent[EID_MAX_EVENTS];
 extern	BOOL	bThreadRun;
 extern	BOOL	bInterupt;
 
@@ -116,8 +125,7 @@ public:
 				{
 					setProgress(100);
 					sortList();
-					updateBox();
-					setBoxSelection();
+                    ::SendMessage(_hSelf, FLWM_UPDATE, 0, 0);
 				}
 				else
 				{
