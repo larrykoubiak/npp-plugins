@@ -85,7 +85,7 @@
 
 #define    IDD_HELP_DLG	         20600
     #define IDC_EMAIL_LINK                      (IDD_HELP_DLG + 1)
-    #define IDC_EDIT_HELP                       (IDD_HELP_DLG + 2)
+	#define IDC_NPP_PLUGINS_URL					(IDD_HELP_DLG + 2)
 
 	#define IDC_STATIC                      -1
 

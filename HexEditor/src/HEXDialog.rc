@@ -50,25 +50,28 @@ BEGIN
     PUSHBUTTON      "Ok",IDOK,47,5,46,12
 END
 
-IDD_HELP_DLG DIALOGEX 0, 0, 230, 193
+IDD_HELP_DLG DIALOGEX 0, 0, 230, 203
 STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_POPUP | WS_BORDER
 EXSTYLE WS_EX_TOOLWINDOW
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "Ok",IDOK,93,172,50,14
-    LTEXT           "jens.plugin.npp@gmx.de",IDC_EMAIL_LINK,65,41,80,8
+    DEFPUSHBUTTON   "Ok",IDOK,93,182,50,14
+    LTEXT           "jens.plugin.npp@gmx.de",IDC_EMAIL_LINK,65,41,80,9
     LTEXT           "Author:\t\tJens Lorenz",IDC_STATIC,12,31,183,9
-    GROUPBOX        "Menu entries",IDC_STATIC,7,89,216,77
-    LTEXT           "eMail:",IDC_STATIC,12,41,21,8
+    GROUPBOX        "Menu entries",IDC_STATIC,7,99,216,77
+    LTEXT           "eMail:",IDC_STATIC,12,41,21,9
     CTEXT           "At first, I would like to thank Don for his great program and his support to create this plugin. Also I would like to thank Vitaliy for\nhis time to make this version more stable and handy.",
-                    IDC_STATIC,7,57,216,25
+                    IDC_STATIC,7,67,216,25
     LTEXT           "Swaps between Hex and ANSI view.\nGives the possibility to add columns\nfilled with a pattern.\nReplace a box selection with pattern.\nChange standard properties of Hex- \nEditor here.\nShows this help dialog.",
-                    IDC_STATIC,97,102,123,59
-    CTEXT           "HEX-Editor Plugin for Notepad++ v4.0.2                    v0.7 Beta 1",
+                    IDC_STATIC,97,112,123,59
+    CTEXT           "HEX-Editor Plugin for Notepad++ v4.0.2                        v0.7",
                     IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
                     WS_EX_TRANSPARENT
     LTEXT           "View in HEX\nInsert Columns...\n\nPattern Repleace...\nOptions...\n\nHelp...",
-                    IDC_STATIC,16,102,72,59
+                    IDC_STATIC,16,112,72,59
+    LTEXT           "http://sourceforge.net/projects/npp-plugins",
+                    IDC_NPP_PLUGINS_URL,65,52,158,9
+    LTEXT           "URL:",IDC_STATIC,12,52,21,9
 END
 
 IDD_OPTION_DLG DIALOGEX 0, 0, 225, 107
@@ -252,7 +255,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 223
         TOPMARGIN, 7
-        BOTTOMMARGIN, 186
+        BOTTOMMARGIN, 196
     END
 
     IDD_OPTION_DLG, DIALOG
@@ -316,6 +319,7 @@ BEGIN
     BEGIN
         BLOCK "040704b0"
         BEGIN
+            VALUE "Comments", "Visit: http://sourceforge.net/projects/npp-plugins"
             VALUE "CompanyName", "jens.plugin.npp@gmx.de"
             VALUE "FileDescription", "Notepad++ Plugin : a free (GNU) source code hex editor"
             VALUE "FileVersion", "0.7"

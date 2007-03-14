@@ -94,8 +94,8 @@ BOOL CALLBACK HexEdit::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 				if (_pCurProp->isVisible == TRUE)
 				{
 					/* set cursor timer */
-					::SetTimer(_hListCtrl, IDC_HEX_CURSORTIMER, 500, cursorFunc);
 					_isCurOn = TRUE;
+					::SetTimer(_hListCtrl, IDC_HEX_CURSORTIMER, 500, cursorFunc);
 					::SetFocus(_hListCtrl);
 				}
 
@@ -244,6 +244,11 @@ BOOL CALLBACK HexEdit::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 					break;
 				}
 			}
+			break;
+		}
+		case WM_DESTROY :
+		{
+			_hexProp.clear();
 			break;
 		}
 		case HEXM_SETSEL :
@@ -704,28 +709,23 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 }
 
 
-void HexEdit::UpdateDocs(const char** pFiles, UINT numFiles, INT openDoc)
+void HexEdit::UpdateDocs(char** pFiles, UINT numFiles, INT openDoc)
 {
 	/* update current visible line */
 	GetLineVis();
 
-	vector<tHexProp>	tmpList		= _hexProp;
-
-	/* clear list */
-	_hexProp.clear();
+	vector<tHexProp>	tmpList;
 
 	/* attach (un)known files */
 	for (size_t i = 0; i < numFiles; i++)
 	{
 		BOOL isCopy = FALSE;
 
-		for (size_t j = 0; j < tmpList.size(); j++)
+		for (size_t j = 0; j < _hexProp.size(); j++)
 		{
-			char	test[MAX_PATH];
-			strcpy(test, tmpList[j].pszFileName);
-			if (strcmp(pFiles[i], tmpList[j].pszFileName) == 0)
+			if (strcmp(pFiles[i], _hexProp[j].pszFileName) == 0)
 			{
-				_hexProp.push_back(tmpList[j]);
+				tmpList.push_back(_hexProp[j]);
 				isCopy = TRUE;
 			}
 		}
@@ -741,32 +741,26 @@ void HexEdit::UpdateDocs(const char** pFiles, UINT numFiles, INT openDoc)
 			prop.editType		= HEX_EDIT_HEX;
 			prop.isSel			= FALSE;
 			prop.selection		= HEX_SEL_NORM;
-			prop.anchorItem		= 0;
-			prop.anchorSubItem	= 0;
-			prop.anchorPos		= 0;
-			prop.cursorItem		= 0;
-			prop.cursorSubItem	= 1;
-			prop.cursorPos		= 0;
 
 			/* test if extension of file is registered */
 			prop.isVisible		= IsExtensionRegistered(pFiles[i]);
 
-			_hexProp.push_back(prop);
+			tmpList.push_back(prop);
 		}
 	}
 
+	/* copy new list into current list */
+	_hexProp = tmpList;
+
 	if (_openDoc != openDoc)
 	{
+		/* store current open document */
+		_openDoc = openDoc;
+
 		if (openDoc != -1)
 		{
-			/* store current open document */
-			_openDoc = openDoc;
-
 			/* set the current file attributes */
 			_pCurProp = &_hexProp[_openDoc];
-
-			/* update views */
-			doDialog();
 		}
 		else
 		{
@@ -779,21 +773,17 @@ void HexEdit::UpdateDocs(const char** pFiles, UINT numFiles, INT openDoc)
 	}
 	else if (tmpList.size() != 0)
 	{
-		/* set new/old pointer */
-		BOOL	isFound	= FALSE;
-
-		for (i = 0; i < _hexProp.size(); i++)
-		{
-			if (strcmp(tmpList[_openDoc].pszFileName, _hexProp[i].pszFileName) == 0)
-			{
-				_pCurProp = &_hexProp[i];
-				isFound = TRUE;
-			}
-		}
-
-		if (isFound == FALSE)
-			_pCurProp = &_hexProp[_openDoc];
+		/* set the current file attributes */
+		_pCurProp = &_hexProp[openDoc];
 	}
+	else
+	{
+		_pCurProp = NULL;
+	}
+
+	/* update views */
+	if (openDoc != -1)
+		doDialog();
 }
 
 
@@ -817,10 +807,17 @@ void HexEdit::doDialog(BOOL toggle)
 		{
 			tHexProp	prop = getProp();
 
-			_pCurProp->columns	= prop.columns;
-			_pCurProp->bits		= prop.bits;
-			_pCurProp->isBin	= prop.isBin;
-			_pCurProp->isLittle	= prop.isLittle;
+			_pCurProp->columns			= prop.columns;
+			_pCurProp->bits				= prop.bits;
+			_pCurProp->isBin			= prop.isBin;
+			_pCurProp->isLittle			= prop.isLittle;
+			_pCurProp->isSel			= FALSE;
+			_pCurProp->anchorItem		= 0;
+			_pCurProp->anchorSubItem	= 0;
+			_pCurProp->anchorPos		= 0;
+			_pCurProp->cursorItem		= 0;
+			_pCurProp->cursorSubItem	= 1;
+			_pCurProp->cursorPos		= 0;
 
 			::SendMessage(_nppData._nppHandle, WM_DECODE_SCI, currentSC, 0);
 		}
@@ -831,26 +828,8 @@ void HexEdit::doDialog(BOOL toggle)
 			ScintillaMsg(SCI_SETSAVEPOINT);
 		else
 			_pCurProp->isModified = TRUE;
+
 		InvalidateNotepad();
-	}
-
-	/* show or hide window */
-	if (_pCurProp->isVisible == TRUE)
-	{
-		display(true);
-		::SetTimer(_hListCtrl, IDC_HEX_CURSORTIMER, 500, cursorFunc);
-
-		/* necessary to keep the current informations */
-		UINT	uBufFirstVisRow	= _pCurProp->firstVisRow;
-		::SetFocus(_hListCtrl);
-		_pCurProp->firstVisRow= uBufFirstVisRow;
-	}
-	else
-	{
-		display(false);
-		::KillTimer(_hListCtrl, IDC_HEX_CURSORTIMER);
-		::SetFocus(_hParentHandle);
-		::SendMessage(_hParent, WM_COMMAND, MAKELONG(0, SCEN_SETFOCUS), (LPARAM)_hParentHandle);
 	}
 
 	/* update the header */
@@ -859,11 +838,17 @@ void HexEdit::doDialog(BOOL toggle)
 	/* set window position and display informations */
 	MoveView();
 
+	/* set focus */
+	ActivateWindow();
+
 	/* set coding entries gray */
 	GrayEncoding();
 
 	/* check menu and tb icon */
 	checkMenu(_pCurProp->isVisible);
+
+	/* show or hide window */
+	display(_pCurProp->isVisible == TRUE);
 }
 
 
@@ -878,11 +863,16 @@ void HexEdit::MoveView(void)
 		
 		::GetWindowRect(_hParentHandle, &rc);
 		ScreenToClient(_nppData._nppHandle, &rc);
-		::SetWindowPos(_hSelf, _hParentHandle, rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, SWP_SHOWWINDOW);
+		::SetWindowPos(_hSelf, _hParentHandle, rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, 0L);
 		::ShowWindow(_hParentHandle, SW_HIDE);
 
 		/* Update header */
 		::RedrawWindow(_hListCtrl, NULL, NULL, RDW_INVALIDATE);
+	}
+	else if ((_openDoc == -1) && (_hParentHandle == _nppData._scintillaSecondHandle))
+	{
+		::ShowWindow(_hParentHandle, SW_HIDE);
+		::ShowWindow(_hSelf, SW_HIDE);
 	}
 	else
 	{
@@ -949,13 +939,6 @@ void HexEdit::UpdateHeader(void)
 		}
 
 		/* set list view to old position */
-		UINT	selStart = ScintillaMsg(SCI_GETANCHOR);
-		UINT	selEnd	 = ScintillaMsg(SCI_GETCURRENTPOS);
-
-		if (selStart == selEnd)
-			SetPosition(selStart);
-		else
-			SetSelection(selStart, selEnd, _pCurProp->selection);
 		SetLineVis(_pCurProp->firstVisRow, HEX_LINE_FIRST);
 	}
 }
@@ -1046,6 +1029,7 @@ void HexEdit::Copy(void)
 		}
 
 		/* destory scintilla handle */
+		::SendMessage(hSCI, SCI_UNDO, 0, 0);
 		::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 		
 		/* convert to hex if usefull */
@@ -1171,6 +1155,7 @@ void HexEdit::Cut(void)
 		}
 		
 		/* destory scintilla handle */
+		::SendMessage(hSCI, SCI_UNDO, 0, 0);
 		::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 
 		/* convert to hex if usefull */
@@ -1300,6 +1285,7 @@ void HexEdit::Paste(void)
 		}
 
 		/* destory scintilla handle */
+		::SendMessage(hSCI, SCI_UNDO, 0, 0);
 		::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 	}	
 	else
@@ -1381,6 +1367,7 @@ void HexEdit::Paste(void)
 				break;
 		}
 		/* destory scintilla handle */
+		::SendMessage(hSCI, SCI_UNDO, 0, 0);
 		::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 
 	}
@@ -1869,6 +1856,7 @@ void HexEdit::OnDeleteBlock(void)
 				LITTLE_DELETE_ERROR;
 				
 				/* free allocated space */
+				::SendMessage(hSCI, SCI_UNDO, 0, 0);
 				::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 				return;
 			}
@@ -1881,6 +1869,7 @@ void HexEdit::OnDeleteBlock(void)
 	SetPosition(posEnd - count, _pCurProp->isLittle);
 	
 	/* free allocated space */
+	::SendMessage(hSCI, SCI_UNDO, 0, 0);
 	::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 }
 

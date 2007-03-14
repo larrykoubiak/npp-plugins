@@ -202,6 +202,7 @@ BOOL PatternDlg::onInsert(void)
 	::SendMessage(_hParentHandle, HEXM_SETCOLUMNCNT, 0, count + prop.columns);
 
 	/* free allocated space */
+	::SendMessage(hSCI, SCI_UNDO, 0, 0);
 	::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 	delete [] pattern;
 
@@ -286,6 +287,7 @@ BOOL PatternDlg::onReplace(void)
 			LITTLE_REPLEACE_ERROR;
 
 			/* free allocated space */
+			::SendMessage(hSCI, SCI_UNDO, 0, 0);
 			::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 
 			return FALSE;
@@ -332,6 +334,7 @@ BOOL PatternDlg::onReplace(void)
 				LITTLE_REPLEACE_ERROR;
 				
 				/* free allocated space */
+				::SendMessage(hSCI, SCI_UNDO, 0, 0);
 				::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 				delete [] pattern;
 
@@ -350,6 +353,7 @@ BOOL PatternDlg::onReplace(void)
 	::SendMessage(_hParentHandle, HEXM_SETPOS, 0, posEnd - prop.bits * prop.columns);
 	
 	/* free allocated space */
+	::SendMessage(hSCI, SCI_UNDO, 0, 0);
 	::SendMessage(_hParent, WM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 
 	/* add text to combo ;) */

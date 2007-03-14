@@ -459,7 +459,7 @@ void MultiTypeCombo::encode(tEncComboInfo* info, eCodingType type)
 		{
 			if (info->length != 0)
 			{
-				char *temp	= (char*)new char[info->length];
+				char *temp	= (char*)new char[info->length+1];
 				memcpy(temp, info->text, info->length);
 
 				strcpy(info->text, hexMask[(UCHAR)temp[0]]);
