@@ -44,7 +44,7 @@ const TCHAR dlgSC[]				= _T("Spell-Checker");
 const TCHAR curLang[]			= _T("Current Language");
 
 
-const TCHAR SPELLCHECKER_INI[]	= _T("\\Explorer.ini");
+const TCHAR SPELLCHECKER_INI[]	= _T("\\SpellChecker.ini");
 const TCHAR CONFIG_PATH[]		= _T("\\plugins\\Config");
 const TCHAR NPP[]				= _T("\\Notepad++");
 const TCHAR NPP_LOCAL_XML[]		= _T("\\doLocalConf.xml");
