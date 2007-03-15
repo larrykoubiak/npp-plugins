@@ -24,6 +24,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "resource.h"
 
 
+#ifndef CB_SETMINVISIBLE
+#define CB_SETMINVISIBLE 0x1701
+#endif
+
+
+
 HANDLE	hThread				= NULL;
 HANDLE	hEvent[EID_MAX]	    = {NULL};
 
@@ -333,10 +339,12 @@ BOOL SpellCheckerDialog::FillLanguages(void)
 		return FALSE;
 	}
 
+	UINT	uElementCnt	= 0;
 	while ((entry = aspell_dict_info_enumeration_next(dels)) != 0) 
 	{
-		::SendMessage(_hLang, CB_ADDSTRING, strlen(entry->name), (LPARAM)entry->name);
+		::SendMessage(_hLang, CB_INSERTSTRING, uElementCnt++, (LPARAM)entry->name);
 	}
+	::SendMessage(_hLang, CB_SETMINVISIBLE, uElementCnt, 0);
 
 	delete_aspell_dict_info_enumeration(dels);
 	return TRUE;
