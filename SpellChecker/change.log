@@ -5,7 +5,9 @@ Change-log for SpellChecker.dll
 07/03/13  v1.1 :
 ------------------------------------------------------------------------------------
 	Fix: Now on W9x platforms the combo box enlarged
-	Fix: The configuration not stored in "Explorer.ini" anymore
+    Fix: Dialog boxes are not system modal anymore
+	Fix: The configuration isn't stored in "Explorer.ini" anymore
+    Fix: Changed typo "Lern" to "Learn"
 	
 ------------------------------------------------------------------------------------
 07/03/13  v1.0 :
