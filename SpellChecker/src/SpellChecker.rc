@@ -27,8 +27,8 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION 1,1,0,0
+ PRODUCTVERSION 1,1,0,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -46,12 +46,12 @@ BEGIN
             VALUE "Comments", "Visit: http://sourceforge.net/projects/npp-plugins"
             VALUE "CompanyName", "jens.plugin.npp@gmx.de"
             VALUE "FileDescription", "Notepad++ Plugin : a free (GNU) Spell Checker interface for Aspell"
-            VALUE "FileVersion", "1, 0, 0, 0"
+            VALUE "FileVersion", "1, 1, 0, 0"
             VALUE "InternalName", "Spell Checker Plugin for Notepad++.exe"
             VALUE "LegalCopyright", "Copyright (C) 2007 by Jens Lorenz"
             VALUE "OriginalFilename", "SpellChecker.dll"
             VALUE "ProductName", "Spell Checker Plugin"
-            VALUE "ProductVersion", "1, 0, 0, 0"
+            VALUE "ProductVersion", "1, 1, 0, 0"
         END
     END
     BLOCK "VarFileInfo"
@@ -115,7 +115,7 @@ BEGIN
                     12,54,150,9
     LTEXT           "Starts checking of (selected) text.\nShows this help dialog.",
                     IDC_STATIC,97,131,123,18
-    CTEXT           "Spell-Checker Plugin for Notepad++ v4.0.2                    v1.0",
+    CTEXT           "Spell-Checker Plugin for Notepad++ v4.0.2                    v1.1",
                     IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
                     WS_EX_TRANSPARENT
     LTEXT           "Spell-Checker...\nHelp...",IDC_STATIC,16,131,72,19
