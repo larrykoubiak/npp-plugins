@@ -1,0 +1,197 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Spanish resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ESN)
+#ifdef _WIN32
+LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MODERN
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_SEARCHINFILESDOCK DIALOGEX 26, 41, 552, 112
+STYLE DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE
+CAPTION "Search in Files "
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+END
+
+IDD_SEARCH_RESULTS DIALOGEX 0, 0, 456, 151
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_RESULTSLIST,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOSORTHEADER | WS_BORDER | WS_GROUP | WS_TABSTOP,5,20,444,125
+    CONTROL         "",IDC_STATIC_STATUS,"Static",SS_LEFTNOWORDWRAP | SS_WORDELLIPSIS | WS_GROUP,5,5,235,8
+END
+
+IDD_SEARCH_INPUT_DLG DIALOGEX 0, 0, 466, 99
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Search in Files parameters"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    COMBOBOX        IDC_WHAT,74,7,327,126,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_TYPES,74,25,327,125,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_WHERE,74,43,303,163,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "&...",IDC_CHOOSE_FOLDER,384,42,17,14
+    CONTROL         "C&ase sensitive",IDC_CHECK_CASE_SENSITIVE,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,9,65,58,10,WS_EX_RIGHT
+    CONTROL         "&Whole word",IDC_WHOLE_WORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,75,66,50,10,WS_EX_RIGHT
+    CONTROL         "&Result in new tab",IDC_RESULTS_IN_NEW_TAB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,134,66,68,10,WS_EX_RIGHT
+    CONTROL         "&Exclude extensions",IDC_EXCLUDE_EXTENSIONS,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,213,65,73,10,WS_EX_RIGHT
+    PUSHBUTTON      "C&hoose extensions to exclude",IDC_MANAGE_EXTENSIONS,291,63,110,14
+    DEFPUSHBUTTON   "&OK",IDOK,409,7,50,14
+    PUSHBUTTON      "&Close",IDCANCEL,409,24,50,14
+    LTEXT           "&Find what",IDC_STATIC,9,7,36,8
+    LTEXT           "&In files / file types",IDC_STATIC,9,25,61,8
+    LTEXT           "I&n folder",IDC_STATIC,9,43,61,8
+    CONTROL         "",IDC_PROGRESS,"msctls_progress32",NOT WS_VISIBLE,7,83,452,9
+    LTEXT           "",IDC_STATIC_PROGRESS,417,65,32,10,SS_CENTERIMAGE,WS_EX_RIGHT
+END
+
+IDD_EXCLUDE_EXTENSIONS DIALOGEX 0, 0, 243, 182
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Exclude file extensions from Search in Files"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    EDITTEXT        IDC_EXTENSION,12,33,40,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "&Exclude ->",IDC_EXCLUDE_EXT,61,33,43,14
+    LISTBOX         IDC_EXCLUDE_LIST,112,33,60,119,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    DEFPUSHBUTTON   "&OK",IDOK,186,12,50,14
+    PUSHBUTTON      "&Cancel",IDCANCEL,186,29,50,14
+    LTEXT           "Choose extensions to exclude from searches",IDC_STATIC,12,17,146,11
+    LTEXT           "Tipically you will include here avi, mpg, jpg, etc.",IDC_STATIC,12,157,155,8
+    GROUPBOX        "",IDC_STATIC,7,7,173,167
+END
+
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDR_CLOSETAB_HOVER      BITMAP                  "..\\Icons\\closeTabButton_hover.bmp"
+IDR_CLOSETAB_PUSH       BITMAP                  "..\\Icons\\closeTabButton_push.bmp"
+IDR_CLOSETAB            BITMAP                  "..\\Icons\\closeTabButton.bmp"
+IDR_CLOSETAB_INACT      BITMAP                  "..\\Icons\\closeTabButton_inact.bmp"
+IDR_SEARCH              BITMAP                  "..\\Icons\\magnifier.bmp"
+IDB_TB_SEARCHINFILES    BITMAP                  "..\\Icons\\searchInFiles.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_SEARCH_INPUT_DLG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 459
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 92
+    END
+
+    IDD_EXCLUDE_EXTENSIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 236
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 175
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,8
+ PRODUCTVERSION 1,0,0,8
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x0L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "000904b0"
+        BEGIN
+            VALUE "FileDescription", "searchInFiles"
+            VALUE "FileVersion", "1, 0, 0, 8"
+            VALUE "InternalName", "searchInFiles"
+            VALUE "LegalCopyright", "Copyright (C) 2007"
+            VALUE "OriginalFilename", "searchInFiles.rc"
+            VALUE "ProductName", " searchInFiles"
+            VALUE "ProductVersion", "1, 0, 0, 8"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x9, 1200
+    END
+END
+
+#endif    // Spanish resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

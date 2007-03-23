@@ -1,0 +1,17 @@
+SCC = This is a Source Code Control file
+
+[NppSearchInFiles.dsp]
+SCC_Aux_Path = "\\ESTOLA\SourceSafeID\"
+SCC_Project_Name = "$/dev/NPPSEARCHINFILES", TJXCAAAA
+
+[NppSearchInFiles.dsw]
+SCC_Aux_Path = "\\ESTOLA\SourceSafeID\"
+SCC_Project_Name = "$/dev/NPPSEARCHINFILES", TJXCAAAA
+
+[NppSearchInFiles.sln]
+SCC_Aux_Path = "\\ESTOLA\SourceSafeID\"
+SCC_Project_Name = "$/dev", FSKCAAAA
+
+[NppSearchInFiles.vcproj]
+SCC_Aux_Path = "\\ESTOLA\SourceSafeID\"
+SCC_Project_Name = "$/dev", FSKCAAAA
