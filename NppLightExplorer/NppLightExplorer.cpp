@@ -21,6 +21,7 @@
 //  NppLightExplorer										23.03.2007	Added icon to notepad++ toolbar
 //
 //  PENDIENTE:
+//  El icono de la solapa de plug-ins no se dibuja bien
 //  Mensaje para abrir la busqueda partiendo de una carpeta 
 //  Poner un icono en la barra de notepad++
 
@@ -47,28 +48,24 @@ void openLightExplorerDlg();
 
 lightExplorerDlg _lightExplorerDlg;
 
-#define DOCKABLE_LIGHTEXPLORER 0
-
-BOOL APIENTRY DllMain( HANDLE hModule, 
-                       DWORD  reasonForCall, 
-                       LPVOID lpReserved )
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 {
     switch (reasonForCall)
     {
 		case DLL_PROCESS_ATTACH:
 		{
-			funcItem[0]._pFunc = openLightExplorerDlg;
+			funcItem[DOCKABLE_LIGHTEXPLORER]._pFunc = openLightExplorerDlg;
 
-			strcpy(funcItem[0]._itemName, "Light Explorer  (Alt + A)");
+			strcpy(funcItem[DOCKABLE_LIGHTEXPLORER]._itemName, "Light Explorer  (Alt + A)");
 
 			// Shortcut :
 			// Following code makes the first command
 			// bind to the shortcut Alt-A
-			funcItem[0]._pShKey = new ShortcutKey;
-			funcItem[0]._pShKey->_isAlt = true;
-			funcItem[0]._pShKey->_isCtrl = false;
-			funcItem[0]._pShKey->_isShift = false;
-			funcItem[0]._pShKey->_key = 0x41; //VK_A
+			funcItem[DOCKABLE_LIGHTEXPLORER]._pShKey = new ShortcutKey;
+			funcItem[DOCKABLE_LIGHTEXPLORER]._pShKey->_isAlt = true;
+			funcItem[DOCKABLE_LIGHTEXPLORER]._pShKey->_isCtrl = false;
+			funcItem[DOCKABLE_LIGHTEXPLORER]._pShKey->_isShift = false;
+			funcItem[DOCKABLE_LIGHTEXPLORER]._pShKey->_key = 0x41; //VK_A
 
 			char nppPath[MAX_PATH];
 			GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
@@ -106,6 +103,9 @@ BOOL APIENTRY DllMain( HANDLE hModule,
         break;
 
 		case DLL_PROCESS_DETACH:
+			if (g_TBLightExplorer.hToolbarBmp)
+				::DeleteObject(g_TBLightExplorer.hToolbarBmp);
+
 			// Don't forget to deallocate your shortcut here
 			delete funcItem[0]._pShKey;
 			break;
@@ -147,7 +147,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	{
 		if (notifyCode->nmhdr.code == NPPN_TB_MODIFICATION)
 		{
-			g_TBLightExplorer.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)_lightExplorerDlg.getHinst(), MAKEINTRESOURCE(IDB_TB_LIGHTEXPLORER), IMAGE_BITMAP, 0, 0, (LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
+			g_TBLightExplorer.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)_lightExplorerDlg.getHinst(), MAKEINTRESOURCE(IDB_TB_LIGHTEXPLORER), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
 			::SendMessage(nppData._nppHandle, WM_ADDTOOLBARICON, (WPARAM)funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)&g_TBLightExplorer);
 		}
 	}
@@ -191,16 +191,16 @@ void openLightExplorerDlg()
 		_lightExplorerDlg.create(&data);
 
 		// define the default docking behaviour
-		data.uMask = DWS_DF_CONT_LEFT;
+		data.uMask = DWS_DF_CONT_LEFT | DWS_ICONTAB;
 
-		data.pszModuleName = _lightExplorerDlg.getPluginFileName();
+		data.hIconTab		= (HICON)::LoadImage((HINSTANCE)&__ImageBase, MAKEINTRESOURCE(IDI_LIGHTEXPLORER), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
+		data.pszModuleName  = _lightExplorerDlg.getPluginFileName();
+		data.dlgID			= DOCKABLE_LIGHTEXPLORER;
 
-		// the dlgDlg should be the index of funcItem where the current function pointer is
-		// in this case is DOCKABLE_LIGHTEXPLORER
-		data.dlgID = DOCKABLE_LIGHTEXPLORER;
 		::SendMessage(nppData._nppHandle, WM_DMM_REGASDCKDLG, 0, (LPARAM)&data);
+		::SendMessage(nppData._nppHandle, WM_PIMENU_CHECK, funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)_lightExplorerDlg.isVisible());
+		_lightExplorerDlg.display(true);
 	}
-	else {
+	else
 		_lightExplorerDlg.display(!_lightExplorerDlg.isVisible());
-	}
 }

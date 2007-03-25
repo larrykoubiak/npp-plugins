@@ -5,10 +5,6 @@
 	Name="NppLightExplorer"
 	ProjectGUID="{56C15F2A-9312-4DBF-BD6F-123487C3BBD0}"
 	RootNamespace="NppInsertPlugin"
-	SccProjectName="SAK"
-	SccAuxPath="SAK"
-	SccLocalPath="SAK"
-	SccProvider="SAK"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -319,6 +315,10 @@
 			>
 			<File
 				RelativePath=".\DockingFeature\res\lightExplorer.bmp"
+				>
+			</File>
+			<File
+				RelativePath=".\DockingFeature\res\lightExplorer.ico"
 				>
 			</File>
 			<File

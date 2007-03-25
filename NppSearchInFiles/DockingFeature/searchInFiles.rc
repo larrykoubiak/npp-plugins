@@ -115,7 +115,7 @@ IDR_CLOSETAB_PUSH       BITMAP                  "..\\Icons\\closeTabButton_push.
 IDR_CLOSETAB            BITMAP                  "..\\Icons\\closeTabButton.bmp"
 IDR_CLOSETAB_INACT      BITMAP                  "..\\Icons\\closeTabButton_inact.bmp"
 IDR_SEARCH              BITMAP                  "..\\Icons\\magnifier.bmp"
-IDB_TB_SEARCHINFILES    BITMAP                  "..\\Icons\\searchInFiles.bmp"
+IDB_TB_SEARCHINFILES    BITMAP                  "..\\icons\\searchInFiles.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -181,6 +181,15 @@ BEGIN
     END
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_SEARCHINFILES       ICON                    "..\\Icons\\searchInFiles.ico"
 #endif    // Spanish resources
 /////////////////////////////////////////////////////////////////////////////
 

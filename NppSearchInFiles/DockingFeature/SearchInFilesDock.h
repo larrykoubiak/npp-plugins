@@ -48,18 +48,21 @@ class SearchInputDlg : public StaticDialog
 class SearchInFilesDock : public DockingDlgInterface
 {
 public :
-	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK), m_bShowSearchInFiles(false) {};
+	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK) {};
 
 	char m_iniFilePath[MAX_PATH];
-	bool m_bShowSearchInFiles;
 	
 	LPSTR getSectionName() { return "Search in Files Extension"; };
-	LPSTR getKeyName() { return "showSearchInFiles"; };
 
 	void chooseFolder(HWND hDlg);
 	void callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFFER types, CUTL_BUFFER where);
 
-    virtual void display(bool toShow = true) const { DockingDlgInterface::display(toShow); };
+	virtual void display(bool toShow = true) const {
+		extern FuncItem funcItem[];
+		::SendMessage(_hParent, toShow ? WM_DMM_SHOW : WM_DMM_HIDE, 0, (LPARAM)_hSelf);
+		::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)toShow);
+	};
+
 	void setParent(HWND parent2set){ _hParent = parent2set; };
 
 	void openSearchInFilesInputDlg();

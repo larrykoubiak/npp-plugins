@@ -36,9 +36,6 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 		{
 			case WM_INITDIALOG:
 			{
-				// Leemos el estado inicial
-				m_bShowSearchInFiles = (::GetPrivateProfileInt(getSectionName(), getKeyName(), 0, m_iniFilePath) != 0);
-
 				// Creamos el control de solapas
 				_ctrlTabIconList.create(_hInst, 16);
 
@@ -70,18 +67,9 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 
 			case WM_DESTROY:
 			{
-				::WritePrivateProfileString(getSectionName(), getKeyName(), 
-											m_bShowSearchInFiles ? "1" : "0", 
-											m_iniFilePath);
 				_searchResultsDlg.destroy();
 				_ctrlTab.destroy();
 				return TRUE;
-			}
-
-			case WM_SHOWWINDOW:
-			{
-				m_bShowSearchInFiles = (BOOL)wParam ? true : false; 
-				return DockingDlgInterface::run_dlgProc(message, wParam, lParam);
 			}
 
 			case WM_SYSCOMMAND:

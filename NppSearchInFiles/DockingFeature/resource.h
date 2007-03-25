@@ -579,7 +579,6 @@
 #define VK_F7                           0x76
 #define VK_F8                           0x77
 #define IDB_BITMAP3                     119
-#define IDB_TB_SEARCHINFILES            119
 #define VK_F9                           0x78
 #define WHEEL_DELTA                     120
 #define VK_F10                          0x79
@@ -588,10 +587,13 @@
 #define WM_CONTEXTMENU                  0x007B
 #define VK_F13                          0x7C
 #define WM_STYLECHANGING                0x007C
+#define IDI_SEARCHINFILES               124
 #define VK_F14                          0x7D
 #define WM_STYLECHANGED                 0x007D
 #define VK_F15                          0x7E
 #define WM_DISPLAYCHANGE                0x007E
+#define IDB_BITMAP4                     126
+#define IDB_TB_SEARCHINFILES            126
 #define VK_F16                          0x7F
 #define WM_GETICON                      0x007F
 #define LANG_INVARIANT                  0x7f
@@ -1235,7 +1237,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        120
+#define _APS_NEXT_RESOURCE_VALUE        127
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1024
 #define _APS_NEXT_SYMED_VALUE           102

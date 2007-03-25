@@ -18,17 +18,14 @@
 #ifndef LIGHTEXPLORER_DLG_H
 #define LIGHTEXPLORER_DLG_H
 
+#include "PluginInterface.h"
+
 #include "DockingDlgInterface.h"
 
 #include "WtlFileTreeCtrl.h"
 #include "resource.h"
 
-//class lightExplorerDlg : public DockingDlgInterface
 class lightExplorerDlg : public DockingDlgInterface 
-							//public CDialogImpl<lightExplorerDlg> 
-							//public CUpdateUI<lightExplorerDlg>,
-							//public CMessageFilter, 
-							//public CIdleHandler
 {
 public:
 	lightExplorerDlg() : DockingDlgInterface(IDD_LIGHTEXPLORER){};
@@ -39,7 +36,10 @@ public:
 	}
 
 	virtual void display(bool toShow = true) const {
-        DockingDlgInterface::display(toShow);
+		extern FuncItem funcItem[];
+		::SendMessage(_hParent, toShow ? WM_DMM_SHOW : WM_DMM_HIDE, 0, (LPARAM)_hSelf);
+		::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)toShow);
+
         if (toShow)
             ::SetFocus(::GetDlgItem(_hSelf, IDC_TREECTRL));
     };

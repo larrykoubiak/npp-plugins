@@ -25,10 +25,14 @@
 //	SearchInFilesDoc.cpp	SearchInFilesInputDlgProc		20.03.07	Retrive current selected text
 //	SearchInFilesDoc.cpp	-								21.03.07	Changed the way combo string are stored
 //  NppSearchInFiles.cpp									23.03.2007	Added icon to notepad++ toolbar
+//																		Added icon to notepad++ plug-ins tabs
 //
 //  PENDIENTE:
-//  Cambiar las solapas
+//  El plug-in no se muestra al arrancar
+//  Eliminar las solapas
 //  Mensaje para abrir la busqueda partiendo de una carpeta desde fuera del plug-in
+//  Eliminar dialogo de confirmación (hacerlo configurable)
+//  Expresiones regulares
 
 #include "stdafx.h"
 
@@ -45,24 +49,18 @@ const char PLUGIN_NAME[]	= "Search in Files";
 const int nbFunc			= 3;
 const char localConfFile[]	= "doLocalConf.xml";
 
-NppData nppData;
+NppData				nppData;
 toolbarIcons		g_TBSearchInFiles;
 
 FuncItem funcItem[nbFunc];
 
 void SearchInFilesDockableDlg();
 void SearchInFilesNavigate();
-void showHideSearchInFilesDockableDlg();
+void ToggleSearchInFilesDockableDlg();
 
 SearchInFilesDock _searchInFilesDock;
 
-#define DOCKABLE_SEARCHINFILES			0
-#define DOCKABLE_SEARCHINFILES_NAVIGATE 1
-#define DOCKABLE_SEARCHINFILES_SHOWHIDE 2
-
-BOOL APIENTRY DllMain( HANDLE hModule, 
-                       DWORD  reasonForCall, 
-                       LPVOID lpReserved )
+BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 {
 	switch (reasonForCall)
     {
@@ -70,30 +68,27 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			{
 				funcItem[DOCKABLE_SEARCHINFILES]._pFunc = SearchInFilesDockableDlg;
 				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._pFunc = SearchInFilesNavigate;
-				funcItem[2]._pFunc = showHideSearchInFilesDockableDlg;
+				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pFunc = ToggleSearchInFilesDockableDlg;
 
 				strcpy(funcItem[DOCKABLE_SEARCHINFILES]._itemName, "Search in files");
 				strcpy(funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._itemName, "Move to next hit");
-				strcpy(funcItem[2]._itemName, "Search in Files results (Alt + Z)");
+				strcpy(funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._itemName, "Search in Files results (Alt + Z)");
 
 				// Shortcut :
 				// Following code makes the first command
 				// bind to the shortcut Alt-Q
-				funcItem[DOCKABLE_SEARCHINFILES]._init2Check = false;
 				funcItem[DOCKABLE_SEARCHINFILES]._pShKey = new ShortcutKey;
 				funcItem[DOCKABLE_SEARCHINFILES]._pShKey->_isAlt = true;
 				funcItem[DOCKABLE_SEARCHINFILES]._pShKey->_isCtrl = false;
 				funcItem[DOCKABLE_SEARCHINFILES]._pShKey->_isShift = false;
 				funcItem[DOCKABLE_SEARCHINFILES]._pShKey->_key = 0x51; //VK_Q
 
-				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._init2Check = false;
 				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._pShKey = new ShortcutKey;
 				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._pShKey->_isAlt = false;
 				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._pShKey->_isCtrl = false;
 				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._pShKey->_isShift = false;
 				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._pShKey->_key = VK_F4; //F4
 
-				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._init2Check = false;
 				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pShKey = new ShortcutKey;
 				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pShKey->_isAlt = true;
 				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pShKey->_isCtrl = false;
@@ -135,6 +130,9 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			break;
 
 		case DLL_PROCESS_DETACH:
+			if (g_TBSearchInFiles.hToolbarBmp)
+				::DeleteObject(g_TBSearchInFiles.hToolbarBmp);
+
 			// Don't forget to deallocate your shortcut here
 			delete funcItem[0]._pShKey;
 			delete funcItem[1]._pShKey;
@@ -169,7 +167,7 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF)
 
 HWND getCurrentHScintilla(int which)
 {
-	return (which == 0)?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
+	return (which == 0) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
 };
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
@@ -179,7 +177,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		if (notifyCode->nmhdr.code == NPPN_TB_MODIFICATION)
 		{
 			g_TBSearchInFiles.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)(HINSTANCE)&__ImageBase, MAKEINTRESOURCE(IDB_TB_SEARCHINFILES), IMAGE_BITMAP, 0, 0, (LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
-			::SendMessage(nppData._nppHandle, WM_ADDTOOLBARICON, (WPARAM)funcItem[2]._cmdID, (LPARAM)&g_TBSearchInFiles);
+			::SendMessage(nppData._nppHandle, WM_ADDTOOLBARICON, (WPARAM)funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)&g_TBSearchInFiles);
 		}
 	}
 }
@@ -218,36 +216,24 @@ void SearchInFilesDockableDlg()
 		_searchInFilesDock.create(&data);
 
 		// define the default docking behaviour
-		data.uMask = DWS_DF_CONT_BOTTOM;
+		data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ICONTAB;
 
-		data.pszModuleName = _searchInFilesDock.getPluginFileName();
+		data.hIconTab		= (HICON)::LoadImage((HINSTANCE)&__ImageBase, MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
+		data.pszModuleName	= _searchInFilesDock.getPluginFileName();
+		data.dlgID			= DOCKABLE_SEARCHINFILES;
 
-		// the dlgDlg should be the index of funcItem where the current function pointer is
-		// in this case is DOCKABLE_SEARCHINFILES
-		data.dlgID = DOCKABLE_SEARCHINFILES;
 		::SendMessage(nppData._nppHandle, WM_DMM_REGASDCKDLG, 0, (LPARAM)&data);
+		_searchInFilesDock.display();
 		if (_searchInFilesDock.isVisible()) _searchInFilesDock.openSearchInFilesInputDlg();
 	}
 	else {
+		// Always show here
 		_searchInFilesDock.display();
 		_searchInFilesDock.openSearchInFilesInputDlg();
 	}
 }
 
-void SearchInFilesNavigate()
-{
-	_searchInFilesDock.init((HINSTANCE)&__ImageBase, nppData._nppHandle);
-	_searchInFilesDock.m_nppHandle = nppData._nppHandle;
-
-	tTbData	data = {0};
-
-	if (_searchInFilesDock.isCreated()) {
-		_searchInFilesDock.display();
-		_searchInFilesDock.moveToNextHit();
-	}
-}
-
-void showHideSearchInFilesDockableDlg() 
+void ToggleSearchInFilesDockableDlg() 
 {
 	_searchInFilesDock.init((HINSTANCE)&__ImageBase, nppData._nppHandle);
 	_searchInFilesDock.m_nppHandle = nppData._nppHandle;
@@ -259,17 +245,32 @@ void showHideSearchInFilesDockableDlg()
 		_searchInFilesDock.create(&data);
 
 		// define the default docking behaviour
-		data.uMask = DWS_DF_CONT_BOTTOM;
+		data.uMask			= DWS_DF_CONT_BOTTOM;
 
-		data.pszModuleName = _searchInFilesDock.getPluginFileName();
+		data.hIconTab		= (HICON)::LoadImage((HINSTANCE)&__ImageBase, MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
+		data.pszModuleName	= _searchInFilesDock.getPluginFileName();
+		data.dlgID			= DOCKABLE_SEARCHINFILES;
 
-		// the dlgDlg should be the index of funcItem where the current function pointer is
-		// in this case is DOCKABLE_SEARCHINFILES_SHOWHIDE
-		data.dlgID = DOCKABLE_SEARCHINFILES_SHOWHIDE;
 		::SendMessage(nppData._nppHandle, WM_DMM_REGASDCKDLG, 0, (LPARAM)&data);
+		_searchInFilesDock.display();
 	}
-	else {
-		_searchInFilesDock.display(_searchInFilesDock.isVisible() ? false : true);
-		::SetFocus(_searchInFilesDock.m_nppHandle);
+	else 
+		_searchInFilesDock.display(!_searchInFilesDock.isVisible());
+	
+	// Give focus to notepad++
+	::SendMessage(nppData._scintillaMainHandle, WM_SETFOCUS, (WPARAM)_searchInFilesDock.getHSelf(), 0L);
+}
+
+void SearchInFilesNavigate()
+{
+	_searchInFilesDock.init((HINSTANCE)&__ImageBase, nppData._nppHandle);
+	_searchInFilesDock.m_nppHandle = nppData._nppHandle;
+
+	tTbData	data = {0};
+
+	if (_searchInFilesDock.isCreated()) {
+		::SendMessage(nppData._nppHandle, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)_searchInFilesDock.isVisible());
+		_searchInFilesDock.display();
+		_searchInFilesDock.moveToNextHit();
 	}
 }

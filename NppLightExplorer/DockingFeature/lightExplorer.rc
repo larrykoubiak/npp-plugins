@@ -148,6 +148,15 @@ END
 //
 
 IDB_TB_LIGHTEXPLORER    BITMAP                  "res\\lightExplorer.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_LIGHTEXPLORER       ICON                    "res\\lightExplorer.ico"
 #endif    // Spanish resources
 /////////////////////////////////////////////////////////////////////////////
 

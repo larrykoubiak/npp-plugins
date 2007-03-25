@@ -5,10 +5,6 @@
 	Name="NppSearchInFiles"
 	ProjectGUID="{1590D7CD-7D3A-4AB7-A355-EE02F7FB987D}"
 	RootNamespace="NppInsertPlugin"
-	SccProjectName="SAK"
-	SccAuxPath="SAK"
-	SccLocalPath="SAK"
-	SccProvider="SAK"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -378,6 +374,22 @@
 				>
 			</File>
 		</Filter>
+		<File
+			RelativePath=".\Icons\bitmap4.bmp"
+			>
+		</File>
+		<File
+			RelativePath=".\Icons\icon1.ico"
+			>
+		</File>
+		<File
+			RelativePath=".\Icons\icon2.ico"
+			>
+		</File>
+		<File
+			RelativePath=".\Icons\searchInFiles.ico"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
