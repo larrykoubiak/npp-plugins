@@ -235,6 +235,7 @@
 #define SUBLANG_FRENCH_LUXEMBOURG       0x05
 #define SUBLANG_GERMAN_LIECHTENSTEIN    0x05
 #define SUBLANG_SPANISH_COSTA_RICA      0x05
+#define IDI_LIGHTEXPLORER               5
 #define SW_MINIMIZE                     6
 #define VK_XBUTTON2                     0x06
 #define WM_ACTIVATE                     0x0006
@@ -559,8 +560,8 @@
 #define IDB_TB_LIGHTEXPLORER            105
 #define VK_MULTIPLY                     0x6A
 #define IDI_ICON1                       106
-#define IDI_LIGHTEXPLORER               106
 #define VK_ADD                          0x6B
+#define IDI_ICON2                       107
 #define VK_SEPARATOR                    0x6C
 #define VK_SUBTRACT                     0x6D
 #define VK_DECIMAL                      0x6E
@@ -1205,7 +1206,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        107
+#define _APS_NEXT_RESOURCE_VALUE        108
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1005
 #define _APS_NEXT_SYMED_VALUE           101

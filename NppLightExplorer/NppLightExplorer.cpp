@@ -32,9 +32,7 @@
 #include <shlobj.h>
 #include "lightExplorerDlg.h"
 
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-
-const char	PLUGIN_NAME[] = "Light Explorer xx";
+const char	PLUGIN_NAME[] = "Light Explorer";
 const int	nbFunc = 1;
 const char	localConfFile[]	= "doLocalConf.xml";
 
@@ -180,7 +178,7 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam
 
 void openLightExplorerDlg()
 {
-	_lightExplorerDlg.init((HINSTANCE)&__ImageBase, nppData._nppHandle);
+	_lightExplorerDlg.init(_lightExplorerDlg.getHinst(), nppData._nppHandle);
 	_lightExplorerDlg.m_nppHandle			= nppData._nppHandle;
 	_lightExplorerDlg.m_scintillaMainHandle = nppData._scintillaMainHandle;
 
@@ -191,15 +189,15 @@ void openLightExplorerDlg()
 		_lightExplorerDlg.create(&data);
 
 		// define the default docking behaviour
-		data.uMask = DWS_DF_CONT_LEFT | DWS_ICONTAB;
+		data.uMask = DWS_DF_CONT_BOTTOM | DWS_ADDINFO | DWS_ICONTAB;
 
-		data.hIconTab		= (HICON)::LoadImage((HINSTANCE)&__ImageBase, MAKEINTRESOURCE(IDI_LIGHTEXPLORER), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
+		data.pszAddInfo		= "";
+		data.hIconTab		= (HICON)::LoadImage(_lightExplorerDlg.getHinst(), MAKEINTRESOURCE(IDI_LIGHTEXPLORER), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		data.pszModuleName  = _lightExplorerDlg.getPluginFileName();
 		data.dlgID			= DOCKABLE_LIGHTEXPLORER;
 
 		::SendMessage(nppData._nppHandle, WM_DMM_REGASDCKDLG, 0, (LPARAM)&data);
-		::SendMessage(nppData._nppHandle, WM_PIMENU_CHECK, funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)_lightExplorerDlg.isVisible());
-		_lightExplorerDlg.display(true);
+		_lightExplorerDlg.display();
 	}
 	else
 		_lightExplorerDlg.display(!_lightExplorerDlg.isVisible());
