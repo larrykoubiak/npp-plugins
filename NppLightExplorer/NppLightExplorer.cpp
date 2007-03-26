@@ -34,7 +34,7 @@
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
-const char	PLUGIN_NAME[] = "Light Explorer";
+const char	PLUGIN_NAME[] = "Light Explorer xx";
 const int	nbFunc = 1;
 const char	localConfFile[]	= "doLocalConf.xml";
 
