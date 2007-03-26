@@ -43,8 +43,6 @@
 #include "searchResultsWindow.h"
 #include "SearchInFilesDock.h"
 
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-
 const char PLUGIN_NAME[]	= "Search in Files";
 const int nbFunc			= 3;
 const char localConfFile[]	= "doLocalConf.xml";
@@ -247,7 +245,7 @@ void ToggleSearchInFilesDockableDlg()
 		// define the default docking behaviour
 		data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ICONTAB;
 
-		data.hIconTab		= (HICON)::LoadImage((HINSTANCE)&__ImageBase, MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
+		data.hIconTab		= (HICON)::LoadImage(_searchInFilesDock.getHinst(), MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		data.pszModuleName	= _searchInFilesDock.getPluginFileName();
 		data.dlgID			= DOCKABLE_SEARCHINFILES;
 
