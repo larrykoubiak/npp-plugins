@@ -245,7 +245,7 @@ void ToggleSearchInFilesDockableDlg()
 		_searchInFilesDock.create(&data);
 
 		// define the default docking behaviour
-		data.uMask			= DWS_DF_CONT_BOTTOM;
+		data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ICONTAB;
 
 		data.hIconTab		= (HICON)::LoadImage((HINSTANCE)&__ImageBase, MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		data.pszModuleName	= _searchInFilesDock.getPluginFileName();

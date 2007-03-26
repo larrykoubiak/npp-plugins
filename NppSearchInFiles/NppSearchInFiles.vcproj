@@ -373,23 +373,11 @@
 				RelativePath=".\Icons\searchInFiles.bmp"
 				>
 			</File>
+			<File
+				RelativePath=".\Icons\searchInFiles.ico"
+				>
+			</File>
 		</Filter>
-		<File
-			RelativePath=".\Icons\bitmap4.bmp"
-			>
-		</File>
-		<File
-			RelativePath=".\Icons\icon1.ico"
-			>
-		</File>
-		<File
-			RelativePath=".\Icons\icon2.ico"
-			>
-		</File>
-		<File
-			RelativePath=".\Icons\searchInFiles.ico"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>
