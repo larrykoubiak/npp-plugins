@@ -37,7 +37,6 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				m_staticMessage.Attach(::GetDlgItem(_hSelf, IDC_STATIC_STATUS));
 				m_searchResultsListCtrl.SubclassWindow(::GetDlgItem(_hSelf, IDC_RESULTSLIST), this);
 
-
 				// Create a font using the system message font
 				NONCLIENTMETRICS ncm;
 
@@ -62,10 +61,10 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 			{
 				// We manage here the ALT+Q keyboad
 				if (wParam == SC_KEYMENU && lParam == 0x71) {
-					display();
-					openSearchInFilesInputDlg();
+					display(!isVisible());
+					if (isVisible()) openSearchInFilesInputDlg();
 					return true;
-				}
+				} 
 				else
 					return DockingDlgInterface::run_dlgProc(message, wParam, lParam);
 			}
@@ -80,13 +79,13 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 
 				rcStatic.left += 8;
 				rcStatic.bottom = rcStatic.top + 18;
-				::MoveWindow(::GetDlgItem(_hSelf, IDC_STATIC_STATUS), rcStatic.left, rcStatic.top, rcStatic.right, rcStatic.bottom, TRUE);
+				m_staticMessage.MoveWindow(&rcStatic);
 
-				rc.top += 20;
-				rc.left += 2;
-				rc.bottom -=20;
-				rc.right -=2;
-				m_searchResultsListCtrl.MoveWindow(rc.left, rc.top, rc.right, rc.bottom, TRUE);
+				rc.top		+= 20;
+				rc.left		+= 2;
+				rc.bottom	-= 2;
+				rc.right	-= 2;
+				m_searchResultsListCtrl.MoveWindow(&rc);
 			}
 			break; 
 

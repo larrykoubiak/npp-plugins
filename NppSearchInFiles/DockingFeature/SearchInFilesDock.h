@@ -91,6 +91,7 @@ public :
 	void LoadChecks(HWND hDlg);
 
 	SearchResultsListCtrl		m_searchResultsListCtrl;
+	tTbData						_data;
 
 protected :
 	int							m_iCurrSearchLength;

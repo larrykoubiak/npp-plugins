@@ -184,10 +184,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\WinControls\ImageListSet\ImageListSet.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\NppSearchInFiles.cpp"
 				>
 			</File>
@@ -270,10 +266,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\WinControls\ImageListSet\ImageListSet.h"
-				>
-			</File>
-			<File
 				RelativePath=".\Notepad_plus_msgs.h"
 				>
 			</File>
@@ -325,26 +317,6 @@
 		<Filter
 			Name="Icons"
 			>
-			<File
-				RelativePath=".\Icons\closeTabButton.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\Icons\closeTabButton_hover.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\Icons\closeTabButton_inact.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\Icons\closeTabButton_push.bmp"
-				>
-			</File>
-			<File
-				RelativePath=".\Icons\magnifier.bmp"
-				>
-			</File>
 			<File
 				RelativePath=".\Icons\searchInFiles.bmp"
 				>

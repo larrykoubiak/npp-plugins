@@ -87,7 +87,9 @@ protected :
 					{
 						case DMN_CLOSE:
 						{
-							//::MessageBox(_hSelf, "Close Dialog", "Plugin Message", MB_OK);
+							extern FuncItem funcItem[];
+							if (_data != NULL)
+								::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)FALSE);
 							break;
 						}
 						case DMN_FLOAT:
