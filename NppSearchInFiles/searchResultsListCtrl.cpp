@@ -61,6 +61,11 @@ LRESULT SearchResultsListCtrl::OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, 
 	return 1;
 }
 
+LRESULT SearchResultsListCtrl::OnDblClick(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+	m_searchInFilesDock->openCurrSelection(GetSelectedIndex());
+	return 1;
+}
+
 void SearchResultsListCtrl::InitTableImageList()
 {
 	try {

@@ -31,9 +31,12 @@ public:
 	BEGIN_MSG_MAP(searchResultsListCtrl)
 		MESSAGE_HANDLER(WM_KEYUP, OnKeyUp)
 		DEFAULT_REFLECTION_HANDLER()
+		MESSAGE_HANDLER(NM_DBLCLK, OnDblClick)
+
 	END_MSG_MAP()
 
 	LRESULT OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+	LRESULT OnDblClick(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
 	BOOL DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult);
 
