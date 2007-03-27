@@ -46,7 +46,12 @@ class SearchInFilesDock : public DockingDlgInterface
 {
 public :
 	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK) {};
-      
+
+	~SearchInFilesDock(){
+		// Destroy our list font
+		if (m_font.m_hFont) m_font.DeleteObject();
+	}
+
 	char m_iniFilePath[MAX_PATH];
 	
 	LPSTR getSectionName() { return "Search in Files Extension"; };
@@ -75,8 +80,7 @@ public :
 		//return m_searchResultsDlgVector[_ctrlTab.getCurrentTab()]; 
 	};
 
-	void setSearchLength(int searchLength) { searchLength = m_searchLength; };
-	int getSearchLength() { return m_searchLength; };
+	void openCurrSelection(int numItem);
 
 	void moveToNextHit();
 
@@ -89,14 +93,9 @@ public :
 	SearchResultsListCtrl		m_searchResultsListCtrl;
 
 protected :
-	int							m_searchLength;
-	//SIFControlsTab			_ctrlTab;
-	//SIFIconList				_ctrlTabIconList;
-	//searchResultsWindow		_searchResultsDlg;
-
-	//SearchResultsDlgVector	m_searchResultsDlgVector;
-
-	//WindowVector			_wVector;
+	int							m_iCurrSearchLength;
+	CStatic						m_staticMessage;
+	CFont						m_font;
 
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 };

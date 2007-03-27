@@ -30,16 +30,6 @@ BOOL SearchResultsListCtrl::SubclassWindow(HWND hWnd, SearchInFilesDock* pSearch
 
 		m_bItHasImageList = false;
 
-		// Create a font using the system message font
-		NONCLIENTMETRICS ncm;
-
-		ncm.cbSize = sizeof(NONCLIENTMETRICS);
-		if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0))
-			m_font.CreateFontIndirect(&(ncm.lfMessageFont));
-		else 
-			m_font.CreateFontA(-11,0,0,0,FW_BOLD,0,0,0,0,0,0,0,0,"Tahoma");
-
-		SetFont(m_font);
 		SetExtendedListViewStyle(LVS_EX_INFOTIP | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER, 
 								 LVS_EX_INFOTIP | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
 
@@ -57,12 +47,12 @@ BOOL SearchResultsListCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARA
 LRESULT SearchResultsListCtrl::OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
 	switch(wParam) {
 		case VK_F4:
-			::SendMessage(m_searchInFilesDock->getHSelf(), uMsg, wParam, lParam);
+			m_searchInFilesDock->moveToNextHit();
 			break;
 
 		case VK_RETURN:
 		case VK_SPACE:
-			openCurrSelection(GetSelectedIndex());
+			m_searchInFilesDock->openCurrSelection(GetSelectedIndex());
 			break;
 
 		default:
@@ -123,33 +113,4 @@ void SearchResultsListCtrl::InitTableList()
 	listCol.pszText="Date Modified";
 	listCol.fmt = LVCFMT_LEFT;
 	InsertColumn(5, &listCol);
-}
-
-void SearchResultsListCtrl::openCurrSelection(int numItem) {
-	try {
-		CUTL_BUFFER filePath(MAX_PATH + 1), fileName(MAX_PATH + 1), lineNumber(MAX_PATH + 1), col(MAX_PATH + 1);
-
-		ListView_GetItemText(m_hWnd, numItem, 2, (LPSTR)filePath.GetSafe(), MAX_PATH);
-		ListView_GetItemText(m_hWnd, numItem, 0, (LPSTR)fileName.GetSafe(), MAX_PATH);
-		ListView_GetItemText(m_hWnd, numItem, 3, (LPSTR)lineNumber.GetSafe(), MAX_PATH);
-		ListView_GetItemText(m_hWnd, numItem, 4, (LPSTR)col.GetSafe(), MAX_PATH);
-
-		// We select the current selection
-		LockWindowUpdate();
-		ListView_EnsureVisible(m_hWnd, numItem, FALSE);
-		ListView_SetItemState(m_hWnd, numItem, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
-		LockWindowUpdate(NULL);
-
-		CUTL_BUFFER fileToOpen;
-
-		::SendMessage(m_searchInFilesDock->m_nppHandle, WM_DOOPEN, 0, (LPARAM)(LPSTR)fileToOpen.Sf("%s\\%s", filePath.GetSafe(), fileName.GetSafe()));
-
-		int startPos = (int)::SendMessage(m_searchInFilesDock->m_scintillaMainHandle, SCI_POSITIONFROMLINE, atoi(lineNumber.Trim().GetSafe()) - 1, 0L);
-
-		startPos += atoi(col.Trim().GetSafe()) - 1;
-		::SendMessage(m_searchInFilesDock->m_scintillaMainHandle, SCI_SETSEL, startPos, startPos + m_searchInFilesDock->getSearchLength());
-	}
-	catch(...) {
-		systemMessageEx("Error at searchResultListCtrl::openCurrSelection", __FILE__, __LINE__);
-	}
 }

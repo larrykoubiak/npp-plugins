@@ -34,44 +34,27 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 		{
 			case WM_INITDIALOG:
 			{
-				// Creamos el control de solapas
-				/*
-				_ctrlTabIconList.create(_hInst, 16);
-
-				_ctrlTabIconList.addImage(IDR_SEARCH);
-
-				_ctrlTab.init(_hInst, _hSelf);
-				_ctrlTab.setImageList(_ctrlTabIconList.getHandle());
-				_ctrlTab.setFont("Tahoma", 13);
-				*/
-				/*
-				_searchResultsDlg.initEx(_hInst, getHSelf(), this);
-				_searchResultsDlg.create(IDD_SEARCH_RESULTS);
-				_searchResultsDlg.display();
-				*/
-				//m_searchResultsDlgVector.push_back(&_searchResultsDlg);
-
-				//_wVector.push_back(DlgInfo(&_searchResultsDlg, "Search Results"));
-
-				//_ctrlTab.createTabs(_wVector);
-				//_ctrlTab.display();
-
-				// These flags should be read from configuration
-				/*
-				SIFTabBarPlus::doDragNDrop(false);
-				SIFTabBarPlus::setDrawTopBar(true);
-				SIFTabBarPlus::setDrawInactiveTab(false);
-				SIFTabBarPlus::setDrawTabCloseButton(true);
-				SIFTabBarPlus::setDbClk2Close(true);
-				*/
+				m_staticMessage.Attach(::GetDlgItem(_hSelf, IDC_STATIC_STATUS));
 				m_searchResultsListCtrl.SubclassWindow(::GetDlgItem(_hSelf, IDC_RESULTSLIST), this);
+
+
+				// Create a font using the system message font
+				NONCLIENTMETRICS ncm;
+
+				ncm.cbSize = sizeof(NONCLIENTMETRICS);
+				if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0))
+					m_font.CreateFontIndirect(&(ncm.lfMessageFont));
+				else 
+					m_font.CreateFontA(-11,0,0,0,FW_BOLD,0,0,0,0,0,0,0,0,"Tahoma");
+
+				m_staticMessage.SetFont(m_font);
+				m_searchResultsListCtrl.SetFont(m_font);
 				return TRUE;
 			}
 
 			case WM_DESTROY:
 			{
 				m_searchResultsListCtrl.DestroyWindow();
-				//_ctrlTab.destroy();
 				return TRUE;
 			}
 
@@ -139,20 +122,6 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 	bool bWholeWord		  = (::SendMessage(::GetDlgItem(hDlg, IDC_WHOLE_WORD), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? true : false;
 	bool bResultsInNewTab = (::SendMessage(::GetDlgItem(hDlg, IDC_RESULTS_IN_NEW_TAB), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? true : false;
 
-	// ¿Create a new tab to show the results? (only if the first tab was alredy used and the user said so)
-	/*
-	CUTL_BUFFER tabText(MAX_PATH), temp;
-	TCITEM		tcItem; 
-
-	tcItem.mask			= TCIF_TEXT;
-	tcItem.pszText		= (LPSTR)tabText.GetSafe();
-	tcItem.cchTextMax	= MAX_PATH-1;
-
-	_CRVERIFY(TabCtrl_GetItem(_ctrlTab.getHSelf(), _ctrlTab.getCurrentTab(), &tcItem));
-
-	int numTabs = TabCtrl_GetItemCount(_ctrlTab.getHSelf());
-	*/
-
 	temp.Sf("%s   %s   %s", what.GetSafe(), types.GetSafe(), where.GetSafe());
 
 	if (!bResultsInNewTab) {
@@ -160,34 +129,12 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 	}
 	else {
 		/*
-		if (numTabs == 1 && tabText == "Search Results") {
-			_ctrlTab.renameTab(_ctrlTab.getCurrentTab(), temp.GetSafe());
-			// We keep the current search length
-			_searchResultsDlg.setSearchLength(bWholeWord ? what.Len() + 2 : what.Len());
-		}
-		else {
-			searchResultsWindow* srDlg = new searchResultsWindow();
-				
-			srDlg->initEx(_hInst, _ctrlTab.getHSelf(), this);
-			srDlg->create(IDD_SEARCH_RESULTS);
-			srDlg->display();
-
-			m_searchResultsDlgVector.push_back(srDlg);
-
-			_wVector.push_back(DlgInfo(srDlg, (LPSTR)temp.GetSafe()));
-			_ctrlTab.activateAt(_ctrlTab.insertAtEnd((LPSTR)temp.GetSafe()));
-			_ctrlTab.clickedUpdate();
-
-			srDlg->setSearchLength(bWholeWord ? what.Len() + 2 : what.Len());
-
-			::SendMessage(_hSelf, WM_SIZE, (WPARAM)SIZE_RESTORED, 0L);
-		}
+		¿Hay que abrir la segunda ventana?
 		*/
-		
 	}
 
-	setSearchLength(bWholeWord ? what.Len() + 2 : what.Len());
-
+	// Save the length of the current search
+	m_iCurrSearchLength = bWholeWord ? what.strlen() + 2 : what.strlen();
 
 	// Finally we do the search
 	CProcessSearchInFiles* searchInFiles = new CProcessSearchInFiles(this, hDlg);
@@ -258,10 +205,38 @@ void SearchInFilesDock::moveToNextHit() {
 
 		iSelect = itemCount <= iSelect ? 0 : iSelect; // If at end, start all over
 
-		m_searchResultsListCtrl.openCurrSelection(iSelect);
+		openCurrSelection(iSelect);
 	}
 	catch (...) {
 		systemMessageEx("Error at SearchInFilesDock::moveToNextHit.", __FILE__, __LINE__);
+	}
+}
+
+void SearchInFilesDock::openCurrSelection(int numItem) {
+	try {
+		CUTL_BUFFER fileToOpen;
+		CUTL_BUFFER filePath(MAX_PATH + 1), fileName(MAX_PATH + 1), lineNumber(MAX_PATH + 1), col(MAX_PATH + 1);
+
+		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 2, (LPSTR)filePath.GetSafe(), MAX_PATH);
+		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 0, (LPSTR)fileName.GetSafe(), MAX_PATH);
+		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 3, (LPSTR)lineNumber.GetSafe(), MAX_PATH);
+		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 4, (LPSTR)col.GetSafe(), MAX_PATH);
+
+		// We select the current selection
+		ListView_EnsureVisible(m_searchResultsListCtrl.m_hWnd, numItem, FALSE);
+		ListView_SetItemState(m_searchResultsListCtrl.m_hWnd, numItem, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+
+		::SendMessage(m_nppHandle, WM_DOOPEN, 0, (LPARAM)(LPSTR)fileToOpen.Sf("%s\\%s", filePath.GetSafe(), fileName.GetSafe()));
+
+		int startPos = (int)::SendMessage(m_scintillaMainHandle, SCI_POSITIONFROMLINE, atoi(lineNumber.Trim().GetSafe()) - 1, 0L);
+
+		startPos += atoi(col.Trim().GetSafe()) - 1;
+
+		int endPos = startPos + m_iCurrSearchLength;
+		::SendMessage(m_scintillaMainHandle, SCI_SETSEL, startPos, endPos);
+	}
+	catch(...) {
+		systemMessageEx("Error at searchResultListCtrl::openCurrSelection", __FILE__, __LINE__);
 	}
 }
 
@@ -281,7 +256,7 @@ void SearchInFilesDock::SaveCombosStrings(HWND hDlg) {
 		temp.Realloc(254 + 1);
 		::GetWindowText(::GetDlgItem(hDlg, IDC_WHAT), temp.data, 254);
 
-		if (temp.Len()) {
+		if (temp.strlen()) {
 			confIni.Write("what", counter.Sf("%d", i), temp.GetSafe());
 			savedStrings.Sf("-|-%s-|-", temp.GetSafe());
 		}
@@ -308,7 +283,7 @@ void SearchInFilesDock::SaveCombosStrings(HWND hDlg) {
 		temp.Realloc(254 + 1);
 		::GetWindowText(::GetDlgItem(hDlg, IDC_TYPES), temp.data, 254);
 
-		if (temp.Len()) {
+		if (temp.strlen()) {
 			confIni.Write("masks", counter.Sf("%d", i), temp.GetSafe());
 			savedStrings.Sf("-|-%s-|-", temp.GetSafe());
 		}
@@ -335,7 +310,7 @@ void SearchInFilesDock::SaveCombosStrings(HWND hDlg) {
 		temp.Realloc(254 + 1);
 		::GetWindowText(::GetDlgItem(hDlg, IDC_WHERE), temp.data, 254);
 
-		if (temp.Len()) {
+		if (temp.strlen()) {
 			confIni.Write("where", counter.Sf("%d", i), temp.GetSafe());
 			savedStrings.Sf("-|-%s-|-", temp.GetSafe());
 		}
@@ -494,7 +469,7 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 
 						::SendMessage(ownerDlg->m_scintillaMainHandle, SCI_GETSELTEXT, 0, (LPARAM)selectionText.data);
 
-						if (selectionText.Len() > 100) {
+						if (selectionText.strlen() > 100) {
 							CUTL_BUFFER tempBuf;
 
 							tempBuf.NCopy(selectionText.GetSafe(), 100);
@@ -561,17 +536,17 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 					::GetDlgItemText(hDlg, IDC_TYPES, types, 254);
 					::GetDlgItemText(hDlg, IDC_WHERE, where, 254);
 
-					if (!what.Len()) {
+					if (!what.strlen()) {
 						::MessageBox(ownerDlg->getHParent(), "You must supply a pattern string to search ...", "Search in Files", MB_OK|MB_ICONASTERISK);
 						::SetFocus(::GetDlgItem(hDlg, IDC_WHAT));
 						return FALSE;
 					}
-					if (!types.Len()) {
+					if (!types.strlen()) {
 						::MessageBox(ownerDlg->getHParent(), "You must supply a type file mask ...", "Search in Files", MB_OK|MB_ICONASTERISK);
 						::SetFocus(::GetDlgItem(hDlg, IDC_TYPES));
 						return FALSE;
 					}
-					if (!where.Len()) {
+					if (!where.strlen()) {
 						::MessageBox(ownerDlg->getHParent(), "You must supply a root folder to search ...", "Search in Files", MB_OK|MB_ICONASTERISK);
 						::SetFocus(::GetDlgItem(hDlg, IDC_WHERE));
 						return FALSE;
@@ -634,7 +609,7 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 
 					excludeExtensionsList = confIni.LoadStr("Search in Files Extension", "excludeExtensionsList", "");
 
-					if (excludeExtensionsList.Len()) {
+					if (excludeExtensionsList.strlen()) {
 						excludeExtensionsList.RepCar(';', ',');
 						tempBuf.Sf("#%s;", excludeExtensionsList.GetSafe());
 
@@ -709,12 +684,12 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 
 							::SendMessage(::GetDlgItem(hDlg, IDC_EXCLUDE_LIST), LB_GETTEXT, (WPARAM)i++, (LPARAM)temp.GetSafe());
 
-							if (extensionsToExclude.Len()) extensionsToExclude += ";";
+							if (extensionsToExclude.strlen()) extensionsToExclude += ";";
 							
 							extensionsToExclude += temp.GetSafe();
 						}
 
-						if (extensionsToExclude.Len()) {
+						if (extensionsToExclude.strlen()) {
 							CUT2_INI	confIni(m_iniFilePath);
 
 							confIni.Write("Search in Files Extension", "excludeExtensionsList", extensionsToExclude.GetSafe());

@@ -26,10 +26,7 @@ class SearchResultsListCtrl : public CWindowImpl<SearchResultsListCtrl, CListVie
 public:
 	BOOL SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock);
 
-	~SearchResultsListCtrl() {
-		// Destroy our list font
-		if (m_font.m_hFont) m_font.DeleteObject();
-	}
+	~SearchResultsListCtrl() {}
 
 	BEGIN_MSG_MAP(searchResultsListCtrl)
 		MESSAGE_HANDLER(WM_KEYUP, OnKeyUp)
@@ -42,12 +39,9 @@ public:
 
 	bool hasImageList() { return m_bItHasImageList; };
 
-	void openCurrSelection(int numItem);
-
 private:
 	SearchInFilesDock*		m_searchInFilesDock;
 	bool					m_bItHasImageList;
-	CFont					m_font;
 
 	void InitTableImageList();
 	void InitTableList();

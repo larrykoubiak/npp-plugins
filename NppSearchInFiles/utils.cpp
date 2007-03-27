@@ -86,8 +86,8 @@ LPSTR CUTL_BUFFER::Cat(LPCSTR string2) {
       _CRVERIFY(Realloc(UTL_strlen(string2) +1));
       UTL_strcpy(data, UTL_Null(string2));
    }   
-   else if (Len() + UTL_strlen(string2) + 1 > length) {
-      LPSTR p = (LPSTR) UTL_alloc(1, length = (Len() + UTL_strlen(string2) + 1));
+   else if (strlen() + UTL_strlen(string2) + 1 > length) {
+      LPSTR p = (LPSTR) UTL_alloc(1, length = (strlen() + UTL_strlen(string2) + 1));
       if (!p) return data;    
       UTL_strcpy(p, data);
       UTL_strcat(p, UTL_Null(string2));
@@ -101,12 +101,12 @@ LPSTR CUTL_BUFFER::Cat(LPCSTR string2) {
 }
 
 LPSTR CUTL_BUFFER::InsStr(LPCSTR str, UINT numChars, UINT pos, BOOL forceUseNumChars) {
-   _CRVERIFY(pos <= Len());
+   _CRVERIFY(pos <= strlen());
    
    if (!forceUseNumChars) numChars = min(numChars, (UINT)UTL_strlen(str));
    if (!numChars) return data;
    if (!data) _CRVERIFY(Realloc(numChars+1));
-   UINT newLen = Len() + numChars +1; 
+   UINT newLen = strlen() + numChars +1; 
    if (length < newLen) {
       // se expande el buffer + 10 para permitir algunas llamadas reiteradas sin cambiar de buffer
       LPSTR p = (LPSTR) UTL_alloc(1, length = newLen);
@@ -115,15 +115,15 @@ LPSTR CUTL_BUFFER::InsStr(LPCSTR str, UINT numChars, UINT pos, BOOL forceUseNumC
       UTL_free(data);
       data = p;
    } 
-   UTL_memmove(data + pos+numChars, data + pos, Len()-pos+1);
+   UTL_memmove(data + pos+numChars, data + pos, strlen()-pos+1);
    UTL_strncpy(data + pos, UTL_Null(str), numChars);
    return data;
 }
 
 LPSTR CUTL_BUFFER::InsCar(char ch, UINT pos) {
-   _CRVERIFY(pos <= Len());
+   _CRVERIFY(pos <= strlen());
    if (!data) _CRVERIFY(Realloc(2));
-   if (length == Len() +1) {
+   if (length == strlen() +1) {
       // se expande el buffer + 10 para permitir algunas llamadas reiteradas sin cambiar de buffer
       LPSTR p = (LPSTR) UTL_alloc(1, length += 10);
       if (!p) return data;    
@@ -131,13 +131,13 @@ LPSTR CUTL_BUFFER::InsCar(char ch, UINT pos) {
       UTL_free(data);
       data = p;
    }
-   UTL_memmove(data + pos+1, data + pos, Len()-pos+1);
+   UTL_memmove(data + pos+1, data + pos, strlen()-pos+1);
    data[pos] = ch;
    return data;
 }
 
 UINT CUTL_BUFFER::RepCar(char replaceCh, char withCh, UINT start) {
-   //_CRCHECK(start < Len());
+   //_CRCHECK(start < strlen());
    if (!data) return 0;
    
    LPSTR p = data + start;
@@ -150,7 +150,7 @@ UINT CUTL_BUFFER::RepCar(char replaceCh, char withCh, UINT start) {
 }
 
 void CUTL_BUFFER::RemoveCar(UINT pos) {
-   UINT len = Len();
+   UINT len = strlen();
 
    if (!_CRVERIFY(pos < len )) return;
    if (!_CRVERIFY(data)) return;
@@ -210,20 +210,20 @@ LPCSTR CUTL_BUFFER::ULToA(unsigned long value, int radix) {
 }
 
 CUTL_BUFFER &CUTL_BUFFER::Trim() {
-   if (data && Len()) {
+   if (data && strlen()) {
       // Elimina los espacios a la derecha
-      UINT i = Len() -1;
+      UINT i = strlen() -1;
       for (;data[i] == ' '; i--);
       data[i+1] = '\0';
       // Elimina los espacios a la izquierda
       for (i = 0; data[i] == ' '; i++);
-      UTL_memmove(data, data + i, Len() - i +1);
+      UTL_memmove(data, data + i, strlen() - i +1);
    }
    return *this;   
 }
 
 BOOL CUTL_BUFFER::Find(LPCSTR string, UINT &found, UINT start) const {
-   if (!data || start >= Len()) return FALSE;
+   if (!data || start >= strlen()) return FALSE;
    _CRCHECK(string);
    LPCSTR p = UTL_strstr(data + start, string);
    if (p) {
@@ -234,7 +234,7 @@ BOOL CUTL_BUFFER::Find(LPCSTR string, UINT &found, UINT start) const {
 }
 
 BOOL CUTL_BUFFER::Find(const char ch, UINT &found, UINT start) const {
-   if (!data || start >= Len()) return FALSE;
+   if (!data || start >= strlen()) return FALSE;
    LPCSTR p = UTL_strchr(data + start, ch);
    if (p) {
       found = (UINT) (p - data);
@@ -312,7 +312,7 @@ CUT2_INI::CUT2_INI(LPCSTR fileName) {
 }
 
 CUT2_INI::~CUT2_INI() { 
-   if (m_file.Len()) Flush();
+   if (m_file.strlen()) Flush();
 }
 
 int CUT2_INI::LoadInt(LPCSTR section, LPCSTR entry, int def) {
@@ -516,7 +516,7 @@ void CUTL_PATH::AppendDirectory(LPCSTR pSubDirectory) {
    CUTL_BUFFER name;
    CUTL_BUFFER extension;
 
-   if (!subDirectory.Len()) return;
+   if (!subDirectory.strlen()) return;
    // strip out any preceeding backslash		
    StripLeadingBackslash(subDirectory);
    EnsureTrailingBackslash(subDirectory);
@@ -531,7 +531,7 @@ void CUTL_PATH::UpDirectory(CUTL_BUFFER* pLastDirectory) {
 
    GetDirectory(directory);	
    StripTrailingBackslash(directory);
-   if(!directory.Len()) return;
+   if(!directory.strlen()) return;
    _CRVERIFY(directory.ReverseFind(PATH_DIR_DELIMITER, delimiter));
    if (pLastDirectory != NULL) {
       *pLastDirectory = LPCSTR(directory) + delimiter;
@@ -601,7 +601,7 @@ void CUTL_PATH::GetDriveDirectory(CUTL_BUFFER &driveDirectory) const {
 
    GetComponents(&drive, &directory);
    driveDirectory = drive;
-   if (drive.Len()) driveDirectory += directory.InsCar(PATH_DRIVE_DELIMITER, 0);
+   if (drive.strlen()) driveDirectory += directory.InsCar(PATH_DRIVE_DELIMITER, 0);
 }
 
 void CUTL_PATH::GetDirectory(CUTL_BUFFER &directory) const {
@@ -617,7 +617,7 @@ void CUTL_PATH::GetNameExtension(CUTL_BUFFER &nameExtension) const {
 
    GetComponents(NULL, NULL, &name, &ext);
    nameExtension = name;                                     
-   if (ext.Len())
+   if (ext.strlen())
    nameExtension += ext.InsCar(PATH_EXT_DELIMITER, 0);
 }
 
@@ -799,7 +799,7 @@ BOOL CUTL_PATH::RemoveDirectory() {
       driveDirectory = m_path.GetSafe();
    else
       GetDriveDirectory(driveDirectory);
-	if ((driveDirectory[driveDirectory.Len() - 1] == '\\' || driveDirectory[driveDirectory.Len() - 1] == '/')) driveDirectory[driveDirectory.Len() - 1] = '\0';
+	if ((driveDirectory[driveDirectory.strlen() - 1] == '\\' || driveDirectory[driveDirectory.strlen() - 1] == '/')) driveDirectory[driveDirectory.strlen() - 1] = '\0';
    return ::RemoveDirectory(driveDirectory) ? TRUE : FALSE; 
 }
 
@@ -1452,21 +1452,21 @@ CUTL_PARSE::token CUTL_PARSE::xSetError() {
 //*************************************************************************************************************************
 
 void StripLeadingChar(CUTL_BUFFER& text, char leadingCh) {
-   UINT len = text.Len();
+   UINT len = text.strlen();
 
    if (!len) return;
    if (text[0] == leadingCh) text.RemoveCar(0);
 }
 
 void StripLeadingBackslash (CUTL_BUFFER& directory) {
-   UINT len = directory.Len();
+   UINT len = directory.strlen();
 
    if (len <= 1) return;
    if (directory[0] == PATH_DIR_DELIMITER) directory.RemoveCar(0);
 }	
 
 void StripTrailingChar(CUTL_BUFFER& text, char traillingCh) {
-	UINT len = text.Len();
+	UINT len = text.strlen();
 	
 	if (!len) return;
 	if (text[len -1] == traillingCh) text[len -1] = '\0';
@@ -1474,7 +1474,7 @@ void StripTrailingChar(CUTL_BUFFER& text, char traillingCh) {
 
 
 void StripTrailingBackslash (CUTL_BUFFER& directory) {
-	UINT len = directory.Len();
+	UINT len = directory.strlen();
 	
 	// if Directory is of the form '\', don't do it.
 	if (len <= 1) return;
@@ -1484,7 +1484,7 @@ void StripTrailingBackslash (CUTL_BUFFER& directory) {
 
 
 void EnsureTrailingBackslash (CUTL_BUFFER& directory) {
-	UINT len = directory.Len();
+	UINT len = directory.strlen();
 
 	if (!len || directory[len -1] != PATH_DIR_DELIMITER) 
       directory.InsCar(PATH_DIR_DELIMITER, len);

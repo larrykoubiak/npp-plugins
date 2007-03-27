@@ -552,7 +552,6 @@
 #define IDS_VALIDATE_SEARCH_INPUT_FOLDER 101
 #define VK_NUMPAD6                      0x66
 #define IDD_DIALOG1                     102
-#define IDD_SEARCH_RESULTS              102
 #define VK_NUMPAD7                      0x67
 #define IDB_BITMAP1                     103
 #define VK_NUMPAD8                      0x68

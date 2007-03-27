@@ -66,7 +66,7 @@ public:
    BOOL         Realloc(UINT size);
    BOOL         Accept(CUTL_BUFFER &other);
    LPSTR        Detach();
-   UINT         Len() const;
+   UINT         strlen() const;
    LPSTR        Copy(LPCSTR string2);
    LPSTR        NCopy(LPCSTR string2, size_t count);
    LPSTR        Cat(LPCSTR string2);
@@ -119,7 +119,7 @@ private:
    UINT length;                               
 };
 
-inline UINT CUTL_BUFFER::Len() const            { return UTL_strlen(data);}
+inline UINT CUTL_BUFFER::strlen() const            { return UTL_strlen(data);}
 inline LPCSTR       CUTL_BUFFER::GetSafe() const{ return (data) ? data : ""; }
 inline CUTL_BUFFER::operator LPSTR() const      { return data; }
 inline CUTL_BUFFER::operator LPCSTR() const     { return data; }
