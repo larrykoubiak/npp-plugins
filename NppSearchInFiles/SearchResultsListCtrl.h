@@ -19,12 +19,17 @@
 #include <atlctrlx.h>
 #include <atlmisc.h>
 
-class searchResultsWindow;
+class SearchInFilesDock;
 
-class searchResultsListCtrl : public CWindowImpl<searchResultsListCtrl, CListViewCtrl>
+class SearchResultsListCtrl : public CWindowImpl<SearchResultsListCtrl, CListViewCtrl>
 {
 public:
-	BOOL SubclassWindow(HWND hWnd, searchResultsWindow* pSearchResultsWindow);
+	BOOL SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock);
+
+	~SearchResultsListCtrl() {
+		// Destroy our list font
+		if (m_font.m_hFont) m_font.DeleteObject();
+	}
 
 	BEGIN_MSG_MAP(searchResultsListCtrl)
 		MESSAGE_HANDLER(WM_KEYUP, OnKeyUp)
@@ -35,6 +40,15 @@ public:
 
 	BOOL DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult);
 
+	bool hasImageList() { return m_bItHasImageList; };
+
+	void openCurrSelection(int numItem);
+
 private:
-	searchResultsWindow*		m_searchResultsWindow;
+	SearchInFilesDock*		m_searchInFilesDock;
+	bool					m_bItHasImageList;
+	CFont					m_font;
+
+	void InitTableImageList();
+	void InitTableList();
 };

@@ -21,9 +21,7 @@
 #include "resource.h"
 
 #include "dockingFeature/staticDialog.h"
-#include "tabBar/tabBar.h"
 #include "SearchResultsListCtrl.h"
-#include "searchResultsWindow.h"
 #include "SearchInFilesDock.h"
 
 #include "ProcessSearchInFiles.h"
@@ -433,12 +431,12 @@ bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR
 
 			memset(&listItem, 0, sizeof(LVITEM));
 
-			listItem.mask = (m_searchDock->getCurrentSearchResultsDialog()->hasImageList()) ? LVIF_IMAGE | LVIF_TEXT : LVIF_TEXT;
+			listItem.mask = (m_searchDock->getCurrentSearchResultsDialog()->m_searchResultsListCtrl.hasImageList()) ? LVIF_IMAGE | LVIF_TEXT : LVIF_TEXT;
 			listItem.cchTextMax = 256;
 
 			listItem.iItem = ListView_GetItemCount(m_searchDockListHWND);
 			listItem.iSubItem = 0;
-			if (m_searchDock->getCurrentSearchResultsDialog()->hasImageList()) {
+			if (m_searchDock->getCurrentSearchResultsDialog()->m_searchResultsListCtrl.hasImageList()) {
 				memset(&sfi, 0, sizeof(sfi));
 				SHGetFileInfo ((LPCSTR)iterator, FILE_ATTRIBUTE_NORMAL, &sfi, sizeof(sfi), SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
 				listItem.iImage = sfi.iIcon;

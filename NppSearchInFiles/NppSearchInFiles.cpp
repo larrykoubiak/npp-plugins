@@ -38,9 +38,7 @@
 
 #include "window.h"
 #include "dockingFeature/staticDialog.h"
-#include "tabBar/tabBar.h"
 #include "SearchResultsListCtrl.h"
-#include "searchResultsWindow.h"
 #include "SearchInFilesDock.h"
 
 const char PLUGIN_NAME[]	= "Search in Files";
@@ -57,7 +55,7 @@ void SearchInFilesNavigate();
 void ToggleSearchInFilesDockableDlg();
 
 SearchInFilesDock _searchInFilesDock;
-
+      
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 {
 	switch (reasonForCall)

@@ -184,10 +184,6 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\TabBar\ControlsTab.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\WinControls\ImageListSet\ImageListSet.cpp"
 				>
 			</File>
@@ -224,10 +220,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\searchResultsWindow.cpp"
-				>
-			</File>
-			<File
 				RelativePath="DockingFeature\StaticDialog.cpp"
 				>
 			</File>
@@ -256,10 +248,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\TabBar\TabBar.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\utils.cpp"
 				>
 			</File>
@@ -269,10 +257,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\TabBar\ControlsTab.h"
-				>
-			</File>
 			<File
 				RelativePath="DockingFeature\Docking.h"
 				>
@@ -310,10 +294,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\searchResultsWindow.h"
-				>
-			</File>
-			<File
 				RelativePath="DockingFeature\StaticDialog.h"
 				>
 			</File>
@@ -323,10 +303,6 @@
 			</File>
 			<File
 				RelativePath=".\MISC\SysMsg\SysMsg.h"
-				>
-			</File>
-			<File
-				RelativePath=".\TabBar\TabBar.h"
 				>
 			</File>
 			<File

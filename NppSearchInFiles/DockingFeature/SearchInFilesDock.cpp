@@ -16,11 +16,9 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include "stdafx.h"
-
+   
 #include "dockingFeature/staticDialog.h"
-#include "tabBar/tabBar.h"
 #include "SearchResultsListCtrl.h"
-#include "searchResultsWindow.h"
 #include "SearchInFilesDock.h"
 #include "ProcessSearchInFiles.h"
 
@@ -37,6 +35,7 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 			case WM_INITDIALOG:
 			{
 				// Creamos el control de solapas
+				/*
 				_ctrlTabIconList.create(_hInst, 16);
 
 				_ctrlTabIconList.addImage(IDR_SEARCH);
@@ -44,31 +43,35 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				_ctrlTab.init(_hInst, _hSelf);
 				_ctrlTab.setImageList(_ctrlTabIconList.getHandle());
 				_ctrlTab.setFont("Tahoma", 13);
-
-				_searchResultsDlg.initEx(_hInst, _ctrlTab.getHSelf(), this);
+				*/
+				/*
+				_searchResultsDlg.initEx(_hInst, getHSelf(), this);
 				_searchResultsDlg.create(IDD_SEARCH_RESULTS);
 				_searchResultsDlg.display();
+				*/
+				//m_searchResultsDlgVector.push_back(&_searchResultsDlg);
 
-				m_searchResultsDlgVector.push_back(&_searchResultsDlg);
+				//_wVector.push_back(DlgInfo(&_searchResultsDlg, "Search Results"));
 
-				_wVector.push_back(DlgInfo(&_searchResultsDlg, "Search Results"));
-
-				_ctrlTab.createTabs(_wVector);
-				_ctrlTab.display();
+				//_ctrlTab.createTabs(_wVector);
+				//_ctrlTab.display();
 
 				// These flags should be read from configuration
+				/*
 				SIFTabBarPlus::doDragNDrop(false);
 				SIFTabBarPlus::setDrawTopBar(true);
 				SIFTabBarPlus::setDrawInactiveTab(false);
 				SIFTabBarPlus::setDrawTabCloseButton(true);
 				SIFTabBarPlus::setDbClk2Close(true);
+				*/
+				m_searchResultsListCtrl.SubclassWindow(::GetDlgItem(_hSelf, IDC_RESULTSLIST), this);
 				return TRUE;
 			}
 
 			case WM_DESTROY:
 			{
-				_searchResultsDlg.destroy();
-				_ctrlTab.destroy();
+				m_searchResultsListCtrl.DestroyWindow();
+				//_ctrlTab.destroy();
 				return TRUE;
 			}
 
@@ -86,178 +89,23 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 
 			case WM_SIZE: 
 			{
-				HWND currListCtrl = ::GetDlgItem(getCurrentSearchResultsDialog()->getHSelf(), IDC_RESULTSLIST); 
-
-				::SendMessage(currListCtrl, WM_SETREDRAW, FALSE, 0L);
-
-				RECT rc, rcResultsDlg;
+				RECT rc, rcStatic;
 
 				getClientRect(rc);
 
-				rcResultsDlg = rc;
+				rcStatic = rc;
 
-				rc.top += 0;
+				rcStatic.left += 8;
+				rcStatic.bottom = rcStatic.top + 18;
+				::MoveWindow(::GetDlgItem(_hSelf, IDC_STATIC_STATUS), rcStatic.left, rcStatic.top, rcStatic.right, rcStatic.bottom, TRUE);
+
+				rc.top += 20;
 				rc.left += 2;
-				rc.right -= 2;
-				rc.bottom -= 2;
-
-				_ctrlTab.reSizeTo(rc);
-
-				rcResultsDlg.top += 30;
-				rcResultsDlg.left += 1;
-				rcResultsDlg.right -= 13;
-				rcResultsDlg.bottom -= 42;
-
-				for (UINT i = 0; i < m_searchResultsDlgVector.size(); i++) {
-					searchResultsWindow* srd = m_searchResultsDlgVector[i];
-
-					if (i == _ctrlTab.getCurrentTab())
-						srd->reSizeTo(rcResultsDlg);
-					else
-						srd->display(false);
-				}
-				::SendMessage(currListCtrl, WM_SETREDRAW, TRUE, 0L);
+				rc.bottom -=20;
+				rc.right -=2;
+				m_searchResultsListCtrl.MoveWindow(rc.left, rc.top, rc.right, rc.bottom, TRUE);
 			}
 			break; 
-
-			case WM_DRAWITEM :
-			{
-				DRAWITEMSTRUCT *dis = (DRAWITEMSTRUCT *)lParam;
-				if (dis->CtlType == ODT_TAB)
-				{
-					return (BOOL)::SendMessage(dis->hwndItem, WM_DRAWITEM, wParam, lParam);
-				}
-			}
-			break;
-
-			case WM_NOTIFY:		  
-			{
-				NMHDR *nmhdr = (NMHDR *)lParam;
-				
-				switch (nmhdr->code) 
-				{
-					case TCN_SELCHANGE:
-						if (nmhdr->hwndFrom == _ctrlTab.getHSelf())
-						{
-							_ctrlTab.clickedUpdate();
-							::SendMessage(_hSelf, WM_SIZE, (WPARAM)SIZE_RESTORED, 0L);
-							return TRUE;
-						}
-						break;
-
-					case TCN_TABDELETE:
-						if (nmhdr->hwndFrom == _ctrlTab.getHSelf())
-						{
-							int currTab = _ctrlTab.getCurrentTab();
-
-							if (currTab >= 1) {
-								_ctrlTab.deletItemAt(currTab);
-								_ctrlTab.activateWindowAt(currTab - 1);
-								_ctrlTab.activateAt(currTab - 1);
-
-								// Delete the LIst Control
-								searchResultsWindow* srDlg = m_searchResultsDlgVector.at(currTab);
-								SearchResultsDlgVector::iterator srdIterator = m_searchResultsDlgVector.begin() + currTab;
-								m_searchResultsDlgVector.erase(srdIterator);
-
-								std::vector<DlgInfo>::iterator hDlg = _wVector.begin() + currTab;
-								_wVector.erase(hDlg);
-
-								srDlg->destroy();
-								delete srDlg; // Finaly delete the results dialog
-								return NULL;
-							}
-						}
-						break;
-	
-					case TCN_TABDELETE_OTHER:
-						if (nmhdr->hwndFrom == _ctrlTab.getHSelf())
-						{
-							CUTL_BUFFER tempBuf;
-
-							// ¿How may tabs are there?
-							int iTabCount = TabCtrl_GetItemCount(_ctrlTab.getHSelf());
-
-							// Place focus over the target tab if it's not alredy the current tab
-							if ((UINT)nmhdr->idFrom != TabCtrl_GetCurSel(_ctrlTab.getHSelf())) {
-								_ctrlTab.activateWindowAt((UINT)nmhdr->idFrom);
-								_ctrlTab.activateAt((UINT)nmhdr->idFrom);
-							}
-
-							for (int i = iTabCount - 1; i > 0; i--) {
-								if (nmhdr->idFrom == i) continue;
-
-								_ctrlTab.deletItemAt(i);
-
-								// Delete the LIst Control
-								searchResultsWindow* srDlg = m_searchResultsDlgVector.at(i);
-								SearchResultsDlgVector::iterator srdIterator = m_searchResultsDlgVector.begin() + i;
-								m_searchResultsDlgVector.erase(srdIterator);
-
-								std::vector<DlgInfo>::iterator hDlg = _wVector.begin() + i;
-								_wVector.erase(hDlg);
-
-								srDlg->destroy();
-								delete srDlg; // Finaly delete the results dialog
-							}
-
-							//_ctrlTab.activateWindowAt(1);
-							//_ctrlTab.activateAt(1);
-							return NULL;
-						}
-						break;
-
-					case TCN_TABDELETE_ALL:
-						if (nmhdr->hwndFrom == _ctrlTab.getHSelf())
-						{
-							CUTL_BUFFER tempBuf;
-
-							// ¿How may tabs are there?
-							int iTabCount = TabCtrl_GetItemCount(_ctrlTab.getHSelf());
-
-							// Place focus over the the first tab
-							_ctrlTab.activateWindowAt(0);
-							_ctrlTab.activateAt(0);
-
-							// Delete them all from last to fist
-							for (int i = iTabCount - 1; i > 0; i--) {
-								_ctrlTab.deletItemAt(i);
-
-								// Delete the LIst Control
-								searchResultsWindow* srDlg = m_searchResultsDlgVector.at(i);
-								SearchResultsDlgVector::iterator srdIterator = m_searchResultsDlgVector.begin() + i;
-								m_searchResultsDlgVector.erase(srdIterator);
-
-								std::vector<DlgInfo>::iterator hDlg = _wVector.begin() + i;
-								_wVector.erase(hDlg);
-
-								srDlg->destroy();
-								delete srDlg; // Finaly delete the results dialog
-							}
-							return NULL;
-						}
-						break;
-
-					default:
-						break;
-				}
-				break;
-			}
-			break;
-			
-			case WM_COMMAND:
-			{
-				switch(LOWORD(wParam)) {
-					case IDM_VIEW_REFRESHTABAR:
-						::SendMessage(_hSelf, WM_SIZE, (WPARAM)SIZE_RESTORED, 1L);
-						break;
-
-					default:
-						break;
-
-				}
-				return TRUE;
-			}
 
 			case WM_NPPSEARCHINFILES_DOSEARCH_FROM_FOLDER:
 			{
@@ -285,11 +133,14 @@ void SearchInFilesDock::openSearchInFilesInputDlg()
 }
 
 void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFFER types, CUTL_BUFFER where) {
+	CUTL_BUFFER temp;
+
 	// Read checks
 	bool bWholeWord		  = (::SendMessage(::GetDlgItem(hDlg, IDC_WHOLE_WORD), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? true : false;
 	bool bResultsInNewTab = (::SendMessage(::GetDlgItem(hDlg, IDC_RESULTS_IN_NEW_TAB), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? true : false;
 
 	// ¿Create a new tab to show the results? (only if the first tab was alredy used and the user said so)
+	/*
 	CUTL_BUFFER tabText(MAX_PATH), temp;
 	TCITEM		tcItem; 
 
@@ -300,14 +151,15 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 	_CRVERIFY(TabCtrl_GetItem(_ctrlTab.getHSelf(), _ctrlTab.getCurrentTab(), &tcItem));
 
 	int numTabs = TabCtrl_GetItemCount(_ctrlTab.getHSelf());
+	*/
 
 	temp.Sf("%s   %s   %s", what.GetSafe(), types.GetSafe(), where.GetSafe());
 
 	if (!bResultsInNewTab) {
-		_ctrlTab.renameTab(_ctrlTab.getCurrentTab(), temp.GetSafe());
-		getCurrentSearchResultsDialog()->setSearchLength(bWholeWord ? what.Len() + 2 : what.Len());
+		//_ctrlTab.renameTab(_ctrlTab.getCurrentTab(), temp.GetSafe());
 	}
 	else {
+		/*
 		if (numTabs == 1 && tabText == "Search Results") {
 			_ctrlTab.renameTab(_ctrlTab.getCurrentTab(), temp.GetSafe());
 			// We keep the current search length
@@ -330,7 +182,12 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 
 			::SendMessage(_hSelf, WM_SIZE, (WPARAM)SIZE_RESTORED, 0L);
 		}
+		*/
+		
 	}
+
+	setSearchLength(bWholeWord ? what.Len() + 2 : what.Len());
+
 
 	// Finally we do the search
 	CProcessSearchInFiles* searchInFiles = new CProcessSearchInFiles(this, hDlg);
@@ -401,7 +258,7 @@ void SearchInFilesDock::moveToNextHit() {
 
 		iSelect = itemCount <= iSelect ? 0 : iSelect; // If at end, start all over
 
-		getCurrentSearchResultsDialog()->openCurrSelection(iSelect);
+		m_searchResultsListCtrl.openCurrSelection(iSelect);
 	}
 	catch (...) {
 		systemMessageEx("Error at SearchInFilesDock::moveToNextHit.", __FILE__, __LINE__);

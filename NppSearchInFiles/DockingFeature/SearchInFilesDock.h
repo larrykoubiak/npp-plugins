@@ -20,7 +20,7 @@
 
 #include "../MISC/sysMsg/sysMsg.h"
 #include "DockingDlgInterface.h"
-#include "../TabBar/ControlsTab.h"
+//#include "../TabBar/ControlsTab.h"
 #include "StaticDialog.h"
 #include "../WinControls/ImageListSet/ImageListSet.h"
 
@@ -29,10 +29,7 @@
 #define SCINTILLA_USER     (WM_USER + 2000)
 #define WM_DOOPEN		   (SCINTILLA_USER + 8)
 
-class SearchInFilesDock;
-class searchResultsWindow;
-
-typedef std::vector<searchResultsWindow*> SearchResultsDlgVector;
+class SearchResultsListCtrl;
 
 //////////////////////////////////////////////////////////////////////////////////////
 // This dialog retrieves the search in files options
@@ -49,7 +46,7 @@ class SearchInFilesDock : public DockingDlgInterface
 {
 public :
 	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK) {};
-
+      
 	char m_iniFilePath[MAX_PATH];
 	
 	LPSTR getSectionName() { return "Search in Files Extension"; };
@@ -73,7 +70,13 @@ public :
 	HWND	m_nppHandle;
 	HWND	m_scintillaMainHandle;
 
-	searchResultsWindow* getCurrentSearchResultsDialog() { return m_searchResultsDlgVector[_ctrlTab.getCurrentTab()]; };
+	SearchInFilesDock* getCurrentSearchResultsDialog() { 
+		return this;
+		//return m_searchResultsDlgVector[_ctrlTab.getCurrentTab()]; 
+	};
+
+	void setSearchLength(int searchLength) { searchLength = m_searchLength; };
+	int getSearchLength() { return m_searchLength; };
 
 	void moveToNextHit();
 
@@ -83,14 +86,17 @@ public :
 	void SaveChecks(HWND hDlg);
 	void LoadChecks(HWND hDlg);
 
+	SearchResultsListCtrl		m_searchResultsListCtrl;
+
 protected :
-	SIFControlsTab			_ctrlTab;
-	SIFIconList				_ctrlTabIconList;
-	searchResultsWindow		_searchResultsDlg;
+	int							m_searchLength;
+	//SIFControlsTab			_ctrlTab;
+	//SIFIconList				_ctrlTabIconList;
+	//searchResultsWindow		_searchResultsDlg;
 
-	SearchResultsDlgVector	m_searchResultsDlgVector;
+	//SearchResultsDlgVector	m_searchResultsDlgVector;
 
-	WindowVector			_wVector;
+	//WindowVector			_wVector;
 
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 };
