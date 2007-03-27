@@ -19,8 +19,6 @@
 
 #include "SysMsg.h"
 
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-
 #pragma warning ( disable : 4996 )
 
 void systemMessage(const char *title)

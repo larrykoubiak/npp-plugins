@@ -20,9 +20,7 @@
 
 #include "../MISC/sysMsg/sysMsg.h"
 #include "DockingDlgInterface.h"
-//#include "../TabBar/ControlsTab.h"
 #include "StaticDialog.h"
-#include "../WinControls/ImageListSet/ImageListSet.h"
 
 #include "PluginInterface.h"
 

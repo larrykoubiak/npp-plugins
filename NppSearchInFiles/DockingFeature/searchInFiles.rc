@@ -103,11 +103,6 @@ END
 // Bitmap
 //
 
-IDR_CLOSETAB_HOVER      BITMAP                  "..\\Icons\\closeTabButton_hover.bmp"
-IDR_CLOSETAB_PUSH       BITMAP                  "..\\Icons\\closeTabButton_push.bmp"
-IDR_CLOSETAB            BITMAP                  "..\\Icons\\closeTabButton.bmp"
-IDR_CLOSETAB_INACT      BITMAP                  "..\\Icons\\closeTabButton_inact.bmp"
-IDR_SEARCH              BITMAP                  "..\\Icons\\magnifier.bmp"
 IDB_TB_SEARCHINFILES    BITMAP                  "..\\icons\\searchInFiles.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -143,8 +138,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,8
- PRODUCTVERSION 1,0,0,8
+ FILEVERSION 1,0,0,9
+ PRODUCTVERSION 1,0,0,9
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -160,12 +155,12 @@ BEGIN
         BLOCK "000904b0"
         BEGIN
             VALUE "FileDescription", "searchInFiles"
-            VALUE "FileVersion", "1, 0, 0, 8"
+            VALUE "FileVersion", "1, 0, 0, 9"
             VALUE "InternalName", "searchInFiles"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "searchInFiles.rc"
             VALUE "ProductName", " searchInFiles"
-            VALUE "ProductVersion", "1, 0, 0, 8"
+            VALUE "ProductVersion", "1, 0, 0, 9"
         END
     END
     BLOCK "VarFileInfo"

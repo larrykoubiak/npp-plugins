@@ -189,7 +189,7 @@ void openLightExplorerDlg()
 		_lightExplorerDlg.create(&data);
 
 		// define the default docking behaviour
-		data.uMask = DWS_DF_CONT_BOTTOM | DWS_ADDINFO | DWS_ICONTAB;
+		data.uMask = DWS_DF_CONT_LEFT | DWS_ADDINFO | DWS_ICONTAB;
 
 		data.pszAddInfo		= "";
 		data.hIconTab		= (HICON)::LoadImage(_lightExplorerDlg.getHinst(), MAKEINTRESOURCE(IDI_LIGHTEXPLORER), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);

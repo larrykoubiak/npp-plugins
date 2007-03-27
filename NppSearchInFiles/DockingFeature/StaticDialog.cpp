@@ -71,8 +71,7 @@ void StaticDialog::create(int dialogID, bool isRTL)
 		::GlobalFree(hMyDlgTemplate);
 	}
 	else
-		//_hSelf = ::CreateDialogParam(_hInst, MAKEINTRESOURCE(dialogID), _hParent, (DLGPROC)dlgProc, (LPARAM)this);
-		_hSelf = ::CreateDialogParam((HINSTANCE)&__ImageBase, MAKEINTRESOURCE(dialogID), _hParent, (DLGPROC)dlgProc, (LPARAM)this);
+		_hSelf = ::CreateDialogParam(_hInst, MAKEINTRESOURCE(dialogID), _hParent, (DLGPROC)dlgProc, (LPARAM)this);
 
 	if (!_hSelf)
 	{

@@ -563,7 +563,6 @@
 #define VK_SUBTRACT                     0x6D
 #define VK_DECIMAL                      0x6E
 #define VK_DIVIDE                       0x6F
-#define IDR_SEARCH                      111
 #define VK_F1                           0x70
 #define VK_F2                           0x71
 #define IDI_TEXT                        113
@@ -1090,10 +1089,6 @@
 #define ctlLast                         0x04ff
 #define _WIN32_WINNT                    0x0501
 #define _WIN32_IE                       0x0501
-#define IDR_CLOSETAB                    1530
-#define IDR_CLOSETAB_INACT              1531
-#define IDR_CLOSETAB_HOVER              1532
-#define IDR_CLOSETAB_PUSH               1533
 #define FILEOPENORD                     1536
 #define MULTIFILEOPENORD                1537
 #define PRINTDLGORD                     1538
