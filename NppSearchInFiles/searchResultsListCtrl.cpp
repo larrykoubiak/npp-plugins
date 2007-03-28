@@ -43,15 +43,8 @@ BOOL SearchResultsListCtrl::SubclassWindow(HWND hWnd, SearchInFilesDock* pSearch
 BOOL SearchResultsListCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult) {
 	switch (uMsg) 
 	{
-		case WM_NOTIFY:
-			{
-				SCNotification *scn = (SCNotification *)lParam;
-
-				if (scn->nmhdr.code == NM_DBLCLK) {
-					NMITEMACTIVATE* lpnmia = (LPNMITEMACTIVATE)lParam;
-					m_searchInFilesDock->openCurrSelection(lpnmia->iItem);
-				}
-			}
+		case WM_LBUTTONDBLCLK:
+			m_searchInFilesDock->openCurrSelection(GetSelectedIndex());
 			break;
 
 		default:
@@ -74,11 +67,6 @@ LRESULT SearchResultsListCtrl::OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, 
 		default:
 			return 0;
 	}
-	return 1;
-}
-
-LRESULT SearchResultsListCtrl::OnDblClick(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
-	m_searchInFilesDock->openCurrSelection(GetSelectedIndex());
 	return 1;
 }
 
