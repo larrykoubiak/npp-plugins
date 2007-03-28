@@ -53,10 +53,15 @@ void CProcessSearchInFiles::doSearch() {
 	m_searchDock->m_bStopPressed = false;
 	ResizeInputDgl();
 
+	m_currRootItem	= NULL;
+	m_currHitFile	= "";
+
 	bool searchResult = false;
 
 	// Empty previous searches
-	ListView_DeleteAllItems(m_searchDockListHWND);
+	//ListView_DeleteAllItems(m_searchDockListHWND);
+	TreeCtrl_DeleteAllItems(m_searchDockListHWND);
+
 	// Ask the list Control to adjust columns to its titles
 	doFixedColumnsResize();
 	// Clean search variables
@@ -68,7 +73,7 @@ void CProcessSearchInFiles::doSearch() {
 
 	try {
 		// Read search
-		CUTL_BUFFER staticStatusBuf, what(256), types(256), where(256), endStatus;
+		CUTL_BUFFER staticStatusBuf, what(256), types(256), where(256);
 
 		::GetDlgItemText(m_searchInputDlgHnd, IDC_WHAT, what, 255);
 		::GetDlgItemText(m_searchInputDlgHnd, IDC_TYPES, types, 255);
@@ -107,7 +112,6 @@ void CProcessSearchInFiles::doSearch() {
 		/////////////////////////////////////////////////////////////////
 		// Start timming
 		::SetWindowText(m_searchDockStaticHWND, "");
-		float startTickCount = (float)::GetTickCount();
 
 		CUTL_BUFFER strFolder(MAX_PATH + 1), tempBuf;
 
@@ -119,20 +123,11 @@ void CProcessSearchInFiles::doSearch() {
 		// Do the search in files process
 		searchResult = SearchInFolders();
 
-		float endTickCount = (float)::GetTickCount();
-		float eleapsedTime = ((endTickCount - startTickCount) / 1000);
-
-		endStatus = searchResult ? "" : tempBuf.Sf("       (Search stopped at %s)", m_percentageProgress.GetSafe());
-
-		staticStatusBuf.Sf("Hits %5d  |  Folders %5d  |  Files %5d  |  Search '%s' '%s' '%s'       in %0.3lf seconds%s     (Use F4 to navigate the results)", 
+		staticStatusBuf.Sf("Hits %5d  |  Search '%s' '%s' '%s'       (Use F4 to navigate the results)", 
 							m_totalHits, 
-							m_totalFolders, 
-							m_totalFiles, 
 							what.GetSafe(),
 							types.GetSafe(),
-							where.GetSafe(),
-							eleapsedTime,
-							endStatus.GetSafe());
+							where.GetSafe());
 
 		::SetWindowText(m_searchDockStaticHWND, staticStatusBuf.GetSafe());
 	}
@@ -200,9 +195,7 @@ bool CProcessSearchInFiles::checkCancelButton() {
 	}
 
 	if (m_searchDock->m_bStopPressed) {
-		CUTL_BUFFER tempBuf;
-
-		if (::MessageBox(m_searchInputDlgHnd, tempBuf.Sf("Stop the search at %s?", m_percentageProgress.GetSafe()), "Search in Files", MB_YESNO) == IDYES) {
+		if (::MessageBox(m_searchInputDlgHnd, "Stop the search?", "Search in Files", MB_YESNO) == IDYES) {
 			::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDCANCEL), TRUE);
 			return true;
 		}
@@ -320,9 +313,8 @@ bool CProcessSearchInFiles::FindInfile(LPCSTR file) {
 
 		::GetDlgItemText(m_searchInputDlgHnd, IDC_WHAT, searchPattern, MAX_PATH);
 
-		CUTL_BUFFER  StringFile, tempStringFile, StringLine, err;
-		
-		UINT      hitPos, startPos = 0, endPos = 0;
+		CUTL_BUFFER		StringFile, tempStringFile, StringLine, err;
+		UINT			hitPos, startPos = 0, endPos = 0;
 
 		// Let's read the file
 		int fileSize = FileSize(file);
@@ -336,12 +328,6 @@ bool CProcessSearchInFiles::FindInfile(LPCSTR file) {
 		int lenFile = int(fread(StringFile, 1, fileSize, fp));
 		fclose(fp);
 
-		/*
-		if (lenFile != fileSize) {
-			systemMessageEx(err.Sf("Error reading file '%s'", file), __FILE__, __LINE__);
-			return true;
-		}
-		*/
 		StringFile[lenFile] = '\0';
 
 		tempStringFile = StringFile;
@@ -404,10 +390,10 @@ int CProcessSearchInFiles::FileSize(const char * szFileName) {
 bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR searchPattern, CUTL_PATH iterator, int line) {
 	try {
 		SHFILEINFO  sfi;
-		UINT        hitPos, size, found, endPosLine = 0;
+		UINT        hitPos, found, endPosLine = 0;
 		CUTL_BUFFER bufLine, nameExtension, driveDirectory, bufSize, statusText, bufFileMask;
 		CUTL_BUFFER StringLine(strLine), formatDate;
-		CCR3_DATE   date;
+		TV_INSERTSTRUCT tvis;
 
 		while (StringLine.Find(searchPattern, hitPos, endPosLine)) {
 			bufLine = lineToShow;
@@ -424,8 +410,37 @@ bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR
 			else
 				iterator.GetDriveDirectory(driveDirectory);
 
-			size = iterator.GetSize();
-			iterator.GetTime(date);
+			if (m_currRootItem == NULL || iterator != m_currHitFile) {
+				ZeroMemory(&tvis, sizeof(TV_INSERTSTRUCT));
+
+				tvis.hParent				= TVI_ROOT;
+				tvis.hInsertAfter			= TVI_LAST;
+				tvis.item.mask				= TVIF_CHILDREN | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_TEXT;
+				tvis.item.pszText			= (LPSTR)(LPCSTR)iterator;
+				tvis.item.iImage			= GetIconIndex((LPCSTR)iterator);
+				tvis.item.iSelectedImage	= GetSelIconIndex((LPCSTR)iterator);
+				tvis.item.cChildren			= true;
+
+				m_currRootItem	= InsertItem(&tvis);
+				m_currHitFile	= iterator;
+			}
+
+			ZeroMemory(&tvis, sizeof(TV_INSERTSTRUCT));
+
+			tvis.hParent				= m_currRootItem;
+			tvis.hInsertAfter			= TVI_LAST;
+			tvis.item.mask				= TVIF_CHILDREN | TVIF_TEXT;
+			tvis.item.pszText			= (LPSTR)bufLine.GetSafe();
+			/*
+			tvis.item.iImage			= GetIconIndex((LPCSTR)iterator);
+			tvis.item.iSelectedImage	= GetSelIconIndex((LPCSTR)iterator);
+			*/
+			tvis.item.cChildren			= false;
+
+			m_currRootItem	= InsertItem(&tvis);
+			m_currHitFile	= iterator;
+
+/*
 
 			LVITEM listItem;
 
@@ -476,6 +491,7 @@ bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR
 
 			m_totalHits++;
 			endPosLine = hitPos + 1;
+*/
 
 			if (checkCancelButton()) return false;
 		}
@@ -509,7 +525,12 @@ bool CProcessSearchInFiles::SearchInFolders() {
 	try {
 		for (i = 1; i <= foldersParse.NumArgs(); i++) {
 			::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_PROGRESS), PBM_SETPOS, (WPARAM)i, 0L);
-			::SetWindowText(::GetDlgItem(m_searchInputDlgHnd, IDC_STATIC_PROGRESS), m_percentageProgress.Sf("%.2lf%%", ((float)(100*i) / (float)foldersParse.NumArgs())));
+
+			// Since progress is based on folders searched, we may have reached 100.00% but still have way to go.
+			// To avoid the effect of having a 100.00% progress and still files to look at, we don't let 
+			// 100.00% show on screen.
+			m_percentageProgress.Sf("%.2lf%%", ((float)(100*i) / (float)foldersParse.NumArgs()));
+			::SetWindowText(::GetDlgItem(m_searchInputDlgHnd, IDC_STATIC_PROGRESS), m_percentageProgress == "100.00%" ? "99.00%" : m_percentageProgress.GetSafe());
 
 			if (checkCancelButton()) return false;
 
@@ -553,3 +574,24 @@ bool CProcessSearchInFiles::SearchInFolders() {
 	}
 	return true;
 }
+
+int CProcessSearchInFiles::GetIconIndex(const CUTL_BUFFER sFilename) {
+	// Retreive the icon index for a specified file/folder
+	SHFILEINFO sfi;
+
+	ZeroMemory(&sfi, sizeof(SHFILEINFO));
+	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_SMALLICON) == 0)
+		return -1;
+	return sfi.iIcon;
+}
+
+int CProcessSearchInFiles::GetSelIconIndex(const CUTL_BUFFER sFilename) {
+	// Retreive the icon index for a specified file/folder
+	SHFILEINFO sfi;
+
+	ZeroMemory(&sfi, sizeof(SHFILEINFO));
+	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_SMALLICON ) == 0)
+		return -1;
+	return sfi.iIcon;
+}
+

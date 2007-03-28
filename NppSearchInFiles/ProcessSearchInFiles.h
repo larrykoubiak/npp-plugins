@@ -44,6 +44,8 @@ protected:
 	bool				m_bExcludeExtensions;
 	CUTL_BUFFER			m_excludeExtensionsList;
 	CUTL_BUFFER			m_percentageProgress;
+	CUTL_PATH			m_currHitFile;
+	HTREEITEM			m_currRootItem;
 
 	bool checkCancelButton(); // Verifies if the cancel button was pressed
 	void ResizeInputDgl();
@@ -53,4 +55,7 @@ protected:
 	bool FindInLine(LPCSTR StringLine, LPCSTR lineToShow, LPCSTR searchPattern, CUTL_PATH iterator, int line);
 	bool SearchInFolders();
 	void doFixedColumnsResize();
+
+	int  GetIconIndex(const CUTL_BUFFER sFilename);
+	int  GetSelIconIndex(const CUTL_BUFFER sFilename);
 };

@@ -933,6 +933,7 @@
 #define TCS_FIXEDWIDTH                  0x0400
 #define ctlFirst                        0x0400
 #define psh1                            0x0400
+#define IDC_TREE1                       1024
 #define psh2                            0x0401
 #define psh3                            0x0402
 #define psh4                            0x0403
@@ -1233,7 +1234,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        127
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1024
+#define _APS_NEXT_CONTROL_VALUE         1025
 #define _APS_NEXT_SYMED_VALUE           102
 #endif
 #endif

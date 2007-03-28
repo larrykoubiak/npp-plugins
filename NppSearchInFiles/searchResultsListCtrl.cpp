@@ -25,16 +25,16 @@ class SearchResultsListCtrl;
 #include "misc/SysMsg/SysMsg.h"
 
 BOOL SearchResultsListCtrl::SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock) {
-	if (CWindowImpl<SearchResultsListCtrl, CListViewCtrl>::SubclassWindow(hWnd)) {
+	if (CWindowImpl<SearchResultsListCtrl, CTreeViewCtrl>::SubclassWindow(hWnd)) {
 		m_searchInFilesDock = pSearchInFilesDock;
 
 		m_bItHasImageList = false;
 
-		SetExtendedListViewStyle(LVS_EX_INFOTIP | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER, 
-								 LVS_EX_INFOTIP | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
+		SetExtendedStyle(LVS_EX_INFOTIP | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER, 
+		 			     LVS_EX_INFOTIP | LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER);
 
 		InitTableImageList();
-		InitTableList();
+		//InitTableList();
 		return TRUE;
 	}
 	return FALSE;
@@ -44,7 +44,7 @@ BOOL SearchResultsListCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARA
 	switch (uMsg) 
 	{
 		case WM_LBUTTONDBLCLK:
-			m_searchInFilesDock->openCurrSelection(GetSelectedIndex());
+			m_searchInFilesDock->openCurrSelection(GetSelectedItem());
 			break;
 
 		default:
@@ -61,7 +61,7 @@ LRESULT SearchResultsListCtrl::OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, 
 
 		case VK_RETURN:
 		case VK_SPACE:
-			m_searchInFilesDock->openCurrSelection(GetSelectedIndex());
+			m_searchInFilesDock->openCurrSelection(GetSelectedItem());
 			break;
 
 		default:
@@ -93,6 +93,7 @@ void SearchResultsListCtrl::InitTableImageList()
 	}
 }
 
+/*
 void SearchResultsListCtrl::InitTableList()
 {
 	LVCOLUMN listCol;
@@ -123,3 +124,4 @@ void SearchResultsListCtrl::InitTableList()
 	listCol.fmt = LVCFMT_LEFT;
 	InsertColumn(5, &listCol);
 }
+*/

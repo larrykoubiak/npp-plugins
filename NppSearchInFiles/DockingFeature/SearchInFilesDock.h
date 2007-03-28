@@ -78,7 +78,7 @@ public :
 		//return m_searchResultsDlgVector[_ctrlTab.getCurrentTab()]; 
 	};
 
-	void openCurrSelection(int numItem);
+	void openCurrSelection(HTREEITEM treeItem);
 
 	void moveToNextHit();
 

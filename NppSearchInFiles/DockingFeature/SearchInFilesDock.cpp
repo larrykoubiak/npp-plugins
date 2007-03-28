@@ -191,6 +191,8 @@ void SearchInFilesDock::chooseFolder(HWND hDlg) {
 
 void SearchInFilesDock::moveToNextHit() {
 	try {
+		systemMessage("::moveToNextHit: hay que abrir el elemento actual y saltar al siguiente");
+		/*
 		HWND listCtrlHWND = ::GetDlgItem(getCurrentSearchResultsDialog()->getHSelf(), IDC_RESULTSLIST);
 
 		int itemCount, iSelect;
@@ -205,16 +207,20 @@ void SearchInFilesDock::moveToNextHit() {
 		iSelect = itemCount <= iSelect ? 0 : iSelect; // If at end, start all over
 
 		openCurrSelection(iSelect);
+		*/
 	}
 	catch (...) {
 		systemMessageEx("Error at SearchInFilesDock::moveToNextHit.", __FILE__, __LINE__);
 	}
 }
 
-void SearchInFilesDock::openCurrSelection(int numItem) {
+void SearchInFilesDock::openCurrSelection(HTREEITEM treeItem) {
 	try {
 		CUTL_BUFFER fileToOpen;
 		CUTL_BUFFER filePath(MAX_PATH + 1), fileName(MAX_PATH + 1), lineNumber(MAX_PATH + 1), col(MAX_PATH + 1);
+
+		systemMessage("::openCurrSelection: hay que abrir un fichero");
+		/*
 
 		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 2, (LPSTR)filePath.GetSafe(), MAX_PATH);
 		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 0, (LPSTR)fileName.GetSafe(), MAX_PATH);
@@ -233,6 +239,7 @@ void SearchInFilesDock::openCurrSelection(int numItem) {
 
 		int endPos = startPos + m_iCurrSearchLength;
 		::SendMessage(m_scintillaMainHandle, SCI_SETSEL, startPos, endPos);
+		*/
 	}
 	catch(...) {
 		systemMessageEx("Error at searchResultListCtrl::openCurrSelection", __FILE__, __LINE__);

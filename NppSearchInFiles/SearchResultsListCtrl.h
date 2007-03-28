@@ -21,7 +21,7 @@
 
 class SearchInFilesDock;
 
-class SearchResultsListCtrl : public CWindowImpl<SearchResultsListCtrl, CListViewCtrl>
+class SearchResultsListCtrl : public CWindowImpl<SearchResultsListCtrl, CTreeViewCtrl>
 {
 public:
 	BOOL SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock);
