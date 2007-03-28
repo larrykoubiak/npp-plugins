@@ -56,19 +56,19 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				m_searchResultsListCtrl.DestroyWindow();
 				return TRUE;
 			}
-
+/*
 			case WM_SYSCOMMAND:
 			{
 				// We manage here the ALT+Q keyboad
 				if (wParam == SC_KEYMENU && lParam == 0x71) {
-					display(!isVisible());
-					if (isVisible()) openSearchInFilesInputDlg();
+					display();
+					openSearchInFilesInputDlg();
 					return true;
 				} 
 				else
 					return DockingDlgInterface::run_dlgProc(message, wParam, lParam);
 			}
-
+*/
 			case WM_SIZE: 
 			{
 				RECT rc, rcStatic;

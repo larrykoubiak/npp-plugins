@@ -54,7 +54,7 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 		{
 			funcItem[DOCKABLE_LIGHTEXPLORER]._pFunc = openLightExplorerDlg;
 
-			strcpy(funcItem[DOCKABLE_LIGHTEXPLORER]._itemName, "Light Explorer  (Alt + A)");
+			strcpy(funcItem[DOCKABLE_LIGHTEXPLORER]._itemName, "Light Explorer");
 
 			// Shortcut :
 			// Following code makes the first command

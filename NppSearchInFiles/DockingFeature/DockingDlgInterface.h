@@ -34,6 +34,13 @@ public:
 	DockingDlgInterface(): StaticDialog() {};
 	DockingDlgInterface(int dlgID): StaticDialog(), _dlgID(dlgID) {};
 	
+	virtual void init(HINSTANCE hInst, HWND parent)
+	{
+		StaticDialog::init(hInst, parent);
+		::GetModuleFileName((HMODULE)hInst, _moduleName, MAX_PATH);
+		strcpy(_moduleName, PathFindFileName(_moduleName));
+	}
+
     void create(tTbData * data, bool isRTL = false){
 		StaticDialog::create(_dlgID, isRTL);
 		::GetWindowText(_hSelf, _pluginName, sizeof(_pluginName));
