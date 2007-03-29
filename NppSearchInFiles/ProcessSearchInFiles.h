@@ -21,23 +21,22 @@ class CProcessSearchInFiles
 public:
 	CProcessSearchInFiles(SearchInFilesDock* searchDock, HWND searchInputDlgHnd): m_searchDock(searchDock), m_searchInputDlgHnd(searchInputDlgHnd)
 	{
-		m_searchDockStaticHWND	= ::GetDlgItem(m_searchDock->getCurrentSearchResultsDialog()->getHSelf(), IDC_STATIC_STATUS);
-		m_searchDockListHWND	= ::GetDlgItem(m_searchDock->getCurrentSearchResultsDialog()->getHSelf(), IDC_RESULTSLIST);
+		m_pSearchDockList = m_searchDock->getResultsTree();
 	};
 
 	void doSearch();
 
 protected:
 
-	SearchInFilesDock*	m_searchDock;
-	HWND				m_searchInputDlgHnd;
-	HWND				m_searchDockStaticHWND;
-	HWND				m_searchDockListHWND;
+	SearchInFilesDock*		m_searchDock;
+	SearchResultsListCtrl*	m_pSearchDockList;
+	HWND					m_searchInputDlgHnd;
 
 	CUTL_BUFFER			m_foldersArray;
 	int					m_totalHits;
 	int					m_totalFolders;
 	int					m_totalFiles;
+	int					m_currFileHits;
 
 	bool				m_bCaseSens;
 	bool				m_bWholeWord;
@@ -46,6 +45,7 @@ protected:
 	CUTL_BUFFER			m_percentageProgress;
 	CUTL_PATH			m_currHitFile;
 	HTREEITEM			m_currRootItem;
+	HTREEITEM			m_messageItem;
 
 	bool checkCancelButton(); // Verifies if the cancel button was pressed
 	void ResizeInputDgl();
@@ -54,7 +54,6 @@ protected:
 	int  FileSize(const char * szFileName);
 	bool FindInLine(LPCSTR StringLine, LPCSTR lineToShow, LPCSTR searchPattern, CUTL_PATH iterator, int line);
 	bool SearchInFolders();
-	void doFixedColumnsResize();
 
 	int  GetIconIndex(const CUTL_BUFFER sFilename);
 	int  GetSelIconIndex(const CUTL_BUFFER sFilename);

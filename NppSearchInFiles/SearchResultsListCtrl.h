@@ -21,6 +21,15 @@
 
 class SearchInFilesDock;
 
+class CCustomItemInfo {
+	CCustomItemInfo(int line, int column, LPCSTR fullPath) : m_line(line), m_column(column), m_fullPath(fullPath) {};
+
+private:
+	int			m_line;
+	int			m_column;
+	CUTL_BUFFER m_fullPath;
+};
+
 class SearchResultsListCtrl : public CWindowImpl<SearchResultsListCtrl, CTreeViewCtrl>
 {
 public:
@@ -30,10 +39,12 @@ public:
 
 	BEGIN_MSG_MAP(searchResultsListCtrl)
 		MESSAGE_HANDLER(WM_KEYUP, OnKeyUp)
+		//MESSAGE_HANDLER(WM_PAINT, OnPaint)
 		DEFAULT_REFLECTION_HANDLER()
 	END_MSG_MAP()
 
 	LRESULT OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+	LRESULT OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
 	BOOL DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult);
 
@@ -45,4 +56,14 @@ private:
 
 	void InitTableImageList();
 	void InitTableList();
+
+	// Drawing code
+	CRect m_rect;						// The client rect when drawing
+	int   m_h_offset;					// 0... -x (scroll offset)
+	int   m_h_size;						// width of unclipped window
+	int   m_v_offset;					// 0... -y (scroll offset)
+	int   m_v_size;						// height of unclipped window
+
+	void DrawBackGround(CDC* pDC);
+	void DrawItems(CDC *pDC);
 };

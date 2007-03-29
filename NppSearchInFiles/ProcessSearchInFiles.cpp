@@ -59,11 +59,24 @@ void CProcessSearchInFiles::doSearch() {
 	bool searchResult = false;
 
 	// Empty previous searches
-	//ListView_DeleteAllItems(m_searchDockListHWND);
-	TreeCtrl_DeleteAllItems(m_searchDockListHWND);
+	m_pSearchDockList->DeleteAllItems();
 
-	// Ask the list Control to adjust columns to its titles
-	doFixedColumnsResize();
+	// Add first row: here we show the results
+	TV_INSERTSTRUCT tvis;
+
+	ZeroMemory(&tvis, sizeof(TV_INSERTSTRUCT));
+
+	tvis.hParent				= TVI_ROOT;
+	tvis.hInsertAfter			= TVI_LAST;
+	tvis.item.mask				= TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM;
+	//tvis.item.iImage			= -1;
+	//tvis.item.iSelectedImage	= -1;
+	tvis.item.pszText			= "";
+	tvis.item.cChildren			= false;
+	tvis.item.lParam			= NULL;
+
+	m_messageItem		= m_pSearchDockList->InsertItem(&tvis);
+
 	// Clean search variables
 	m_totalHits = 0;
 	m_totalFolders = 0;
@@ -110,9 +123,7 @@ void CProcessSearchInFiles::doSearch() {
 			m_bExcludeExtensions = false;
 
 		/////////////////////////////////////////////////////////////////
-		// Start timming
-		::SetWindowText(m_searchDockStaticHWND, "");
-
+		// Start
 		CUTL_BUFFER strFolder(MAX_PATH + 1), tempBuf;
 
 		::GetDlgItemText(m_searchInputDlgHnd, IDC_WHERE, strFolder, MAX_PATH);
@@ -129,7 +140,7 @@ void CProcessSearchInFiles::doSearch() {
 							types.GetSafe(),
 							where.GetSafe());
 
-		::SetWindowText(m_searchDockStaticHWND, staticStatusBuf.GetSafe());
+		m_pSearchDockList->SetItemText(m_messageItem, staticStatusBuf.GetSafe());
 	}
 	catch (...) {
 		systemMessageEx("Error at SearchInFilesDock::callSearchInFiles", __FILE__, __LINE__);
@@ -161,28 +172,10 @@ END_PROCESS:
 		::EndDialog(m_searchInputDlgHnd, IDCANCEL);
 	}
 	else {
-		if (m_totalHits) {
-			// Ask the list Control to adjust columns
-			for (int i = 0; i < 6; i++)
-				ListView_SetColumnWidth(m_searchDockListHWND, i, LVSCW_AUTOSIZE);		
-		}
-		else 
-			doFixedColumnsResize();
-
 		// Place the focus on the first control
 		::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_WHAT), EM_SETSEL, 0, -1);
 		::SetFocus(::GetDlgItem(m_searchInputDlgHnd, IDC_WHAT));
 	}
-}
-
-// Ask the list Control to adjust columns to its titles
-void CProcessSearchInFiles::doFixedColumnsResize() {
-	ListView_SetColumnWidth(m_searchDockListHWND, 0, 190);		
-	ListView_SetColumnWidth(m_searchDockListHWND, 1, 220);		
-	ListView_SetColumnWidth(m_searchDockListHWND, 2, 160);		
-	ListView_SetColumnWidth(m_searchDockListHWND, 3, 80);		
-	ListView_SetColumnWidth(m_searchDockListHWND, 4, 80);		
-	ListView_SetColumnWidth(m_searchDockListHWND, 5, 140);		
 }
 
 bool CProcessSearchInFiles::checkCancelButton() {
@@ -255,7 +248,7 @@ bool CProcessSearchInFiles::SearchFolders(LPCSTR folder) {
 	m_foldersArray += folder;
 
 	// Avisamos de los que estamos haciendo:
-	::SetWindowText(m_searchDockStaticHWND, msg.Sf("Adding folder: '%s' ...", (LPCSTR)strFolder));
+	m_pSearchDockList->SetItemText(m_messageItem, msg.GetSafe());
 
 	tempPath.SetNameExtension("*.*");
 	// Search for subfolders
@@ -389,9 +382,8 @@ int CProcessSearchInFiles::FileSize(const char * szFileName) {
 
 bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR searchPattern, CUTL_PATH iterator, int line) {
 	try {
-		SHFILEINFO  sfi;
 		UINT        hitPos, found, endPosLine = 0;
-		CUTL_BUFFER bufLine, nameExtension, driveDirectory, bufSize, statusText, bufFileMask;
+		CUTL_BUFFER bufLine, nameExtension, driveDirectory, bufSize, statusText, bufFileMask, temp;
 		CUTL_BUFFER StringLine(strLine), formatDate;
 		TV_INSERTSTRUCT tvis;
 
@@ -410,88 +402,49 @@ bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR
 			else
 				iterator.GetDriveDirectory(driveDirectory);
 
-			if (m_currRootItem == NULL || iterator != m_currHitFile) {
+			if (UTL_strcmp((LPCSTR)iterator, (LPCSTR)m_currHitFile)) {
+				m_currFileHits = 0;
+
 				ZeroMemory(&tvis, sizeof(TV_INSERTSTRUCT));
 
 				tvis.hParent				= TVI_ROOT;
 				tvis.hInsertAfter			= TVI_LAST;
-				tvis.item.mask				= TVIF_CHILDREN | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_TEXT;
-				tvis.item.pszText			= (LPSTR)(LPCSTR)iterator;
+				tvis.item.mask				= TVIF_CHILDREN | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_TEXT | TVIF_PARAM;
+				tvis.item.pszText			= (LPSTR)temp.Sf("Hits %5d  |  %s", m_currFileHits, (LPCSTR)iterator);
 				tvis.item.iImage			= GetIconIndex((LPCSTR)iterator);
 				tvis.item.iSelectedImage	= GetSelIconIndex((LPCSTR)iterator);
 				tvis.item.cChildren			= true;
+				tvis.item.lParam			= NULL;
 
-				m_currRootItem	= InsertItem(&tvis);
+				m_currRootItem	= m_pSearchDockList->InsertItem(&tvis);
 				m_currHitFile	= iterator;
+
+				m_pSearchDockList->SetItemState(m_currRootItem, TVIS_EXPANDED, TVIS_EXPANDED);
 			}
 
 			ZeroMemory(&tvis, sizeof(TV_INSERTSTRUCT));
 
 			tvis.hParent				= m_currRootItem;
 			tvis.hInsertAfter			= TVI_LAST;
-			tvis.item.mask				= TVIF_CHILDREN | TVIF_TEXT;
-			tvis.item.pszText			= (LPSTR)bufLine.GetSafe();
+			tvis.item.mask				= TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM;
+			tvis.item.pszText			= (LPSTR)temp.Sf("%5d: %s", line, bufLine.GetSafe());
 			/*
 			tvis.item.iImage			= GetIconIndex((LPCSTR)iterator);
 			tvis.item.iSelectedImage	= GetSelIconIndex((LPCSTR)iterator);
 			*/
 			tvis.item.cChildren			= false;
 
-			m_currRootItem	= InsertItem(&tvis);
-			m_currHitFile	= iterator;
+			CCustomItemInfo* pCii = new CCustomItemInfo(line, hitPos, (LPCSTR)iterator);
 
-/*
-
-			LVITEM listItem;
-
-			memset(&listItem, 0, sizeof(LVITEM));
-
-			listItem.mask = (m_searchDock->getCurrentSearchResultsDialog()->m_searchResultsListCtrl.hasImageList()) ? LVIF_IMAGE | LVIF_TEXT : LVIF_TEXT;
-			listItem.cchTextMax = 256;
-
-			listItem.iItem = ListView_GetItemCount(m_searchDockListHWND);
-			listItem.iSubItem = 0;
-			if (m_searchDock->getCurrentSearchResultsDialog()->m_searchResultsListCtrl.hasImageList()) {
-				memset(&sfi, 0, sizeof(sfi));
-				SHGetFileInfo ((LPCSTR)iterator, FILE_ATTRIBUTE_NORMAL, &sfi, sizeof(sfi), SHGFI_SMALLICON | SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
-				listItem.iImage = sfi.iIcon;
-			}
-
-			listItem.pszText = (LPSTR)nameExtension.GetSafe();
-			SendMessage(m_searchDockListHWND, LVM_SETITEMSTATE, listItem.iItem, (LPARAM)&listItem);
-			SendMessage(m_searchDockListHWND, LVM_INSERTITEM, 0, (LPARAM)&listItem); // Send info to the Listview
-
-			// Now the other columns
-			// Text
-			listItem.mask = LVIF_TEXT;
-			listItem.iSubItem = 1;
-			listItem.pszText = (LPSTR)bufLine.GetSafe();
-			SendMessage(m_searchDockListHWND, LVM_SETITEM, 0,(LPARAM)&listItem);
-
-			// Folder
-			listItem.iSubItem = 2;
-			listItem.pszText = (LPSTR)driveDirectory.GetSafe();
-			SendMessage(m_searchDockListHWND, LVM_SETITEM, 0,(LPARAM)&listItem);
-
-			// Line
-			listItem.iSubItem = 3;
-			listItem.pszText = bufSize.Sf("%12ld", line);
-			SendMessage(m_searchDockListHWND, LVM_SETITEM, 0,(LPARAM)&listItem);
-
-			// Hit pos
-			listItem.iSubItem = 4;
-			listItem.pszText = bufSize.Sf("%12ld", hitPos + 1);
-			SendMessage(m_searchDockListHWND, LVM_SETITEM, 0,(LPARAM)&listItem);
-
-			// Date Modified
-			listItem.iSubItem = 5;
-			date.Format(CCR3_DATE::DDMMYYHHMISS, &formatDate);
-			listItem.pszText = (LPSTR)formatDate.GetSafe();
-			SendMessage(m_searchDockListHWND, LVM_SETITEM, 0,(LPARAM)&listItem);
+			tvis.item.lParam			= (LPARAM)pCii;
+			m_pSearchDockList->InsertItem(&tvis);
 
 			m_totalHits++;
+			m_currFileHits++;
+
+			m_pSearchDockList->SetItemText(m_currRootItem, temp.Sf("(%d) %s", m_currFileHits, (LPCSTR)iterator));
+
 			endPosLine = hitPos + 1;
-*/
 
 			if (checkCancelButton()) return false;
 		}
@@ -550,7 +503,7 @@ bool CProcessSearchInFiles::SearchInFolders() {
 					do { 
 						statusText.Sf("Hits %5d  |  Folders %5d / %5d  |  Files %5d  |  %s", 
 							m_totalHits, i, foldersParse.NumArgs(), ++m_totalFiles, (LPCSTR)iterator);
-						::SetWindowText(m_searchDockStaticHWND, statusText.GetSafe());
+						m_pSearchDockList->SetItemText(m_messageItem, statusText.GetSafe());
 
 						if (checkCancelButton()) return false;
 						if (!FindInfile((LPCSTR)iterator)) return false;
@@ -560,14 +513,6 @@ bool CProcessSearchInFiles::SearchInFolders() {
 				if (checkCancelButton()) return false;
 			}
 		} 
-
-		// If there is something on the list
-		if (m_totalHits) {
-			// Ask the list Control to adjust columns
-			for (int i = 0; i < 6; i++)
-				ListView_SetColumnWidth(m_searchDockListHWND, i, LVSCW_AUTOSIZE);		
-		}
-
 	}
 	catch (...) {
 		systemMessageEx("Error at CProcessSearchInFiles::SearchInFolders", __FILE__, __LINE__);

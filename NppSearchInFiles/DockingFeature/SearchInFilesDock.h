@@ -78,6 +78,8 @@ public :
 		//return m_searchResultsDlgVector[_ctrlTab.getCurrentTab()]; 
 	};
 
+	SearchResultsListCtrl*	getResultsTree()	{ return &m_searchResultsListCtrl; };
+
 	void openCurrSelection(HTREEITEM treeItem);
 
 	void moveToNextHit();
@@ -93,7 +95,6 @@ public :
 
 protected :
 	int							m_iCurrSearchLength;
-	CStatic						m_staticMessage;
 	CFont						m_font;
 
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);

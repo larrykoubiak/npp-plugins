@@ -34,7 +34,6 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 		{
 			case WM_INITDIALOG:
 			{
-				m_staticMessage.Attach(::GetDlgItem(_hSelf, IDC_STATIC_STATUS));
 				m_searchResultsListCtrl.SubclassWindow(::GetDlgItem(_hSelf, IDC_RESULTSLIST), this);
 
 				// Create a font using the system message font
@@ -46,7 +45,6 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				else 
 					m_font.CreateFontA(-11,0,0,0,FW_BOLD,0,0,0,0,0,0,0,0,"Tahoma");
 
-				m_staticMessage.SetFont(m_font);
 				m_searchResultsListCtrl.SetFont(m_font);
 				return TRUE;
 			}
@@ -56,7 +54,7 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				m_searchResultsListCtrl.DestroyWindow();
 				return TRUE;
 			}
-/*
+
 			case WM_SYSCOMMAND:
 			{
 				// We manage here the ALT+Q keyboad
@@ -68,26 +66,35 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				else
 					return DockingDlgInterface::run_dlgProc(message, wParam, lParam);
 			}
-*/
+
 			case WM_SIZE: 
 			{
-				RECT rc, rcStatic;
+				CRect rc;
 
 				getClientRect(rc);
 
-				rcStatic = rc;
-
-				rcStatic.left += 8;
-				rcStatic.bottom = rcStatic.top + 18;
-				m_staticMessage.MoveWindow(&rcStatic);
-
-				rc.top		+= 20;
-				rc.left		+= 2;
-				rc.bottom	-= 2;
-				rc.right	-= 2;
+				rc.DeflateRect(2, 2);
 				m_searchResultsListCtrl.MoveWindow(&rc);
 			}
 			break; 
+
+			case WM_NOTIFY:
+			{
+				NMHDR* pNMHDR = (LPNMHDR)lParam;
+
+				if (pNMHDR->hwndFrom == m_searchResultsListCtrl.m_hWnd) {
+					switch (pNMHDR->code) {
+						case TVN_DELETEITEM:
+							m_searchResultsListCtrl.onDeleteItem(pNMHDR);
+							break;
+
+						default:
+							break;
+					}
+				}
+			}
+			break;
+
 
 			case WM_NPPSEARCHINFILES_DOSEARCH_FROM_FOLDER:
 			{
@@ -191,6 +198,13 @@ void SearchInFilesDock::chooseFolder(HWND hDlg) {
 
 void SearchInFilesDock::moveToNextHit() {
 	try {
+		HTREEITEM itemSel = m_searchResultsListCtrl.GetSelectedItem();
+
+		// Let's find the next leave
+		HTREEITEM itemNext = m_searchResultsListCtrl.GetNextSiblingItem xxxxxxxxxxxxxxxx
+
+
+
 		systemMessage("::moveToNextHit: hay que abrir el elemento actual y saltar al siguiente");
 		/*
 		HWND listCtrlHWND = ::GetDlgItem(getCurrentSearchResultsDialog()->getHSelf(), IDC_RESULTSLIST);
