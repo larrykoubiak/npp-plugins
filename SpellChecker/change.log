@@ -2,7 +2,7 @@
 Change-log for SpellChecker.dll
 
 ------------------------------------------------------------------------------------
-07/03/13  v1.1 :
+07/03/31  v1.1 :
 ------------------------------------------------------------------------------------
 	Fix: Now on W9x platforms the combo box enlarged correctly
     Fix: Dialog boxes are not system modal
