@@ -75,7 +75,8 @@ void CProcessSearchInFiles::doSearch() {
 	tvis.item.cChildren			= false;
 	tvis.item.lParam			= NULL;
 
-	m_messageItem		= m_pSearchDockList->InsertItem(&tvis);
+	m_pSearchDockList->SetMessageItem(m_messageItem = m_pSearchDockList->InsertItem(&tvis));
+	m_pSearchDockList->SetItemState(m_messageItem, TVIS_BOLD, TVIS_BOLD);
 
 	// Clean search variables
 	m_totalHits = 0;

@@ -22,9 +22,10 @@
 class SearchInFilesDock;
 
 class CCustomItemInfo {
+public:
 	CCustomItemInfo(int line, int column, LPCSTR fullPath) : m_line(line), m_column(column), m_fullPath(fullPath) {};
 
-private:
+public:
 	int			m_line;
 	int			m_column;
 	CUTL_BUFFER m_fullPath;
@@ -33,6 +34,8 @@ private:
 class SearchResultsListCtrl : public CWindowImpl<SearchResultsListCtrl, CTreeViewCtrl>
 {
 public:
+	SearchResultsListCtrl() : m_messageItem(NULL) {};
+
 	BOOL SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock);
 
 	~SearchResultsListCtrl() {}
@@ -46,13 +49,19 @@ public:
 	LRESULT OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 	LRESULT OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
+	bool onDeleteItem(LPNMHDR pnmh);
+
 	BOOL DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult);
 
 	bool hasImageList() { return m_bItHasImageList; };
 
+	void		SetMessageItem(HTREEITEM messageItem) { m_messageItem = messageItem; };
+	HTREEITEM	GetMessageItem() { return m_messageItem; };
+
 private:
 	SearchInFilesDock*		m_searchInFilesDock;
 	bool					m_bItHasImageList;
+	HTREEITEM				m_messageItem;
 
 	void InitTableImageList();
 	void InitTableList();

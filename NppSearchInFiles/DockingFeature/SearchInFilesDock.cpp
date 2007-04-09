@@ -198,62 +198,65 @@ void SearchInFilesDock::chooseFolder(HWND hDlg) {
 
 void SearchInFilesDock::moveToNextHit() {
 	try {
-		HTREEITEM itemSel = m_searchResultsListCtrl.GetSelectedItem();
+		if (m_searchResultsListCtrl.GetCount() < 2) return;
 
-		// Let's find the next leave
-		HTREEITEM itemNext = m_searchResultsListCtrl.GetNextSiblingItem xxxxxxxxxxxxxxxx
+		HTREEITEM itemSel		= m_searchResultsListCtrl.GetSelectedItem();
+		HTREEITEM itemParent	= m_searchResultsListCtrl.GetParentItem(itemSel);
+		HTREEITEM itemNext;
 
+		CCustomItemInfo* pCii = (CCustomItemInfo*)m_searchResultsListCtrl.GetItemData(itemSel);
 
+		if (pCii == NULL) {
+			if (itemSel == m_searchResultsListCtrl.GetMessageItem())
+				itemParent = m_searchResultsListCtrl.GetNextSiblingItem(itemSel);
 
-		systemMessage("::moveToNextHit: hay que abrir el elemento actual y saltar al siguiente");
-		/*
-		HWND listCtrlHWND = ::GetDlgItem(getCurrentSearchResultsDialog()->getHSelf(), IDC_RESULTSLIST);
+			itemNext = m_searchResultsListCtrl.GetChildItem(itemParent);
+		}
+		else {
+			// Let's find the next leave
+			itemNext = m_searchResultsListCtrl.GetNextSiblingItem(itemSel);
 
-		int itemCount, iSelect;
+			if (itemNext == NULL) {
+				itemParent = m_searchResultsListCtrl.GetNextSiblingItem(itemParent);
 
-		if (0 == (itemCount = ListView_GetItemCount(listCtrlHWND)))  return;
+				if (itemParent == NULL) {
+					itemParent = m_searchResultsListCtrl.GetMessageItem();
+					itemParent = m_searchResultsListCtrl.GetNextSiblingItem(itemParent);
+					itemNext   = m_searchResultsListCtrl.GetChildItem(itemParent);
+				}
+				else
+					itemNext   = m_searchResultsListCtrl.GetChildItem(itemParent);
+			}
+		}
 
-		if (-1 == (iSelect = ListView_GetNextItem(listCtrlHWND, -1, LVNI_FOCUSED)))
-			iSelect = 0;
-		else
-			iSelect++;
-
-		iSelect = itemCount <= iSelect ? 0 : iSelect; // If at end, start all over
-
-		openCurrSelection(iSelect);
-		*/
+		m_searchResultsListCtrl.SetItemState(itemSel, ~(TVGN_CARET | TVIS_SELECTED), TVGN_CARET | TVIS_SELECTED);
+		openCurrSelection(itemNext);
 	}
 	catch (...) {
 		systemMessageEx("Error at SearchInFilesDock::moveToNextHit.", __FILE__, __LINE__);
 	}
 }
 
-void SearchInFilesDock::openCurrSelection(HTREEITEM treeItem) {
+void SearchInFilesDock::openCurrSelection(HTREEITEM selItem) {
 	try {
 		CUTL_BUFFER fileToOpen;
 		CUTL_BUFFER filePath(MAX_PATH + 1), fileName(MAX_PATH + 1), lineNumber(MAX_PATH + 1), col(MAX_PATH + 1);
 
-		systemMessage("::openCurrSelection: hay que abrir un fichero");
-		/*
+		CCustomItemInfo* pCii = (CCustomItemInfo*)m_searchResultsListCtrl.GetItemData(selItem);
 
-		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 2, (LPSTR)filePath.GetSafe(), MAX_PATH);
-		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 0, (LPSTR)fileName.GetSafe(), MAX_PATH);
-		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 3, (LPSTR)lineNumber.GetSafe(), MAX_PATH);
-		ListView_GetItemText(m_searchResultsListCtrl.m_hWnd, numItem, 4, (LPSTR)col.GetSafe(), MAX_PATH);
+		if (pCii == NULL) return;
 
-		// We select the current selection
-		ListView_EnsureVisible(m_searchResultsListCtrl.m_hWnd, numItem, FALSE);
-		ListView_SetItemState(m_searchResultsListCtrl.m_hWnd, numItem, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+		m_searchResultsListCtrl.EnsureVisible(selItem);
+		m_searchResultsListCtrl.SelectItem(selItem);
 
-		::SendMessage(m_nppHandle, WM_DOOPEN, 0, (LPARAM)(LPSTR)fileToOpen.Sf("%s\\%s", filePath.GetSafe(), fileName.GetSafe()));
+		::SendMessage(m_nppHandle, WM_DOOPEN, 0, (LPARAM)(LPSTR)pCii->m_fullPath.GetSafe());
 
-		int startPos = (int)::SendMessage(m_scintillaMainHandle, SCI_POSITIONFROMLINE, atoi(lineNumber.Trim().GetSafe()) - 1, 0L);
+		int startPos = (int)::SendMessage(m_scintillaMainHandle, SCI_POSITIONFROMLINE, pCii->m_line - 1, 0L);
 
-		startPos += atoi(col.Trim().GetSafe()) - 1;
+		startPos += pCii->m_column;
 
 		int endPos = startPos + m_iCurrSearchLength;
 		::SendMessage(m_scintillaMainHandle, SCI_SETSEL, startPos, endPos);
-		*/
 	}
 	catch(...) {
 		systemMessageEx("Error at searchResultListCtrl::openCurrSelection", __FILE__, __LINE__);
@@ -376,8 +379,6 @@ void SearchInFilesDock::LoadCombosStrings(HWND hDlg) {
 			i++;
 		}
 		if (i) ::SendMessage(hComboWhat, CB_SETCURSEL, 0, 0L);
-
-
 
 		// Load 'masks' entries
 		i = 0;
