@@ -16,14 +16,15 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 // 22.03.2007, v1.0.0.1, 
+// 09.04.2007, v1.2 
 //
 //	FILE					METHOD							DATE		DESCRIPTION							
 //  NppLightExplorer										23.03.2007	Added icon to notepad++ toolbar
+//  resource.rc     										28.03.2007	Tab icon
+//  NppLightExplorer										09.04.2007	Toolbar icon state when closing the adding
 //
 //  PENDIENTE:
-//  El icono de la solapa de plug-ins no se dibuja bien
 //  Mensaje para abrir la busqueda partiendo de una carpeta 
-//  Poner un icono en la barra de notepad++
 
 #include "stdafx.h"
 #include "PluginInterface.h"

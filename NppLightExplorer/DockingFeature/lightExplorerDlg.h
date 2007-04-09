@@ -44,6 +44,12 @@ public:
             ::SetFocus(::GetDlgItem(_hSelf, IDC_TREECTRL));
     };
 
+	void showHideToolbarIcon(bool toShow) {
+		extern FuncItem funcItem[];
+
+		::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)toShow);
+	}
+
 	HWND m_nppHandle;
 	HWND m_scintillaMainHandle;
 

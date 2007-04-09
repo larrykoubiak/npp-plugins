@@ -81,6 +81,12 @@ BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM 
 			break;
 		}
 
+		case WM_SHOWWINDOW:
+		{
+			showHideToolbarIcon(wParam != FALSE && lParam != 0);
+		}
+		return 0;
+
 		case WM_SYSCOMMAND:
 		{
 			// We manage here the ALT+A keyboad
