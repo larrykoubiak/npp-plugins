@@ -61,24 +61,8 @@ void CProcessSearchInFiles::doSearch() {
 	// Empty previous searches
 	m_pSearchDockList->DeleteAllItems();
 
-	// Add first row: here we show the results
-	TV_INSERTSTRUCT tvis;
-
-	ZeroMemory(&tvis, sizeof(TV_INSERTSTRUCT));
-
-	tvis.hParent				= TVI_ROOT;
-	tvis.hInsertAfter			= TVI_LAST;
-	tvis.item.mask				= TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM;
-	//tvis.item.iImage			= -1;
-	//tvis.item.iSelectedImage	= -1;
-	tvis.item.pszText			= "";
-	tvis.item.cChildren			= false;
-	tvis.item.lParam			= NULL;
-
-	m_pSearchDockList->SetMessageItem(m_messageItem = m_pSearchDockList->InsertItem(&tvis));
-	m_pSearchDockList->SetItemState(m_messageItem, TVIS_BOLD, TVIS_BOLD);
-
 	// Clean search variables
+	m_pSearchDockList->SetFirstItem(NULL);
 	m_totalHits = 0;
 	m_totalFolders = 0;
 	m_totalFiles = 0;
@@ -135,13 +119,13 @@ void CProcessSearchInFiles::doSearch() {
 		// Do the search in files process
 		searchResult = SearchInFolders();
 
-		staticStatusBuf.Sf("Hits %5d  |  Search '%s' '%s' '%s'       (Use F4 to navigate the results)", 
-							m_totalHits, 
+		staticStatusBuf.Sf("'%s' - '%s' - '%s'        (%d hits)", 
 							what.GetSafe(),
 							types.GetSafe(),
-							where.GetSafe());
+							where.GetSafe(),
+							m_totalHits);
 
-		m_pSearchDockList->SetItemText(m_messageItem, staticStatusBuf.GetSafe());
+		m_pStaticMessage->SetWindowTextA(staticStatusBuf.GetSafe());
 	}
 	catch (...) {
 		systemMessageEx("Error at SearchInFilesDock::callSearchInFiles", __FILE__, __LINE__);
@@ -249,7 +233,7 @@ bool CProcessSearchInFiles::SearchFolders(LPCSTR folder) {
 	m_foldersArray += folder;
 
 	// Avisamos de los que estamos haciendo:
-	m_pSearchDockList->SetItemText(m_messageItem, msg.GetSafe());
+	m_pStaticMessage->SetWindowTextA(msg.Sf("Added folder %s", folder));
 
 	tempPath.SetNameExtension("*.*");
 	// Search for subfolders
@@ -417,9 +401,11 @@ bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR
 				tvis.item.cChildren			= true;
 				tvis.item.lParam			= NULL;
 
-				m_currRootItem	= m_pSearchDockList->InsertItem(&tvis);
-				m_currHitFile	= iterator;
+				m_currRootItem = m_pSearchDockList->InsertItem(&tvis);
 
+				if (m_pSearchDockList->GetFirstItem() == NULL) m_pSearchDockList->SetFirstItem(m_currRootItem);
+
+				m_currHitFile	= iterator;
 				m_pSearchDockList->SetItemState(m_currRootItem, TVIS_EXPANDED, TVIS_EXPANDED);
 			}
 
@@ -504,7 +490,7 @@ bool CProcessSearchInFiles::SearchInFolders() {
 					do { 
 						statusText.Sf("Hits %5d  |  Folders %5d / %5d  |  Files %5d  |  %s", 
 							m_totalHits, i, foldersParse.NumArgs(), ++m_totalFiles, (LPCSTR)iterator);
-						m_pSearchDockList->SetItemText(m_messageItem, statusText.GetSafe());
+						m_pStaticMessage->SetWindowTextA(statusText.GetSafe());
 
 						if (checkCancelButton()) return false;
 						if (!FindInfile((LPCSTR)iterator)) return false;

@@ -22,6 +22,7 @@ public:
 	CProcessSearchInFiles(SearchInFilesDock* searchDock, HWND searchInputDlgHnd): m_searchDock(searchDock), m_searchInputDlgHnd(searchInputDlgHnd)
 	{
 		m_pSearchDockList = m_searchDock->getResultsTree();
+		m_pStaticMessage = m_searchDock->getStaticMessageCtrl();
 	};
 
 	void doSearch();
@@ -30,6 +31,7 @@ protected:
 
 	SearchInFilesDock*		m_searchDock;
 	SearchResultsListCtrl*	m_pSearchDockList;
+	CStatic*				m_pStaticMessage;
 	HWND					m_searchInputDlgHnd;
 
 	CUTL_BUFFER			m_foldersArray;
@@ -45,7 +47,6 @@ protected:
 	CUTL_BUFFER			m_percentageProgress;
 	CUTL_PATH			m_currHitFile;
 	HTREEITEM			m_currRootItem;
-	HTREEITEM			m_messageItem;
 
 	bool checkCancelButton(); // Verifies if the cancel button was pressed
 	void ResizeInputDgl();

@@ -24,6 +24,8 @@
 
 #pragma warning ( disable : 4311 )
 
+SearchInFilesDock* _pSearchInFilesDock2 = NULL;
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 // SearchInFilesDock class
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +37,7 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 			case WM_INITDIALOG:
 			{
 				m_searchResultsListCtrl.SubclassWindow(::GetDlgItem(_hSelf, IDC_RESULTSLIST), this);
+				m_staticMessage.Attach(::GetDlgItem(_hSelf, IDC_STATIC_MESSAGE));
 
 				// Create a font using the system message font
 				NONCLIENTMETRICS ncm;
@@ -43,9 +46,22 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS, sizeof(NONCLIENTMETRICS), &ncm, 0))
 					m_font.CreateFontIndirect(&(ncm.lfMessageFont));
 				else 
-					m_font.CreateFontA(-11,0,0,0,FW_BOLD,0,0,0,0,0,0,0,0,"Tahoma");
+					m_font.CreateFontA(-11,0,0,0,FW_NORMAL,0,0,0,0,0,0,0,0,"Tahoma");
+
+				LOGFONT logFont;
+
+				m_font.GetLogFont(&logFont);
+
+				logFont.lfWeight = FW_BOLD;
+				m_fontBold.CreateFontIndirect(&logFont);
 
 				m_searchResultsListCtrl.SetFont(m_font);
+				m_staticMessage.SetFont(m_fontBold);
+
+				// Set StaticMessage height in pixels
+				m_staticHeight = (-2)*((72*logFont.lfHeight) / (GetDeviceCaps(GetDC(_hSelf), LOGPIXELSY))); 
+
+				doOnSize();
 				return TRUE;
 			}
 
@@ -69,14 +85,18 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 
 			case WM_SIZE: 
 			{
-				CRect rc;
-
-				getClientRect(rc);
-
-				rc.DeflateRect(2, 2);
-				m_searchResultsListCtrl.MoveWindow(&rc);
+				doOnSize();
 			}
 			break; 
+
+			case WM_SHOWWINDOW:
+			{
+				if (_pSearchInFilesDock2 == NULL)
+					showHideToolbarIcon(wParam != FALSE && lParam != 0);
+				else 
+					showHideToolbarIcon(!(wParam == FALSE && lParam == 0 && !isSecondTabVisible()));
+			}
+			return 0;
 
 			case WM_NOTIFY:
 			{
@@ -112,6 +132,23 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 	return FALSE;
 }
 
+void SearchInFilesDock::doOnSize() {
+	CRect rc, rcStatic;
+
+	getClientRect(rc);
+
+	rc.DeflateRect(2, 2);
+
+	rcStatic = rc;
+
+	rcStatic.left += 6;
+	rcStatic.bottom = rcStatic.top + m_staticHeight;
+	m_staticMessage.MoveWindow(&rcStatic, 1);
+
+	rc.top += m_staticHeight;
+	m_searchResultsListCtrl.MoveWindow(&rc, 1);
+}
+
 void SearchInFilesDock::openSearchInFilesInputDlg() 
 {
 	DialogBoxParam(_hInst, 
@@ -122,28 +159,50 @@ void SearchInFilesDock::openSearchInFilesInputDlg()
 }
 
 void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFFER types, CUTL_BUFFER where) {
-	CUTL_BUFFER temp;
-
 	// Read checks
 	bool bWholeWord		  = (::SendMessage(::GetDlgItem(hDlg, IDC_WHOLE_WORD), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? true : false;
 	bool bResultsInNewTab = (::SendMessage(::GetDlgItem(hDlg, IDC_RESULTS_IN_NEW_TAB), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? true : false;
 
-	temp.Sf("%s   %s   %s", what.GetSafe(), types.GetSafe(), where.GetSafe());
+	display(); // Let's show the results main window
 
-	if (!bResultsInNewTab) {
-		//_ctrlTab.renameTab(_ctrlTab.getCurrentTab(), temp.GetSafe());
+	SearchInFilesDock* dockOwner = NULL;
+
+	if (bResultsInNewTab) {
+		// We have to opne a second dockable window
+		if (_pSearchInFilesDock2 == NULL) {
+			_pSearchInFilesDock2 = new SearchInFilesDock();
+
+			_pSearchInFilesDock2->init(getHinst(), getHParent());
+			_pSearchInFilesDock2->m_nppHandle = m_nppHandle;
+			_pSearchInFilesDock2->m_scintillaMainHandle = m_scintillaMainHandle;
+			UTL_strcpy(_pSearchInFilesDock2->m_iniFilePath, m_iniFilePath);
+
+			if (!_pSearchInFilesDock2->isCreated()) {
+				_pSearchInFilesDock2->create(&_pSearchInFilesDock2->_data);
+
+				// define the default docking behaviour
+				_pSearchInFilesDock2->_data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ADDINFO | DWS_ICONTAB;
+
+				_pSearchInFilesDock2->_data.pszAddInfo		= "";
+				_pSearchInFilesDock2->_data.hIconTab		= (HICON)::LoadImage(_pSearchInFilesDock2->getHinst(), MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
+				_pSearchInFilesDock2->_data.pszModuleName	= _pSearchInFilesDock2->getPluginFileName();
+				_pSearchInFilesDock2->_data.dlgID			= DOCKABLE_SEARCHINFILES;
+				_pSearchInFilesDock2->_data.pszName			= "Search In Files 2";
+
+				::SendMessage(getHParent(), WM_DMM_REGASDCKDLG, 0, (LPARAM)&_pSearchInFilesDock2->_data);
+			}
+		}
+		dockOwner = _pSearchInFilesDock2;
+		::SendMessage(_pSearchInFilesDock2->getHParent(), WM_DMM_SHOW, 0, (LPARAM)_pSearchInFilesDock2->getHSelf());
 	}
-	else {
-		/*
-		¿Hay que abrir la segunda ventana?
-		*/
-	}
+	else
+		dockOwner = this;
 
 	// Save the length of the current search
-	m_iCurrSearchLength = bWholeWord ? what.strlen() + 2 : what.strlen();
+	dockOwner->m_iCurrSearchLength = bWholeWord ? what.strlen() + 2 : what.strlen();
 
 	// Finally we do the search
-	CProcessSearchInFiles* searchInFiles = new CProcessSearchInFiles(this, hDlg);
+	CProcessSearchInFiles* searchInFiles = new CProcessSearchInFiles(dockOwner, hDlg);
 
 	searchInFiles->doSearch();
 	delete searchInFiles;
@@ -198,20 +257,24 @@ void SearchInFilesDock::chooseFolder(HWND hDlg) {
 
 void SearchInFilesDock::moveToNextHit() {
 	try {
+		if (_pSearchInFilesDock2 && this != _pSearchInFilesDock2 && SearchInFilesDock::isSecondTabVisible()) 
+			_pSearchInFilesDock2->moveToNextHit();
+
 		if (m_searchResultsListCtrl.GetCount() < 2) return;
 
-		HTREEITEM itemSel		= m_searchResultsListCtrl.GetSelectedItem();
-		HTREEITEM itemParent	= m_searchResultsListCtrl.GetParentItem(itemSel);
+		HTREEITEM itemParent;
 		HTREEITEM itemNext;
+		HTREEITEM itemSel = m_searchResultsListCtrl.GetSelectedItem();
+
+		if (itemSel == NULL) 
+			itemSel = itemParent = m_searchResultsListCtrl.GetFirstItem();
+		else 
+			itemParent	= m_searchResultsListCtrl.GetParentItem(itemSel);
 
 		CCustomItemInfo* pCii = (CCustomItemInfo*)m_searchResultsListCtrl.GetItemData(itemSel);
 
-		if (pCii == NULL) {
-			if (itemSel == m_searchResultsListCtrl.GetMessageItem())
-				itemParent = m_searchResultsListCtrl.GetNextSiblingItem(itemSel);
-
-			itemNext = m_searchResultsListCtrl.GetChildItem(itemParent);
-		}
+		if (pCii == NULL) 
+			itemNext = m_searchResultsListCtrl.GetChildItem(itemSel);
 		else {
 			// Let's find the next leave
 			itemNext = m_searchResultsListCtrl.GetNextSiblingItem(itemSel);
@@ -220,8 +283,7 @@ void SearchInFilesDock::moveToNextHit() {
 				itemParent = m_searchResultsListCtrl.GetNextSiblingItem(itemParent);
 
 				if (itemParent == NULL) {
-					itemParent = m_searchResultsListCtrl.GetMessageItem();
-					itemParent = m_searchResultsListCtrl.GetNextSiblingItem(itemParent);
+					itemParent = m_searchResultsListCtrl.GetFirstItem();
 					itemNext   = m_searchResultsListCtrl.GetChildItem(itemParent);
 				}
 				else
@@ -453,6 +515,10 @@ void SearchInFilesDock::LoadChecks(HWND hDlg) {
 						0L);
 	}
 	catch (...) {}
+}
+
+bool SearchInFilesDock::isSecondTabVisible() { 
+	return _pSearchInFilesDock2 && _pSearchInFilesDock2->isVisible(); 
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////

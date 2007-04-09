@@ -46,8 +46,9 @@ public :
 	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK) {};
 
 	~SearchInFilesDock(){
-		// Destroy our list font
+		// Destroy our list fonts
 		if (m_font.m_hFont) m_font.DeleteObject();
+		if (m_fontBold.m_hFont) m_fontBold.DeleteObject();
 	}
 
 	char m_iniFilePath[MAX_PATH];
@@ -63,6 +64,12 @@ public :
 		::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)toShow);
 	};
 
+	void showHideToolbarIcon(bool toShow) {
+		extern FuncItem funcItem[];
+
+		::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)toShow);
+	}
+
 	void setParent(HWND parent2set){ _hParent = parent2set; };
 
 	void openSearchInFilesInputDlg();
@@ -73,12 +80,8 @@ public :
 	HWND	m_nppHandle;
 	HWND	m_scintillaMainHandle;
 
-	SearchInFilesDock* getCurrentSearchResultsDialog() { 
-		return this;
-		//return m_searchResultsDlgVector[_ctrlTab.getCurrentTab()]; 
-	};
-
 	SearchResultsListCtrl*	getResultsTree()	{ return &m_searchResultsListCtrl; };
+	CStatic*				getStaticMessageCtrl() { return &m_staticMessage; };
 
 	void openCurrSelection(HTREEITEM treeItem);
 
@@ -91,13 +94,20 @@ public :
 	void LoadChecks(HWND hDlg);
 
 	SearchResultsListCtrl		m_searchResultsListCtrl;
+	CStatic						m_staticMessage;
 	tTbData						_data;
+
+	static bool isSecondTabVisible();
 
 protected :
 	int							m_iCurrSearchLength;
 	CFont						m_font;
+	CFont						m_fontBold;
+	int							m_staticHeight;
 
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
+
+	void doOnSize();
 };
 
 #endif //SEARCHINFILES_DLG_H

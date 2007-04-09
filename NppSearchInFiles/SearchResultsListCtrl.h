@@ -34,7 +34,7 @@ public:
 class SearchResultsListCtrl : public CWindowImpl<SearchResultsListCtrl, CTreeViewCtrl>
 {
 public:
-	SearchResultsListCtrl() : m_messageItem(NULL) {};
+	SearchResultsListCtrl() : m_firstItem(NULL) {};
 
 	BOOL SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock);
 
@@ -55,13 +55,13 @@ public:
 
 	bool hasImageList() { return m_bItHasImageList; };
 
-	void		SetMessageItem(HTREEITEM messageItem) { m_messageItem = messageItem; };
-	HTREEITEM	GetMessageItem() { return m_messageItem; };
+	void		SetFirstItem(HTREEITEM firstItem)	{ m_firstItem = firstItem; };
+	HTREEITEM	GetFirstItem()						{ return m_firstItem; };
 
 private:
 	SearchInFilesDock*		m_searchInFilesDock;
 	bool					m_bItHasImageList;
-	HTREEITEM				m_messageItem;
+	HTREEITEM				m_firstItem;
 
 	void InitTableImageList();
 	void InitTableList();
