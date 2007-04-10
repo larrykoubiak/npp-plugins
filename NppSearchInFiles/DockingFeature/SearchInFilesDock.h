@@ -57,12 +57,17 @@ public :
 
 	void chooseFolder(HWND hDlg);
 	void callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFFER types, CUTL_BUFFER where);
-
+/*
 	virtual void display(bool toShow = true) const {
+
+		if (toShow && this != _pSearchInFilesDock2 && _pSearchInFilesDock2->isVisible()) return;
+
 		extern FuncItem funcItem[];
 		::SendMessage(_hParent, toShow ? WM_DMM_SHOW : WM_DMM_HIDE, 0, (LPARAM)_hSelf);
 		::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)toShow);
 	};
+*/
+	virtual void display(bool toShow = true) const;
 
 	void showHideToolbarIcon(bool toShow) {
 		extern FuncItem funcItem[];

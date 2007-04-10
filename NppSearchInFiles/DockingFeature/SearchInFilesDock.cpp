@@ -19,12 +19,13 @@
    
 #include "dockingFeature/staticDialog.h"
 #include "SearchResultsListCtrl.h"
+
+SearchInFilesDock* _pSearchInFilesDock2 = NULL;
+
 #include "SearchInFilesDock.h"
 #include "ProcessSearchInFiles.h"
 
 #pragma warning ( disable : 4311 )
-
-SearchInFilesDock* _pSearchInFilesDock2 = NULL;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // SearchInFilesDock class
@@ -149,20 +150,38 @@ void SearchInFilesDock::doOnSize() {
 	m_searchResultsListCtrl.MoveWindow(&rc, 1);
 }
 
+void SearchInFilesDock::display(bool toShow) const {
+
+	if (toShow && 
+		_pSearchInFilesDock2 && 
+		this != _pSearchInFilesDock2 && 
+		_pSearchInFilesDock2->isVisible()) return;
+
+	extern FuncItem funcItem[];
+	::SendMessage(_hParent, toShow ? WM_DMM_SHOW : WM_DMM_HIDE, 0, (LPARAM)_hSelf);
+	::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)toShow);
+
+	if (!toShow && 
+		_pSearchInFilesDock2 && 
+		this != _pSearchInFilesDock2 && 
+		_pSearchInFilesDock2->isVisible()) 
+		::SendMessage(_hParent, WM_DMM_HIDE, 0, (LPARAM)_pSearchInFilesDock2->getHSelf());
+}
+
+
 void SearchInFilesDock::openSearchInFilesInputDlg() 
 {
-	/*
-	DialogBoxParam(_hInst, 
-					(LPCTSTR)IDD_SEARCH_INPUT_DLG, 
-					_hParent, 
-					(DLGPROC)SearchInputDlg::SearchInFilesInputDlgProc,
-					(LPARAM)this);
-	*/
-	CreateDialogParam(_hInst,												// handle to module
-	 					(LPCTSTR)IDD_SEARCH_INPUT_DLG,						// dialog box template name
-						_hParent,											// handle to owner window
-						(DLGPROC)SearchInputDlg::SearchInFilesInputDlgProc, // dialog box procedure
-						(LPARAM)this);
+	try {
+		HWND hDlg = ::CreateDialogParam(_hInst, 
+										MAKEINTRESOURCE(IDD_SEARCH_INPUT_DLG), 
+										_hParent, 
+										(DLGPROC)SearchInputDlg::SearchInFilesInputDlgProc, 
+										(LPARAM)this);
+		::SendMessage(_hParent, WM_MODELESSDIALOG, MODELESSDIALOGADD, (WPARAM)hDlg);
+	}
+	catch (...) {
+		systemMessageEx("Error in SearchInFilesDock::openSearchInFilesInputDlg", __FILE__, __LINE__);
+	}
 }
 
 void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFFER types, CUTL_BUFFER where) {
@@ -202,14 +221,20 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 		dockOwner = _pSearchInFilesDock2;
 		::SendMessage(_pSearchInFilesDock2->getHParent(), WM_DMM_SHOW, 0, (LPARAM)_pSearchInFilesDock2->getHSelf());
 	}
-	else
+	else {
 		dockOwner = this;
+
+		// if second tab is open and the search is over first tab, show the later
+		if (isSecondTabVisible)
+			::SendMessage(_hParent, WM_DMM_SHOW, 0, (LPARAM)_hSelf);
+	}
+
 
 	// Save the length of the current search
 	dockOwner->m_iCurrSearchLength = bWholeWord ? what.strlen() + 2 : what.strlen();
 
 	// Finally we do the search
-	CProcessSearchInFiles* searchInFiles = new CProcessSearchInFiles(dockOwner, hDlg);
+	CProcessSearchInFiles* searchInFiles = new CProcessSearchInFiles(dockOwner, this, hDlg);
 
 	searchInFiles->doSearch();
 	delete searchInFiles;
@@ -604,8 +629,10 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 						ownerDlg->m_bStopPressed = true;
 						::EnableWindow(::GetDlgItem(hDlg, IDCANCEL), FALSE);
 					}
-					else
-						::EndDialog(hDlg, 0);
+					else {
+						::DestroyWindow(hDlg);
+						::SendMessage(::GetParent(hDlg), WM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)hDlg);
+					}
 					return TRUE;
 				}
 				
@@ -623,7 +650,7 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 				}
 
 				if (LOWORD(wParam) == IDOK) {
-					// Validaciones primero
+					// Validate first
 					CUTL_BUFFER what(255), types(255), where(255);
 
 					::GetDlgItemText(hDlg, IDC_WHAT, what, 254);

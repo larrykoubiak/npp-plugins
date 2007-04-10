@@ -19,7 +19,7 @@
 class CProcessSearchInFiles
 {
 public:
-	CProcessSearchInFiles(SearchInFilesDock* searchDock, HWND searchInputDlgHnd): m_searchDock(searchDock), m_searchInputDlgHnd(searchInputDlgHnd)
+	CProcessSearchInFiles(SearchInFilesDock* searchDock, SearchInFilesDock* mainDock, HWND searchInputDlgHnd): m_searchDock(searchDock), m_mainDock(mainDock), m_searchInputDlgHnd(searchInputDlgHnd)
 	{
 		m_pSearchDockList = m_searchDock->getResultsTree();
 		m_pStaticMessage = m_searchDock->getStaticMessageCtrl();
@@ -29,6 +29,7 @@ public:
 
 protected:
 
+	SearchInFilesDock*		m_mainDock;
 	SearchInFilesDock*		m_searchDock;
 	SearchResultsListCtrl*	m_pSearchDockList;
 	CStatic*				m_pStaticMessage;
@@ -39,6 +40,7 @@ protected:
 	int					m_totalFolders;
 	int					m_totalFiles;
 	int					m_currFileHits;
+	int					m_currFileIcon;
 
 	bool				m_bCaseSens;
 	bool				m_bWholeWord;

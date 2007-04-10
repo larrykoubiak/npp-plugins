@@ -27,7 +27,7 @@
 #include "ProcessSearchInFiles.h"
 
 void CProcessSearchInFiles::doSearch() {
-	if (m_searchInputDlgHnd == NULL || m_searchDock == NULL) {
+	if (m_searchInputDlgHnd == NULL || m_searchDock == NULL || m_mainDock == NULL) {
 		::MessageBox(NULL, "CProcessSearchInFiles::doSearch: object not inicialized.", "Search in Files", MB_OK);
 		return;
 	}
@@ -49,8 +49,8 @@ void CProcessSearchInFiles::doSearch() {
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_EXCLUDE_EXTENSIONS), FALSE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_MANAGE_EXTENSIONS), FALSE);
 
-	m_searchDock->m_bInProcess = true;
-	m_searchDock->m_bStopPressed = false;
+	m_mainDock->m_bInProcess = true;
+	m_mainDock->m_bStopPressed = false;
 	ResizeInputDgl();
 
 	m_currRootItem	= NULL;
@@ -88,12 +88,12 @@ void CProcessSearchInFiles::doSearch() {
 						(LPARAM)0) == BST_CHECKED ? true : false;
 
 		// Read excluded extensions (ONLY WHEN SEARCHING *.*!)
-		CUT2_INI	confIni(m_searchDock->m_iniFilePath);
+		CUT2_INI	confIni(m_mainDock->m_iniFilePath);
 		
-		m_bExcludeExtensions = confIni.LoadInt(m_searchDock->getSectionName(), "excludeExtensions", 0) ? true : false;
+		m_bExcludeExtensions = confIni.LoadInt(m_mainDock->getSectionName(), "excludeExtensions", 0) ? true : false;
 
 		if (m_bExcludeExtensions && !UTL_strcmp(types.GetSafe(), "*.*")) {
-			m_excludeExtensionsList = confIni.LoadStr(m_searchDock->getSectionName(), "excludeExtensionsList", "");
+			m_excludeExtensionsList = confIni.LoadStr(m_mainDock->getSectionName(), "excludeExtensionsList", "");
 
 			if (m_excludeExtensionsList.strlen()) {
 				m_excludeExtensionsList.RepCar(';', ',');
@@ -115,9 +115,8 @@ void CProcessSearchInFiles::doSearch() {
 		m_foldersArray.Realloc(0);
 
 		// Search for subfolders
-		if (!SearchFolders(strFolder.GetSafe())) goto END_PROCESS;
-		// Do the search in files process
-		searchResult = SearchInFolders();
+		if (searchResult = SearchFolders(strFolder.GetSafe())) 
+			searchResult = SearchInFolders(); // Do the search in files process
 
 		staticStatusBuf.Sf("'%s' - '%s' - '%s'        (%d hits)", 
 							what.GetSafe(),
@@ -131,9 +130,8 @@ void CProcessSearchInFiles::doSearch() {
 		systemMessageEx("Error at SearchInFilesDock::callSearchInFiles", __FILE__, __LINE__);
 	}
 
-END_PROCESS:
-	m_searchDock->m_bInProcess = false;
-	m_searchDock->m_bStopPressed = false;
+	m_mainDock->m_bInProcess = false;
+	m_mainDock->m_bStopPressed = false;
 	ResizeInputDgl();
 	// Enable OK button
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDOK), TRUE);
@@ -152,15 +150,18 @@ END_PROCESS:
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_EXCLUDE_EXTENSIONS), TRUE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_MANAGE_EXTENSIONS), TRUE);
 
+	/*
 	if (searchResult) {
-		m_searchDock->m_bInProcess = false; // We are leaving
-		::EndDialog(m_searchInputDlgHnd, IDCANCEL);
+		m_mainDock->m_bInProcess = false; // We are leaving
+		::DestroyWindow(m_searchInputDlgHnd);
+		::SendMessage(::GetParent(m_searchInputDlgHnd), WM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)m_searchInputDlgHnd);
 	}
 	else {
+	*/
 		// Place the focus on the first control
 		::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_WHAT), EM_SETSEL, 0, -1);
 		::SetFocus(::GetDlgItem(m_searchInputDlgHnd, IDC_WHAT));
-	}
+	//}
 }
 
 bool CProcessSearchInFiles::checkCancelButton() {
@@ -172,14 +173,14 @@ bool CProcessSearchInFiles::checkCancelButton() {
 		}
 	}
 
-	if (m_searchDock->m_bStopPressed) {
+	if (m_mainDock->m_bStopPressed) {
 		::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDCANCEL), TRUE);
 		return true;
 	}
 
 	// Enable Cancel button (if it was pressed)
-	if(m_searchDock->m_bStopPressed) ::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDCANCEL), TRUE);
-	m_searchDock->m_bStopPressed = false;
+	if(m_mainDock->m_bStopPressed) ::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDCANCEL), TRUE);
+	m_mainDock->m_bStopPressed = false;
 	::SetFocus(::GetDlgItem(m_searchInputDlgHnd, IDCANCEL));
 	return false;
 }
@@ -193,7 +194,7 @@ void CProcessSearchInFiles::ResizeInputDgl() {
 	coordinates.x = wndRect.left;
 	coordinates.y = wndRect.top;
 
-	if (m_searchDock->m_bInProcess) {
+	if (m_mainDock->m_bInProcess) {
 		::ShowWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_PROGRESS), SW_SHOW);
 		wndRect.bottom += 24;
 	}
@@ -321,8 +322,8 @@ bool CProcessSearchInFiles::FindInfile(LPCSTR file) {
 		while (tempStringFile.Find("\n", hitPos, endPos)) {
 			if (checkCancelButton()) return false;
 
-			if (hitPos - endPos > 110) {
-				lineToShow.NCopy(&StringFile[endPos], 110);
+			if (hitPos - endPos > 128) {
+				lineToShow.NCopy(&StringFile[endPos], 128);
 				lineToShow += "...";
 			}
 			else
@@ -404,6 +405,7 @@ bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR
 				if (m_pSearchDockList->GetFirstItem() == NULL) m_pSearchDockList->SetFirstItem(m_currRootItem);
 
 				m_currHitFile	= iterator;
+				m_currFileIcon  = tvis.item.iImage;
 				m_pSearchDockList->SetItemState(m_currRootItem, TVIS_EXPANDED, TVIS_EXPANDED);
 			}
 
@@ -411,12 +413,10 @@ bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR
 
 			tvis.hParent				= m_currRootItem;
 			tvis.hInsertAfter			= TVI_LAST;
-			tvis.item.mask				= TVIF_CHILDREN | TVIF_TEXT | TVIF_PARAM;
+			tvis.item.mask				= TVIF_CHILDREN | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_TEXT | TVIF_PARAM;
 			tvis.item.pszText			= (LPSTR)temp.Sf("%5d: %s", line, bufLine.GetSafe());
-			/*
-			tvis.item.iImage			= GetIconIndex((LPCSTR)iterator);
-			tvis.item.iSelectedImage	= GetSelIconIndex((LPCSTR)iterator);
-			*/
+			tvis.item.iImage			= m_currFileIcon;
+			tvis.item.iSelectedImage	= m_currFileIcon;
 			tvis.item.cChildren			= false;
 
 			CCustomItemInfo* pCii = new CCustomItemInfo(line, hitPos, (LPCSTR)iterator);
