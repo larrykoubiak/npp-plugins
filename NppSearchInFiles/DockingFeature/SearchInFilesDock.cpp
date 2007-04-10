@@ -151,11 +151,18 @@ void SearchInFilesDock::doOnSize() {
 
 void SearchInFilesDock::openSearchInFilesInputDlg() 
 {
+	/*
 	DialogBoxParam(_hInst, 
 					(LPCTSTR)IDD_SEARCH_INPUT_DLG, 
 					_hParent, 
 					(DLGPROC)SearchInputDlg::SearchInFilesInputDlgProc,
 					(LPARAM)this);
+	*/
+	CreateDialogParam(_hInst,												// handle to module
+	 					(LPCTSTR)IDD_SEARCH_INPUT_DLG,						// dialog box template name
+						_hParent,											// handle to owner window
+						(DLGPROC)SearchInputDlg::SearchInFilesInputDlgProc, // dialog box procedure
+						(LPARAM)this);
 }
 
 void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFFER types, CUTL_BUFFER where) {

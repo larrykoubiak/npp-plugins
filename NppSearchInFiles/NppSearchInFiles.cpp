@@ -28,6 +28,8 @@
 //																		Added icon to notepad++ plug-ins tabs
 //  NppSearchInFiles.cpp	-								28.03.2007	The plug-in did not show at start
 //	SearchInFilesDock.cpp	-											Get rid of tabs
+//	SearchInFilesDock.cpp	-								10.04.2007	The parameters window is modaless
+//	ProcessSearchInFiles.cpp								10.04.2007	Get rid of confirmation window on stopping search
 //
 //  PENDIENTE:
 //  Mensaje para abrir la busqueda partiendo de una carpeta desde fuera del plug-in

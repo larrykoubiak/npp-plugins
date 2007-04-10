@@ -173,10 +173,8 @@ bool CProcessSearchInFiles::checkCancelButton() {
 	}
 
 	if (m_searchDock->m_bStopPressed) {
-		if (::MessageBox(m_searchInputDlgHnd, "Stop the search?", "Search in Files", MB_YESNO) == IDYES) {
-			::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDCANCEL), TRUE);
-			return true;
-		}
+		::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDCANCEL), TRUE);
+		return true;
 	}
 
 	// Enable Cancel button (if it was pressed)
