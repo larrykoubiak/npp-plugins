@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\DockingFeature;.\"
+				AdditionalIncludeDirectories=".\DockingFeature;.\;.\HelpDlg"
 				PreprocessorDefinitions="WIN32,_DEBUG,_WINDOWS,STRICT;_USRDLL;NPPINSERTPLUGIN_EXPORTS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -125,7 +125,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories=".\DockingFeature;.\"
+				AdditionalIncludeDirectories=".\DockingFeature;.\;.\HelpDlg"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPINSERTPLUGIN_EXPORTS"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
@@ -190,6 +190,10 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath=".\HelpDlg\HelpDialog.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\DockingFeature\lightExplorerDlg.cpp"
 				>
 				<FileConfiguration
@@ -242,6 +246,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\HelpDlg\URLCtrl.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\utils.cpp"
 				>
 			</File>
@@ -265,6 +273,10 @@
 			</File>
 			<File
 				RelativePath="DockingFeature\dockingResource.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HelpDlg\HelpDialog.h"
 				>
 			</File>
 			<File
@@ -297,6 +309,10 @@
 			</File>
 			<File
 				RelativePath=".\SysMsg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\HelpDlg\URLCtrl.h"
 				>
 			</File>
 			<File

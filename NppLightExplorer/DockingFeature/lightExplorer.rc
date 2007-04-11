@@ -60,6 +60,22 @@ BEGIN
     GROUPBOX        "",IDC_STATIC,7,7,173,171
 END
 
+IDD_HELP_DLG DIALOGEX 0, 0, 230, 154
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,89,132,50,14
+    LTEXT           "dengGB.balandro@gmail.com",IDC_EMAIL_LINK,65,41,123,8
+    LTEXT           "Author:\t\tJose Javier Sanjosé",IDC_STATIC,12,31,183,9
+    GROUPBOX        "Menu entries",IDC_STATIC,7,70,216,55
+    LTEXT           "eMail:",IDC_STATIC,12,41,21,9
+    LTEXT           "Light Explorer ...\tToggle the light explorer pane visibility\n\t\t\t(ALT + A)",IDC_STATIC,15,85,203,25
+    CTEXT           "Light Explorer Plugin for Notepad++ v4.x                        v1.2",IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | WS_EX_TRANSPARENT
+    LTEXT           "URL:",IDC_STATIC,12,52,21,9
+    LTEXT           "http://sourceforge.net/projects/npp-plugins",IDC_NPP_PLUGINS_URL,65,52,158,8
+    LTEXT           "Help ...\t\t\tShows this help dialog",IDC_STATIC,15,110,203,12
+END
+
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -110,8 +126,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
- PRODUCTVERSION 1,0,0,1
+ FILEVERSION 1,2,0,0
+ PRODUCTVERSION 1,2,0,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -127,12 +143,12 @@ BEGIN
         BLOCK "0c0a04b0"
         BEGIN
             VALUE "FileDescription", "lightExplorer"
-            VALUE "FileVersion", "1, 0, 0, 1"
+            VALUE "FileVersion", "1, 2, 0, 0"
             VALUE "InternalName", "lightExplorer"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "lightExplorer.rc"
             VALUE "ProductName", " lightExplorer"
-            VALUE "ProductVersion", "1, 0, 0, 1"
+            VALUE "ProductVersion", "1, 2, 0, 0"
         END
     END
     BLOCK "VarFileInfo"

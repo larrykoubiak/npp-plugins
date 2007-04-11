@@ -22,6 +22,7 @@
 //  NppLightExplorer										23.03.2007	Added icon to notepad++ toolbar
 //  resource.rc     										28.03.2007	Tab icon
 //  NppLightExplorer										09.04.2007	Toolbar icon state when closing the adding
+//  NppLightExplorer										11.04.2007	Added help dialog
 //
 //  PENDIENTE:
 //  Mensaje para abrir la busqueda partiendo de una carpeta 
@@ -29,33 +30,44 @@
 #include "stdafx.h"
 #include "PluginInterface.h"
 
+#pragma warning ( disable : 4312 )
 
 #include <shlobj.h>
 #include "lightExplorerDlg.h"
+#include "helpDialog.h"
 
 const char	PLUGIN_NAME[] = "Light Explorer";
-const int	nbFunc = 1;
+const int	nbFunc = 3;
 const char	localConfFile[]	= "doLocalConf.xml";
 
 NppData				nppData;
+HANDLE				g_hModule;
 toolbarIcons		g_TBLightExplorer;
 
 FuncItem funcItem[nbFunc];
 bool doCloseTag = false;
 
 void openLightExplorerDlg();
+void openHelpDlg();
 
-lightExplorerDlg _lightExplorerDlg;
+lightExplorerDlg	_lightExplorerDlg;
+HelpDlg				_helpDlg;
 
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 {
+	g_hModule = hModule;
+
     switch (reasonForCall)
     {
 		case DLL_PROCESS_ATTACH:
 		{
 			funcItem[DOCKABLE_LIGHTEXPLORER]._pFunc = openLightExplorerDlg;
+			funcItem[1]._pFunc = openLightExplorerDlg;
+			funcItem[2]._pFunc = openHelpDlg;
 
 			strcpy(funcItem[DOCKABLE_LIGHTEXPLORER]._itemName, "Light Explorer");
+			strcpy(funcItem[1]._itemName, "-----------");
+			strcpy(funcItem[2]._itemName, "H&elp ...");
 
 			// Shortcut :
 			// Following code makes the first command
@@ -65,6 +77,10 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 			funcItem[DOCKABLE_LIGHTEXPLORER]._pShKey->_isCtrl = false;
 			funcItem[DOCKABLE_LIGHTEXPLORER]._pShKey->_isShift = false;
 			funcItem[DOCKABLE_LIGHTEXPLORER]._pShKey->_key = 0x41; //VK_A
+
+			funcItem[1]._pShKey = NULL;
+			funcItem[2]._pShKey = NULL;
+
 
 			char nppPath[MAX_PATH];
 			GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
@@ -122,6 +138,8 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
 	nppData = notpadPlusData;
+
+	_helpDlg.init((HINSTANCE)g_hModule, nppData);
 }
 
 extern "C" __declspec(dllexport) const char * getName()
@@ -159,16 +177,24 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 //
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam)
 {
-	/*
-	if (Message == WM_MOVE)
+	if (Message == WM_CREATE)
 	{
-		::MessageBox(NULL, "move", "", MB_OK);
+		initMenu();
 	}
-	*/
 	return TRUE;
 }
 
+/***
+ *	initMenu()
+ *
+ *	Initialize the menu
+ */
+void initMenu(void)
+{
+	HMENU	hMenu = ::GetMenu(nppData._nppHandle);
 
+	::ModifyMenu(hMenu, funcItem[1]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
+}
 
 // Dockable Dialog Demo
 // 
@@ -202,4 +228,9 @@ void openLightExplorerDlg()
 	}
 	else
 		_lightExplorerDlg.display(!_lightExplorerDlg.isVisible());
+}
+
+void openHelpDlg(void)
+{
+	_helpDlg.doDialog();
 }

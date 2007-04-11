@@ -54,6 +54,8 @@ struct FuncItem {
 
 typedef FuncItem * (__cdecl * PFUNCGETFUNCSARRAY)(int *);
 
+void initMenu(void);
+
 // You should implement (or define an empty function body) those functions which are called by Notepad++ plugin manager
 extern "C" __declspec(dllexport) void setInfo(NppData);
 extern "C" __declspec(dllexport) const char * getName();
