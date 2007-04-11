@@ -33,18 +33,20 @@
 //
 //  PENDIENTE:
 //  Mensaje para abrir la busqueda partiendo de una carpeta desde fuera del plug-in
-//  Eliminar dialogo de confirmación (hacerlo configurable)
 //  Expresiones regulares
 
 #include "stdafx.h"
+
+#pragma warning ( disable : 4312 )
 
 #include "window.h"
 #include "dockingFeature/staticDialog.h"
 #include "SearchResultsListCtrl.h"
 #include "SearchInFilesDock.h"
+#include "helpDialog.h"
 
 const char PLUGIN_NAME[]	= "Search in Files";
-const int nbFunc			= 3;
+const int nbFunc			= 5;
 const char localConfFile[]	= "doLocalConf.xml";
 
 NppData				nppData;
@@ -57,8 +59,11 @@ FuncItem funcItem[nbFunc];
 void SearchInFilesDockableDlg();
 void SearchInFilesNavigate();
 void ToggleSearchInFilesDockableDlg();
+void openHelpDlg();
 
-SearchInFilesDock _searchInFilesDock;
+SearchInFilesDock	_searchInFilesDock;
+HelpDlg				_helpDlg;
+
       
 BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 {
@@ -68,13 +73,17 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
     {
 		case DLL_PROCESS_ATTACH: 
 			{
-				funcItem[DOCKABLE_SEARCHINFILES]._pFunc = SearchInFilesDockableDlg;
-				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._pFunc = SearchInFilesNavigate;
-				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pFunc = ToggleSearchInFilesDockableDlg;
+				funcItem[DOCKABLE_SEARCHINFILES]._pFunc				= SearchInFilesDockableDlg;
+				funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._pFunc	= SearchInFilesNavigate;
+				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pFunc	= ToggleSearchInFilesDockableDlg;
+				funcItem[3]._pFunc									= ToggleSearchInFilesDockableDlg; 	/* ------- */
+				funcItem[4]._pFunc									= openHelpDlg;
 				
-				strcpy(funcItem[DOCKABLE_SEARCHINFILES]._itemName, "Search in Files");
-				strcpy(funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._itemName, "Move to next hit");
-				strcpy(funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._itemName, "Show / Hide Results");
+				strcpy(funcItem[DOCKABLE_SEARCHINFILES]._itemName, "&Search in Files");
+				strcpy(funcItem[DOCKABLE_SEARCHINFILES_NAVIGATE]._itemName, "&Move to next hit");
+				strcpy(funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._itemName, "S&how / Hide Results");
+				strcpy(funcItem[3]._itemName, "-----------");
+				strcpy(funcItem[4]._itemName, "H&elp ...");
 
 				// Shortcut :
 				// Following code makes the first command
@@ -96,9 +105,13 @@ BOOL APIENTRY DllMain(HANDLE hModule, DWORD  reasonForCall, LPVOID lpReserved)
 				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pShKey->_isCtrl = false;
 				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pShKey->_isShift = false;
 				funcItem[DOCKABLE_SEARCHINFILES_SHOWHIDE]._pShKey->_key = 0x5A; // VK_Z
-				
+
+				funcItem[3]._pShKey = NULL;
+				funcItem[4]._pShKey	= NULL;
+
 				// retrieve the visual state
 				char nppPath[MAX_PATH];
+
 				GetModuleFileName((HMODULE)hModule, nppPath, sizeof(nppPath));
 				
 				// remove the module name : get plugins directory path
@@ -162,6 +175,8 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	_searchInFilesDock.init((HINSTANCE)g_hModule, nppData._nppHandle);
 	_searchInFilesDock.m_nppHandle = nppData._nppHandle;
 	_searchInFilesDock.m_scintillaMainHandle = nppData._scintillaMainHandle;
+
+	_helpDlg.init((HINSTANCE)g_hModule, nppData);
 }
 
 extern "C" __declspec(dllexport) const char * getName()
@@ -205,13 +220,24 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 // http://sourceforge.net/forum/forum.php?forum_id=482781
 //
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam)
-{/*
-	if (Message == WM_MOVE)
+{
+	if (Message == WM_CREATE)
 	{
-		::MessageBox(NULL, "move", "", MB_OK);
+		initMenu();
 	}
-*/
 	return TRUE;
+}
+
+/***
+ *	initMenu()
+ *
+ *	Initialize the menu
+ */
+void initMenu(void)
+{
+	HMENU	hMenu = ::GetMenu(nppData._nppHandle);
+
+	::ModifyMenu(hMenu, funcItem[3]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
 }
 
 // Dockable Dialog Search In Files
@@ -273,4 +299,9 @@ void SearchInFilesNavigate()
 		_searchInFilesDock.display();
 		_searchInFilesDock.moveToNextHit();
 	}
+}
+
+void openHelpDlg(void)
+{
+	_helpDlg.doDialog();
 }

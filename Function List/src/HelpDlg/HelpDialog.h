@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "PluginInterface.h"
 #include "URLCtrl.h"
 
-#include "FunctionListResource.h"
+#include "resource.h"
 
 
 
@@ -62,38 +62,4 @@ private:
 	URLCtrl			_urlNppPlugins;
 };
 
-
-
-class UserHelpDlg : public StaticDialog
-{
-
-public:
-	UserHelpDlg() : StaticDialog() {};
-    
-    void init(HINSTANCE hInst, NppData nppData)
-	{
-		_nppData = nppData;
-		Window::init(hInst, nppData._nppHandle);
-	};
-
-   	void doDialog(bool willBeShown = TRUE);
-
-    virtual void destroy() {
-		_urlLink.destroy();
-    };
-
-
-protected :
-	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
-
-private:
-	/* Handles */
-	NppData			_nppData;
-    HWND			_HSource;
-
-	/* for eMail */
-    URLCtrl			_urlLink;
-};
-
-
-#endif // HELP_DEFINE_H
+#endif

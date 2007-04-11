@@ -15,6 +15,11 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+#include <stdafx.h>
+
+#pragma warning ( disable : 4311 )
+#pragma warning ( disable : 4312 )
+
 #include "URLCtrl.h"
 
 static BYTE XORMask[128] =

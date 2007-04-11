@@ -607,6 +607,7 @@
 #define LVS_NOLABELWRAP                 0x0080
 #define TVS_NOTOOLTIPS                  0x0080
 #define TCS_VERTICAL                    0x0080
+#define IDD_HELP_DLG                    128
 #define VK_F18                          0x81
 #define WM_NCCREATE                     0x0081
 #define CF_DSPTEXT                      0x0081
@@ -936,7 +937,9 @@
 #define IDC_TREE1                       1024
 #define psh2                            0x0401
 #define IDC_STATIC_MESSAGE              1025
+#define IDC_EMAIL_LINK                  1026
 #define psh3                            0x0402
+#define IDC_NPP_PLUGINS_URL             1027
 #define psh4                            0x0403
 #define psh5                            0x0404
 #define psh6                            0x0405
@@ -1233,9 +1236,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        127
+#define _APS_NEXT_RESOURCE_VALUE        129
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1026
+#define _APS_NEXT_CONTROL_VALUE         1028
 #define _APS_NEXT_SYMED_VALUE           102
 #endif
 #endif

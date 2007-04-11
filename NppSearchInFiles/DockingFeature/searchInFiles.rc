@@ -44,10 +44,10 @@ BEGIN
     COMBOBOX        IDC_TYPES,74,25,327,125,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_WHERE,74,43,303,163,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "&...",IDC_CHOOSE_FOLDER,384,42,17,14
-    CONTROL         "C&ase sensitive",IDC_CHECK_CASE_SENSITIVE,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,9,65,58,10
-    CONTROL         "&Whole word",IDC_WHOLE_WORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,71,66,50,10
-    CONTROL         "&Show results in 2nd tab",IDC_RESULTS_IN_NEW_TAB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,125,66,87,10
-    CONTROL         "&Exclude extensions",IDC_EXCLUDE_EXTENSIONS,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,217,65,72,10
+    CONTROL         "C&ase sensitive",IDC_CHECK_CASE_SENSITIVE,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,9,65,58,10,WS_EX_RIGHT
+    CONTROL         "&Whole word",IDC_WHOLE_WORD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,72,66,50,10,WS_EX_RIGHT
+    CONTROL         "&Show results in 2nd tab",IDC_RESULTS_IN_NEW_TAB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,124,66,87,10,WS_EX_RIGHT
+    CONTROL         "&Exclude extensions",IDC_EXCLUDE_EXTENSIONS,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,214,65,73,10,WS_EX_RIGHT
     PUSHBUTTON      "C&hoose extensions to exclude",IDC_MANAGE_EXTENSIONS,291,63,110,14
     DEFPUSHBUTTON   "&OK",IDOK,409,7,50,14
     PUSHBUTTON      "&Close",IDCANCEL,409,24,50,14
@@ -71,6 +71,24 @@ BEGIN
     LTEXT           "Choose extensions to exclude from searches",IDC_STATIC,12,17,146,11
     LTEXT           "Tipically you will include here avi, mpg, jpg, etc.",IDC_STATIC,12,157,155,8
     GROUPBOX        "",IDC_STATIC,7,7,173,167
+END
+
+IDD_HELP_DLG DIALOGEX 0, 0, 230, 213
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,89,193,50,14
+    LTEXT           "dengGB.balandro@gmail.com",IDC_EMAIL_LINK,65,41,123,8
+    LTEXT           "Author:\t\tJose Javier Sanjosé",IDC_STATIC,12,31,183,9
+    GROUPBOX        "Menu entries",IDC_STATIC,7,90,216,97
+    LTEXT           "eMail:",IDC_STATIC,12,41,21,9
+    CTEXT           "Many thanks to Jens for helping me to write this plugin.",IDC_STATIC,7,73,216,11
+    LTEXT           "Search in Files ...\tShows the Search In Files params\n\t\t\tdialog\n\t\t\t(ALT + Q)",IDC_STATIC,15,105,203,25
+    CTEXT           "Search In Files Plugin for Notepad++ v4.x                        v1.10",IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | WS_EX_TRANSPARENT
+    LTEXT           "Show / Hide results ...\tToggle the results pane visibility\n\t\t\t(ALT + Z)",IDC_STATIC,15,163,203,18
+    LTEXT           "URL:",IDC_STATIC,12,52,21,9
+    LTEXT           "http://sourceforge.net/projects/npp-plugins",IDC_NPP_PLUGINS_URL,65,52,158,8
+    LTEXT           "Move to next hit ...\tOpen next search hit found\n\t\t\t(F4)",IDC_STATIC,15,136,203,19
 END
 
 
@@ -138,8 +156,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,10,0,0
- PRODUCTVERSION 1,10,0,0
+ FILEVERSION 1,0,0,9
+ PRODUCTVERSION 1,0,0,9
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -155,12 +173,12 @@ BEGIN
         BLOCK "000904b0"
         BEGIN
             VALUE "FileDescription", "searchInFiles"
-            VALUE "FileVersion", "1, 10, 0, 0"
+            VALUE "FileVersion", "1, 0, 0, 9"
             VALUE "InternalName", "searchInFiles"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "searchInFiles.rc"
             VALUE "ProductName", " searchInFiles"
-            VALUE "ProductVersion", "1, 10, 0, 0"
+            VALUE "ProductVersion", "1, 0, 0, 9"
         END
     END
     BLOCK "VarFileInfo"

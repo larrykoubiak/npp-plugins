@@ -17,12 +17,13 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <stdafx.h>
 
+#pragma warning ( disable : 4311 )
+#pragma warning ( disable : 4312 )
 
 #include "HelpDialog.h"
 #include "PluginInterface.h"
-#include "HelpTxt.h"
-
 
 void HelpDlg::doDialog()
 {
@@ -40,7 +41,7 @@ BOOL CALLBACK HelpDlg::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
         case WM_INITDIALOG :
 		{
             _emailLink.init(_hInst, _hSelf);
-            _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), "mailto:jens.plugin.npp@gmx.de");
+            _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), "mailto:dengGB.balandro@gmail.com");
 
             _urlNppPlugins.init(_hInst, _hSelf);
             _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), "http://sourceforge.net/projects/npp-plugins/");
@@ -59,41 +60,6 @@ BOOL CALLBACK HelpDlg::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
 				default :
 					break;
 			}
-		}
-	}
-	return FALSE;
-}
-
-
-void UserHelpDlg::doDialog(bool willBeShown)
-{
-    if (!isCreated())
-        create(IDD_HELP_USERDLG);
-
-	if (willBeShown == TRUE)
-	{
-		goToCenter();
-	}
-
-	display(willBeShown);
-}
-
-
-BOOL CALLBACK UserHelpDlg::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
-{
-	switch (Message) 
-	{
-        case WM_INITDIALOG :
-		{
-			::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_HELP), helpTxt);
-			_urlLink.init(_hInst, _hSelf);
-			_urlLink.create(::GetDlgItem(_hSelf, IDC_SCINTILLA_URL), "http://scintilla.sourceforge.net/ScintillaDoc.html#Searching");
-			return TRUE;
-		}
-		case WM_CLOSE :
-		{
-			display(FALSE);
-			return TRUE;
 		}
 	}
 	return FALSE;
