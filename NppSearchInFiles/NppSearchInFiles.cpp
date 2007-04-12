@@ -18,6 +18,7 @@
 // 
 // 07.03.2007, v1.0.0.5, 
 // 21.03.2007, v1.0.0.8, 
+// 11.04.2007, v1.10.0.0, 
 //
 //	FILE					METHOD							DATE		DESCRIPTION							
 //	ControlsTab.h			SIFControlsTab::renameTab		07.03.07	UTL_strlen instead of sizeof
@@ -30,6 +31,7 @@
 //	SearchInFilesDock.cpp	-											Get rid of tabs
 //	SearchInFilesDock.cpp	-								10.04.2007	The parameters window is modaless
 //	ProcessSearchInFiles.cpp								10.04.2007	Get rid of confirmation window on stopping search
+//  NppSearchInFiles.cpp	-								11.04.2007	Added help dialog
 //
 //  PENDIENTE:
 //  Mensaje para abrir la busqueda partiendo de una carpeta desde fuera del plug-in

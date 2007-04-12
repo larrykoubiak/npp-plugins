@@ -73,14 +73,14 @@ BEGIN
     GROUPBOX        "",IDC_STATIC,7,7,173,167
 END
 
-IDD_HELP_DLG DIALOGEX 0, 0, 230, 213
+IDD_HELP_DLG DIALOGEX 0, 0, 230, 234
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,89,193,50,14
+    DEFPUSHBUTTON   "OK",IDOK,89,213,50,14
     LTEXT           "dengGB.balandro@gmail.com",IDC_EMAIL_LINK,65,41,123,8
     LTEXT           "Author:\t\tJose Javier Sanjosé",IDC_STATIC,12,31,183,9
-    GROUPBOX        "Menu entries",IDC_STATIC,7,90,216,97
+    GROUPBOX        "Menu entries",IDC_STATIC,7,90,216,116
     LTEXT           "eMail:",IDC_STATIC,12,41,21,9
     CTEXT           "Many thanks to Jens for helping me to write this plugin.",IDC_STATIC,7,73,216,11
     LTEXT           "Search in Files ...\tShows the Search In Files params\n\t\t\tdialog\n\t\t\t(ALT + Q)",IDC_STATIC,15,105,203,25
@@ -89,6 +89,7 @@ BEGIN
     LTEXT           "URL:",IDC_STATIC,12,52,21,9
     LTEXT           "http://sourceforge.net/projects/npp-plugins",IDC_NPP_PLUGINS_URL,65,52,158,8
     LTEXT           "Move to next hit ...\tOpen next search hit found\n\t\t\t(F4)",IDC_STATIC,15,136,203,19
+    LTEXT           "Help ...\t\t\tShows this help dialog",IDC_STATIC,15,187,203,10
 END
 
 
