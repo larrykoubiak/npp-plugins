@@ -28,7 +28,7 @@ LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MODERN
 IDD_SEARCHINFILESDOCK DIALOGEX 26, 41, 552, 112
 STYLE DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE
-CAPTION "Search in Files "
+CAPTION "Search in Files"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     CONTROL         "",IDC_RESULTSLIST,"SysTreeView32",TVS_HASBUTTONS | TVS_LINESATROOT | TVS_DISABLEDRAGDROP | TVS_SHOWSELALWAYS | TVS_FULLROWSELECT | WS_BORDER | WS_TABSTOP,4,20,547,90
@@ -157,8 +157,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,9
- PRODUCTVERSION 1,0,0,9
+ FILEVERSION 1,10,0,0
+ PRODUCTVERSION 1,10,0,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -174,12 +174,12 @@ BEGIN
         BLOCK "000904b0"
         BEGIN
             VALUE "FileDescription", "searchInFiles"
-            VALUE "FileVersion", "1, 0, 0, 9"
+            VALUE "FileVersion", "1, 10, 0, 0"
             VALUE "InternalName", "searchInFiles"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "searchInFiles.rc"
             VALUE "ProductName", " searchInFiles"
-            VALUE "ProductVersion", "1, 0, 0, 9"
+            VALUE "ProductVersion", "1, 10, 0, 0"
         END
     END
     BLOCK "VarFileInfo"

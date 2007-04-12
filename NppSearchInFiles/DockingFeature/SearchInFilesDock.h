@@ -48,7 +48,6 @@ public :
 	~SearchInFilesDock(){
 		// Destroy our list fonts
 		if (m_font.m_hFont) m_font.DeleteObject();
-		if (m_fontBold.m_hFont) m_fontBold.DeleteObject();
 	}
 
 	char m_iniFilePath[MAX_PATH];
@@ -104,11 +103,18 @@ public :
 
 	static bool isSecondTabVisible();
 
+	void UpdateWindowTitle(LPCSTR title) { 
+		m_windowTitle = title; 
+		_data.pszAddInfo = m_windowTitle.data;
+		_data.pszName = m_windowTitle.data;
+		updateDockingDlg();
+	};
+
 protected :
 	int							m_iCurrSearchLength;
 	CFont						m_font;
-	CFont						m_fontBold;
 	int							m_staticHeight;
+	CUTL_BUFFER					m_windowTitle;
 
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 

@@ -118,13 +118,15 @@ void CProcessSearchInFiles::doSearch() {
 		if (searchResult = SearchFolders(strFolder.GetSafe())) 
 			searchResult = SearchInFolders(); // Do the search in files process
 
-		staticStatusBuf.Sf("'%s' - '%s' - '%s'        (%d hits)", 
+		staticStatusBuf.Sf("(%d hits)  '%s' - '%s' - '%s'", 
+							m_totalHits,
 							what.GetSafe(),
 							types.GetSafe(),
-							where.GetSafe(),
-							m_totalHits);
+							where.GetSafe());
 
 		m_pStaticMessage->SetWindowTextA(staticStatusBuf.GetSafe());
+
+		m_searchDock->UpdateWindowTitle(staticStatusBuf.GetSafe());
 	}
 	catch (...) {
 		systemMessageEx("Error at SearchInFilesDock::callSearchInFiles", __FILE__, __LINE__);
@@ -233,6 +235,8 @@ bool CProcessSearchInFiles::SearchFolders(LPCSTR folder) {
 
 	// Avisamos de los que estamos haciendo:
 	m_pStaticMessage->SetWindowTextA(msg.Sf("Added folder %s", folder));
+
+	m_searchDock->UpdateWindowTitle(msg.Sf("Added folder %s", folder));
 
 	tempPath.SetNameExtension("*.*");
 	// Search for subfolders
@@ -489,6 +493,11 @@ bool CProcessSearchInFiles::SearchInFolders() {
 						statusText.Sf("Hits %5d  |  Folders %5d / %5d  |  Files %5d  |  %s", 
 							m_totalHits, i, foldersParse.NumArgs(), ++m_totalFiles, (LPCSTR)iterator);
 						m_pStaticMessage->SetWindowTextA(statusText.GetSafe());
+
+						m_searchDock->UpdateWindowTitle(statusText.GetSafe());
+
+
+
 
 						if (checkCancelButton()) return false;
 						if (!FindInfile((LPCSTR)iterator)) return false;

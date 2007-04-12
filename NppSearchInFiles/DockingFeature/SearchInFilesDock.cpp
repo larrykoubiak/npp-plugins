@@ -53,11 +53,8 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 
 				m_font.GetLogFont(&logFont);
 
-				logFont.lfWeight = FW_BOLD;
-				m_fontBold.CreateFontIndirect(&logFont);
-
 				m_searchResultsListCtrl.SetFont(m_font);
-				m_staticMessage.SetFont(m_fontBold);
+				m_staticMessage.SetFont(m_font);
 
 				// Set StaticMessage height in pixels
 				m_staticHeight = (-2)*((72*logFont.lfHeight) / (GetDeviceCaps(GetDC(_hSelf), LOGPIXELSY))); 
@@ -138,15 +135,17 @@ void SearchInFilesDock::doOnSize() {
 
 	getClientRect(rc);
 
-	rc.DeflateRect(2, 2);
-
 	rcStatic = rc;
+
+	rcStatic.DeflateRect(2, 2);
 
 	rcStatic.left += 6;
 	rcStatic.bottom = rcStatic.top + m_staticHeight;
 	m_staticMessage.MoveWindow(&rcStatic, 1);
 
-	rc.top += m_staticHeight;
+	//rc.DeflateRect(1, 1);
+
+	rc.top += m_staticHeight + 2;
 	m_searchResultsListCtrl.MoveWindow(&rc, 1);
 }
 
@@ -225,7 +224,7 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 		dockOwner = this;
 
 		// if second tab is open and the search is over first tab, show the later
-		if (isSecondTabVisible)
+		if (isSecondTabVisible())
 			::SendMessage(_hParent, WM_DMM_SHOW, 0, (LPARAM)_hSelf);
 	}
 

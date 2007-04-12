@@ -46,7 +46,7 @@ BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM 
 			RECT rc;
 
 			::GetClientRect(_hSelf, &rc);
-			m_wndTreeCtrl.MoveWindow(rc.left + 2, rc.top + 2, rc.right - 2, rc.bottom - 2, TRUE);
+			m_wndTreeCtrl.MoveWindow(rc.left + 0, rc.top + 0, rc.right - 0, rc.bottom - 0, TRUE);
 			return TRUE;
 		}
 
