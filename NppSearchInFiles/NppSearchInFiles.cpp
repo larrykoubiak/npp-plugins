@@ -32,6 +32,7 @@
 //	SearchInFilesDock.cpp	-								10.04.2007	The parameters window is modaless
 //	ProcessSearchInFiles.cpp								10.04.2007	Get rid of confirmation window on stopping search
 //  NppSearchInFiles.cpp	-								11.04.2007	Added help dialog
+//	SearchInFilesDock.cpp	-								13.04.2007	The browse for folder dialog opens from the current folder if this exists
 //
 //  PENDIENTE:
 //  Mensaje para abrir la busqueda partiendo de una carpeta desde fuera del plug-in

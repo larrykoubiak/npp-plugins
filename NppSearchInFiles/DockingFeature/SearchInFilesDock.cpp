@@ -239,10 +239,32 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 	delete searchInFiles;
 }
 
+static char s_szConfigDir[_MAX_PATH];
+
+int CALLBACK BrowseCallbackProc(HWND hwnd, UINT uMsg, LPARAM lParam, LPARAM lpData) {
+   switch(uMsg) {
+      case BFFM_INITIALIZED: 
+         // WParam is TRUE since we are passing a path.
+         SendMessage(hwnd, BFFM_SETSELECTION, TRUE, (LPARAM)s_szConfigDir);
+         break;            
+
+      default:
+         break;         
+   }         
+   return 0;      
+}
+
 void SearchInFilesDock::chooseFolder(HWND hDlg) {
 	try {
 		LPMALLOC pShellMalloc = 0;
 		if (::SHGetMalloc(&pShellMalloc) == NO_ERROR) {
+			// Read the folder on screen
+			CUTL_BUFFER where(MAX_PATH + 1);
+
+			::GetDlgItemText(hDlg, IDC_WHERE, where, MAX_PATH);
+
+			CUTL_PATH wherePath(where.GetSafe());
+
 			// If we were able to get the shell malloc object,
 			// then proceed by initializing the BROWSEINFO stuct
 			BROWSEINFO info;
@@ -256,7 +278,14 @@ void SearchInFilesDock::chooseFolder(HWND hDlg) {
 			info.pszDisplayName = szDisplayName;
 			info.lpszTitle		= title.GetSafe();
 			info.ulFlags		= 0;
-			info.lpfn			= NULL;
+
+			if (wherePath.DirectoryExists()) {
+				UTL_strcpy(s_szConfigDir, where.GetSafe());
+				info.lpfn = BrowseCallbackProc;
+			}
+			else
+				info.lpfn			= NULL;
+
 			info.lParam			= 0;
 
 			// Execute the browsing dialog.
