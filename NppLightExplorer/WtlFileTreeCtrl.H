@@ -149,6 +149,11 @@ public:
 	void LoadFavorites();
 	void SearchFromHere();
 
+	LPCSTR				GetItemDisplayString(HTREEITEM hItem);
+	LPCSTR				GetItemTag(HTREEITEM hItem);
+	LPCSTR				GetSelectedPath();
+	int					GetItemType(HTREEITEM hItem);
+
 protected:
 	void				InsertRoots();
 	void				DisplayPath(LPCSTR folder, HTREEITEM parentItem);
@@ -164,7 +169,6 @@ protected:
 	int					GetIconIndex(LPITEMIDLIST lpPIDL);
 	int					GetSelIconIndex(HTREEITEM hItem);
 	int					GetSelIconIndex(LPITEMIDLIST lpPIDL);
-	int					GetItemType(HTREEITEM hItem);
 
 	NETRESOURCE*		GetNetworkResource(HTREEITEM hItem);
 
@@ -190,10 +194,6 @@ protected:
 	int					m_nNetworkSelIcon;
 
 	CUTL_BUFFER			m_iniFilePath;
-
-	LPCSTR				GetItemDisplayString(HTREEITEM hItem);
-	LPCSTR				GetItemTag(HTREEITEM hItem);
-	LPCSTR				GetSelectedPath();
 
 	IMalloc*			m_pMalloc;
 };

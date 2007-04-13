@@ -55,6 +55,45 @@ public:
 
 	char m_iniFilePath[MAX_PATH];
 
+    virtual void destroy() {
+		HTREEITEM	currItem = m_wndTreeCtrl.GetSelectedItem(), currFirstParent, tempItem; 
+		CUTL_BUFFER	pathToSave, tempBuf;
+
+		if (currItem == NULL) return;
+
+		currFirstParent = currItem;
+		
+		while (currFirstParent) {
+			tempItem = m_wndTreeCtrl.GetParentItem(currFirstParent);
+			if (tempItem == NULL) break;
+			currFirstParent = tempItem;
+		}
+
+		CCustomItemInfo* pCii = (CCustomItemInfo*)m_wndTreeCtrl.GetItemData(currItem);
+
+		CUT2_INI confIni(m_iniFilePath);
+
+		if (pCii && 
+			pCii->getType() == CCustomItemInfo::FILE || 
+			pCii->getType() == CCustomItemInfo::FOLDER ||
+			pCii->getType() == CCustomItemInfo::ROOT) {
+
+			if (pCii->getType() == CCustomItemInfo::FILE) {
+				CUTL_PATH	fileName(pCii->getTag());
+
+				fileName.GetDriveDirectory(pathToSave);
+				if (pathToSave[pathToSave.Len() - 1] != '\\') pathToSave += "\\";
+			}
+			else
+				pathToSave = pCii->getTag();
+
+			confIni.Write("startContext", "currItem", pathToSave.GetSafe());
+			confIni.Write("startContext", "currFirstParent", m_wndTreeCtrl.GetItemTag(currFirstParent));
+		}
+		else
+			confIni.Delete("startContext");
+	};
+
 protected:
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 

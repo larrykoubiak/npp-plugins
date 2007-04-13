@@ -100,6 +100,10 @@ BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM 
 				return DockingDlgInterface::run_dlgProc(message, wParam, lParam);
 		}
 
+		case WM_DESTROY:
+			destroy();
+			break;
+
 		default :
 			return DockingDlgInterface::run_dlgProc(message, wParam, lParam);
 	}
