@@ -27,7 +27,7 @@
 #define SCINTILLA_USER     (WM_USER + 2000)
 #define WM_DOOPEN		   (SCINTILLA_USER + 8)
 
-class SearchResultsListCtrl;
+class SearchResultsTreeCtrl;
 
 //////////////////////////////////////////////////////////////////////////////////////
 // This dialog retrieves the search in files options
@@ -43,7 +43,7 @@ class SearchInputDlg : public StaticDialog
 class SearchInFilesDock : public DockingDlgInterface
 {
 public :
-	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK) {};
+	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK), m_windowTitle("") {};
 
 	~SearchInFilesDock(){
 		// Destroy our list fonts
@@ -56,16 +56,7 @@ public :
 
 	void chooseFolder(HWND hDlg);
 	void callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFFER types, CUTL_BUFFER where);
-/*
-	virtual void display(bool toShow = true) const {
 
-		if (toShow && this != _pSearchInFilesDock2 && _pSearchInFilesDock2->isVisible()) return;
-
-		extern FuncItem funcItem[];
-		::SendMessage(_hParent, toShow ? WM_DMM_SHOW : WM_DMM_HIDE, 0, (LPARAM)_hSelf);
-		::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)toShow);
-	};
-*/
 	virtual void display(bool toShow = true) const;
 
 	void showHideToolbarIcon(bool toShow) {
@@ -84,7 +75,7 @@ public :
 	HWND	m_nppHandle;
 	HWND	m_scintillaMainHandle;
 
-	SearchResultsListCtrl*	getResultsTree()	{ return &m_searchResultsListCtrl; };
+	SearchResultsTreeCtrl*	getResultsTree()	{ return &m_searchResultsListCtrl; };
 	CStatic*				getStaticMessageCtrl() { return &m_staticMessage; };
 
 	void openCurrSelection(HTREEITEM treeItem);
@@ -97,7 +88,7 @@ public :
 	void SaveChecks(HWND hDlg);
 	void LoadChecks(HWND hDlg);
 
-	SearchResultsListCtrl		m_searchResultsListCtrl;
+	SearchResultsTreeCtrl		m_searchResultsListCtrl;
 	CStatic						m_staticMessage;
 	tTbData						_data;
 
@@ -106,15 +97,15 @@ public :
 	void UpdateWindowTitle(LPCSTR title) { 
 		m_windowTitle = title; 
 		_data.pszAddInfo = m_windowTitle.data;
-		_data.pszName = m_windowTitle.data;
 		updateDockingDlg();
 	};
+
+	CUTL_BUFFER					m_windowTitle;
 
 protected :
 	int							m_iCurrSearchLength;
 	CFont						m_font;
 	int							m_staticHeight;
-	CUTL_BUFFER					m_windowTitle;
 
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 

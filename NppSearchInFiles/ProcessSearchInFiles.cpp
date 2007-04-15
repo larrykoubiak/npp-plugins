@@ -370,9 +370,9 @@ int CProcessSearchInFiles::FileSize(const char * szFileName) {
 
 bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR searchPattern, CUTL_PATH iterator, int line) {
 	try {
-		UINT        hitPos, found, endPosLine = 0;
-		CUTL_BUFFER bufLine, nameExtension, driveDirectory, bufSize, statusText, bufFileMask, temp;
-		CUTL_BUFFER StringLine(strLine), formatDate;
+		UINT			hitPos, found, endPosLine = 0;
+		CUTL_BUFFER		bufLine, nameExtension, driveDirectory, bufSize, statusText, bufFileMask, temp;
+		CUTL_BUFFER		StringLine(strLine), formatDate;
 		TV_INSERTSTRUCT tvis;
 
 		while (StringLine.Find(searchPattern, hitPos, endPosLine)) {

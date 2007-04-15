@@ -31,7 +31,7 @@ protected:
 
 	SearchInFilesDock*		m_mainDock;
 	SearchInFilesDock*		m_searchDock;
-	SearchResultsListCtrl*	m_pSearchDockList;
+	SearchResultsTreeCtrl*	m_pSearchDockList;
 	CStatic*				m_pStaticMessage;
 	HWND					m_searchInputDlgHnd;
 

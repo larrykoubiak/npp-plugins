@@ -106,6 +106,10 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 							m_searchResultsListCtrl.onDeleteItem(pNMHDR);
 							break;
 
+						case NM_RCLICK:
+							m_searchResultsListCtrl.OnRClickItem(pNMHDR);
+							break;
+
 						default:
 							break;
 					}
@@ -150,7 +154,6 @@ void SearchInFilesDock::doOnSize() {
 }
 
 void SearchInFilesDock::display(bool toShow) const {
-
 	if (toShow && 
 		_pSearchInFilesDock2 && 
 		this != _pSearchInFilesDock2 && 
@@ -227,7 +230,6 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 		if (isSecondTabVisible())
 			::SendMessage(_hParent, WM_DMM_SHOW, 0, (LPARAM)_hSelf);
 	}
-
 
 	// Save the length of the current search
 	dockOwner->m_iCurrSearchLength = bWholeWord ? what.strlen() + 2 : what.strlen();
@@ -794,6 +796,12 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 						CUTL_BUFFER newExtension(256);
 
 						::GetWindowText(::GetDlgItem(hDlg, IDC_EXTENSION), (LPSTR)newExtension.GetSafe(), 255);
+
+						CString tempStr(newExtension.data);
+
+						tempStr.Remove('.'); // remove points
+
+						newExtension = tempStr.GetBuffer(tempStr.GetLength());
 
 						// Is it already on the list?
 						if (LB_ERR != ::SendMessage(::GetDlgItem(hDlg, IDC_EXCLUDE_LIST), LB_FINDSTRINGEXACT, -1, (LPARAM)newExtension.GetSafe())) {

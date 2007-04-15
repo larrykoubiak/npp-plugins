@@ -24,8 +24,11 @@ class SearchResultsListCtrl;
 #include "SearchInFilesDock.h"
 #include "misc/SysMsg/SysMsg.h"
 
-BOOL SearchResultsListCtrl::SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock) {
-	if (CWindowImpl<SearchResultsListCtrl, CTreeViewCtrl>::SubclassWindow(hWnd)) {
+#define COLAPSE_ALL  2001
+#define EXPAND_ALL	 2002
+
+BOOL SearchResultsTreeCtrl::SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock) {
+	if (CWindowImpl<SearchResultsTreeCtrl, CTreeViewCtrl>::SubclassWindow(hWnd)) {
 		m_searchInFilesDock = pSearchInFilesDock;
 
 		m_bItHasImageList = false;
@@ -36,7 +39,7 @@ BOOL SearchResultsListCtrl::SubclassWindow(HWND hWnd, SearchInFilesDock* pSearch
 	return FALSE;
 }
 
-BOOL SearchResultsListCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult) {
+BOOL SearchResultsTreeCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult) {
 	switch (uMsg) 
 	{
 		case WM_LBUTTONDBLCLK:
@@ -49,7 +52,7 @@ BOOL SearchResultsListCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARA
 	return FALSE;
 }
 
-LRESULT SearchResultsListCtrl::OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+LRESULT SearchResultsTreeCtrl::OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
 	switch(wParam) {
 		case VK_F4:
 			m_searchInFilesDock->moveToNextHit();
@@ -66,7 +69,7 @@ LRESULT SearchResultsListCtrl::OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, 
 	return 1;
 }
 
-LRESULT SearchResultsListCtrl::OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
+LRESULT SearchResultsTreeCtrl::OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled) {
 	CPaintDC dc(m_hWnd);	// Device context for painting
 	CDC dc_ff;				// Memory base device context for flicker free painting
 	CBitmap bm_ff;			// The bitmap we paint into
@@ -124,12 +127,12 @@ LRESULT SearchResultsListCtrl::OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, 
 }
 
 // Draw TreeCtrl Background - 
-void SearchResultsListCtrl::DrawBackGround(CDC* pDC) {
+void SearchResultsTreeCtrl::DrawBackGround(CDC* pDC) {
 	pDC->FillSolidRect(m_rect, pDC->GetBkColor()); 
 }
 
 // Draw TreeCtrl Items
-void SearchResultsListCtrl::DrawItems(CDC *pDC) {
+void SearchResultsTreeCtrl::DrawItems(CDC *pDC) {
 	// draw items
 	HTREEITEM show_item, parent;
 	CRect rc_item;
@@ -237,7 +240,7 @@ void SearchResultsListCtrl::DrawItems(CDC *pDC) {
 }
 
 
-void SearchResultsListCtrl::InitTableImageList()
+void SearchResultsTreeCtrl::InitTableImageList()
 {
 	try {
 		OSVERSIONINFO osVer = { sizeof(OSVERSIONINFO), 0L, 0L, 0L, 0L, "\0"};
@@ -260,7 +263,7 @@ void SearchResultsListCtrl::InitTableImageList()
 	}
 }
 
-bool SearchResultsListCtrl::onDeleteItem(LPNMHDR pnmh) {
+bool SearchResultsTreeCtrl::onDeleteItem(LPNMHDR pnmh) {
 	try {
 		NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pnmh;
 
@@ -268,6 +271,73 @@ bool SearchResultsListCtrl::onDeleteItem(LPNMHDR pnmh) {
 
 		// Let's free the memory
 		if (cii) delete cii;
+	}
+	catch (...) {
+		systemMessage("Error at SearchResultsListCtrl::onDeleteItem.");
+	}
+	return 0;
+}
+
+bool  SearchResultsTreeCtrl::OnRClickItem(LPNMHDR pnmh) {
+	try {
+		POINT	screenPoint, clientPoint;
+		UINT	uFlags;
+
+		::GetCursorPos(&screenPoint);
+
+		clientPoint = screenPoint;
+
+		ScreenToClient(&clientPoint);
+
+		HTREEITEM hHitItem = HitTest(clientPoint, &uFlags);
+
+		// The rClick was over a tree item?
+		if (hHitItem != NULL) SelectItem(hHitItem); 
+
+		// And now the context menu
+		HMENU hPopupMenu = ::CreatePopupMenu();
+
+		MENUITEMINFO mii;
+
+		memset(&mii, 0, sizeof(mii));
+		mii.cbSize		= sizeof(mii);
+		mii.fMask		= MIIM_STRING | MIIM_DATA | MIIM_STATE | MIIM_ID;
+
+		// Collapse all
+		mii.wID			= COLAPSE_ALL;
+		mii.dwTypeData	= "Colapse All";
+		mii.cch			= UTL_strlen(mii.dwTypeData);
+		mii.fState		= GetCount() ? MFS_ENABLED : MFS_DISABLED;
+
+		::InsertMenuItem(hPopupMenu, COLAPSE_ALL, FALSE, &mii);
+
+		// Expand all
+		mii.wID			= EXPAND_ALL;
+		mii.dwTypeData	= "Expand All";
+		mii.cch			= UTL_strlen(mii.dwTypeData);
+		mii.fState		= GetCount() ? MFS_ENABLED : MFS_DISABLED;
+
+		::InsertMenuItem(hPopupMenu, EXPAND_ALL, FALSE, &mii);
+
+		// Let's open the context menu
+		int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
+
+		if (resp == COLAPSE_ALL || resp == EXPAND_ALL) {
+			HTREEITEM hCurrent = GetFirstItem();
+			while (hCurrent != NULL)
+			{
+				Expand(hCurrent, resp == COLAPSE_ALL ? TVE_COLLAPSE : TVE_EXPAND);
+
+			   // Try to get the next item
+			   hCurrent = GetNextItem(hCurrent, TVGN_NEXT);
+			}
+
+			// Show the current selection
+			if (hHitItem != NULL && 
+				((resp == COLAPSE_ALL && GetParentItem(hHitItem) == NULL) || resp == EXPAND_ALL)
+				)
+				EnsureVisible(hHitItem);
+		}
 	}
 	catch (...) {
 		systemMessage("Error at SearchResultsListCtrl::onDeleteItem.");

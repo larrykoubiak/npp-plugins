@@ -258,7 +258,7 @@ void SearchInFilesDockableDlg()
 		// define the default docking behaviour
 		_searchInFilesDock._data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ADDINFO | DWS_ICONTAB;
 
-		_searchInFilesDock._data.pszAddInfo		= "";
+		_searchInFilesDock._data.pszAddInfo		= _searchInFilesDock.m_windowTitle.data;
 		_searchInFilesDock._data.hIconTab		= (HICON)::LoadImage(_searchInFilesDock.getHinst(), MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		_searchInFilesDock._data.pszModuleName	= _searchInFilesDock.getPluginFileName();
 		_searchInFilesDock._data.dlgID			= DOCKABLE_SEARCHINFILES;
@@ -281,7 +281,7 @@ void ToggleSearchInFilesDockableDlg()
 		// define the default docking behaviour
 		_searchInFilesDock._data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ADDINFO | DWS_ICONTAB;
 
-		_searchInFilesDock._data.pszAddInfo		= "";
+		_searchInFilesDock._data.pszAddInfo		= _searchInFilesDock.m_windowTitle.data;
 		_searchInFilesDock._data.hIconTab		= (HICON)::LoadImage(_searchInFilesDock.getHinst(), MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		_searchInFilesDock._data.pszModuleName	= _searchInFilesDock.getPluginFileName();
 		_searchInFilesDock._data.dlgID			= DOCKABLE_SEARCHINFILES;

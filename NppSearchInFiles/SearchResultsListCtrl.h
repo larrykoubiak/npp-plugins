@@ -31,18 +31,18 @@ public:
 	CUTL_BUFFER m_fullPath;
 };
 
-class SearchResultsListCtrl : public CWindowImpl<SearchResultsListCtrl, CTreeViewCtrl>
+class SearchResultsTreeCtrl : public CWindowImpl<SearchResultsTreeCtrl, CTreeViewCtrl>
 {
 public:
-	SearchResultsListCtrl() : m_firstItem(NULL) {};
+	SearchResultsTreeCtrl() : m_firstItem(NULL) {};
 
 	BOOL SubclassWindow(HWND hWnd, SearchInFilesDock* pSearchInFilesDock);
 
-	~SearchResultsListCtrl() {}
+	~SearchResultsTreeCtrl() {}
 
 	BEGIN_MSG_MAP(searchResultsListCtrl)
 		MESSAGE_HANDLER(WM_KEYUP, OnKeyUp)
-		//MESSAGE_HANDLER(WM_PAINT, OnPaint)
+		//MESSAGE_HANDLER(WM_PAINT, OnPaint) Custom draw?, no now
 		DEFAULT_REFLECTION_HANDLER()
 	END_MSG_MAP()
 
@@ -50,6 +50,7 @@ public:
 	LRESULT OnPaint(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
 
 	bool onDeleteItem(LPNMHDR pnmh);
+	bool OnRClickItem(LPNMHDR pnmh);
 
 	BOOL DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult);
 
