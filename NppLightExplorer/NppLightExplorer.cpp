@@ -25,6 +25,8 @@
 //  NppLightExplorer										11.04.2007	Added help dialog
 //
 //  PENDIENTE:
+//  Arrancar desde la última carpeta
+//  Ordenar subcarpetas
 //  Mensaje para abrir la busqueda partiendo de una carpeta 
 
 #include "stdafx.h"
