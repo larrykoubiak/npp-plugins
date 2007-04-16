@@ -38,7 +38,6 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 			case WM_INITDIALOG:
 			{
 				m_searchResultsListCtrl.SubclassWindow(::GetDlgItem(_hSelf, IDC_RESULTSLIST), this);
-				m_staticMessage.Attach(::GetDlgItem(_hSelf, IDC_STATIC_MESSAGE));
 
 				// Create a font using the system message font
 				NONCLIENTMETRICS ncm;
@@ -49,17 +48,7 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				else 
 					m_font.CreateFontA(-11,0,0,0,FW_NORMAL,0,0,0,0,0,0,0,0,"Tahoma");
 
-				LOGFONT logFont;
-
-				m_font.GetLogFont(&logFont);
-
 				m_searchResultsListCtrl.SetFont(m_font);
-				m_staticMessage.SetFont(m_font);
-
-				// Set StaticMessage height in pixels
-				m_staticHeight = (-2)*((72*logFont.lfHeight) / (GetDeviceCaps(GetDC(_hSelf), LOGPIXELSY))); 
-
-				doOnSize();
 				return TRUE;
 			}
 
@@ -83,7 +72,10 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 
 			case WM_SIZE: 
 			{
-				doOnSize();
+				CRect rc;
+
+				getClientRect(rc);
+				m_searchResultsListCtrl.MoveWindow(&rc, TRUE);
 			}
 			break; 
 
@@ -134,25 +126,6 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 	return FALSE;
 }
 
-void SearchInFilesDock::doOnSize() {
-	CRect rc, rcStatic;
-
-	getClientRect(rc);
-
-	rcStatic = rc;
-
-	rcStatic.DeflateRect(2, 2);
-
-	rcStatic.left += 6;
-	rcStatic.bottom = rcStatic.top + m_staticHeight;
-	m_staticMessage.MoveWindow(&rcStatic, 1);
-
-	//rc.DeflateRect(1, 1);
-
-	rc.top += m_staticHeight + 2;
-	m_searchResultsListCtrl.MoveWindow(&rc, 1);
-}
-
 void SearchInFilesDock::display(bool toShow) const {
 	if (toShow && 
 		_pSearchInFilesDock2 && 
@@ -187,8 +160,7 @@ void SearchInFilesDock::openSearchInFilesInputDlg()
 }
 
 void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFFER types, CUTL_BUFFER where) {
-	// Read checks
-	bool bWholeWord		  = (::SendMessage(::GetDlgItem(hDlg, IDC_WHOLE_WORD), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? true : false;
+	// Read tab check
 	bool bResultsInNewTab = (::SendMessage(::GetDlgItem(hDlg, IDC_RESULTS_IN_NEW_TAB), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? true : false;
 
 	display(); // Let's show the results main window
@@ -211,7 +183,7 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 				// define the default docking behaviour
 				_pSearchInFilesDock2->_data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ADDINFO | DWS_ICONTAB;
 
-				_pSearchInFilesDock2->_data.pszAddInfo		= "";
+				_pSearchInFilesDock2->_data.pszAddInfo		= _pSearchInFilesDock2->m_windowTitle;
 				_pSearchInFilesDock2->_data.hIconTab		= (HICON)::LoadImage(_pSearchInFilesDock2->getHinst(), MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 				_pSearchInFilesDock2->_data.pszModuleName	= _pSearchInFilesDock2->getPluginFileName();
 				_pSearchInFilesDock2->_data.dlgID			= DOCKABLE_SEARCHINFILES;
@@ -232,7 +204,7 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 	}
 
 	// Save the length of the current search
-	dockOwner->m_iCurrSearchLength = bWholeWord ? what.strlen() + 2 : what.strlen();
+	dockOwner->m_iCurrSearchLength = what.strlen();
 
 	// Finally we do the search
 	CProcessSearchInFiles* searchInFiles = new CProcessSearchInFiles(dockOwner, this, hDlg);

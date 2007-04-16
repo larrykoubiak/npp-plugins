@@ -124,8 +124,6 @@ void CProcessSearchInFiles::doSearch() {
 							types.GetSafe(),
 							where.GetSafe());
 
-		m_pStaticMessage->SetWindowTextA(staticStatusBuf.GetSafe());
-
 		m_searchDock->UpdateWindowTitle(staticStatusBuf.GetSafe());
 	}
 	catch (...) {
@@ -233,9 +231,7 @@ bool CProcessSearchInFiles::SearchFolders(LPCSTR folder) {
 
 	m_foldersArray += folder;
 
-	// Avisamos de los que estamos haciendo:
-	m_pStaticMessage->SetWindowTextA(msg.Sf("Added folder %s", folder));
-
+	// Tell what we're doing
 	m_searchDock->UpdateWindowTitle(msg.Sf("Added folder %s", folder));
 
 	tempPath.SetNameExtension("*.*");
@@ -318,10 +314,11 @@ bool CProcessSearchInFiles::FindInfile(LPCSTR file) {
 			tempStringFile.Upper();
 			searchPattern.Upper();
 		}
-		if (m_bWholeWord) {
-			tempBuf = searchPattern;
-			searchPattern.Sf(" %s ", tempBuf.GetSafe());
-		}
+
+		//if (m_bWholeWord) {
+		//	tempBuf = searchPattern;
+		//	searchPattern.Sf(" %s ", tempBuf.GetSafe());
+		//}
 
 		while (tempStringFile.Find("\n", hitPos, endPos)) {
 			if (checkCancelButton()) return false;
@@ -368,14 +365,54 @@ int CProcessSearchInFiles::FileSize(const char * szFileName) {
   return fileStat.st_size; 
 }
 
+BOOL CProcessSearchInFiles::DoFind(LPCSTR strLine, LPCSTR searchPattern, UINT& hitPos, UINT endPosLine, BOOL& wholeWordSuccess) {
+	CUTL_BUFFER		StringLine(strLine);
+	BOOL			success = StringLine.Find(searchPattern, hitPos, endPosLine);
+
+	// If the search is wholeWord we have to make more questions before giving a hit
+	if (success && m_bWholeWord) {
+		wholeWordSuccess = FALSE;
+
+		if (hitPos == 0) {
+			if (StringLine[hitPos + UTL_strlen(searchPattern)] == '\r' ||
+				StringLine[hitPos + UTL_strlen(searchPattern)] == '\n' ||
+				StringLine[hitPos + UTL_strlen(searchPattern)] == ' ' ||
+			    StringLine[hitPos + UTL_strlen(searchPattern)] == ',' ||
+			    StringLine[hitPos + UTL_strlen(searchPattern)] == '.' ||
+			    StringLine[hitPos + UTL_strlen(searchPattern)] == '?' ||
+			    StringLine[hitPos + UTL_strlen(searchPattern)] == ')')
+				wholeWordSuccess = TRUE;
+		}
+		else {
+			if (StringLine[hitPos - 1] == ' ') {
+				if (hitPos + UTL_strlen(searchPattern) >= (UINT)UTL_strlen(strLine))
+					wholeWordSuccess = TRUE;
+				else if (StringLine[hitPos + UTL_strlen(searchPattern)] == '\r' ||
+					     StringLine[hitPos + UTL_strlen(searchPattern)] == '\n' ||
+						 StringLine[hitPos + UTL_strlen(searchPattern)] == ' ' ||
+					     StringLine[hitPos + UTL_strlen(searchPattern)] == ',' ||
+					     StringLine[hitPos + UTL_strlen(searchPattern)] == '.' ||
+					     StringLine[hitPos + UTL_strlen(searchPattern)] == '?' ||
+					     StringLine[hitPos + UTL_strlen(searchPattern)] == ')')
+					wholeWordSuccess = TRUE;
+			}
+		}
+	}
+	return success;
+}
+
 bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR searchPattern, CUTL_PATH iterator, int line) {
 	try {
 		UINT			hitPos, found, endPosLine = 0;
-		CUTL_BUFFER		bufLine, nameExtension, driveDirectory, bufSize, statusText, bufFileMask, temp;
-		CUTL_BUFFER		StringLine(strLine), formatDate;
+		CUTL_BUFFER		bufLine, nameExtension, driveDirectory, temp;
+		BOOL			wholeWordSuccess;
 		TV_INSERTSTRUCT tvis;
 
-		while (StringLine.Find(searchPattern, hitPos, endPosLine)) {
+		//while (StringLine.Find(searchPattern, hitPos, endPosLine)) {
+		while(DoFind(strLine, searchPattern, hitPos, endPosLine, wholeWordSuccess)) {
+			endPosLine = hitPos + 1;
+			if (m_bWholeWord && !wholeWordSuccess) continue;
+
 			bufLine = lineToShow;
 			bufLine.RepCar('\t', ' ');
 			bufLine.RepCar('\n', ' ');
@@ -432,8 +469,6 @@ bool CProcessSearchInFiles::FindInLine(LPCSTR strLine, LPCSTR lineToShow, LPCSTR
 			m_currFileHits++;
 
 			m_pSearchDockList->SetItemText(m_currRootItem, temp.Sf("(%d) %s", m_currFileHits, (LPCSTR)iterator));
-
-			endPosLine = hitPos + 1;
 
 			if (checkCancelButton()) return false;
 		}
@@ -492,12 +527,8 @@ bool CProcessSearchInFiles::SearchInFolders() {
 					do { 
 						statusText.Sf("Hits %5d  |  Folders %5d / %5d  |  Files %5d  |  %s", 
 							m_totalHits, i, foldersParse.NumArgs(), ++m_totalFiles, (LPCSTR)iterator);
-						m_pStaticMessage->SetWindowTextA(statusText.GetSafe());
 
 						m_searchDock->UpdateWindowTitle(statusText.GetSafe());
-
-
-
 
 						if (checkCancelButton()) return false;
 						if (!FindInfile((LPCSTR)iterator)) return false;

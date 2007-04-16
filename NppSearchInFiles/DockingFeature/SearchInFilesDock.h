@@ -43,7 +43,9 @@ class SearchInputDlg : public StaticDialog
 class SearchInFilesDock : public DockingDlgInterface
 {
 public :
-	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK), m_windowTitle("") {};
+	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK) {
+		::ZeroMemory(&m_windowTitle, sizeof(m_windowTitle));
+	};
 
 	~SearchInFilesDock(){
 		// Destroy our list fonts
@@ -76,7 +78,6 @@ public :
 	HWND	m_scintillaMainHandle;
 
 	SearchResultsTreeCtrl*	getResultsTree()	{ return &m_searchResultsListCtrl; };
-	CStatic*				getStaticMessageCtrl() { return &m_staticMessage; };
 
 	void openCurrSelection(HTREEITEM treeItem);
 
@@ -89,27 +90,23 @@ public :
 	void LoadChecks(HWND hDlg);
 
 	SearchResultsTreeCtrl		m_searchResultsListCtrl;
-	CStatic						m_staticMessage;
 	tTbData						_data;
 
 	static bool isSecondTabVisible();
 
 	void UpdateWindowTitle(LPCSTR title) { 
-		m_windowTitle = title; 
-		_data.pszAddInfo = m_windowTitle.data;
+		UTL_strncpy(m_windowTitle,  UTL_Null(title), sizeof(m_windowTitle) - 1); 
+		_data.pszAddInfo = m_windowTitle;
 		updateDockingDlg();
 	};
 
-	CUTL_BUFFER					m_windowTitle;
+	TCHAR						m_windowTitle[2024];
 
 protected :
 	int							m_iCurrSearchLength;
 	CFont						m_font;
-	int							m_staticHeight;
 
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
-
-	void doOnSize();
 };
 
 #endif //SEARCHINFILES_DLG_H

@@ -29,10 +29,11 @@
 //																		Added icon to notepad++ plug-ins tabs
 //  NppSearchInFiles.cpp	-								28.03.2007	The plug-in did not show at start
 //	SearchInFilesDock.cpp	-											Get rid of tabs
-//	SearchInFilesDock.cpp	-								10.04.2007	The parameters window is modaless
+//	SearchInFilesDock.cpp	-								10.04.2007	Make the parameters window modaless
 //	ProcessSearchInFiles.cpp								10.04.2007	Get rid of confirmation window on stopping search
 //  NppSearchInFiles.cpp	-								11.04.2007	Added help dialog
 //	SearchInFilesDock.cpp	-								13.04.2007	The browse for folder dialog opens from the current folder if this exists
+//	ProcessSearchInFiles.cpp								16.04.2007	Fixed the whole word search
 //
 //  PENDIENTE:
 //  Mensaje para abrir la busqueda partiendo de una carpeta desde fuera del plug-in
@@ -258,7 +259,7 @@ void SearchInFilesDockableDlg()
 		// define the default docking behaviour
 		_searchInFilesDock._data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ADDINFO | DWS_ICONTAB;
 
-		_searchInFilesDock._data.pszAddInfo		= _searchInFilesDock.m_windowTitle.data;
+		_searchInFilesDock._data.pszAddInfo		= _searchInFilesDock.m_windowTitle;
 		_searchInFilesDock._data.hIconTab		= (HICON)::LoadImage(_searchInFilesDock.getHinst(), MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		_searchInFilesDock._data.pszModuleName	= _searchInFilesDock.getPluginFileName();
 		_searchInFilesDock._data.dlgID			= DOCKABLE_SEARCHINFILES;
@@ -281,7 +282,7 @@ void ToggleSearchInFilesDockableDlg()
 		// define the default docking behaviour
 		_searchInFilesDock._data.uMask			= DWS_DF_CONT_BOTTOM | DWS_ADDINFO | DWS_ICONTAB;
 
-		_searchInFilesDock._data.pszAddInfo		= _searchInFilesDock.m_windowTitle.data;
+		_searchInFilesDock._data.pszAddInfo		= _searchInFilesDock.m_windowTitle;
 		_searchInFilesDock._data.hIconTab		= (HICON)::LoadImage(_searchInFilesDock.getHinst(), MAKEINTRESOURCE(IDI_SEARCHINFILES), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		_searchInFilesDock._data.pszModuleName	= _searchInFilesDock.getPluginFileName();
 		_searchInFilesDock._data.dlgID			= DOCKABLE_SEARCHINFILES;

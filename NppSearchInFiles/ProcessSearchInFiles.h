@@ -22,7 +22,6 @@ public:
 	CProcessSearchInFiles(SearchInFilesDock* searchDock, SearchInFilesDock* mainDock, HWND searchInputDlgHnd): m_searchDock(searchDock), m_mainDock(mainDock), m_searchInputDlgHnd(searchInputDlgHnd)
 	{
 		m_pSearchDockList = m_searchDock->getResultsTree();
-		m_pStaticMessage = m_searchDock->getStaticMessageCtrl();
 	};
 
 	void doSearch();
@@ -32,7 +31,6 @@ protected:
 	SearchInFilesDock*		m_mainDock;
 	SearchInFilesDock*		m_searchDock;
 	SearchResultsTreeCtrl*	m_pSearchDockList;
-	CStatic*				m_pStaticMessage;
 	HWND					m_searchInputDlgHnd;
 
 	CUTL_BUFFER			m_foldersArray;
@@ -55,6 +53,7 @@ protected:
 	bool SearchFolders(LPCSTR folder);
 	bool FindInfile(LPCSTR file);
 	int  FileSize(const char * szFileName);
+	BOOL DoFind(LPCSTR strLine, LPCSTR searchPattern, UINT& hitpos, UINT endPosLine, BOOL& wholeWordSucess);
 	bool FindInLine(LPCSTR StringLine, LPCSTR lineToShow, LPCSTR searchPattern, CUTL_PATH iterator, int line);
 	bool SearchInFolders();
 

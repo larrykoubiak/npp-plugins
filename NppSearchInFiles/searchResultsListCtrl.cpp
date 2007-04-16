@@ -323,7 +323,8 @@ bool  SearchResultsTreeCtrl::OnRClickItem(LPNMHDR pnmh) {
 		int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
 
 		if (resp == COLAPSE_ALL || resp == EXPAND_ALL) {
-			HTREEITEM hCurrent = GetFirstItem();
+			CWaitCursor	wCursor;
+			HTREEITEM	hCurrent = GetFirstItem();
 			while (hCurrent != NULL)
 			{
 				Expand(hCurrent, resp == COLAPSE_ALL ? TVE_COLLAPSE : TVE_EXPAND);
@@ -335,7 +336,7 @@ bool  SearchResultsTreeCtrl::OnRClickItem(LPNMHDR pnmh) {
 			// Show the current selection
 			if (hHitItem != NULL && 
 				((resp == COLAPSE_ALL && GetParentItem(hHitItem) == NULL) || resp == EXPAND_ALL)
-				)
+				) 
 				EnsureVisible(hHitItem);
 		}
 	}
