@@ -18,15 +18,15 @@
 // 22.03.2007, v1.0.0.1, 
 // 09.04.2007, v1.2 
 //
-//	FILE					METHOD							DATE		DESCRIPTION							
-//  NppLightExplorer										23.03.2007	Added icon to notepad++ toolbar
-//  resource.rc     										28.03.2007	Tab icon
-//  NppLightExplorer										09.04.2007	Toolbar icon state when closing the adding
-//  NppLightExplorer										11.04.2007	Added help dialog
+//	FILE					DATE		DESCRIPTION							
+//  NppLightExplorer		23.03.2007	Added icon to notepad++ toolbar
+//  resource.rc     		28.03.2007	Tab icon
+//  NppLightExplorer		09.04.2007	Toolbar icon state when closing the adding
+//  NppLightExplorer		11.04.2007	Added help dialog
+//  WtlFileTreeCtrl			17.04.2007	Save state across sessions
+//  WtlFileTreeCtrl			17.04.2007	Sort folders and files before inserting them on the control
 //
 //  PENDIENTE:
-//  Arrancar desde la última carpeta
-//  Ordenar subcarpetas
 //  Mensaje para abrir la busqueda partiendo de una carpeta 
 
 #include "stdafx.h"

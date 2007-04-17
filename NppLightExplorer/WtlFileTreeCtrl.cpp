@@ -131,7 +131,7 @@ HTREEITEM CWtlFileTreeCtrl::AddSystemRoot(int nFolder, LPCSTR defaultName) {
 			tvis.item.iSelectedImage	= nSelIcon;
 			tvis.item.cChildren			= true;
 
-			CCustomItemInfo* pCii = new CCustomItemInfo("", itemName.GetSafe(), CCustomItemInfo::ROOT, NULL);
+			CCustomItemInfo* pCii = new CCustomItemInfo(itemName.GetSafe(), defaultName, CCustomItemInfo::ROOT, NULL);
 			tvis.item.lParam			= (LPARAM)pCii;
 			return InsertItem(&tvis);
 		}
@@ -386,9 +386,6 @@ HTREEITEM CWtlFileTreeCtrl::InsertTreeNetworkItem(HTREEITEM hParent, LPCSTR sFQP
 void CWtlFileTreeCtrl::DisplayDrives(HTREEITEM hParent) {
 	CWaitCursor c;
 
-	// Remove any items currently in the tree
-	//DeleteAllItems();
-
 	// Enumerate the drive letters and add them to the tree control
 	DWORD dwDrives = GetLogicalDrives();
 	DWORD dwMask = 1;
@@ -419,6 +416,10 @@ void CWtlFileTreeCtrl::DisplayPath(LPCSTR folder, HTREEITEM parentItem) {
 	CUTL_PATH   iterator(buf.GetSafe());
 	CUTL_PATH   folderIt(buf.GetSafe()); 
 
+	std::vector<tItemList>	vFolderList;
+	std::vector<tItemList>	vFilesList;
+	tItemList				listElement;
+
 	iterator.SetNameExtension("*.*");
 	folderIt.SetNameExtension("*.*");
 
@@ -426,10 +427,10 @@ void CWtlFileTreeCtrl::DisplayPath(LPCSTR folder, HTREEITEM parentItem) {
 	CUTL_BUFFER fileName, folderName, msg;
 	UINT        found;
 
-	// First folders
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// First add folders
 	bIterating = folderIt.FindFirst(_A_SUBDIR);
 	while(bIterating) {
-		// Añadimos la carpeta
 		folderName = (LPCSTR)folderIt;
 
 		if (folderName[folderName.Len() - 1] == '\\') folderName[folderName.Len() - 1] = '\0';
@@ -438,20 +439,71 @@ void CWtlFileTreeCtrl::DisplayPath(LPCSTR folder, HTREEITEM parentItem) {
 		folderName[found] = '\0';
 		folderName.Reverse();
 
-		InsertTreeItem(folderName.GetSafe(), (LPCSTR)folderIt, parentItem, true);
-		
+		//InsertTreeItem(folderName.GetSafe(), (LPCSTR)folderIt, parentItem, true); NTFS systems don't need to sorted
+		listElement.name		= folderName.GetSafe();
+		listElement.iterator	= (LPCSTR)folderIt;
+
+		vFolderList.push_back(listElement);
 		bIterating = folderIt.FindNext();
 	}
 
-	// Now files
+	// sort folders data before inserting it: we don't need to do this with NTFS systems
+	QuickSortItems(&vFolderList, 0, (INT)vFolderList.size() - 1);
+	for (size_t i = 0; i < vFolderList.size(); i++) 
+		InsertTreeItem((LPTSTR)vFolderList[i].name.GetSafe(), (LPCSTR)(LPTSTR)vFolderList[i].iterator, parentItem, true);
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////
+	// Now add files
 	bIterating = iterator.FindFirst(_A_NORMAL | _A_ARCH | _A_HIDDEN | _A_SYSTEM | _A_RDONLY);
 	while(bIterating) {
 		iterator.GetNameExtension(fileName);
 
-		InsertTreeItem(fileName.GetSafe(), (LPCSTR)iterator, parentItem, false);
+		//InsertTreeItem(fileName.GetSafe(), (LPCSTR)iterator, parentItem, false); NTFS systems don't need to sorted
+		listElement.name		= fileName.GetSafe();
+		listElement.iterator	= (LPCSTR)iterator;
 
+		vFilesList.push_back(listElement);
 		bIterating = iterator.FindNext();
    }
+
+	// sort files data before inserting it: we don't need to do this with NTFS systems
+	QuickSortItems(&vFilesList, 0, (INT)vFilesList.size() - 1);
+	for (size_t j = 0; j < vFilesList.size(); j++) 
+		InsertTreeItem((LPTSTR)vFilesList[j].name.GetSafe(), (LPCSTR)(LPTSTR)vFilesList[j].iterator, parentItem, false);
+}
+
+void CWtlFileTreeCtrl::QuickSortItems(std::vector<tItemList>* vList, INT d, INT h) {
+	INT			i		= 0;
+	INT			j		= 0;
+	std::string	str		= "";
+
+	/* return on empty list */
+	if (d > h || d < 0)
+		return;
+
+	i = h;
+	j = d;
+
+	str = (*vList)[((INT) ((d+h) / 2))].name;
+	do {
+		while (stricmp((*vList)[j].name.GetSafe(), str.c_str()) < 0) j++;
+		while (stricmp((*vList)[i].name.GetSafe(), str.c_str()) > 0) i--;
+
+		if ( i >= j )
+		{
+			if ( i != j )
+			{
+				tItemList buf = (*vList)[i];
+				(*vList)[i] = (*vList)[j];
+				(*vList)[j] = buf;
+			}
+			i--;
+			j++;
+		}
+	} while (j <= i);
+
+	if (d < i) QuickSortItems(vList, d, i);
+	if (j < h) QuickSortItems(vList, j, h);
 }
 
 HTREEITEM CWtlFileTreeCtrl::FindSibling(HTREEITEM hParent, const std::string sItem) {
@@ -545,6 +597,9 @@ BOOL CWtlFileTreeCtrl::OnPopulateTree(UINT uMsg, WPARAM wParam, LPARAM lParam, B
 	// Expand 'My Computer' and 'Favorites' by default
 	Expand(m_hMyComputerRoot, TVE_EXPAND);
 	Expand(m_hMyFavoritesRoot, TVE_EXPAND);
+
+	// Load context state fropm last session
+	LoadState();
 	return 0;
 }
 
@@ -1084,6 +1139,78 @@ void CWtlFileTreeCtrl::LoadFavorites() {
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::LoadFavorites", __FILE__, __LINE__);
+	}
+}
+
+void CWtlFileTreeCtrl::LoadState() {
+	try {
+		CUT2_INI	confIni(m_iniFilePath);
+		CUTL_BUFFER	startContext;
+		HTREEITEM	hCurrItem = NULL, hCurrTemp;
+
+		startContext.Sf("#%s;", confIni.LoadStr("startContext", "currItem", ""));
+
+		CUTL_PARSE startContextParse(startContext.GetSafe(), NULL, '#');
+
+		startContextParse.NextToken();
+
+		for (UINT i = 1; i <= startContextParse.NumArgs(); i++) {
+			hCurrItem = GetNextItem(hCurrItem, TVGN_CHILD);
+
+			while (true){
+				if (!UTL_strcmp(GetItemTag(hCurrItem), startContextParse.StrArg(i))) {
+					if (GetItemType(hCurrItem) == CCustomItemInfo::FILE || i == startContextParse.NumArgs()) 
+						SelectItem(hCurrItem);
+					else
+						Expand(hCurrItem, TVE_EXPAND);
+					break;
+				}
+
+				hCurrTemp = GetNextItem(hCurrItem, TVGN_NEXT);
+				if (hCurrTemp == NULL) break;
+				hCurrItem = hCurrTemp;
+			}
+		}
+
+		if (hCurrItem != NULL) EnsureVisible(hCurrItem);
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::SaveState", __FILE__, __LINE__);
+	}
+}
+
+void CWtlFileTreeCtrl::SaveState() {
+	try {
+		HTREEITEM	currItem = GetSelectedItem(), currParent, tempItem; 
+		CUTL_BUFFER	pathToSave, tempBuf, tempBuf2;
+		CUT2_INI	confIni(m_iniFilePath);
+
+		confIni.Delete("startContext");
+
+		if (currItem == NULL) return;
+
+		currParent = currItem;
+
+		while (currParent) {
+			CCustomItemInfo* pCii = (CCustomItemInfo*)GetItemData(currParent);
+			
+			if (pCii == NULL) break;
+			tempBuf = pCii->getTag();
+
+			pathToSave = tempBuf2.Sf("%s%s%s", 
+										tempBuf.GetSafe(), 
+										pathToSave.Len() ? "," : "", 
+										pathToSave.GetSafe());
+
+			tempItem = GetParentItem(currParent);
+			if (tempItem == NULL) break;
+			currParent = tempItem;
+		}
+
+		confIni.Write("startContext", "currItem", pathToSave.GetSafe());
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::SaveState", __FILE__, __LINE__);
 	}
 }
 

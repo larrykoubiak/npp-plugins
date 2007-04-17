@@ -18,6 +18,7 @@
 #include "stdafx.h"
 
 #include "lightExplorerDlg.h"
+#include "SysMsg.h"
 
 BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -101,7 +102,7 @@ BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM 
 		}
 
 		case WM_DESTROY:
-			destroy();
+			m_wndTreeCtrl.SaveState();
 			break;
 
 		default :
@@ -109,5 +110,3 @@ BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM 
 	}
 	return FALSE;
 }
-
-

@@ -29,6 +29,9 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 void systemMessage(const char *title)
 {
   LPVOID lpMsgBuf;
+  char	 message[1024];
+
+
   FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                  NULL,
 				 ::GetLastError(),
@@ -36,7 +39,10 @@ void systemMessage(const char *title)
                  (LPTSTR) &lpMsgBuf,
                  0,
                  NULL );// Process any inserts in lpMsgBuf.
-  MessageBox( NULL, (LPTSTR)lpMsgBuf, title, MB_OK | MB_ICONSTOP);
+
+  sprintf(message, "%s\r\n\r\n%s", title, lpMsgBuf);
+
+  ::MessageBox(NULL, message, "Search In Files", MB_OK | MB_ICONSTOP);
   ::LocalFree(lpMsgBuf);
 }
 
@@ -55,7 +61,7 @@ void systemMessageEx(const char *title, const char *fileName, int lineNumber)
 
 		sprintf(message, "%s\r\n\r\n%s (%d)\r\n\r\n%s", title, fileName, lineNumber, lpMsgBuf);
 
-		MessageBox(NULL, message, "Search In Files", MB_OK | MB_ICONSTOP);
+		::MessageBox(NULL, message, "Search In Files", MB_OK | MB_ICONSTOP);
 		::LocalFree(lpMsgBuf);
 	}
 	catch (...) {

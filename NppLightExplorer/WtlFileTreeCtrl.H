@@ -145,8 +145,13 @@ public:
 
 	void OnViewRefresh();
 	void setNppHandles(HWND nppHandle, HWND nppScintilla) { m_nppHandle = nppHandle; m_nppScintilla = nppScintilla; };
+
 	void SaveFavorites();
 	void LoadFavorites();
+
+	void SaveState();
+	void LoadState();
+
 	void SearchFromHere();
 
 	LPCSTR				GetItemDisplayString(HTREEITEM hItem);
@@ -196,6 +201,13 @@ protected:
 	CUTL_BUFFER			m_iniFilePath;
 
 	IMalloc*			m_pMalloc;
+
+	// Stuff to order: taken from Explorer plugin by Jens Lorenz
+	typedef struct tItemList {
+		CUTL_BUFFER name;
+		CUTL_BUFFER iterator;
+	};
+	void QuickSortItems(std::vector<tItemList>* vList, INT d, INT h);
 };
 
 #endif //WTL_FILETREECTRL_H__
