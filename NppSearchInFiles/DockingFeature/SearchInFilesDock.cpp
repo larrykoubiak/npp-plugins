@@ -791,8 +791,6 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 
 					if (LOWORD(wParam) == IDC_EXCLUDE_LIST) {
 						if (HIWORD(wParam) == LBN_DBLCLK) {
-
-
 							int selIndex = (int)::SendMessage((HWND)lParam, LB_GETCURSEL, 0, 0L);
 
 							if (selIndex != LB_ERR) 
@@ -826,9 +824,7 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 						::EndDialog(hDlg, IDOK);
 					}
 
-					if (LOWORD(wParam) == IDCANCEL) {
-						::EndDialog(hDlg, IDCANCEL);
-					}
+					if (LOWORD(wParam) == IDCANCEL) ::EndDialog(hDlg, IDCANCEL);
 				}
 				break;
 
