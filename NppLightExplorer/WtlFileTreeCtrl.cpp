@@ -256,7 +256,7 @@ int CWtlFileTreeCtrl::GetIconIndex(HTREEITEM hItem) {
 	tvi.mask	= TVIF_IMAGE;
 	tvi.hItem	= hItem;
 	if( GetItem( &tvi ) )
-		return tvi.iImage;
+		return tvi.iImage & 0x000000ff;
 	else
 		return -1;
 }
@@ -266,17 +266,7 @@ int CWtlFileTreeCtrl::GetIconIndex(const CUTL_BUFFER sFilename) {
 	SHFILEINFO sfi;
 
 	ZeroMemory(&sfi, sizeof(SHFILEINFO));
-	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_SMALLICON) == 0)
-		return -1;
-	return sfi.iIcon;
-}
-
-int CWtlFileTreeCtrl::GetSelIconIndex(const CUTL_BUFFER sFilename) {
-	// Retreive the icon index for a specified file/folder
-	SHFILEINFO sfi;
-
-	ZeroMemory(&sfi, sizeof(SHFILEINFO));
-	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_SMALLICON ) == 0)
+	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_OVERLAYINDEX) == 0)
 		return -1;
 	return sfi.iIcon;
 }
@@ -284,14 +274,24 @@ int CWtlFileTreeCtrl::GetSelIconIndex(const CUTL_BUFFER sFilename) {
 int CWtlFileTreeCtrl::GetIconIndex(LPITEMIDLIST lpPIDL) {
 	SHFILEINFO sfi;
 	memset(&sfi, 0, sizeof(SHFILEINFO));
-	SHGetFileInfo((LPCTSTR)lpPIDL, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_LINKOVERLAY);
+	SHGetFileInfo((LPCTSTR)lpPIDL, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_LINKOVERLAY | SHGFI_OVERLAYINDEX);
 	return sfi.iIcon; 
+}
+
+int CWtlFileTreeCtrl::GetSelIconIndex(const CUTL_BUFFER sFilename) {
+	// Retreive the icon index for a specified file/folder
+	SHFILEINFO sfi;
+
+	ZeroMemory(&sfi, sizeof(SHFILEINFO));
+	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_SMALLICON | SHGFI_OVERLAYINDEX) == 0)
+		return -1;
+	return sfi.iIcon;
 }
 
 int CWtlFileTreeCtrl::GetSelIconIndex(LPITEMIDLIST lpPIDL) {
 	SHFILEINFO sfi;
 	memset(&sfi, 0, sizeof(SHFILEINFO));
-	SHGetFileInfo((LPCTSTR)lpPIDL, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_OPENICON);
+	SHGetFileInfo((LPCTSTR)lpPIDL, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_OPENICON | SHGFI_OVERLAYINDEX);
 	return sfi.iIcon; 
 }
 
@@ -339,8 +339,8 @@ HTREEITEM CWtlFileTreeCtrl::InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM
 	tvis.hInsertAfter			= TVI_LAST;
 	tvis.item.mask				= TVIF_CHILDREN | TVIF_IMAGE | TVIF_SELECTEDIMAGE | TVIF_TEXT | TVIF_PARAM;
 	tvis.item.pszText			= (LPSTR)displayString.GetSafe();
-	tvis.item.iImage			= nIconIndex;
 	tvis.item.cChildren			= isFolder;
+	tvis.item.iImage			= nIconIndex;
 	tvis.item.iSelectedImage	= nSelIconIndex;
 
 	CCustomItemInfo* pCii = new CCustomItemInfo(displayString.GetSafe(), fullPath.GetSafe(), isFolder ? CCustomItemInfo::FOLDER : CCustomItemInfo::FILE, NULL);
@@ -443,7 +443,7 @@ void CWtlFileTreeCtrl::DisplayPath(LPCSTR folder, HTREEITEM parentItem) {
 		folderName[found] = '\0';
 		folderName.Reverse();
 
-		//InsertTreeItem(folderName.GetSafe(), (LPCSTR)folderIt, parentItem, true); NTFS systems don't need to sorted
+		//InsertTreeItem(folderName.GetSafe(), (LPCSTR)folderIt, parentItem, true);
 		listElement.name		= folderName.GetSafe();
 		listElement.iterator	= (LPCSTR)folderIt;
 
@@ -462,7 +462,7 @@ void CWtlFileTreeCtrl::DisplayPath(LPCSTR folder, HTREEITEM parentItem) {
 	while(bIterating) {
 		iterator.GetNameExtension(fileName);
 
-		//InsertTreeItem(fileName.GetSafe(), (LPCSTR)iterator, parentItem, false); NTFS systems don't need to sorted
+		//InsertTreeItem(fileName.GetSafe(), (LPCSTR)iterator, parentItem, false);
 		listElement.name		= fileName.GetSafe();
 		listElement.iterator	= (LPCSTR)iterator;
 

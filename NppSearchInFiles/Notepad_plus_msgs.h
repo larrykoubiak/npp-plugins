@@ -1,5 +1,5 @@
 //this file is part of notepad++
-//Copyright (C)2003 Don HO <donho@altern.org>
+//Copyright (C)2003 Don HO ( donho@altern.org )
 //
 //This program is free software; you can redistribute it and/or
 //modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@ enum LangType {L_TXT, L_PHP , L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_RC,\
 			   L_ASP, L_SQL, L_VB, L_JS, L_CSS, L_PERL, L_PYTHON, L_LUA,\
 			   L_TEX, L_FORTRAN, L_BASH, L_FLASH, L_NSIS, L_TCL, L_LISP, L_SCHEME,\
 			   L_ASM, L_DIFF, L_PROPS, L_PS, L_RUBY, L_SMALLTALK, L_VHDL, L_KIX, L_AU3,\
-			   L_CAML, L_ADA, L_VERILOG, L_MATLAB, L_HASKELL, L_INNO,\
+			   L_CAML, L_ADA, L_VERILOG, L_MATLAB, L_HASKELL, L_INNO, L_SEARCHRESULT, L_CMAKE,\
 			   // The end of enumated language type, so it should be always at the end
 			   L_END};
 enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV_S2003, WV_XPX64, WV_VISTA};
@@ -137,20 +137,27 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 	#define WM_GETWINDOWSVERSION (NOTEPADPLUS_USER + 42)
 	//winVer WM_GETWINDOWSVERSION(0, 0)
 
+	#define WM_DMM_GETPLUGINHWNDBYNAME (NOTEPADPLUS_USER + 43)
+	//HWND WM_DMM_GETPLUGINHWNDBYNAME(const char *windowName, const char *moduleName)
+	// if moduleName is NULL, then return value is NULL
+	// if windowName is NULL, then the first found window handle which matches with the moduleName will be returned
 
 // Notification code
 #define NPPN_FIRST 1000
-	#define NPPN_READY (NPPN_FIRST + 1)
+	#define NPPN_READY (NPPN_FIRST + 1) // To notify plugins that all the procedures of launchment of notepad++ are done.
 	//scnNotification->nmhdr.code = NPPN_READY;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = 0;
 
-	#define NPPN_TB_MODIFICATION (NPPN_FIRST + 2)
+	#define NPPN_TB_MODIFICATION (NPPN_FIRST + 2) // To notify plugins that toolbar icons can be registered
 	//scnNotification->nmhdr.code = NPPN_TB_MODIFICATION;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = 0;
 
-
+	#define NPPN_FILE_BEFORECLOSE (NPPN_FIRST + 3) // To notify plugins that the current file is about to be closed
+	//scnNotification->nmhdr.code = NPPN_FILE_BEFORECLOSE;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
 
 #define	RUNCOMMAND_USER    (WM_USER + 3000)
 	#define WM_GET_FULLCURRENTPATH (RUNCOMMAND_USER + FULL_CURRENT_PATH)

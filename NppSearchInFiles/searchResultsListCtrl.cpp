@@ -63,6 +63,11 @@ LRESULT SearchResultsTreeCtrl::OnKeyUp(UINT uMsg, WPARAM wParam, LPARAM lParam, 
 			m_searchInFilesDock->openCurrSelection(GetSelectedItem());
 			break;
 
+		case VK_TAB:
+		case VK_ESCAPE:
+			::SendMessage(m_searchInFilesDock->m_scintillaMainHandle, WM_SETFOCUS, (WPARAM)m_hWnd, 0L); // Give the focus to notepad++
+			break;
+
 		default:
 			return 0;
 	}

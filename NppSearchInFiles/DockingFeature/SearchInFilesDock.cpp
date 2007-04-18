@@ -589,6 +589,8 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 						::SendMessage(::GetDlgItem(hDlg, IDC_WHERE), CB_SETCURSEL, 0, 0L);
 						ownerDlg->m_cstMsgWParam.Realloc(0);
 						ownerDlg->m_cstMsgLParam.Realloc(0);
+
+						if (!ownerDlg->isVisible()) ownerDlg->display();
 					}
 
 					// Ask Scintilla for the current selected text

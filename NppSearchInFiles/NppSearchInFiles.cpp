@@ -20,24 +20,26 @@
 // 21.03.2007, v1.0.0.8, 
 // 11.04.2007, v1.10.0.0, 
 //
-//	FILE					METHOD							DATE		DESCRIPTION							
-//	ControlsTab.h			SIFControlsTab::renameTab		07.03.07	UTL_strlen instead of sizeof
-//	SearchInFilesDock.cpp	SearchInFilesInputDlgProc		20.03.07	Remember input dlg position
-//	SearchInFilesDock.cpp	SearchInFilesInputDlgProc		20.03.07	Retrive current selected text
-//	SearchInFilesDock.cpp	-								21.03.07	Changed the way combo string are stored
-//  NppSearchInFilesk.cpp									23.03.2007	Added icon to notepad++ toolbar
-//																		Added icon to notepad++ plug-ins tabs
-//  NppSearchInFiles.cpp	-								28.03.2007	The plug-in did not show at start
-//	SearchInFilesDock.cpp	-											Get rid of tabs
-//	SearchInFilesDock.cpp	-								10.04.2007	Make the parameters window modaless
-//	ProcessSearchInFiles.cpp								10.04.2007	Get rid of confirmation window on stopping search
-//  NppSearchInFiles.cpp	-								11.04.2007	Added help dialog
-//	SearchInFilesDock.cpp	-								13.04.2007	The browse for folder dialog opens from the current folder if this exists
-//	ProcessSearchInFiles.cpp								16.04.2007	Fixed the whole word search
+//	FILE						DATE		DESCRIPTION							
+//	ControlsTab.h				07.03.07	UTL_strlen instead of sizeof
+//	SearchInFilesDock.cpp		20.03.07	Remember input dlg position
+//	SearchInFilesDock.cpp		20.03.07	Retrive current selected text
+//	SearchInFilesDock.cpp		21.03.07	Changed the way combo string are stored
+//  NppSearchInFilesk.cpp		23.03.2007	Added icon to notepad++ toolbar
+//											Added icon to notepad++ plug-ins tabs
+//  NppSearchInFiles.cpp		28.03.2007	The plug-in did not show at start
+//	SearchInFilesDock.cpp					Get rid of tabs
+//	SearchInFilesDock.cpp		10.04.2007	Make the parameters window modaless
+//	ProcessSearchInFiles.cpp	10.04.2007	Get rid of confirmation window on stopping search
+//  NppSearchInFiles.cpp		11.04.2007	Added help dialog
+//	SearchInFilesDock.cpp		13.04.2007	The browse for folder dialog opens from the current folder if this exists
+//	ProcessSearchInFiles.cpp	16.04.2007	Fixed the whole word search
+//  NppSearchInFiles.cpp		11.04.2007	Added custom message WM_PG_LAUNCH_SEARCHINFILESDLG to open 
+//											Search In Files from Npp
+//  SearchResultsListCtrl.cpp	18.04.2007	Give focus to Npp with ESC or TAB keys
 //
-//  PENDIENTE:
-//  Mensaje para abrir la busqueda partiendo de una carpeta desde fuera del plug-in
-//  Expresiones regulares
+//  PENDING:
+//  Regular expresions
 
 #include "stdafx.h"
 
@@ -211,7 +213,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		if (notifyCode->nmhdr.code == NPPN_READY)
 		{
 			_nppReady = true;
-			::SendMessage(nppData._nppHandle, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)_searchInFilesDock.isVisible());
+
+			bool putCheck = false;
+
+			if (_searchInFilesDock.isVisible() ||
+				::SendMessage(nppData._nppHandle, WM_DMM_GETPLUGINHWNDBYNAME, 0, (LPARAM)"NppSearchInFiles.dll") != NULL)
+				putCheck = true;
+
+			::SendMessage(nppData._nppHandle, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)putCheck);
 			// Give focus to notepad++ (should we be doing this?)
 			::SendMessage(nppData._scintillaMainHandle, WM_SETFOCUS, (WPARAM)_searchInFilesDock.getHSelf(), 0L);
 		}
@@ -270,7 +279,7 @@ void SearchInFilesDockableDlg()
 	// Always show, unless npp is not ready yet
 	if (_nppReady) {
 		_searchInFilesDock.display();
-		_searchInFilesDock.openSearchInFilesInputDlg();
+		_searchInFilesDock.OpenSearchInFilesInputDlg();
 	}
 }
 
