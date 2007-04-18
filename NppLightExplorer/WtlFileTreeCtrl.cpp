@@ -13,9 +13,13 @@ E-mail: dengGB.balandro@gmail.com
 
 #include "stdafx.h"
 #include "WtlFileTreeCtrl.h"
+#include "Notepad_plus_msgs.h"
 #include "sysMsg.h"
 
 #include <winnetwk.h>
+
+#define MIN_ID 1
+#define MAX_ID 10000
 
 int CSystemImageList::m_nRefCount = 0;
 
@@ -715,10 +719,245 @@ BOOL CWtlFileTreeCtrl::OnItemExpanding(int idCtrl, LPNMHDR pnmh, BOOL& bHandled)
 	return 0;
 }
 
+// this functions determines which version of IContextMenu is avaibale for those objects (always the highest one)
+// and returns that interface
+BOOL CWtlFileTreeCtrl::GetContextMenu (void ** ppContextMenu, int & iMenuType) {
+	*ppContextMenu = NULL;
+	LPCONTEXTMENU icm1 = NULL;
+	
+	// first we retrieve the normal IContextMenu interface (every object should have it)
+	m_psfFolder->GetUIObjectOf (NULL, m_nItems, (LPCITEMIDLIST *) m_pidlArray, IID_IContextMenu, NULL, (void**) &icm1);
+
+	if (icm1)
+	{	// since we got an IContextMenu interface we can now obtain the higher version interfaces via that
+		if (icm1->QueryInterface (IID_IContextMenu3, ppContextMenu) == NOERROR)
+			iMenuType = 3;
+		else if (icm1->QueryInterface (IID_IContextMenu2, ppContextMenu) == NOERROR)
+			iMenuType = 2;
+
+		if (*ppContextMenu) 
+			icm1->Release(); // we can now release version 1 interface, cause we got a higher one
+		else 
+		{	
+			iMenuType = 1;
+			*ppContextMenu = icm1;	// since no higher versions were found
+		}							// redirect ppContextMenu to version 1 interface
+	}
+	else
+		return (FALSE);	// something went wrong
+	
+	return (TRUE); // success
+}
+
+void CWtlFileTreeCtrl::SetObjects(std::string strObject) {
+	// only one object is passed
+	std::vector<std::string>	strArray;
+	strArray.push_back(strObject);	// create a CStringArray with one element
+	
+	SetObjects (strArray);			// and pass it to SetObjects (vector<string> strArray)
+									// for further processing
+}
+
+void CWtlFileTreeCtrl::FreePIDLArray(LPITEMIDLIST *pidlArray) {
+	if (!pidlArray) return;
+
+	int iSize = (int)(_msize (pidlArray) / sizeof (LPITEMIDLIST));
+
+	for (int i = 0; i < iSize; i++)
+		free (pidlArray[i]);
+	free (pidlArray);
+}
+
+LPITEMIDLIST CWtlFileTreeCtrl::CopyPIDL (LPCITEMIDLIST pidl, int cb) {
+	if (cb == -1)
+		cb = GetPIDLSize (pidl); // Calculate size of list.
+
+    LPITEMIDLIST pidlRet = (LPITEMIDLIST) calloc (cb + sizeof (USHORT), sizeof (BYTE));
+    if (pidlRet)
+		CopyMemory(pidlRet, pidl, cb);
+
+    return (pidlRet);
+}
+
+UINT CWtlFileTreeCtrl::GetPIDLSize (LPCITEMIDLIST pidl) {  
+	if (!pidl) 
+		return 0;
+	int nSize = 0;
+	LPITEMIDLIST pidlTemp = (LPITEMIDLIST) pidl;
+	while (pidlTemp->mkid.cb)
+	{
+		nSize += pidlTemp->mkid.cb;
+		pidlTemp = (LPITEMIDLIST) (((LPBYTE) pidlTemp) + pidlTemp->mkid.cb);
+	}
+	return nSize;
+}
+
+int CWtlFileTreeCtrl::GetPIDLCount (LPCITEMIDLIST pidl) {
+	if (!pidl)
+		return 0;
+
+	int nCount = 0;
+	BYTE*  pCur = (BYTE *) pidl;
+	while (((LPCITEMIDLIST) pCur)->mkid.cb)
+	{
+		nCount++;
+		pCur += ((LPCITEMIDLIST) pCur)->mkid.cb;
+	}
+	return nCount;
+}
+
+LPBYTE CWtlFileTreeCtrl::GetPIDLPos (LPCITEMIDLIST pidl, int nPos) {
+	if (!pidl)
+		return 0;
+	int nCount = 0;
+	
+	BYTE * pCur = (BYTE *) pidl;
+	while (((LPCITEMIDLIST) pCur)->mkid.cb)
+	{
+		if (nCount == nPos)
+			return pCur;
+		nCount++;
+		pCur += ((LPCITEMIDLIST) pCur)->mkid.cb;	// + sizeof(pidl->mkid.cb);
+	}
+	if (nCount == nPos) 
+		return pCur;
+	return NULL;
+}
+
+// this is workaround function for the Shell API Function SHBindToParent
+// SHBindToParent is not available under Win95/98
+HRESULT CWtlFileTreeCtrl::SHBindToParentEx (LPCITEMIDLIST pidl, REFIID riid, VOID **ppv, LPCITEMIDLIST *ppidlLast) {
+	HRESULT hr = 0;
+	if (!pidl || !ppv)
+		return E_POINTER;
+	
+	int nCount = GetPIDLCount (pidl);
+	if (nCount == 0)	// desktop pidl of invalid pidl
+		return E_POINTER;
+
+	IShellFolder * psfDesktop = NULL;
+	SHGetDesktopFolder (&psfDesktop);
+	if (nCount == 1)	// desktop pidl
+	{
+		if ((hr = psfDesktop->QueryInterface(riid, ppv)) == S_OK)
+		{
+			if (ppidlLast) 
+				*ppidlLast = CopyPIDL (pidl);
+		}
+		psfDesktop->Release ();
+		return hr;
+	}
+
+	LPBYTE pRel = GetPIDLPos (pidl, nCount - 1);
+	LPITEMIDLIST pidlParent = NULL;
+	pidlParent = CopyPIDL (pidl, (int)(pRel - (LPBYTE) pidl));
+	IShellFolder * psfFolder = NULL;
+	
+	if ((hr = psfDesktop->BindToObject (pidlParent, NULL, __uuidof (psfFolder), (void **) &psfFolder)) != S_OK)
+	{
+		free (pidlParent);
+		psfDesktop->Release ();
+		return hr;
+	}
+	if ((hr = psfFolder->QueryInterface (riid, ppv)) == S_OK)
+	{
+		if (ppidlLast)
+			*ppidlLast = CopyPIDL ((LPCITEMIDLIST) pRel);
+	}
+	free (pidlParent);
+	psfFolder->Release ();
+	psfDesktop->Release ();
+	return hr;
+}
+
+void CWtlFileTreeCtrl::SetObjects(std::vector<std::string> strArray) {
+	// store also the string for later menu use
+	m_strArray		 = strArray;
+
+	// free all allocated datas
+	if (m_psfFolder) m_psfFolder->Release ();
+	m_psfFolder = NULL;
+	FreePIDLArray (m_pidlArray);
+	m_pidlArray = NULL;
+	
+	// get IShellFolder interface of Desktop (root of shell namespace)
+	IShellFolder* psfDesktop = NULL;
+	SHGetDesktopFolder (&psfDesktop);	// needed to obtain full qualified pidl
+
+	// ParseDisplayName creates a PIDL from a file system path relative to the IShellFolder interface
+	// but since we use the Desktop as our interface and the Desktop is the namespace root
+	// that means that it's a fully qualified PIDL, which is what we need
+	LPITEMIDLIST pidl = NULL;
+
+#ifndef _UNICODE
+	OLECHAR * olePath = NULL;
+	olePath = (OLECHAR *) calloc (strArray[0].size() + 1, sizeof (OLECHAR));
+	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, strArray[0].c_str(), -1, olePath, (int)(strArray[0].size() + 1));	
+	psfDesktop->ParseDisplayName (NULL, 0, olePath, NULL, &pidl, NULL);
+	free (olePath);
+#else
+	psfDesktop->ParseDisplayName (NULL, 0, strArray[0].c_str(), NULL, &pidl, NULL);
+#endif
+
+	if (pidl != NULL)
+	{
+		// now we need the parent IShellFolder interface of pidl, and the relative PIDL to that interface
+		LPITEMIDLIST pidlItem = NULL;	// relative pidl
+		SHBindToParentEx (pidl, IID_IShellFolder, (void **) &m_psfFolder, NULL);
+		free (pidlItem);
+		// get interface to IMalloc (need to free the PIDLs allocated by the shell functions)
+		LPMALLOC lpMalloc = NULL;
+		SHGetMalloc (&lpMalloc);
+		if (lpMalloc != NULL) lpMalloc->Free (pidl);
+
+		// now we have the IShellFolder interface to the parent folder specified in the first element in strArray
+		// since we assume that all objects are in the same folder (as it's stated in the MSDN)
+		// we now have the IShellFolder interface to every objects parent folder
+		
+		IShellFolder * psfFolder = NULL;
+		m_nItems = (int)strArray.size();
+		for (int i = 0; i < m_nItems; i++)
+		{
+#ifndef _UNICODE
+			olePath = (OLECHAR *) calloc (strArray[i].size() + 1, sizeof (OLECHAR));
+			MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, strArray[i].c_str(), -1, olePath, (int)(strArray[i].size() + 1));	
+			psfDesktop->ParseDisplayName (NULL, 0, olePath, NULL, &pidl, NULL);
+			free (olePath);
+#else
+			psfDesktop->ParseDisplayName (NULL, 0, strArray[i].c_str(), NULL, &pidl, NULL);
+#endif
+			m_pidlArray = (LPITEMIDLIST *) realloc (m_pidlArray, (i + 1) * sizeof (LPITEMIDLIST));
+			// get relative pidl via SHBindToParent
+			SHBindToParentEx (pidl, IID_IShellFolder, (void **) &psfFolder, (LPCITEMIDLIST *) &pidlItem);
+			m_pidlArray[i] = CopyPIDL (pidlItem);	// copy relative pidl to pidlArray
+			free (pidlItem);
+			// free pidl allocated by ParseDisplayName
+			if (lpMalloc != NULL) lpMalloc->Free (pidl);
+			if (psfFolder != NULL) psfFolder->Release ();
+		}
+
+		if (lpMalloc != NULL) lpMalloc->Release ();
+	}
+	if (psfDesktop != NULL) psfDesktop->Release ();
+}
+
+void CWtlFileTreeCtrl::InvokeCommand (LPCONTEXTMENU pContextMenu, UINT idCommand) {
+	CMINVOKECOMMANDINFO cmi = {0};
+	cmi.cbSize = sizeof (CMINVOKECOMMANDINFO);
+	cmi.lpVerb = (LPSTR) MAKEINTRESOURCE (idCommand);
+	cmi.nShow = SW_SHOWNORMAL;
+	
+	pContextMenu->InvokeCommand (&cmi);
+}
+
 BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BOOL byKeyboard) {
 	try {
 		POINT	screenPoint, clientPoint;
 		UINT	uFlags;
+		HMENU	hStandardMenu = NULL;
+
+		// common pointer to IContextMenu and higher version interface
+		LPCONTEXTMENU pContextMenu = NULL;
 
 		bHandled = TRUE;
 
@@ -764,6 +1003,9 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			// Let's open the context menu
 			int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
 
+			// Free resources
+			::DestroyMenu(hPopupMenu);
+
 			switch (resp) 
 			{
 				case FILE_EXTENSIONS_TO_EXECUTE:
@@ -773,7 +1015,7 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 				default:
 					break;
 			}
-			return 0;
+			return 0; // We leave here
 		}
 
 		SelectItem(hHitItem);
@@ -783,7 +1025,21 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		int itemType = GetItemType(hHitItem);
 		HMENU hPopupMenu;
 
-		// If it's not a folder or a file we don't have context menu
+		// Manage the standard menu
+		int		iMenuType = 0;
+
+		SetObjects(GetItemTag(hHitItem));
+
+		if (m_pidlArray != NULL) {
+			hStandardMenu = ::CreateMenu();
+
+			if (!GetContextMenu((void**) &pContextMenu, iMenuType))	return (0);	// something went wrong
+
+			// Let's fill out our popupmenu 
+			pContextMenu->QueryContextMenu(hStandardMenu, ::GetMenuItemCount(hStandardMenu), MIN_ID, MAX_ID, CMF_NORMAL);
+		}
+
+		// If it's not a folder, a file or a favorite we don't have context menu
 		if (itemType == CCustomItemInfo::FILE || itemType == CCustomItemInfo::FOLDER) {
 			// Is it a file?
 			bool bIsFile = (GetItemType(hHitItem) == CCustomItemInfo::FILE) ? true : false;
@@ -794,14 +1050,21 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			mii.cbSize		= sizeof(mii);
 			mii.fMask		= MIIM_STRING | MIIM_DATA | MIIM_STATE | MIIM_ID;
 
+			// Open it
+			mii.wID			= EXECUTE_FILE;
+			mii.dwTypeData	= "Open";
+			mii.cch			= UTL_strlen(mii.dwTypeData);
+			mii.fState		= bIsFile ? MFS_ENABLED : MFS_GRAYED;
+
+			hPopupMenu = ::CreatePopupMenu();
+			::InsertMenuItem(hPopupMenu, EXECUTE_FILE, FALSE, &mii);
+
 			// Add to favorites folder
 			mii.wID			= ADD_TO_FAVORITES;
 			mii.dwTypeData	= "Add to favorites";
 			mii.cch			= UTL_strlen(mii.dwTypeData);
+			mii.fState		= bIsFile ? MFS_GRAYED : MFS_ENABLED;
 
-			mii.fState = bIsFile ? MFS_GRAYED : MFS_ENABLED;
-
-			hPopupMenu = ::CreatePopupMenu();
 			::InsertMenuItem(hPopupMenu, ADD_TO_FAVORITES, FALSE, &mii);
 
 			// Properties
@@ -863,28 +1126,74 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		else
 			return 0;
 
+		if (m_pidlArray != NULL && hStandardMenu != NULL) {
+			::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
+
+			::InsertMenu(hPopupMenu, -1, MF_BYPOSITION | MF_STRING | MF_POPUP, (UINT_PTR)hStandardMenu, "Standard Menu");
+		}
+
+
 		// Let's open the context menu
 		int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
 
-		switch (resp) 
-		{
-			case REMOVE_FROM_FAVORITES:
-				RemoveFromFavorites();
-				break;
-			
-			case ADD_TO_FAVORITES:
-			case EDIT_FAVORITE_FOLDER_NAME:
-				AddEditFavoriteFolderName();
-				break;
+		// Free resources
+		::DestroyMenu(hPopupMenu);
 
-			case GET_PROPERTIES:
-				ShowProperties();
-				break;
+		// Free resources
+		if (hStandardMenu != NULL) ::DestroyMenu(hStandardMenu);
 
-			case SEARCH_FROM_HERE:
-				SearchFromHere();
-				break;
+		// see if returned idCommand belongs to shell menu entries
+		if (resp >= MIN_ID && resp <= MAX_ID) {
+			InvokeCommand (pContextMenu, resp - MIN_ID);	// execute related command
+
+			// If they deleted the file or folder we delete the tree item
+			CUTL_PATH current(GetItemTag(hHitItem));
+
+			if (itemType == CCustomItemInfo::FOLDER) {
+				if (!current.DirectoryExists()) DeleteItem(hHitItem);
+			}
+			else if (itemType == CCustomItemInfo::FILE) {
+				if (!current.Exists()) DeleteItem(hHitItem);
+			}
 		}
+		else
+		{
+			switch (resp) 
+			{
+				case REMOVE_FROM_FAVORITES:
+					RemoveFromFavorites();
+					break;
+				
+				case ADD_TO_FAVORITES:
+				case EDIT_FAVORITE_FOLDER_NAME:
+					AddEditFavoriteFolderName();
+					break;
+
+				case GET_PROPERTIES:
+					ShowProperties();
+					break;
+
+				case SEARCH_FROM_HERE:
+					SearchFromHere();
+					break;
+
+				case EXECUTE_FILE:
+					ExecuteFile();
+					break;
+			}
+		}
+
+		if (m_psfFolder != NULL) {
+			m_psfFolder->Release ();
+			m_psfFolder = NULL;
+		}
+
+		if (m_pidlArray != NULL) {
+			FreePIDLArray(m_pidlArray);
+			m_pidlArray = NULL;
+		}
+		if (pContextMenu != NULL) pContextMenu->Release();
+
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::OnRClickItem.", __FILE__, __LINE__);
@@ -892,10 +1201,65 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 	return 0;
 }
 
+void CWtlFileTreeCtrl::ExecuteFile() {
+	try {
+		CWaitCursor wc;
+
+		// 'Open' the file
+		HTREEITEM hSelItem = GetSelectedItem();
+
+		if (hSelItem == NULL) return;
+
+		SHELLEXECUTEINFO  si;
+		// Preparamos el si
+		ZeroMemory(&si, sizeof(si));
+		si.cbSize         = sizeof(SHELLEXECUTEINFO);
+		si.fMask          = SEE_MASK_INVOKEIDLIST;
+		si.hwnd           = NULL;
+		si.lpVerb         = "open";
+		si.lpFile         = GetItemTag(hSelItem);
+		si.lpParameters   = NULL;
+		si.lpDirectory    = NULL;
+		si.nShow          = SW_SHOWNORMAL;
+
+		if (!ShellExecuteEx(&si)) {
+			CUTL_BUFFER bufTemp;
+
+			systemMessage(bufTemp.Sf("Error executing file'%s'.", GetItemTag(hSelItem)));
+		}
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::OpenFile.", __FILE__, __LINE__);
+	}
+}
+
 void CWtlFileTreeCtrl::SearchFromHere() {
 	try {
+		CWaitCursor wc;
+
 		// See if there is the "Search in Files" window
-		systemMessage("Llamar a Search In Files");
+		HTREEITEM hSelItem = GetSelectedItem();
+
+		if (hSelItem == NULL) return;
+
+		HWND searchInFilesHWnd = 
+			(HWND)::SendMessage(m_nppHandle, WM_DMM_GETPLUGINHWNDBYNAME, 0, (LPARAM)"NppSearchInFiles.dll");
+
+		CUTL_PATH fullPath(GetItemTag(hSelItem));
+		CUTL_BUFFER driveDir, tempBuf, extension;
+
+		fullPath.GetDriveDirectory(driveDir);
+		fullPath.GetExtension(tempBuf);
+
+		if (tempBuf == "") 
+			extension = "*.*";
+		else
+			extension.Sf("*.%s", tempBuf.GetSafe());
+
+		if (searchInFilesHWnd != NULL)  
+			::SendMessage(searchInFilesHWnd, WM_PG_LAUNCH_SEARCHINFILESDLG, (WPARAM)extension.GetSafe(), (LPARAM)driveDir.GetSafe());
+		else 
+			::SendMessage(m_nppHandle, WM_LAUNCH_FINDINFILESDLG, (WPARAM)extension.GetSafe(), (LPARAM)driveDir.GetSafe());
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::SearchFromHere.", __FILE__, __LINE__);
@@ -940,7 +1304,7 @@ void CWtlFileTreeCtrl::RemoveFromFavorites() {
 
 void CWtlFileTreeCtrl::ShowProperties() {
 	try {
-		CWaitCursor c;
+		CWaitCursor wc;
 
 		CUTL_BUFFER bufPath(GetItemTag(GetSelectedItem()));
 

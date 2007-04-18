@@ -30,12 +30,13 @@ const UINT WM_POPULATE_TREE = WM_APP + 1;
 const UINT WM_ITEM_SELECTED = WM_APP + 2;
 
 // Context menus
-#define ADD_TO_FAVORITES			2000
-#define REMOVE_FROM_FAVORITES		2001
-#define GET_PROPERTIES				2002
-#define EDIT_FAVORITE_FOLDER_NAME	2003
-#define FILE_EXTENSIONS_TO_EXECUTE  2004
-#define SEARCH_FROM_HERE			2005
+#define ADD_TO_FAVORITES			12000
+#define REMOVE_FROM_FAVORITES		12001
+#define GET_PROPERTIES				12002
+#define EDIT_FAVORITE_FOLDER_NAME	12003
+#define FILE_EXTENSIONS_TO_EXECUTE  12004
+#define SEARCH_FROM_HERE			12005
+#define EXECUTE_FILE				12006
 
 // Roots
 #define ROOT_FAVORITES		"Favorites"
@@ -99,7 +100,7 @@ class CWtlFileTreeCtrl : public CWindowImpl< CWtlFileTreeCtrl, CTreeViewCtrl>
 {
 public:
 	CWtlFileTreeCtrl::CWtlFileTreeCtrl() : m_hSelItem(NULL), 
-		m_hMyFavoritesRoot(NULL), m_hMyComputerRoot(NULL), m_hNetworkRoot(NULL) {
+		m_hMyFavoritesRoot(NULL), m_hMyComputerRoot(NULL), m_hNetworkRoot(NULL), m_pidlArray(NULL) {
 		SHGetMalloc(&m_pMalloc);
 
 		m_nNetworkIcon = -1;
@@ -108,6 +109,11 @@ public:
 
 	virtual ~CWtlFileTreeCtrl(){
 		m_pMalloc->Release();
+
+		if (m_pidlArray != NULL) {
+			FreePIDLArray(m_pidlArray);
+			m_pidlArray = NULL;
+		}
 	};
 
 	BOOL PreTranslateMessage(MSG* pMsg);
@@ -153,6 +159,7 @@ public:
 	void LoadState();
 
 	void SearchFromHere();
+	void ExecuteFile();
 
 	LPCSTR				GetItemDisplayString(HTREEITEM hItem);
 	LPCSTR				GetItemTag(HTREEITEM hItem);
@@ -208,6 +215,23 @@ protected:
 		CUTL_BUFFER iterator;
 	};
 	void QuickSortItems(std::vector<tItemList>* vList, INT d, INT h);
+
+	// Standard context menu
+	BOOL			GetContextMenu(void ** ppContextMenu, int & iMenuType);
+	void			SetObjects(std::string strObject);
+	void			SetObjects(std::vector<std::string> strArray);
+	void			FreePIDLArray(LPITEMIDLIST *pidlArray);
+	HRESULT			SHBindToParentEx(LPCITEMIDLIST pidl, REFIID riid, VOID **ppv, LPCITEMIDLIST *ppidlLast);
+	int				GetPIDLCount(LPCITEMIDLIST pidl);
+	LPBYTE			GetPIDLPos(LPCITEMIDLIST pidl, int nPos);
+	LPITEMIDLIST	CopyPIDL(LPCITEMIDLIST pidl, int cb = -1);
+	UINT			GetPIDLSize (LPCITEMIDLIST pidl);
+	void			InvokeCommand(LPCONTEXTMENU pContextMenu, UINT idCommand);
+
+	IShellFolder*				m_psfFolder;
+	LPITEMIDLIST*				m_pidlArray;	
+	int							m_nItems;
+	std::vector<std::string>	m_strArray;
 };
 
 #endif //WTL_FILETREECTRL_H__

@@ -19,15 +19,18 @@
 // 09.04.2007, v1.2 
 //
 //	FILE					DATE		DESCRIPTION							
-//  NppLightExplorer		23.03.2007	Added icon to notepad++ toolbar
+//  NppLightExplorer.cpp	23.03.2007	Added icon to notepad++ toolbar
 //  resource.rc     		28.03.2007	Tab icon
-//  NppLightExplorer		09.04.2007	Toolbar icon state when closing the adding
-//  NppLightExplorer		11.04.2007	Added help dialog
-//  WtlFileTreeCtrl			17.04.2007	Save state across sessions
-//  WtlFileTreeCtrl			17.04.2007	Sort folders and files before inserting them on the control
+//  NppLightExplorer.cpp	09.04.2007	Toolbar icon state when closing the adding
+//  WtlFileTreeCtrl.cpp		09.04.2007	Give focus to Npp with ESC or TAB keys
+//  NppLightExplorer.cpp	11.04.2007	Added help dialog
+//  WtlFileTreeCtrl.cpp		17.04.2007	Save state across sessions
+//  WtlFileTreeCtrl.cpp		17.04.2007	Sort folders and files before inserting them on the control
+//  WtlFileTreeCtrl.cpp		18.04.2007	Open search from a folder or a file: if search in files is available, use this
+//  WtlFileTreeCtrl.cpp		18.04.2007	Added execute context menu
 //
-//  PENDIENTE:
-//  Mensaje para abrir la busqueda partiendo de una carpeta 
+//  PENDING:
+//  
 
 #include "stdafx.h"
 #include "PluginInterface.h"
