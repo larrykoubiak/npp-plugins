@@ -48,6 +48,7 @@ const char	localConfFile[]	= "doLocalConf.xml";
 NppData				nppData;
 HANDLE				g_hModule;
 toolbarIcons		g_TBLightExplorer;
+bool				_nppReady = false;
 
 FuncItem funcItem[nbFunc];
 bool doCloseTag = false;
@@ -171,6 +172,20 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		{
 			g_TBLightExplorer.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)_lightExplorerDlg.getHinst(), MAKEINTRESOURCE(IDB_TB_LIGHTEXPLORER), IMAGE_BITMAP, 0, 0, LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS);
 			::SendMessage(nppData._nppHandle, WM_ADDTOOLBARICON, (WPARAM)funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)&g_TBLightExplorer);
+		}
+		if (notifyCode->nmhdr.code == NPPN_READY)
+		{
+			_nppReady = true;
+
+			bool putCheck = false;
+
+			if (_lightExplorerDlg.isVisible() ||
+				::SendMessage(nppData._nppHandle, WM_DMM_GETPLUGINHWNDBYNAME, 0, (LPARAM)"NppLightExplorer.dll") != NULL)
+				putCheck = true;
+
+			::SendMessage(nppData._nppHandle, WM_PIMENU_CHECK, funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)putCheck);
+			// Give focus to notepad++ (should we be doing this?)
+			::SendMessage(nppData._scintillaMainHandle, WM_SETFOCUS, (WPARAM)_lightExplorerDlg.getHSelf(), 0L);
 		}
 	}
 }
