@@ -8,6 +8,7 @@
 // Generated from the TEXTINCLUDE 2 resource.
 //
 #include "afxres.h"
+
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
 
@@ -25,13 +26,13 @@ LANGUAGE LANG_SPANISH, SUBLANG_SPANISH_MODERN
 // Dialog
 //
 
-IDD_SEARCHINFILESDOCK DIALOGEX 26, 41, 122, 48
+IDD_SEARCHINFILESDOCK DIALOGEX 26, 41, 552, 112
 STYLE DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU
-EXSTYLE WS_EX_TOOLWINDOW | WS_EX_WINDOWEDGE
+EXSTYLE WS_EX_WINDOWEDGE
 CAPTION "Search in Files"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    CONTROL         "",IDC_RESULTSLIST,"SysTreeView32",TVS_HASBUTTONS | TVS_LINESATROOT | TVS_DISABLEDRAGDROP | TVS_SHOWSELALWAYS | TVS_FULLROWSELECT | WS_BORDER | WS_TABSTOP,2,4,116,39
+    CONTROL         "",IDC_RESULTSLIST,"SysTreeView32",TVS_HASBUTTONS | TVS_LINESATROOT | TVS_DISABLEDRAGDROP | TVS_SHOWSELALWAYS | TVS_FULLROWSELECT | WS_BORDER | WS_TABSTOP,4,3,547,107
 END
 
 IDD_SEARCH_INPUT_DLG DIALOGEX 0, 0, 466, 99
@@ -206,6 +207,7 @@ IDI_SEARCHINFILES       ICON                    "..\\Icons\\searchInFiles.ico"
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
+
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED

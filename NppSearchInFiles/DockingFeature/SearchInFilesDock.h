@@ -45,6 +45,8 @@ class SearchInFilesDock : public DockingDlgInterface
 public :
 	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK) {
 		::ZeroMemory(&m_windowTitle, sizeof(m_windowTitle));
+		m_cstMsgWParam.Realloc(0);
+		m_cstMsgLParam.Realloc(0);
 	};
 
 	~SearchInFilesDock(){
@@ -69,7 +71,7 @@ public :
 
 	void setParent(HWND parent2set){ _hParent = parent2set; };
 
-	void openSearchInFilesInputDlg();
+	void OpenSearchInFilesInputDlg();
 	static BOOL CALLBACK SearchInFilesInputDlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 	bool	m_bInProcess;
@@ -101,6 +103,8 @@ public :
 	};
 
 	TCHAR						m_windowTitle[2024];
+	CUTL_BUFFER					m_cstMsgWParam;
+	CUTL_BUFFER					m_cstMsgLParam;
 
 protected :
 	int							m_iCurrSearchLength;

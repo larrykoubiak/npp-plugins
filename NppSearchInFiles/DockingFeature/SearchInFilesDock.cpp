@@ -63,7 +63,7 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				// We manage here the ALT+Q keyboad
 				if (wParam == SC_KEYMENU && lParam == 0x71) {
 					display();
-					openSearchInFilesInputDlg();
+					OpenSearchInFilesInputDlg();
 					return true;
 				} 
 				else
@@ -110,9 +110,11 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 			break;
 
 
-			case WM_NPPSEARCHINFILES_DOSEARCH_FROM_FOLDER:
+			case WM_PG_LAUNCH_SEARCHINFILESDLG:
 			{
-				::MessageBox(NULL, "Hola", "WM_NPPSEARCHINFILES_DOSEARCH_FROM_FOLDER", MB_OK);
+				m_cstMsgWParam = (LPCSTR)wParam;
+				m_cstMsgLParam = (LPCSTR)lParam;
+				OpenSearchInFilesInputDlg();
 				break;
 			}
 
@@ -144,7 +146,7 @@ void SearchInFilesDock::display(bool toShow) const {
 }
 
 
-void SearchInFilesDock::openSearchInFilesInputDlg() 
+void SearchInFilesDock::OpenSearchInFilesInputDlg() 
 {
 	try {
 		HWND hDlg = ::CreateDialogParam(_hInst, 
@@ -155,7 +157,7 @@ void SearchInFilesDock::openSearchInFilesInputDlg()
 		::SendMessage(_hParent, WM_MODELESSDIALOG, MODELESSDIALOGADD, (WPARAM)hDlg);
 	}
 	catch (...) {
-		systemMessageEx("Error in SearchInFilesDock::openSearchInFilesInputDlg", __FILE__, __LINE__);
+		systemMessageEx("Error in SearchInFilesDock::OpenSearchInFilesInputDlg", __FILE__, __LINE__);
 	}
 }
 
@@ -577,7 +579,18 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 
 					// Load Checks state
 					ownerDlg->LoadChecks(hDlg);
-		
+
+					// Did someone call us from outside?
+					if (ownerDlg->m_cstMsgWParam.strlen() && ownerDlg->m_cstMsgLParam.strlen()) {
+						::SendMessage(::GetDlgItem(hDlg, IDC_TYPES), CB_INSERTSTRING, 0, (LPARAM)ownerDlg->m_cstMsgWParam.GetSafe());
+						::SendMessage(::GetDlgItem(hDlg, IDC_TYPES), CB_SETCURSEL, 0, 0L);
+
+						::SendMessage(::GetDlgItem(hDlg, IDC_WHERE), CB_INSERTSTRING, 0, (LPARAM)ownerDlg->m_cstMsgLParam.GetSafe());
+						::SendMessage(::GetDlgItem(hDlg, IDC_WHERE), CB_SETCURSEL, 0, 0L);
+						ownerDlg->m_cstMsgWParam.Realloc(0);
+						ownerDlg->m_cstMsgLParam.Realloc(0);
+					}
+
 					// Ask Scintilla for the current selected text
 					size_t selectionStart = ::SendMessage(ownerDlg->m_scintillaMainHandle, SCI_GETSELECTIONSTART, 0, 0L);
 					size_t selectionEnd = ::SendMessage(ownerDlg->m_scintillaMainHandle, SCI_GETSELECTIONEND, 0, 0L);
@@ -791,6 +804,8 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 
 					if (LOWORD(wParam) == IDC_EXCLUDE_LIST) {
 						if (HIWORD(wParam) == LBN_DBLCLK) {
+
+
 							int selIndex = (int)::SendMessage((HWND)lParam, LB_GETCURSEL, 0, 0L);
 
 							if (selIndex != LB_ERR) 
@@ -824,7 +839,9 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 						::EndDialog(hDlg, IDOK);
 					}
 
-					if (LOWORD(wParam) == IDCANCEL) ::EndDialog(hDlg, IDCANCEL);
+					if (LOWORD(wParam) == IDCANCEL) {
+						::EndDialog(hDlg, IDCANCEL);
+					}
 				}
 				break;
 
