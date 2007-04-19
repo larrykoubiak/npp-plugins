@@ -212,11 +212,11 @@ bool CProcessSearchInFiles::SearchFolders(LPCSTR folder) {
 	if (checkCancelButton()) return false;
 
 	CUTL_BUFFER strFolder(folder);
-	UINT pos;
 
 	strFolder.Lower();   
    
 	// We take this folder out of the search (05.10.07)
+	//UINT pos;
 	//if (strFolder.Find("jose\\wwwroot\\fotos", pos)) return true;
 
 	if (strFolder[strFolder.strlen() - 1] != '\\') strFolder += "\\";
@@ -366,35 +366,41 @@ int CProcessSearchInFiles::FileSize(const char * szFileName) {
 }
 
 BOOL CProcessSearchInFiles::DoFind(LPCSTR strLine, LPCSTR searchPattern, UINT& hitPos, UINT endPosLine, BOOL& wholeWordSuccess) {
-	CUTL_BUFFER		StringLine(strLine);
-	BOOL			success = StringLine.Find(searchPattern, hitPos, endPosLine);
+	CUTL_BUFFER		bufStringLine(strLine);
+	BOOL			success = bufStringLine.Find(searchPattern, hitPos, endPosLine);
+	CUTL_BUFFER		set("_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
 
 	// If the search is wholeWord we have to make more questions before giving a hit
 	if (success && m_bWholeWord) {
+		UCHAR	beforeChar, afterChar;
+		UINT	found;
+
 		wholeWordSuccess = FALSE;
 
 		if (hitPos == 0) {
-			if (StringLine[hitPos + UTL_strlen(searchPattern)] == '\r' ||
-				StringLine[hitPos + UTL_strlen(searchPattern)] == '\n' ||
-				StringLine[hitPos + UTL_strlen(searchPattern)] == ' ' ||
-			    StringLine[hitPos + UTL_strlen(searchPattern)] == ',' ||
-			    StringLine[hitPos + UTL_strlen(searchPattern)] == '.' ||
-			    StringLine[hitPos + UTL_strlen(searchPattern)] == '?' ||
-			    StringLine[hitPos + UTL_strlen(searchPattern)] == ')')
+			// Only look at the character after the pattern
+			if (UTL_strlen(strLine) == UTL_strlen(searchPattern))
 				wholeWordSuccess = TRUE;
+			else {
+				afterChar = bufStringLine[hitPos + UTL_strlen(searchPattern)];
+
+				wholeWordSuccess = afterChar < 128 && !set.Find(afterChar, found);
+			}
 		}
 		else {
-			if (StringLine[hitPos - 1] == ' ') {
-				if (hitPos + UTL_strlen(searchPattern) >= (UINT)UTL_strlen(strLine))
-					wholeWordSuccess = TRUE;
-				else if (StringLine[hitPos + UTL_strlen(searchPattern)] == '\r' ||
-					     StringLine[hitPos + UTL_strlen(searchPattern)] == '\n' ||
-						 StringLine[hitPos + UTL_strlen(searchPattern)] == ' ' ||
-					     StringLine[hitPos + UTL_strlen(searchPattern)] == ',' ||
-					     StringLine[hitPos + UTL_strlen(searchPattern)] == '.' ||
-					     StringLine[hitPos + UTL_strlen(searchPattern)] == '?' ||
-					     StringLine[hitPos + UTL_strlen(searchPattern)] == ')')
-					wholeWordSuccess = TRUE;
+			if (UTL_strlen(strLine) > (int)(hitPos + UTL_strlen(searchPattern))) {
+				// Look at the characteres before and after the pattern
+				beforeChar = bufStringLine[hitPos - 1];
+				afterChar = bufStringLine[hitPos + UTL_strlen(searchPattern)];
+
+				wholeWordSuccess = afterChar < 128 && !set.Find(beforeChar, found) && 
+								   beforeChar < 128 && !set.Find(afterChar, found);
+			}
+			else {
+				// Look only at the character before the pattern
+				beforeChar = bufStringLine[hitPos - 1];
+
+				wholeWordSuccess = beforeChar < 128 && !set.Find(beforeChar, found);
 			}
 		}
 	}
