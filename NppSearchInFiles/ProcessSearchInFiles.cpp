@@ -217,7 +217,7 @@ bool CProcessSearchInFiles::SearchFolders(LPCSTR folder) {
 	strFolder.Lower();   
    
 	// We take this folder out of the search (05.10.07)
-	if (strFolder.Find("jose\\wwwroot\\fotos", pos)) return true;
+	//if (strFolder.Find("jose\\wwwroot\\fotos", pos)) return true;
 
 	if (strFolder[strFolder.strlen() - 1] != '\\') strFolder += "\\";
 

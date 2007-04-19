@@ -227,6 +227,7 @@ protected:
 	LPITEMIDLIST	CopyPIDL(LPCITEMIDLIST pidl, int cb = -1);
 	UINT			GetPIDLSize (LPCITEMIDLIST pidl);
 	void			InvokeCommand(LPCONTEXTMENU pContextMenu, UINT idCommand);
+	int				GetOverlayIcon(LPCSTR sPath, bool isFolder);
 
 	IShellFolder*				m_psfFolder;
 	LPITEMIDLIST*				m_pidlArray;	

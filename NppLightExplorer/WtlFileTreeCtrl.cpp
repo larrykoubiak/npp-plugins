@@ -266,7 +266,7 @@ int CWtlFileTreeCtrl::GetIconIndex(const CUTL_BUFFER sFilename) {
 	SHFILEINFO sfi;
 
 	ZeroMemory(&sfi, sizeof(SHFILEINFO));
-	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_OVERLAYINDEX) == 0)
+	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_SMALLICON) == 0)
 		return -1;
 	return sfi.iIcon;
 }
@@ -274,7 +274,7 @@ int CWtlFileTreeCtrl::GetIconIndex(const CUTL_BUFFER sFilename) {
 int CWtlFileTreeCtrl::GetIconIndex(LPITEMIDLIST lpPIDL) {
 	SHFILEINFO sfi;
 	memset(&sfi, 0, sizeof(SHFILEINFO));
-	SHGetFileInfo((LPCTSTR)lpPIDL, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_LINKOVERLAY | SHGFI_OVERLAYINDEX);
+	SHGetFileInfo((LPCTSTR)lpPIDL, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
 	return sfi.iIcon; 
 }
 
@@ -283,7 +283,7 @@ int CWtlFileTreeCtrl::GetSelIconIndex(const CUTL_BUFFER sFilename) {
 	SHFILEINFO sfi;
 
 	ZeroMemory(&sfi, sizeof(SHFILEINFO));
-	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_SMALLICON | SHGFI_OVERLAYINDEX) == 0)
+	if(SHGetFileInfo(sFilename.GetSafe(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_OPENICON | SHGFI_SMALLICON) == 0)
 		return -1;
 	return sfi.iIcon;
 }
@@ -291,7 +291,7 @@ int CWtlFileTreeCtrl::GetSelIconIndex(const CUTL_BUFFER sFilename) {
 int CWtlFileTreeCtrl::GetSelIconIndex(LPITEMIDLIST lpPIDL) {
 	SHFILEINFO sfi;
 	memset(&sfi, 0, sizeof(SHFILEINFO));
-	SHGetFileInfo((LPCTSTR)lpPIDL, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_OPENICON | SHGFI_OVERLAYINDEX);
+	SHGetFileInfo((LPCTSTR)lpPIDL, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_SYSICONINDEX | SHGFI_SMALLICON | SHGFI_OPENICON);
 	return sfi.iIcon; 
 }
 
@@ -347,7 +347,32 @@ HTREEITEM CWtlFileTreeCtrl::InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM
 	tvis.item.lParam			= (LPARAM)pCii;
 
 	HTREEITEM hItem = InsertItem(&tvis);
+
+	// Let's find the overlay icon (if there is one)
+	int iOverlayImage;
+
+	if (iOverlayImage = GetOverlayIcon(sPath, isFolder))
+		SetItemState(hItem, INDEXTOOVERLAYMASK(iOverlayImage), TVIS_OVERLAYMASK);
+
 	return hItem;
+}
+
+int CWtlFileTreeCtrl::GetOverlayIcon(LPCSTR sPath, bool isFolder) {
+	SHFILEINFO		sfi	= {0};
+	DWORD_PTR		dResp = NULL;
+
+	if (isFolder) {
+		dResp = SHGetFileInfo(sPath, 0, &sfi, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_SMALLICON | SHGFI_OVERLAYINDEX);
+		if (UTL_strlen(sPath) < 4) {
+			::DestroyIcon(sfi.hIcon);
+			dResp = SHGetFileInfo(sPath, FILE_ATTRIBUTE_NORMAL, &sfi, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_SMALLICON | SHGFI_OVERLAYINDEX | SHGFI_USEFILEATTRIBUTES);
+		}
+	}
+	else
+		dResp = SHGetFileInfo(sPath, FILE_ATTRIBUTE_NORMAL, &sfi, sizeof(SHFILEINFO), SHGFI_ICON | SHGFI_SMALLICON | SHGFI_OVERLAYINDEX | SHGFI_USEFILEATTRIBUTES);
+
+	::DestroyIcon(sfi.hIcon);
+	return dResp != NULL ? sfi.iIcon >> 24 : 0;
 }
 
 HTREEITEM CWtlFileTreeCtrl::InsertTreeNetworkItem(HTREEITEM hParent, LPCSTR sFQPath, CCustomItemInfo* pCii) {
@@ -1033,7 +1058,7 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		if (m_pidlArray != NULL) {
 			hStandardMenu = ::CreateMenu();
 
-			if (!GetContextMenu((void**) &pContextMenu, iMenuType))	return (0);	// something went wrong
+			if (!GetContextMenu((void**) &pContextMenu, iMenuType))	throw 0;	// something went wrong
 
 			// Let's fill out our popupmenu 
 			pContextMenu->QueryContextMenu(hStandardMenu, ::GetMenuItemCount(hStandardMenu), MIN_ID, MAX_ID, CMF_NORMAL);
@@ -1127,11 +1152,23 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			return 0;
 
 		if (m_pidlArray != NULL && hStandardMenu != NULL) {
-			::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
+			// Disable cut (25) and copy (26) options from the standard menu
+			MENUITEMINFO info = {0};
 
+			info.cbSize = sizeof(MENUITEMINFO);
+			for (int i = 0; i < ::GetMenuItemCount(hStandardMenu); i++) {
+				info.fMask = MIIM_ID;
+				::GetMenuItemInfo(hStandardMenu, i, TRUE, &info);
+				if ((info.wID == 25) || (info.wID == 26)) {
+					info.fMask	= MIIM_STATE;
+					info.fState = MFS_DISABLED;
+					::SetMenuItemInfo(hStandardMenu, i, MF_BYPOSITION, &info);
+				}
+			}
+			// Insert the standard menu after a separator
+			::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
 			::InsertMenu(hPopupMenu, -1, MF_BYPOSITION | MF_STRING | MF_POPUP, (UINT_PTR)hStandardMenu, "Standard Menu");
 		}
-
 
 		// Let's open the context menu
 		int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
@@ -1256,10 +1293,12 @@ void CWtlFileTreeCtrl::SearchFromHere() {
 		else
 			extension.Sf("*.%s", tempBuf.GetSafe());
 
+		systemMessage(driveDir.GetSafe());
+
 		if (searchInFilesHWnd != NULL)  
 			::SendMessage(searchInFilesHWnd, WM_PG_LAUNCH_SEARCHINFILESDLG, (WPARAM)extension.GetSafe(), (LPARAM)driveDir.GetSafe());
 		else 
-			::SendMessage(m_nppHandle, WM_LAUNCH_FINDINFILESDLG, (WPARAM)extension.GetSafe(), (LPARAM)driveDir.GetSafe());
+			::SendMessage(m_nppHandle, WM_LAUNCH_FINDINFILESDLG, (WPARAM)driveDir.GetSafe(), (LPARAM)NULL);
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::SearchFromHere.", __FILE__, __LINE__);
