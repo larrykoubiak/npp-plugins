@@ -1293,12 +1293,10 @@ void CWtlFileTreeCtrl::SearchFromHere() {
 		else
 			extension.Sf("*.%s", tempBuf.GetSafe());
 
-		systemMessage(driveDir.GetSafe());
-
 		if (searchInFilesHWnd != NULL)  
 			::SendMessage(searchInFilesHWnd, WM_PG_LAUNCH_SEARCHINFILESDLG, (WPARAM)extension.GetSafe(), (LPARAM)driveDir.GetSafe());
 		else 
-			::SendMessage(m_nppHandle, WM_LAUNCH_FINDINFILESDLG, (WPARAM)driveDir.GetSafe(), (LPARAM)NULL);
+			::SendMessage(m_nppHandle, WM_LAUNCH_FINDINFILESDLG, (WPARAM)driveDir.GetSafe(), (LPARAM)extension.GetSafe());
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::SearchFromHere.", __FILE__, __LINE__);

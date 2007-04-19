@@ -339,10 +339,7 @@ bool  SearchResultsTreeCtrl::OnRClickItem(LPNMHDR pnmh) {
 			}
 
 			// Show the current selection
-			if (hHitItem != NULL && 
-				((resp == COLAPSE_ALL && GetParentItem(hHitItem) == NULL) || resp == EXPAND_ALL)
-				) 
-				EnsureVisible(hHitItem);
+			if (GetSelectedItem()) EnsureVisible(GetSelectedItem());
 		}
 	}
 	catch (...) {

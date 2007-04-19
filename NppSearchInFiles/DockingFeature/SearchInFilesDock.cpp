@@ -75,6 +75,7 @@ BOOL CALLBACK SearchInFilesDock::run_dlgProc(UINT message, WPARAM wParam, LPARAM
 				CRect rc;
 
 				getClientRect(rc);
+				rc.bottom += 1;
 				m_searchResultsListCtrl.MoveWindow(&rc, TRUE);
 
 				m_searchResultsListCtrl.Invalidate(TRUE);
