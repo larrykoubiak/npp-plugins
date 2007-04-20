@@ -153,12 +153,18 @@ void SearchInFilesDock::display(bool toShow) const {
 void SearchInFilesDock::OpenSearchInFilesInputDlg() 
 {
 	try {
-		HWND hDlg = ::CreateDialogParam(_hInst, 
-										MAKEINTRESOURCE(IDD_SEARCH_INPUT_DLG), 
-										_hParent, 
-										(DLGPROC)SearchInputDlg::SearchInFilesInputDlgProc, 
-										(LPARAM)this);
-		::SendMessage(_hParent, WM_MODELESSDIALOG, MODELESSDIALOGADD, (WPARAM)hDlg);
+		if (m_hInputParamtersDlg && ::IsWindow(m_hInputParamtersDlg)) {
+			::ShowWindow(m_hInputParamtersDlg, SW_SHOW);
+			::SetFocus(m_hInputParamtersDlg);
+		}
+		else {
+			m_hInputParamtersDlg = ::CreateDialogParam(_hInst, 
+											MAKEINTRESOURCE(IDD_SEARCH_INPUT_DLG), 
+											_hParent, 
+											(DLGPROC)SearchInputDlg::SearchInFilesInputDlgProc, 
+											(LPARAM)this);
+			::SendMessage(_hParent, WM_MODELESSDIALOG, MODELESSDIALOGADD, (WPARAM)m_hInputParamtersDlg);
+		}
 	}
 	catch (...) {
 		systemMessageEx("Error in SearchInFilesDock::OpenSearchInFilesInputDlg", __FILE__, __LINE__);
@@ -651,8 +657,9 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 						::EnableWindow(::GetDlgItem(hDlg, IDCANCEL), FALSE);
 					}
 					else {
-						::DestroyWindow(hDlg);
+						ownerDlg->DestroyInputParametersDlg();
 						::SendMessage(::GetParent(hDlg), WM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)hDlg);
+						::DestroyWindow(hDlg);
 					}
 					return TRUE;
 				}

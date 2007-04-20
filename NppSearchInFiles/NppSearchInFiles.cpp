@@ -18,13 +18,12 @@
 // 
 // 07.03.2007, v1.0.0.5, 
 // 21.03.2007, v1.0.0.8, 
-// 11.04.2007, v1.10.0.0, 
 //
 //	FILE						DATE		DESCRIPTION							
-//	ControlsTab.h				07.03.07	UTL_strlen instead of sizeof
-//	SearchInFilesDock.cpp		20.03.07	Remember input dlg position
-//	SearchInFilesDock.cpp		20.03.07	Retrive current selected text
-//	SearchInFilesDock.cpp		21.03.07	Changed the way combo string are stored
+//	ControlsTab.h				07.03.2007	UTL_strlen instead of sizeof
+//	SearchInFilesDock.cpp		20.03.2007	Remember input dlg position
+//	SearchInFilesDock.cpp		20.03.2007	Retrive current selected text
+//	SearchInFilesDock.cpp		21.03.2007	Changed the way combo string are stored
 //  NppSearchInFilesk.cpp		23.03.2007	Added icon to notepad++ toolbar
 //											Added icon to notepad++ plug-ins tabs
 //  NppSearchInFiles.cpp		28.03.2007	The plug-in did not show at start
@@ -37,6 +36,13 @@
 //  NppSearchInFiles.cpp		11.04.2007	Added custom message WM_PG_LAUNCH_SEARCHINFILESDLG to open 
 //											Search In Files from Npp
 //  SearchResultsListCtrl.cpp	18.04.2007	Give focus to Npp with ESC or TAB keys
+//
+//  20.04.2007 Release v1.10 Beta
+//____________________________________________________________________________________________________________
+//
+//
+//	ProcessSearchInFiles.cpp	20.04.2007	Rewrote whole word search
+//	SearchInFilesDock.cpp		20.04.2007	Multiple dialogs could be opened using ALT+Q
 //
 //  PENDING:
 //  Regular expresions

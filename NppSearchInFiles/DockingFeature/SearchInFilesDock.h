@@ -43,7 +43,7 @@ class SearchInputDlg : public StaticDialog
 class SearchInFilesDock : public DockingDlgInterface
 {
 public :
-	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK) {
+	SearchInFilesDock() : DockingDlgInterface(IDD_SEARCHINFILESDOCK), m_hInputParamtersDlg(NULL) {
 		::ZeroMemory(&m_windowTitle, sizeof(m_windowTitle));
 		m_cstMsgWParam.Realloc(0);
 		m_cstMsgLParam.Realloc(0);
@@ -91,6 +91,8 @@ public :
 	void SaveChecks(HWND hDlg);
 	void LoadChecks(HWND hDlg);
 
+	void DestroyInputParametersDlg() { m_hInputParamtersDlg = NULL; };
+
 	SearchResultsTreeCtrl		m_searchResultsListCtrl;
 	tTbData						_data;
 
@@ -109,6 +111,7 @@ public :
 protected :
 	int							m_iCurrSearchLength;
 	CFont						m_font;
+	HWND						m_hInputParamtersDlg;
 
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
 };

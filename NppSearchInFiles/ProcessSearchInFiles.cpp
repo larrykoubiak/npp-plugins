@@ -68,6 +68,8 @@ void CProcessSearchInFiles::doSearch() {
 	m_totalFiles = 0;
 	m_percentageProgress = "0%";
 	::SetWindowText(::GetDlgItem(m_searchInputDlgHnd, IDC_STATIC_PROGRESS), "");
+	::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_PROGRESS), PBM_SETRANGE, 0L, (LPARAM) MAKELPARAM (0, 100));
+	::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_PROGRESS), PBM_SETPOS, (WPARAM)0, 0L);
 
 	try {
 		// Read search
@@ -150,18 +152,9 @@ void CProcessSearchInFiles::doSearch() {
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_EXCLUDE_EXTENSIONS), TRUE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_MANAGE_EXTENSIONS), TRUE);
 
-	/*
-	if (searchResult) {
-		m_mainDock->m_bInProcess = false; // We are leaving
-		::DestroyWindow(m_searchInputDlgHnd);
-		::SendMessage(::GetParent(m_searchInputDlgHnd), WM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)m_searchInputDlgHnd);
-	}
-	else {
-	*/
-		// Place the focus on the first control
-		::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_WHAT), EM_SETSEL, 0, -1);
-		::SetFocus(::GetDlgItem(m_searchInputDlgHnd, IDC_WHAT));
-	//}
+	// Place the focus on the first control
+	::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_WHAT), EM_SETSEL, 0, -1);
+	::SetFocus(::GetDlgItem(m_searchInputDlgHnd, IDC_WHAT));
 }
 
 bool CProcessSearchInFiles::checkCancelButton() {
