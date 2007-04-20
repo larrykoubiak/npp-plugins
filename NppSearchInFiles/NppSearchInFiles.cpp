@@ -41,8 +41,9 @@
 //____________________________________________________________________________________________________________
 //
 //
-//	ProcessSearchInFiles.cpp	20.04.2007	Rewrote whole word search
-//	SearchInFilesDock.cpp		20.04.2007	Multiple dialogs could be opened using ALT+Q
+//	ProcessSearchInFiles.cpp	20.04.2007	Rerewiew again the whole word search
+//	SearchInFilesDock.cpp		20.04.2007	Fixed error: multiple dialogs could be opened using ALT+Q
+//  SearchInFiles.rc			20.04.2007	Rearrange the Input Parameters Dialog
 //
 //  PENDING:
 //  Regular expresions
