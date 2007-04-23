@@ -89,11 +89,15 @@ void CProcessSearchInFiles::doSearch() {
 						(WPARAM)0,				// not used; must be zero
 						(LPARAM)0) == BST_CHECKED ? true : false;
 
+		m_bExcludeExtensions = ::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_EXCLUDE_EXTENSIONS),
+						BM_GETCHECK,			// message to send
+						(WPARAM)0,				// not used; must be zero
+						(LPARAM)0) == BST_CHECKED ? true : false;
+
+
 		// Read excluded extensions (ONLY WHEN SEARCHING *.*!)
 		CUT2_INI	confIni(m_mainDock->m_iniFilePath);
 		
-		m_bExcludeExtensions = confIni.LoadInt(m_mainDock->getSectionName(), "excludeExtensions", 0) ? true : false;
-
 		if (m_bExcludeExtensions && !UTL_strcmp(types.GetSafe(), "*.*")) {
 			m_excludeExtensionsList = confIni.LoadStr(m_mainDock->getSectionName(), "excludeExtensionsList", "");
 
@@ -259,7 +263,7 @@ bool CProcessSearchInFiles::FindInfile(LPCSTR file) {
 		CUTL_BUFFER searchPattern(MAX_PATH);
 		CUTL_PATH   iterator(file); 
 		CUTL_BUFFER lineToShow, extension, tempBuf;
-		int         line;
+		int         line; 
 
 		// We skip some extensions (if they told us so)
 		iterator.GetExtension(extension);
