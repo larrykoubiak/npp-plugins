@@ -47,6 +47,7 @@ void CProcessSearchInFiles::doSearch() {
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_WHOLE_WORD), FALSE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_RESULTS_IN_NEW_TAB), FALSE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_EXCLUDE_EXTENSIONS), FALSE);
+	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_INCLUDE_SUBFOLDERS), FALSE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_MANAGE_EXTENSIONS), FALSE);
 
 	m_mainDock->m_bInProcess = true;
@@ -85,6 +86,11 @@ void CProcessSearchInFiles::doSearch() {
 						(LPARAM)0) == BST_CHECKED ? true : false;
 
 		m_bWholeWord = ::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_WHOLE_WORD),
+						BM_GETCHECK,			// message to send
+						(WPARAM)0,				// not used; must be zero
+						(LPARAM)0) == BST_CHECKED ? true : false;
+
+		m_bIncludeSubfolders = ::SendMessage(::GetDlgItem(m_searchInputDlgHnd, IDC_INCLUDE_SUBFOLDERS),
 						BM_GETCHECK,			// message to send
 						(WPARAM)0,				// not used; must be zero
 						(LPARAM)0) == BST_CHECKED ? true : false;
@@ -154,6 +160,7 @@ void CProcessSearchInFiles::doSearch() {
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_WHOLE_WORD), TRUE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_RESULTS_IN_NEW_TAB), TRUE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_EXCLUDE_EXTENSIONS), TRUE);
+	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_INCLUDE_SUBFOLDERS), TRUE);
 	::EnableWindow(::GetDlgItem(m_searchInputDlgHnd, IDC_MANAGE_EXTENSIONS), TRUE);
 
 	// Place the focus on the first control
@@ -227,6 +234,8 @@ bool CProcessSearchInFiles::SearchFolders(LPCSTR folder) {
 		m_foldersArray += ",";
 
 	m_foldersArray += folder;
+
+	if (!m_bIncludeSubfolders) return true; // If subfolders are not to be included, we're done
 
 	// Tell what we're doing
 	m_searchDock->UpdateWindowTitle(msg.Sf("Added folder %s", folder));

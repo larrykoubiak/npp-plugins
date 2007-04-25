@@ -901,27 +901,30 @@ BOOL CUTL_PATH::FindFirst(DWORD attributes) {
 
   See Also:	   FindNextFile, FindFirstSubdirectory.
 */
-   BOOL gotFile;
-   BOOL wantSubdirectory = (_A_SUBDIR & attributes);
-   WIN32_FIND_DATA findData;
+	BOOL gotFile;
+	WIN32_FIND_DATA findData;
 
-   // Close handle to any previous enumeration
-   xClose();
+	// Close handle to any previous enumeration
+	xClose();
 
-   m_findFileAttributes = attributes;
-   m_hFindFile = FindFirstFile(m_path, &findData);
-   gotFile = (m_hFindFile != INVALID_HANDLE_VALUE);
-   while (gotFile) {
-		// ii. compare candidate to attributes
-		if (!AttributesMatch(m_findFileAttributes, findData.dwFileAttributes)) goto GetAnother;
-		if (wantSubdirectory && (findData.cFileName[0] == '.')) goto GetAnother;
-		// iii. found match; prepare result
-		if (_A_SUBDIR & m_findFileAttributes) StripTrailingBackslash(m_path);
+	m_wantSubdirectory = (_A_SUBDIR & attributes);
+
+	m_hFindFile = FindFirstFile(m_path, &findData);
+	gotFile = (m_hFindFile != INVALID_HANDLE_VALUE);
+	while (gotFile) {
+		if (m_wantSubdirectory && (findData.cFileName[0] == '.')) goto GetAnother;
+
+		// found match; prepare result
+		if (m_wantSubdirectory) 
+			StripTrailingBackslash(m_path);
+
 		SetNameExtension(findData.cFileName);
-      if (_A_SUBDIR & attributes)
-         EnsureTrailingBackslash(m_path);
+
+		if (m_wantSubdirectory) 
+			EnsureTrailingBackslash(m_path);
+
 		return TRUE;
-		// iv. not found match; get another
+		// not found match; get another
 	GetAnother:
 		gotFile = FindNextFile(m_hFindFile, &findData);
 	}
@@ -929,21 +932,20 @@ BOOL CUTL_PATH::FindFirst(DWORD attributes) {
 }
 
 BOOL CUTL_PATH::FindNext() {
-   WIN32_FIND_DATA findData;
+	WIN32_FIND_DATA findData;
 
-   _CRCHECK(m_hFindFile);
-   while (FindNextFile(m_hFindFile, &findData) != FALSE) {
-      if (AttributesMatch(m_findFileAttributes, findData.dwFileAttributes)) {
-         if (_A_SUBDIR & m_findFileAttributes) {
-            UpDirectory();
-            AppendDirectory(findData.cFileName);
-         }
-         else
-            SetNameExtension (findData.cFileName);
-         return TRUE;
-      }
-   }
-   return FALSE;
+	_CRCHECK(m_hFindFile);
+	while (FindNextFile(m_hFindFile, &findData) != FALSE) {
+		if (_A_SUBDIR & m_wantSubdirectory) {
+			UpDirectory();
+			AppendDirectory(findData.cFileName);
+		}
+		else
+			SetNameExtension (findData.cFileName);
+
+		return TRUE;
+	}
+	return FALSE;
 }
 
 
@@ -1015,7 +1017,6 @@ BOOL CUTL_PATH::operator == (const CUTL_PATH &other) const {
 //--- otros métodos -------------------------------------------------------------------------------------------------------
 
 void CUTL_PATH::xInit() {
-   m_findFileAttributes = 0;
    m_hFindFile = NULL;
 }
 
@@ -1495,36 +1496,6 @@ void EnsureLeadingBackslash(CUTL_BUFFER& directory) {
 	if (!directory || directory[0] != PATH_DIR_DELIMITER)
 		directory.InsCar(PATH_DIR_DELIMITER, 0);
 }
-
-BOOL AttributesMatch(DWORD targetAttributes, DWORD fileAttributes) { 
-/*
-   // Calculamos los atributos que se nos piden 
-   DWORD targetAttributesNewAPI;
-
-   if (targetAttributes & _A_NORMAL) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_NORMAL;
-   if (targetAttributes & _A_ARCH) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_ARCHIVE;
-   if (targetAttributes & _A_HIDDEN) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_HIDDEN;
-   if (targetAttributes & _A_RDONLY) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_READONLY;
-   if (targetAttributes & _A_SUBDIR) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_DIRECTORY;
-   if (targetAttributes & _A_SYSTEM) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_SYSTEM;
-
-   if (targetAttributesNewAPI == FILE_ATTRIBUTE_NORMAL)
-      return (!(FILE_ATTRIBUTE_DIRECTORY & targetAttributesNewAPI));
-   else
-      return ((targetAttributesNewAPI & fileAttributes) && ((FILE_ATTRIBUTE_DIRECTORY & targetAttributesNewAPI) == (FILE_ATTRIBUTE_DIRECTORY & fileAttributes)));
-*/
-   if (targetAttributes == _A_NORMAL)
-      return (!(_A_SUBDIR & fileAttributes));
-   else
-      return ((targetAttributes & fileAttributes) && ((_A_SUBDIR & targetAttributes) == (_A_SUBDIR & fileAttributes)));
-}
-
 
 // Funciones locales de apoyo
 

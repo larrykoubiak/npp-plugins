@@ -25,6 +25,8 @@ SearchInFilesDock* _pSearchInFilesDock2 = NULL;
 #include "SearchInFilesDock.h"
 #include "ProcessSearchInFiles.h"
 
+#include "dockingFeature/resource.h"
+
 #pragma warning ( disable : 4311 )
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -529,6 +531,9 @@ void SearchInFilesDock::SaveChecks(HWND hDlg) {
 		confIni.Write(getSectionName(), "resultsInNewTab", 
 			(::SendMessage(::GetDlgItem(hDlg, IDC_RESULTS_IN_NEW_TAB), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? "1" : "0");
 	 
+		confIni.Write(getSectionName(), "includeSubfolders", 
+			(::SendMessage(::GetDlgItem(hDlg, IDC_INCLUDE_SUBFOLDERS), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? "1" : "0");
+
 		confIni.Write(getSectionName(), "excludeExtensions", 
 			(::SendMessage(::GetDlgItem(hDlg, IDC_EXCLUDE_EXTENSIONS), BM_GETCHECK, 0, 0L) == BST_CHECKED) ? "1" : "0");
 	}
@@ -553,6 +558,11 @@ void SearchInFilesDock::LoadChecks(HWND hDlg) {
 		::SendMessage(::GetDlgItem(hDlg, IDC_RESULTS_IN_NEW_TAB), 
 						BM_SETCHECK,        
 						(WPARAM) confIni.LoadInt(getSectionName(), "resultsInNewTab", 0) ? BST_CHECKED : BST_UNCHECKED,
+						0L);
+
+		::SendMessage(::GetDlgItem(hDlg, IDC_INCLUDE_SUBFOLDERS), 
+						BM_SETCHECK,        
+						(WPARAM) confIni.LoadInt(getSectionName(), "includeSubfolders", 1) ? BST_CHECKED : BST_UNCHECKED,
 						0L);
 
 		::SendMessage(::GetDlgItem(hDlg, IDC_EXCLUDE_EXTENSIONS), 

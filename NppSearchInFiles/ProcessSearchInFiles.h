@@ -42,6 +42,7 @@ protected:
 
 	bool				m_bCaseSens;
 	bool				m_bWholeWord;
+	bool				m_bIncludeSubfolders;
 	bool				m_bExcludeExtensions;
 	CUTL_BUFFER			m_excludeExtensionsList;
 	CUTL_BUFFER			m_percentageProgress;

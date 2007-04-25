@@ -670,7 +670,7 @@ BOOL CWtlFileTreeCtrl::OnLButtonDblClick(int idCtrl, LPNMHDR pnmh, BOOL& bHandle
 	// If it is a file let's open it, nothing to do now if it's a folder, a root or the network
 	if (GetItemType(currItem) == CCustomItemInfo::FILE) {
 		CUTL_BUFFER executeExtensions, fileExtension, bufTemp;
-		CUT2_INI confIni(m_iniFilePath.GetSafe());
+		CUT2_INI	confIni(m_iniFilePath.GetSafe());
 		CUTL_PATH	filePath(bufPath.GetSafe());
 		UINT		found;
 

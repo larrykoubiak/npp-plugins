@@ -930,6 +930,7 @@
 #define IDC_NPP_PLUGINS_URL             1027
 #define psh4                            0x0403
 #define psh5                            0x0404
+#define IDC_INCLUDE_SUBFOLDERS          1028
 #define psh6                            0x0405
 #define psh7                            0x0406
 #define psh8                            0x0407
@@ -1225,7 +1226,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        129
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1028
+#define _APS_NEXT_CONTROL_VALUE         1029
 #define _APS_NEXT_SYMED_VALUE           102
 #endif
 #endif

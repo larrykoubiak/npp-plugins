@@ -311,8 +311,8 @@ protected: //otros métodos
 
 
 private: //miembros
-   CUTL_BUFFER m_path;
-   DWORD			m_findFileAttributes;
+	CUTL_BUFFER m_path;
+	DWORD		m_wantSubdirectory;
 	HANDLE      m_hFindFile;
 };
 
@@ -389,6 +389,5 @@ void        StripTrailingChar(CUTL_BUFFER& text, char traillingCh);
 void        StripTrailingBackslash (CUTL_BUFFER& directory);
 void        EnsureTrailingBackslash (CUTL_BUFFER& directory);
 void        EnsureLeadingBackslash(CUTL_BUFFER& directory);
-BOOL        AttributesMatch(DWORD targetAttributes, DWORD fileAttributes);
 
 //#endif
