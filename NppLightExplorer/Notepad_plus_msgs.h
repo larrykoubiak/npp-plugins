@@ -28,31 +28,31 @@ enum LangType {L_TXT, L_PHP , L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_RC,\
 			   L_END};
 enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV_S2003, WV_XPX64, WV_VISTA};
 
-//#include "deprecatedSymbols.h"
-
 //Here you can find how to use these messages : http://notepad-plus.sourceforge.net/uk/plugins-HOWTO.php 
-#define NPPMSG  (WM_USER + 1000)
+#define NOTEPADPLUS_USER   (WM_USER + 1000)
 
-	#define NPPM_GETCURRENTSCINTILLA  (NPPMSG + 4)
-	#define NPPM_GETCURRENTLANGTYPE  (NPPMSG + 5)
-	#define NPPM_SETCURRENTLANGTYPE  (NPPMSG + 6)
+	#define WM_GETCURRENTSCINTILLA  (NOTEPADPLUS_USER + 4)
+	#define WM_GETCURRENTLANGTYPE  (NOTEPADPLUS_USER + 5)
+	#define WM_SETCURRENTLANGTYPE  (NOTEPADPLUS_USER + 6)
 
-	#define NPPM_GETNBOPENFILES			(NPPMSG + 7)
+	#define WM_NBOPENFILES			(NOTEPADPLUS_USER + 7)
 		#define ALL_OPEN_FILES			0
 		#define PRIMARY_VIEW			1
 		#define SECOND_VIEW				2
 
-	#define NPPM_GETOPENFILENAMES		(NPPMSG + 8)
+	#define WM_GETOPENFILENAMES		(NOTEPADPLUS_USER + 8)
+	#define WM_CANCEL_SCINTILLAKEY	(NOTEPADPLUS_USER + 9)
+	#define WM_BIND_SCINTILLAKEY	(NOTEPADPLUS_USER + 10)
+	#define WM_SCINTILLAKEY_MODIFIED (NOTEPADPLUS_USER + 11)
 
-
-	#define NPPM_MODELESSDIALOG		 (NPPMSG + 12)
+	#define WM_MODELESSDIALOG		 (NOTEPADPLUS_USER + 12)
 		#define MODELESSDIALOGADD		0
 		#define MODELESSDIALOGREMOVE	1
 
-	#define NPPM_GETNBSESSIONFILES (NPPMSG + 13)
-	#define NPPM_GETSESSIONFILES (NPPMSG + 14)
-	#define NPPM_SAVESESSION (NPPMSG + 15)
-	#define NPPM_SAVECURRENTSESSION (NPPMSG + 16)
+	#define WM_NBSESSIONFILES (NOTEPADPLUS_USER + 13)
+	#define WM_GETSESSIONFILES (NOTEPADPLUS_USER + 14)
+	#define WM_SAVESESSION (NOTEPADPLUS_USER + 15)
+	#define WM_SAVECURRENTSESSION (NOTEPADPLUS_USER + 16)
 
 		struct sessionInfo {
 			char* sessionFilePathName;
@@ -60,18 +60,18 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 			char** files;
 		};
 
-	#define NPPM_GETOPENFILENAMESPRIMARY (NPPMSG + 17)
-	#define NPPM_GETOPENFILENAMESSECOND (NPPMSG + 18)
-	
-	#define NPPM_CREATESCINTILLAHANDLE (NPPMSG + 20)
-	#define NPPM_DESTROYSCINTILLAHANDLE (NPPMSG + 21)
-	#define NPPM_GETNBUSERLANG (NPPMSG + 22)
+	#define WM_GETOPENFILENAMES_PRIMARY (NOTEPADPLUS_USER + 17)
+	#define WM_GETOPENFILENAMES_SECOND (NOTEPADPLUS_USER + 18)
+	#define WM_GETPARENTOF (NOTEPADPLUS_USER + 19)
+	#define WM_CREATESCINTILLAHANDLE (NOTEPADPLUS_USER + 20)
+	#define WM_DESTROYSCINTILLAHANDLE (NOTEPADPLUS_USER + 21)
+	#define WM_GETNBUSERLANG (NOTEPADPLUS_USER + 22)
 
-	#define NPPM_GETCURRENTDOCINDEX (NPPMSG + 23)
+	#define WM_GETCURRENTDOCINDEX (NOTEPADPLUS_USER + 23)
 		#define MAIN_VIEW 0
 		#define SUB_VIEW 1
 
-	#define NPPM_SETSTATUSBAR (NPPMSG + 24)
+	#define WM_SETSTATUSBAR (NOTEPADPLUS_USER + 24)
 		#define STATUSBAR_DOC_TYPE 0
 		#define STATUSBAR_DOC_SIZE 1
 		#define STATUSBAR_CUR_POS 2
@@ -79,80 +79,94 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 		#define STATUSBAR_UNICODE_TYPE 4
 		#define STATUSBAR_TYPING_MODE 5
 
-	#define NPPM_GETMENUHANDLE (NPPMSG + 25)
+	#define WM_GETMENUHANDLE (NOTEPADPLUS_USER + 25)
 		#define NPPPLUGINMENU 0
 
-	#define NPPM_ENCODESCI (NPPMSG + 26)
+	#define WM_ENCODE_SCI (NOTEPADPLUS_USER + 26)
 	//ascii file to unicode
-	//int NPPM_ENCODESCI(MAIN_VIEW/SUB_VIEW, 0)
+	//int WM_ENCODE_SCI(MAIN_VIEW/SUB_VIEW, 0)
 	//return new unicodeMode
 	
-	#define NPPM_DECODESCI (NPPMSG + 27)
+	#define WM_DECODE_SCI (NOTEPADPLUS_USER + 27)
 	//unicode file to ascii
-	//int NPPM_DECODESCI(MAIN_VIEW/SUB_VIEW, 0)
+	//int WM_DECODE_SCI(MAIN_VIEW/SUB_VIEW, 0)
 	//return old unicodeMode
 
-	#define NPPM_ACTIVATEDOC (NPPMSG + 28)
-	//void NPPM_ACTIVATEDOC(int index2Activate, int view)
+	#define WM_ACTIVATE_DOC (NOTEPADPLUS_USER + 28)
+	//void WM_ACTIVATE_DOC(int index2Activate, int view)
 
-	#define NPPM_LAUNCHFINDINFILESDLG (NPPMSG + 29)
-	//void NPPM_LAUNCHFINDINFILESDLG(char * dir2Search, char * filtre)
+	#define WM_LAUNCH_FINDINFILESDLG (NOTEPADPLUS_USER + 29)
+	//void WM_LAUNCH_FINDINFILESDLG(char * dir2Search, char * filtre)
 
-	#define NPPM_DMMSHOW (NPPMSG + 30)
-	#define NPPM_DMMHIDE	(NPPMSG + 31)
-	#define NPPM_DMMUPDATEDISPINFO (NPPMSG + 32)
-	//void NPPM_DMMxxx(0, tTbData->hClient)
+	#define WM_DMM_SHOW (NOTEPADPLUS_USER + 30)
+	#define WM_DMM_HIDE	(NOTEPADPLUS_USER + 31)
+	#define WM_DMM_UPDATEDISPINFO (NOTEPADPLUS_USER + 32)
+	//void WM_DMM_xxx(0, tTbData->hClient)
 
-	#define NPPM_DMMREGASDCKDLG (NPPMSG + 33)
-	//void NPPM_DMMREGASDCKDLG(0, &tTbData)
+	#define WM_DMM_REGASDCKDLG (NOTEPADPLUS_USER + 33)
+	//void WM_DMM_REGASDCKDLG(0, &tTbData)
 
-	#define NPPM_LOADSESSION (NPPMSG + 34)
-	//void NPPM_LOADSESSION(0, const char* file name)
+	#define WM_LOADSESSION (NOTEPADPLUS_USER + 34)
+	//void WM_LOADSESSION(0, const char* file name)
 
-	#define NPPM_DMMVIEWOTHERTAB (NPPMSG + 35)
+	#define WM_DMM_VIEWOTHERTAB (NOTEPADPLUS_USER + 35)
 	//void WM_DMM_VIEWOTHERTAB(0, tTbData->hClient)
 
-	#define NPPM_RELOADFILE (NPPMSG + 36)
-	//BOOL NPPM_RELOADFILE(BOOL withAlert, char *filePathName2Reload)
+	#define WM_RELOADFILE (NOTEPADPLUS_USER + 36)
+	//BOOL WM_RELOADFILE(BOOL withAlert, char *filePathName2Reload)
 
-	#define NPPM_SWITCHTOFILE (NPPMSG + 37)
-	//BOOL NPPM_SWITCHTOFILE(0, char *filePathName2switch)
+	#define WM_SWITCHTOFILE (NOTEPADPLUS_USER + 37)
+	//BOOL WM_SWITCHTOFILE(0, char *filePathName2switch)
 
-	#define NPPM_SAVECURRENTFILE (NPPMSG + 38)
+	#define WM_SAVECURRENTFILE (NOTEPADPLUS_USER + 38)
 	//BOOL WM_SWITCHTOFILE(0, 0)
 
-	#define NPPM_SAVEALLFILES	(NPPMSG + 39)
-	//BOOL NPPM_SAVEALLFILES(0, 0)
+	#define WM_SAVEALLFILES	(NOTEPADPLUS_USER + 39)
+	//BOOL WM_SAVEALLFILES(0, 0)
 
-	#define NPPM_SETMENUITEMCHECK	(NPPMSG + 40)
+	#define WM_PIMENU_CHECK	(NOTEPADPLUS_USER + 40)
 	//void WM_PIMENU_CHECK(UINT	funcItem[X]._cmdID, TRUE/FALSE)
 
-	#define NPPM_ADDTOOLBARICON (NPPMSG + 41)
+	#define WM_ADDTOOLBARICON (NOTEPADPLUS_USER + 41)
 	//void WM_ADDTOOLBARICON(UINT funcItem[X]._cmdID, toolbarIcons icon)
 		struct toolbarIcons {
 			HBITMAP	hToolbarBmp;
 			HICON	hToolbarIcon;
 		};
 
-	#define NPPM_GETWINDOWSVERSION (NPPMSG + 42)
-	//winVer NPPM_GETWINDOWSVERSION(0, 0)
+	#define WM_GETWINDOWSVERSION (NOTEPADPLUS_USER + 42)
+	//winVer WM_GETWINDOWSVERSION(0, 0)
 
-	#define NPPM_DMMGETPLUGINHWNDBYNAME (NPPMSG + 43)
+	#define WM_DMM_GETPLUGINHWNDBYNAME (NOTEPADPLUS_USER + 43)
 	//HWND WM_DMM_GETPLUGINHWNDBYNAME(const char *windowName, const char *moduleName)
 	// if moduleName is NULL, then return value is NULL
 	// if windowName is NULL, then the first found window handle which matches with the moduleName will be returned
-	
-	#define NPPM_MAKECURRENTBUFFERDIRTY (NPPMSG + 44)
-	//BOOL NPPM_MAKECURRENTBUFFERDIRTY(0, 0)
+
+// Notification code
+#define NPPN_FIRST 1000
+	#define NPPN_READY (NPPN_FIRST + 1) // To notify plugins that all the procedures of launchment of notepad++ are done.
+	//scnNotification->nmhdr.code = NPPN_READY;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
+	#define NPPN_TB_MODIFICATION (NPPN_FIRST + 2) // To notify plugins that toolbar icons can be registered
+	//scnNotification->nmhdr.code = NPPN_TB_MODIFICATION;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
+	#define NPPN_FILE_BEFORECLOSE (NPPN_FIRST + 3) // To notify plugins that the current file is about to be closed
+	//scnNotification->nmhdr.code = NPPN_FILE_BEFORECLOSE;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
 
 #define	RUNCOMMAND_USER    (WM_USER + 3000)
-	#define NPPM_GETFULLCURRENTPATH		(RUNCOMMAND_USER + FULL_CURRENT_PATH)
-	#define NPPM_GETCURRENTDIRECTORY	(RUNCOMMAND_USER + CURRENT_DIRECTORY)
-	#define NPPM_GETFILENAME			(RUNCOMMAND_USER + FILE_NAME)
-	#define NPPM_GETNAMEPART			(RUNCOMMAND_USER + NAME_PART)
-	#define NPPM_GETEXTPART				(RUNCOMMAND_USER + EXT_PART)
-	#define NPPM_GETCURRENTWORD			(RUNCOMMAND_USER + CURRENT_WORD)
-	#define NPPM_GETNPPDIRECTORY		(RUNCOMMAND_USER + NPP_DIRECTORY)
+	#define WM_GET_FULLCURRENTPATH (RUNCOMMAND_USER + FULL_CURRENT_PATH)
+	#define WM_GET_CURRENTDIRECTORY (RUNCOMMAND_USER + CURRENT_DIRECTORY)
+	#define WM_GET_FILENAME (RUNCOMMAND_USER + FILE_NAME)
+	#define WM_GET_NAMEPART (RUNCOMMAND_USER + NAME_PART)
+	#define WM_GET_EXTPART (RUNCOMMAND_USER + EXT_PART)
+	#define WM_GET_CURRENTWORD (RUNCOMMAND_USER + CURRENT_WORD)
+	#define WM_GET_NPPDIRECTORY (RUNCOMMAND_USER + NPP_DIRECTORY)
 
 		#define VAR_NOT_RECOGNIZED 0
 		#define FULL_CURRENT_PATH 1
@@ -163,24 +177,9 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 		#define CURRENT_WORD 6
 		#define NPP_DIRECTORY 7
 
-
-// Notification code
-#define NPPN_FIRST 1000
-	#define NPPN_READY (NPPN_FIRST + 1) // To notify plugins that all the procedures of launchment of notepad++ are done.
-	//scnNotification->nmhdr.code = NPPN_READY;
-	//scnNotification->nmhdr.hwndFrom = hwndNpp;
-	//scnNotification->nmhdr.idFrom = 0;
-
-	#define NPPN_TBMODIFICATION (NPPN_FIRST + 2) // To notify plugins that toolbar icons can be registered
-	//scnNotification->nmhdr.code = NPPN_TB_MODIFICATION;
-	//scnNotification->nmhdr.hwndFrom = hwndNpp;
-	//scnNotification->nmhdr.idFrom = 0;
-
-	#define NPPN_FILEBEFORECLOSE (NPPN_FIRST + 3) // To notify plugins that the current file is about to be closed
-	//scnNotification->nmhdr.code = NPPN_FILEBEFORECLOSE;
-	//scnNotification->nmhdr.hwndFrom = hwndNpp;
-	//scnNotification->nmhdr.idFrom = 0;
-
+#define	MACRO_USER    (WM_USER + 4000)
+	#define WM_ISCURRENTMACRORECORDED (MACRO_USER + 01)
+	#define WM_MACRODLGRUNMACRO       (MACRO_USER + 02)
 
 
 

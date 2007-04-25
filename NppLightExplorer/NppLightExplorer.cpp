@@ -28,6 +28,7 @@
 //  WtlFileTreeCtrl.cpp		17.04.2007	Sort folders and files before inserting them on the control
 //  WtlFileTreeCtrl.cpp		18.04.2007	Open search from a folder or a file: if search in files is available, use this
 //  WtlFileTreeCtrl.cpp		18.04.2007	Added execute context menu
+//  WtlFileTreeCtrl.cpp		25.04.2007	Added 'Load tree state on startup' option
 //
 //  PENDING:
 //  

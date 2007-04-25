@@ -83,10 +83,6 @@ void CWtlFileTreeCtrl::OnViewRefresh() {
 		DisplayDrives(m_hMyComputerRoot);
 	else
 		DisplayPath(sItem.c_str(), hSelItem);
-  
-	// Reselect the initially selected item
-	//if(sItem.size())
-	//	hSelItem = SetSelectedPath(sItem, bExpanded);
 }
 
 void CWtlFileTreeCtrl::InsertRoots() {
@@ -977,9 +973,12 @@ void CWtlFileTreeCtrl::InvokeCommand (LPCONTEXTMENU pContextMenu, UINT idCommand
 
 BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BOOL byKeyboard) {
 	try {
-		POINT	screenPoint, clientPoint;
-		UINT	uFlags;
-		HMENU	hStandardMenu = NULL;
+		POINT		screenPoint, clientPoint;
+		UINT		uFlags;
+		HMENU		hStandardMenu = NULL;
+		CUT2_INI	confIni(m_iniFilePath);
+
+		bool		initialLoadOnStartup = confIni.LoadInt("startContext", "loadOnStartup", 1) ? true : false;
 
 		// common pointer to IContextMenu and higher version interface
 		LPCONTEXTMENU pContextMenu = NULL;
@@ -1016,14 +1015,23 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			mii.cbSize		= sizeof(mii);
 			mii.fMask		= MIIM_STRING | MIIM_DATA | MIIM_STATE | MIIM_ID;
 
+			HMENU hPopupMenu = ::CreatePopupMenu();
+
 			// Add to favorites folder
 			mii.wID			= FILE_EXTENSIONS_TO_EXECUTE;
 			mii.dwTypeData	= "File extensions to execute";
 			mii.cch			= UTL_strlen(mii.dwTypeData);
 			mii.fState		= MFS_ENABLED;
 
-			HMENU hPopupMenu = ::CreatePopupMenu();
 			::InsertMenuItem(hPopupMenu, FILE_EXTENSIONS_TO_EXECUTE, FALSE, &mii);
+
+			// Load last session tree state on startup
+			mii.wID			= LOAD_LAST_SESSION;
+			mii.dwTypeData	= "Load tree state on startup";
+			mii.cch			= UTL_strlen(mii.dwTypeData);
+			mii.fState		= initialLoadOnStartup ? MFS_ENABLED | MFS_CHECKED : MFS_ENABLED | MFS_UNCHECKED;
+
+			::InsertMenuItem(hPopupMenu, LOAD_LAST_SESSION, FALSE, &mii);
 
 			// Let's open the context menu
 			int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
@@ -1035,6 +1043,10 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			{
 				case FILE_EXTENSIONS_TO_EXECUTE:
 					FileExtensionToExecute();
+					break;
+
+				case LOAD_LAST_SESSION:
+					confIni.Write("startContext", "loadOnStartup", initialLoadOnStartup ? "0" : "1");
 					break;
 
 				default:
@@ -1170,6 +1182,22 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			::InsertMenu(hPopupMenu, -1, MF_BYPOSITION | MF_STRING | MF_POPUP, (UINT_PTR)hStandardMenu, "Standard Menu");
 		}
 
+		// And last the open last session state menu
+		// Load last session tree state on startup
+		MENUITEMINFO mii;
+
+		memset(&mii, 0, sizeof(mii));
+		mii.cbSize		= sizeof(mii);
+		mii.fMask		= MIIM_STRING | MIIM_DATA | MIIM_STATE | MIIM_ID;
+
+		mii.wID			= LOAD_LAST_SESSION;
+		mii.dwTypeData	= "Load tree state on startup";
+		mii.cch			= UTL_strlen(mii.dwTypeData);
+		mii.fState		= initialLoadOnStartup ? MFS_ENABLED | MFS_CHECKED : MFS_ENABLED | MFS_UNCHECKED;
+
+		::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
+		::InsertMenuItem(hPopupMenu, LOAD_LAST_SESSION, FALSE, &mii);
+
 		// Let's open the context menu
 		int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
 
@@ -1216,6 +1244,10 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 				case EXECUTE_FILE:
 					ExecuteFile();
+					break;
+
+				case LOAD_LAST_SESSION:
+					confIni.Write("startContext", "loadOnStartup", initialLoadOnStartup ? "0" : "1");
 					break;
 			}
 		}
@@ -1549,6 +1581,8 @@ void CWtlFileTreeCtrl::LoadState() {
 		CUTL_BUFFER	startContext;
 		HTREEITEM	hCurrItem = NULL, hCurrTemp;
 
+		if (!confIni.LoadInt("startContext", "loadOnStartup", 1)) return;
+
 		startContext.Sf("#%s;", confIni.LoadStr("startContext", "currItem", ""));
 
 		CUTL_PARSE startContextParse(startContext.GetSafe(), NULL, '#');
@@ -1586,7 +1620,7 @@ void CWtlFileTreeCtrl::SaveState() {
 		CUTL_BUFFER	pathToSave, tempBuf, tempBuf2;
 		CUT2_INI	confIni(m_iniFilePath);
 
-		confIni.Delete("startContext");
+		confIni.Delete("startContext", "currItem");
 
 		if (currItem == NULL) return;
 
@@ -1622,18 +1656,6 @@ BOOL CWtlFileTreeCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wPa
 			case WM_KEYUP:
 				if (wParam == VK_TAB || wParam == VK_ESCAPE) 
 					::SendMessage(m_nppScintilla, WM_SETFOCUS, (WPARAM)hWnd, 0L); // Give the focus to notepad++
-				/*
-				else if (wParam == VK_F2) {
-					if (!GetEditControl() && GetItemType(GetSelectedItem()) == CCustomItemInfo::FAVORITE) 
-						EditLabel(GetSelectedItem());
-				}
-				else if (wParam == VK_RETURN) {
-					if (GetEditControl()) 
-						EndEditLabelNow(FALSE);
-				}
-				else
-					ATLTRACE("[WM_KEYUP] : 0x%X\r\n\r\n", uMsg);
-				*/
 				break;
 
 			case WM_CONTEXTMENU:
@@ -1642,6 +1664,7 @@ BOOL CWtlFileTreeCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wPa
 
 					OnRClickItem(0, NULL, bHandled, TRUE);
 				}
+				break;
 
 			default:
 				break;
