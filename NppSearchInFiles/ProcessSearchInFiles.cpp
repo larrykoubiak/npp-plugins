@@ -107,7 +107,7 @@ void CProcessSearchInFiles::doSearch() {
 		if (m_bExcludeExtensions && !UTL_strcmp(types.GetSafe(), "*.*")) {
 			m_excludeExtensionsList = confIni.LoadStr(m_mainDock->getSectionName(), "excludeExtensionsList", "");
 
-			if (m_excludeExtensionsList.strlen()) {
+			if (m_excludeExtensionsList.Len()) {
 				m_excludeExtensionsList.RepCar(';', ',');
 		
 				CUTL_BUFFER temp;
@@ -127,7 +127,10 @@ void CProcessSearchInFiles::doSearch() {
 		m_foldersArray.Realloc(0);
 
 		// Search for subfolders
-		if (searchResult = SearchFolders(strFolder.GetSafe())) 
+		if (!m_bIncludeSubfolders) m_foldersArray.Sf("#%s;", strFolder.GetSafe());	
+	
+		m_searchDock->UpdateWindowTitle("Searching for folders ...");
+		if (!m_bIncludeSubfolders || (searchResult = SearchFolders(strFolder.GetSafe()))) 
 			searchResult = SearchInFolders(); // Do the search in files process
 
 		staticStatusBuf.Sf("(%d hits)  '%s' - '%s' - '%s'", 
@@ -223,19 +226,17 @@ bool CProcessSearchInFiles::SearchFolders(LPCSTR folder) {
 	//UINT pos;
 	//if (strFolder.Find("jose\\wwwroot\\fotos", pos)) return true;
 
-	if (strFolder[strFolder.strlen() - 1] != '\\') strFolder += "\\";
+	if (strFolder[strFolder.Len() - 1] != '\\') strFolder += "\\";
 
 	CUTL_PATH   tempPath(strFolder.GetSafe());
 	CUTL_BUFFER nextFolder, msg;
 
-	if (m_foldersArray.strlen() == 0) 
+	if (m_foldersArray.Len() == 0) 
 		m_foldersArray = "#";
 	else
 		m_foldersArray += ",";
 
 	m_foldersArray += folder;
-
-	if (!m_bIncludeSubfolders) return true; // If subfolders are not to be included, we're done
 
 	// Tell what we're doing
 	m_searchDock->UpdateWindowTitle(msg.Sf("Added folder %s", folder));
@@ -279,7 +280,7 @@ bool CProcessSearchInFiles::FindInfile(LPCSTR file) {
 		extension.Lower();
 
 		// Let's check if we should exclude this file from search (ONLY WHEN SEARCHING *.*!)
-		if (m_bExcludeExtensions && m_excludeExtensionsList.strlen()) {
+		if (m_bExcludeExtensions && m_excludeExtensionsList.Len()) {
 			CUTL_PARSE excludeParse(m_excludeExtensionsList.GetSafe(), NULL, '#');
 
 			excludeParse.NextToken();
@@ -342,13 +343,13 @@ bool CProcessSearchInFiles::FindInfile(LPCSTR file) {
 		}
       
 		// Tratamos el resto del buffer.
-		if (endPos < tempStringFile.strlen()) {
-			if (tempStringFile.strlen() - endPos > 128) {
+		if (endPos < tempStringFile.Len()) {
+			if (tempStringFile.Len() - endPos > 128) {
 				lineToShow.NCopy(&StringFile[endPos], 128);
 				lineToShow += "...";
 			}
 			else
-				lineToShow.NCopy(&StringFile[endPos], tempStringFile.strlen() - endPos);
+				lineToShow.NCopy(&StringFile[endPos], tempStringFile.Len() - endPos);
 			if (!FindInLine(&tempStringFile[endPos], lineToShow.GetSafe(), searchPattern, iterator, line))
 				return false;
 		}
@@ -496,8 +497,8 @@ bool CProcessSearchInFiles::SearchInFolders() {
 	CUTL_BUFFER fileMaskEdit(255), bufFileMask, statusText;
 
 	// We use the CUTL_PARSE class
-	if (m_foldersArray[m_foldersArray.strlen() - 1] == ',')
-		m_foldersArray[m_foldersArray.strlen() - 1] = ';';
+	if (m_foldersArray[m_foldersArray.Len() - 1] == ',')
+		m_foldersArray[m_foldersArray.Len() - 1] = ';';
 	else
 		m_foldersArray += ";";
 
@@ -526,7 +527,7 @@ bool CProcessSearchInFiles::SearchInFolders() {
 			CUTL_PATH iterator;
 
 			iterator.SetDriveDirectory(foldersParse.StrArg(i));
-			if (!fileMaskEdit.strlen()) fileMaskEdit = "*.*";
+			if (!fileMaskEdit.Len()) fileMaskEdit = "*.*";
 			fileMaskEdit.RepCar(';', ',');
 			bufFileMask.Sf("#%s;", fileMaskEdit.GetSafe());
 

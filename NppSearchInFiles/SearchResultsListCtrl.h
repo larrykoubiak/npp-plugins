@@ -42,7 +42,6 @@ public:
 
 	BEGIN_MSG_MAP(searchResultsListCtrl)
 		MESSAGE_HANDLER(WM_KEYUP, OnKeyUp)
-		//MESSAGE_HANDLER(WM_PAINT, OnPaint) Custom draw?, no now
 		DEFAULT_REFLECTION_HANDLER()
 	END_MSG_MAP()
 
@@ -66,14 +65,4 @@ private:
 
 	void InitTableImageList();
 	void InitTableList();
-
-	// Drawing code
-	CRect m_rect;						// The client rect when drawing
-	int   m_h_offset;					// 0... -x (scroll offset)
-	int   m_h_size;						// width of unclipped window
-	int   m_v_offset;					// 0... -y (scroll offset)
-	int   m_v_size;						// height of unclipped window
-
-	void DrawBackGround(CDC* pDC);
-	void DrawItems(CDC *pDC);
 };

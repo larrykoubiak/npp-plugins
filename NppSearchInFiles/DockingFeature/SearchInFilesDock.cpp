@@ -218,7 +218,7 @@ void SearchInFilesDock::callSearchInFiles(HWND hDlg, CUTL_BUFFER what, CUTL_BUFF
 	}
 
 	// Save the length of the current search
-	dockOwner->m_iCurrSearchLength = what.strlen();
+	dockOwner->m_iCurrSearchLength = what.Len();
 
 	// Finally we do the search
 	CProcessSearchInFiles* searchInFiles = new CProcessSearchInFiles(dockOwner, this, hDlg);
@@ -389,7 +389,7 @@ void SearchInFilesDock::SaveCombosStrings(HWND hDlg) {
 		temp.Realloc(254 + 1);
 		::GetWindowText(::GetDlgItem(hDlg, IDC_WHAT), temp.data, 254);
 
-		if (temp.strlen()) {
+		if (temp.Len()) {
 			confIni.Write("what", counter.Sf("%d", i), temp.GetSafe());
 			savedStrings.Sf("-|-%s-|-", temp.GetSafe());
 		}
@@ -416,7 +416,7 @@ void SearchInFilesDock::SaveCombosStrings(HWND hDlg) {
 		temp.Realloc(254 + 1);
 		::GetWindowText(::GetDlgItem(hDlg, IDC_TYPES), temp.data, 254);
 
-		if (temp.strlen()) {
+		if (temp.Len()) {
 			confIni.Write("masks", counter.Sf("%d", i), temp.GetSafe());
 			savedStrings.Sf("-|-%s-|-", temp.GetSafe());
 		}
@@ -443,7 +443,7 @@ void SearchInFilesDock::SaveCombosStrings(HWND hDlg) {
 		temp.Realloc(254 + 1);
 		::GetWindowText(::GetDlgItem(hDlg, IDC_WHERE), temp.data, 254);
 
-		if (temp.strlen()) {
+		if (temp.Len()) {
 			confIni.Write("where", counter.Sf("%d", i), temp.GetSafe());
 			savedStrings.Sf("-|-%s-|-", temp.GetSafe());
 		}
@@ -601,7 +601,7 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 					ownerDlg->LoadChecks(hDlg);
 
 					// Did someone call us from outside?
-					if (ownerDlg->m_cstMsgWParam.strlen() && ownerDlg->m_cstMsgLParam.strlen()) {
+					if (ownerDlg->m_cstMsgWParam.Len() && ownerDlg->m_cstMsgLParam.Len()) {
 						::SendMessage(::GetDlgItem(hDlg, IDC_TYPES), CB_INSERTSTRING, 0, (LPARAM)ownerDlg->m_cstMsgWParam.GetSafe());
 						::SendMessage(::GetDlgItem(hDlg, IDC_TYPES), CB_SETCURSEL, 0, 0L);
 
@@ -625,7 +625,7 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 
 						::SendMessage(ownerDlg->m_scintillaMainHandle, SCI_GETSELTEXT, 0, (LPARAM)selectionText.data);
 
-						if (selectionText.strlen() > 100) {
+						if (selectionText.Len() > 100) {
 							CUTL_BUFFER tempBuf;
 
 							tempBuf.NCopy(selectionText.GetSafe(), 100);
@@ -695,17 +695,17 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesInputDlgProc(HWND hDlg, UINT message,
 					::GetDlgItemText(hDlg, IDC_TYPES, types, 254);
 					::GetDlgItemText(hDlg, IDC_WHERE, where, 254);
 
-					if (!what.strlen()) {
+					if (!what.Len()) {
 						::MessageBox(ownerDlg->getHParent(), "You must supply a pattern string to search ...", "Search in Files", MB_OK|MB_ICONASTERISK);
 						::SetFocus(::GetDlgItem(hDlg, IDC_WHAT));
 						return FALSE;
 					}
-					if (!types.strlen()) {
+					if (!types.Len()) {
 						::MessageBox(ownerDlg->getHParent(), "You must supply a type file mask ...", "Search in Files", MB_OK|MB_ICONASTERISK);
 						::SetFocus(::GetDlgItem(hDlg, IDC_TYPES));
 						return FALSE;
 					}
-					if (!where.strlen()) {
+					if (!where.Len()) {
 						::MessageBox(ownerDlg->getHParent(), "You must supply a root folder to search ...", "Search in Files", MB_OK|MB_ICONASTERISK);
 						::SetFocus(::GetDlgItem(hDlg, IDC_WHERE));
 						return FALSE;
@@ -768,7 +768,7 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 
 					excludeExtensionsList = confIni.LoadStr("Search in Files Extension", "excludeExtensionsList", "");
 
-					if (excludeExtensionsList.strlen()) {
+					if (excludeExtensionsList.Len()) {
 						excludeExtensionsList.RepCar(';', ',');
 						tempBuf.Sf("#%s;", excludeExtensionsList.GetSafe());
 
@@ -849,12 +849,12 @@ BOOL CALLBACK SearchInputDlg::SearchInFilesExcludeDlgProc(HWND hDlg, UINT messag
 
 							::SendMessage(::GetDlgItem(hDlg, IDC_EXCLUDE_LIST), LB_GETTEXT, (WPARAM)i++, (LPARAM)temp.GetSafe());
 
-							if (extensionsToExclude.strlen()) extensionsToExclude += ";";
+							if (extensionsToExclude.Len()) extensionsToExclude += ";";
 							
 							extensionsToExclude += temp.GetSafe();
 						}
 
-						if (extensionsToExclude.strlen()) {
+						if (extensionsToExclude.Len()) {
 							CUT2_INI	confIni(m_iniFilePath);
 
 							confIni.Write("Search in Files Extension", "excludeExtensionsList", extensionsToExclude.GetSafe());

@@ -48,6 +48,7 @@ inline char  *UTL_ltoa( long value, char *string, int radix )                  {
 inline LPTSTR UTL_strupr(LPTSTR lpsz)                                          { return CharUpper(lpsz); };
 inline LPTSTR UTL_strlwr(LPTSTR lpsz)                                          { return CharLower(lpsz); };
 inline unsigned long UTL_strtoul(const char *nptr, char **endptr, int base )   { return strtoul(nptr,endptr,base); };
+inline char  *UTL_strrev( char *string )                                       { return strrev(string); };
 
 inline LPCSTR          UTL_Null(LPCSTR expr, LPCSTR defaultValue = "") { return (LPCSTR)((expr) ? expr : defaultValue);};
 inline LPSTR           UTL_Null(LPSTR expr,  LPSTR defaultValue = "") { return (LPSTR)((expr) ? expr : defaultValue);};
@@ -66,7 +67,7 @@ public:
    BOOL         Realloc(UINT size);
    BOOL         Accept(CUTL_BUFFER &other);
    LPSTR        Detach();
-   UINT         strlen() const;
+   UINT         Len() const;
    LPSTR        Copy(LPCSTR string2);
    LPSTR        NCopy(LPCSTR string2, size_t count);
    LPSTR        Cat(LPCSTR string2);
@@ -88,6 +89,7 @@ public:
    BOOL         Find(LPCSTR string, UINT &found, UINT start = 0) const;
    BOOL         Find(const char ch, UINT &found, UINT start = 0) const;
    BOOL         ReverseFind(const char ch, UINT &found) const;
+   CUTL_BUFFER &Reverse();
    BOOL         FindOneOf(LPCSTR set, UINT &found) const;
    LPCSTR       GetSafe() const;
 
@@ -119,8 +121,9 @@ private:
    UINT length;                               
 };
 
-inline UINT CUTL_BUFFER::strlen() const            { return UTL_strlen(data);}
+inline UINT CUTL_BUFFER::Len() const            { return UTL_strlen(data);}
 inline LPCSTR       CUTL_BUFFER::GetSafe() const{ return (data) ? data : ""; }
+inline CUTL_BUFFER &CUTL_BUFFER::Reverse()      { if (data) UTL_strrev(data); return *this; }
 inline CUTL_BUFFER::operator LPSTR() const      { return data; }
 inline CUTL_BUFFER::operator LPCSTR() const     { return data; }
 
@@ -311,8 +314,8 @@ protected: //otros métodos
 
 
 private: //miembros
-	CUTL_BUFFER m_path;
-	DWORD		m_wantSubdirectory;
+   CUTL_BUFFER m_path;
+   DWORD			m_findFileAttributes;
 	HANDLE      m_hFindFile;
 };
 
@@ -389,5 +392,6 @@ void        StripTrailingChar(CUTL_BUFFER& text, char traillingCh);
 void        StripTrailingBackslash (CUTL_BUFFER& directory);
 void        EnsureTrailingBackslash (CUTL_BUFFER& directory);
 void        EnsureLeadingBackslash(CUTL_BUFFER& directory);
+BOOL        AttributesMatch(DWORD targetAttributes, DWORD fileAttributes);
 
 //#endif
