@@ -1,6 +1,6 @@
 /***********************************************
  *  
- *  CTinyBufT ver. 1.0.3
+ *  CTinyBufT ver. 1.0.4
  *  --------------------------------  
  *  (C) DV, Nov 2006 - March 2007
  *  --------------------------------
@@ -216,9 +216,11 @@ template <class T> T* CTinyBufT<T>::Append(const T item)
 
 template <class T> void CTinyBufT<T>::Clear()
 {
-  m_nCount = 0;
   if (m_pData != NULL)
+  {
     SetSize(0);
+  }
+  m_nCount = 0; // must be AFTER SetSize(0)!!!
 }
 
 template <class T> int CTinyBufT<T>::Compare(const T* pData, int nCount) const

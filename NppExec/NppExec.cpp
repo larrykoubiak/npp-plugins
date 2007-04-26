@@ -1,6 +1,6 @@
 /****************************************************************************
- * NppExec plugin ver. 0.1 for Notepad++ 4.0.2 (and above)
- * by DV, December 2006 - February 2007
+ * NppExec plugin ver. 0.2 beta2 for Notepad++ 4.0.2 (and above)
+ * by DV, December 2006 - March 2007
  ****************************************************************************
  *
  * Possibilities:
@@ -45,28 +45,43 @@
 #include "DlgConsole.h"
 #include "DlgHelpAbout.h"
 #include "cpp/CFileBufT.h"
+#include "c_func/MatchMask.h"
 
 
-const char  PLUGIN_NAME[]          = "NppExec";
-const TCHAR INI_FILENAME[]         = "NppExec.ini";
-const TCHAR INI_SECTION_CONSOLE[]  = "Console";
-const TCHAR INI_SECTION_OPTIONS[]  = "Options";
-const TCHAR INI_KEY_HOTKEY[]       = "HotKey";
-const TCHAR INI_KEY_HEIGHT[]       = "Height";
-const TCHAR INI_KEY_VISIBLE[]      = "Visible";
-const TCHAR INI_KEY_OEM[]          = "OEM";
-const TCHAR INI_KEY_FONT[]         = "Font";
-const TCHAR SCRIPTFILE_TEMP[]      = "npes_temp.txt";
-const TCHAR SCRIPTFILE_SAVED[]     = "npes_saved.txt";
+const char  PLUGIN_NAME[]               = "NppExec";
+const TCHAR INI_FILENAME[]              = "NppExec.ini";
+const TCHAR INI_SECTION_CONSOLE[]       = "Console";
+const TCHAR INI_SECTION_OPTIONS[]       = "Options";
+const TCHAR INI_SECTION_CONSOLEFILTER[] = "ConsoleOutputFilter";
+const TCHAR INI_KEY_HOTKEY[]            = "HotKey";
+const TCHAR INI_KEY_HEIGHT[]            = "Height";
+const TCHAR INI_KEY_VISIBLE[]           = "Visible";
+const TCHAR INI_KEY_OEM[]               = "OEM";
+const TCHAR INI_KEY_FONT[]              = "Font";
+const TCHAR INI_KEY_CMDHISTORY[]        = "CmdHistory";
+const TCHAR INI_KEY_ENABLE[]            = "Enable";
+const TCHAR INI_KEY_EXCLUDEDUPEMTY[]    = "ExcludeDupEmpty";
+const TCHAR INI_KEY_INCLUDEMASK[]       = "IncludeMask";
+const TCHAR INI_KEY_EXCLUDEMASK[]       = "ExcludeMask";
+const TCHAR INI_KEY_INCLUDELINE_FMT[]   = "IncludeLine%ld";
+const TCHAR INI_KEY_EXCLUDELINE_FMT[]   = "ExcludeLine%ld";
+const TCHAR SCRIPTFILE_TEMP[]           = "npes_temp.txt";
+const TCHAR SCRIPTFILE_SAVED[]          = "npes_saved.txt";
 
 
 FuncItem    g_funcItem[nbFunc];
 CNppExec    g_nppExec;
 
+extern WNDPROC                 nppOriginalWndProc;
+extern CConsoleOutputFilterDlg ConsoleOutputFilterDlg;
+
+
 void empty_func(void)        { /* empty function */ }
-void do_exec_func(void)      { g_nppExec.DoExec(); }
-void oem_output_func(void)   { g_nppExec.OEMOutput(); }
-void console_font_func(void) { g_nppExec.SelectConsoleFont(); } 
+void cmdhistory_func(void)   { g_nppExec.OnCmdHistory(); }
+void do_exec_func(void)      { g_nppExec.OnDoExec(); }
+void oem_output_func(void)   { g_nppExec.OnOEMOutput(); }
+void output_f_func(void)     { g_nppExec.OnOutputFilter(); }
+void console_font_func(void) { g_nppExec.OnSelectConsoleFont(); } 
 void help_about_func(void);
 BOOL IsWindowsNT(void);
 
@@ -120,12 +135,14 @@ extern "C" BOOL APIENTRY DllMain(
 
       // ... Plugin menu ...
       pKey = InitShortcut(false, false, false, g_nppExec.opt_nHotKey);
-      InitFuncItem(N_DO_EXEC,      "Execute...",             do_exec_func,      pKey);
-      InitFuncItem(N_SEPARATOR_1,  "",                       empty_func,        NULL);
-      InitFuncItem(N_OEM_OUTPUT,   "OEM Console Output",     oem_output_func,   NULL);
-      InitFuncItem(N_CONSOLE_FONT, "Change Console Font...", console_font_func, NULL);
-      InitFuncItem(N_SEPARATOR_2,  "",                       empty_func,        NULL);
-      InitFuncItem(N_HELP_ABOUT,   "Help/About...",          help_about_func,   NULL);
+      InitFuncItem(N_DO_EXEC,       "Execute...",               do_exec_func,      pKey);
+      InitFuncItem(N_SEPARATOR_1,   "",                         empty_func,        NULL);
+      InitFuncItem(N_CMDHISTORY,    "Console Commands History", cmdhistory_func,   NULL);
+      InitFuncItem(N_OEM_OUTPUT,    "OEM Console Output",       oem_output_func,   NULL);
+      InitFuncItem(N_OUTPUT_FILTER, "Console Output Filter",    output_f_func,     NULL);
+      InitFuncItem(N_CONSOLE_FONT,  "Change Console Font...",   console_font_func, NULL);
+      InitFuncItem(N_SEPARATOR_2,   "",                         empty_func,        NULL);
+      InitFuncItem(N_HELP_ABOUT,    "Help/About...",            help_about_func,   NULL);
     }                 
       break;
 
@@ -136,6 +153,13 @@ extern "C" BOOL APIENTRY DllMain(
 
       // Don't forget to deallocate your shortcut here
       DelShortcut(N_DO_EXEC);
+
+      if (nppOriginalWndProc)
+      {
+        ::SetWindowLongPtr(g_nppExec.m_nppData._nppHandle, 
+            GWLP_WNDPROC, (LONG_PTR) nppOriginalWndProc);
+      }
+
     }
       break;
 
@@ -155,6 +179,10 @@ extern "C" BOOL APIENTRY DllMain(
 extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 {
   g_nppExec.m_nppData = notpadPlusData;
+
+  nppOriginalWndProc = (WNDPROC) SetWindowLongPtr(notpadPlusData._nppHandle, 
+    GWLP_WNDPROC, (LONG_PTR) nppPluginWndProc);
+
 }
 
 extern "C" __declspec(dllexport) const char * getName()
@@ -184,8 +212,14 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
       ModifyMenu(hMenu, g_funcItem[N_SEPARATOR_2]._cmdID, 
         MF_BYCOMMAND | MF_SEPARATOR, g_funcItem[N_SEPARATOR_2]._cmdID, NULL);
 
+      CheckMenuItem(hMenu, g_funcItem[N_CMDHISTORY]._cmdID,
+      MF_BYCOMMAND | (g_nppExec.opt_bConsoleCmdHistory ? MF_CHECKED : MF_UNCHECKED));
+      
       CheckMenuItem(hMenu, g_funcItem[N_OEM_OUTPUT]._cmdID,
         MF_BYCOMMAND | (g_nppExec.opt_bConsoleOEM ? MF_CHECKED : MF_UNCHECKED));
+
+      CheckMenuItem(hMenu, g_funcItem[N_OUTPUT_FILTER]._cmdID,
+        MF_BYCOMMAND | (g_nppExec.opt_ConsoleFilter_bEnable ? MF_CHECKED : MF_UNCHECKED));
 
       /*
       EnableMenuItem(hMenu, g_funcItem[N_CONSOLE_FONT]._cmdID,
@@ -415,6 +449,163 @@ bool CNppExec::nppSwitchToDocument(LPCTSTR cszDocumentPath, bool bGetOpenFileNam
                 (WPARAM) 0, (LPARAM) cszDocumentPath) != 0) ? true : false );
 }
 
+void CNppExec::Console_ClosePipes(void)
+{
+  ::CloseHandle(m_hStdOutReadPipe);  m_hStdOutReadPipe = NULL;
+  ::CloseHandle(m_hStdOutWritePipe); m_hStdOutWritePipe = NULL;
+  ::CloseHandle(m_hStdInReadPipe);   m_hStdInReadPipe = NULL;
+  ::CloseHandle(m_hStdInWritePipe);  m_hStdInWritePipe = NULL;
+}
+
+void CNppExec::Console_ReadPipesAndOutput(tstr& bufLine, 
+         bool& bPrevLineEmpty, bool bOutputAll)
+{
+  const int BUF_SIZE = 4096;
+  
+  DWORD  dwBytesRead;
+  TCHAR  Buf[BUF_SIZE];
+  tstr   outLine;
+  
+  bool   bSomethingHasBeenReadFromThePipe = false; 
+                  // great name for local variable :-)
+
+  do
+  { 
+    Sleep(10);  // it prevents from 100% CPU usage while reading!
+    dwBytesRead = 0;
+    if ((PeekNamedPipe(m_hStdOutReadPipe, NULL, 0, NULL, &dwBytesRead, NULL)
+         && (dwBytesRead > 0)) || bOutputAll)
+    {
+      // some data is in the Pipe or bOutputAll==true
+
+      bool bContainsData = (dwBytesRead > 0) ? true : false;
+      // without bContainsData==true the ReadFile operation will never return
+
+      ZeroMemory(Buf, BUF_SIZE);
+      dwBytesRead = 0;
+      if ((bContainsData 
+           && ReadFile(m_hStdOutReadPipe, Buf, (BUF_SIZE-1)*sizeof(TCHAR), &dwBytesRead, NULL)
+           && (dwBytesRead > 0)) || bOutputAll)
+      {
+        // some data has been read from the Pipe or bOutputAll==true
+        
+        int copy_len;
+
+        Buf[dwBytesRead/sizeof(TCHAR)] = 0;
+        bufLine += Buf;
+
+        if (dwBytesRead > 0)
+        {
+            bSomethingHasBeenReadFromThePipe = true;
+        }
+
+        // The following lines are needed for filtered output only.
+        // I.e. you can replace all these lines by this one:
+        //     ConsoleOutput(Buf);
+        // if you don't need filtered output.
+        
+        do {
+         
+            copy_len = -1;
+            for (int pos = 0; pos < bufLine.length(); pos++)
+            {
+                if ((bufLine[pos] == '\n') || 
+                    (bOutputAll && (pos == bufLine.length()-1)))
+                {
+                    copy_len = pos;
+                    if (bufLine[pos] != '\n')
+                    {
+                        // i.e. bOutputAll is true
+                        copy_len++;
+                    }
+                    else if ((pos > 0) && (bufLine[pos-1] == '\r'))
+                    {
+                        copy_len--;
+                    }
+
+                    outLine.Copy(bufLine.c_str(), copy_len);
+
+                    bufLine.Delete(0, pos+1);
+                    if ((copy_len > 0) || 
+                        (!bPrevLineEmpty) ||
+                        (!opt_ConsoleFilter_bEnable) ||
+                        (!opt_ConsoleFilter_bExcludeDupEmpty))
+                    {
+                        bool bOutput = true;  
+
+                        if (opt_ConsoleFilter_bEnable)
+                        {
+                            tstr _mask;
+                            tstr _line = outLine;
+
+                            if (opt_bConsoleOEM)
+                            {
+                                TCHAR _strOEM[4096];
+                                if (_line.length() > 4096-1)
+                                {
+                                    _line.SetSize(4096-1);
+                                }
+                                ::OemToChar(_line.c_str(), _strOEM);
+                                _line = _strOEM;
+                            }
+                            ::CharLower(_line.c_str());
+
+                            if ((opt_ConsoleFilter_IncludeMask > 0) ||
+                                (opt_ConsoleFilter_ExcludeMask > 0))
+                            {
+                                for (int i = 0; bOutput && 
+                                      (i < CConsoleOutputFilterDlg::FILTER_ITEMS); i++)
+                                {
+                                    if ((opt_ConsoleFilter_IncludeMask & (0x01 << i)) &&
+                                        (opt_ConsoleFilter_IncludeLine[i].length() > 0))
+                                    {
+                                        _mask = opt_ConsoleFilter_IncludeLine[i].c_str();
+                                        ::CharLower(_mask.c_str());
+                                        if (!match_mask(_mask.c_str(), _line.c_str()))
+                                        {
+                                            bOutput = false;
+                                        }
+                                    }
+                                    if (bOutput &&
+                                        (opt_ConsoleFilter_ExcludeMask & (0x01 << i)) &&
+                                        (opt_ConsoleFilter_ExcludeLine[i].length() > 0))
+                                    {
+                                        _mask = opt_ConsoleFilter_ExcludeLine[i].c_str();
+                                        ::CharLower(_mask.c_str());
+                                        if (match_mask(_mask.c_str(), _line.c_str()))
+                                        {
+                                            bOutput = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                            
+                        if (bOutput)
+                        {
+                            ConsoleOutput(outLine.c_str());
+                        }
+                    }
+                    bPrevLineEmpty = (copy_len > 0) ? false : true;
+                    break;
+                }
+            }
+        } while (copy_len >= 0);  
+
+      }
+    }
+
+    if ((!bSomethingHasBeenReadFromThePipe) && (bufLine.length() > 0))
+    {
+        // nothing has been read, but there is data in the buffer
+        dwBytesRead = 1; // for the condition (dwBytesRead > 0)
+        bOutputAll = true; // output the data in the buffer
+    }
+
+  } 
+  while (dwBytesRead > 0);
+}
+
 void CNppExec::ConsoleError(LPCTSTR cszMessage) 
 { 
   m_reConsole.AddStr(cszMessage, FALSE, RGB(0xA0, 0x10, 0x10)); 
@@ -441,7 +632,7 @@ void CNppExec::ConsoleOutput(LPCTSTR cszMessage)
   {
     TCHAR strOEM[4096];
 
-    ::OemToCharBuff(cszMessage, strOEM, 4096 - 1);
+    ::OemToChar(cszMessage, strOEM);
     m_reConsole.AddLine(strOEM, TRUE);
   }
   ::SendMessage(_consoleParentWnd, WM_LOCKCONSOLELINES, 
@@ -533,22 +724,18 @@ BOOL CNppExec::CreateChildProcess(HWND hParentWnd, LPCTSTR cszCommandLine)
   //ShowWarning(szCmdLine);
 
   if (CreateProcess(
-    NULL,
-    szCmdLine,
-    NULL, // security
-    NULL, // security
-    TRUE, // inherits handles
-    0,    // creation flags
-    NULL, // environment
-    NULL, // current directory
-    &si,  // startup info
-    &pi   // process info
-  ))
+        NULL,
+        szCmdLine,
+        NULL, // security
+        NULL, // security
+        TRUE, // inherits handles
+        0,    // creation flags
+        NULL, // environment
+        NULL, // current directory
+        &si,  // startup info
+        &pi   // process info
+     ))
   {
-    const int BUF_SIZE = 4096;
-    DWORD  dwBytesRead;
-    TCHAR  Buf[BUF_SIZE];
-
     CloseHandle(pi.hThread);
     //CloseHandle(hStdOutWritePipe); hStdOutWritePipe = NULL;
     //CloseHandle(hStdInReadPipe); hStdInReadPipe = NULL;
@@ -564,26 +751,27 @@ BOOL CNppExec::CreateChildProcess(HWND hParentWnd, LPCTSTR cszCommandLine)
     //WaitForSingleObject(pi.hProcess, 120);
     WaitForSingleObject(pi.hProcess, opt_ChildProcess_dwStartupTimeout_ms);
         
-    do
+    tstr  bufLine;
+    bool  bPrevLineEmpty = false;
+    
+    bufLine.Clear(); // just in case :-)
+    
+    do 
     {
-      dwBytesRead = 0;
-      if (PeekNamedPipe(m_hStdOutReadPipe, NULL, 0, NULL, &dwBytesRead, NULL)
-        && (dwBytesRead > 0))
-      {
-        ZeroMemory(Buf, BUF_SIZE);
-        dwBytesRead = 0;
-        if (ReadFile(m_hStdOutReadPipe, Buf, (BUF_SIZE-1)*sizeof(TCHAR), &dwBytesRead, NULL)
-          && (dwBytesRead > 0))
-        {
-          Buf[dwBytesRead/sizeof(TCHAR)] = 0;
-          ConsoleOutput(Buf);
-        }
-      }
+      Console_ReadPipesAndOutput(bufLine, bPrevLineEmpty, false);
+  
     }
     while ((_consoleProcessIsRunning = (WaitForSingleObject(pi.hProcess, 
               opt_ChildProcess_dwCycleTimeout_ms) == WAIT_TIMEOUT))
         && _consoleIsVisible && !_consoleProcessBreak);
     // NOTE: time-out inside WaitForSingleObject() prevents from 100% CPU usage!
+
+    if (_consoleIsVisible && !_consoleProcessBreak)
+    {
+      // maybe the child process is exited but not all its data is read
+      Console_ReadPipesAndOutput(bufLine, bPrevLineEmpty, true);
+      // ShowWarning("All is read!");
+    }
 
     if (!_consoleIsVisible)
     {
@@ -624,10 +812,7 @@ BOOL CNppExec::CreateChildProcess(HWND hParentWnd, LPCTSTR cszCommandLine)
     // Process cleanup
     CloseHandle(pi.hProcess);
     // closing pipe handles
-    CloseHandle(m_hStdOutReadPipe);  m_hStdOutReadPipe = NULL;
-    CloseHandle(m_hStdOutWritePipe); m_hStdOutWritePipe = NULL;
-    CloseHandle(m_hStdInReadPipe);   m_hStdInReadPipe = NULL;
-    CloseHandle(m_hStdInWritePipe);  m_hStdInWritePipe = NULL;
+    Console_ClosePipes();
 
     if (_consoleIsVisible && !_consoleProcessBreak)
     {
@@ -642,16 +827,107 @@ BOOL CNppExec::CreateChildProcess(HWND hParentWnd, LPCTSTR cszCommandLine)
   else
   {
     // closing pipe handles
-    CloseHandle(m_hStdOutReadPipe);  m_hStdOutReadPipe = NULL;
-    CloseHandle(m_hStdOutWritePipe); m_hStdOutWritePipe = NULL;
-    CloseHandle(m_hStdInReadPipe);   m_hStdInReadPipe = NULL;
-    CloseHandle(m_hStdInWritePipe);  m_hStdInWritePipe = NULL;
+    Console_ClosePipes();
     ConsoleError("CreateProcess() failed");
     return FALSE;
   }
 }
 
-void CNppExec::DoExec(void)
+void CNppExec::Free(void)
+{
+  if (npp_bufFileNames.GetCount() > 0)
+  {
+    for (int i = 0; i < npp_bufFileNames.GetCount(); i++)
+    {
+      if (npp_bufFileNames[i] != NULL)
+      {
+        delete [] npp_bufFileNames[i];
+        npp_bufFileNames[i] = NULL;  // just in case
+      }
+    }
+  }
+  
+  if (_consoleProcessIsRunning)
+  {
+    TerminateProcess(_consoleProcessHandle, 0);
+    _consoleProcessIsRunning = false;
+    CloseHandle(_consoleProcessHandle);
+    _consoleProcessHandle = NULL;
+    Console_ClosePipes();
+    // you can ensure it's working !!!
+    // MessageBox(NULL, "Process is terminated", "", 0);
+  }
+
+  if (_consoleIsVisible)
+  {
+    // necessary for the dwCreateConsoleProcess thread
+    _consoleIsVisible = false;
+    /*
+    ::SendMessage(m_nppData._nppHandle, WM_MODELESSDIALOG, 
+        (WPARAM) MODELESSDIALOGREMOVE, (LPARAM) _consoleParentWnd);
+    ::DestroyWindow(_consoleParentWnd);
+    */
+  }
+
+}
+
+void CNppExec::Init(void)
+{
+  INT   i;
+  TCHAR ch;
+  TCHAR szPath[0x200];
+  
+  GetModuleFileName(m_hDllModule /*NULL*/ , szPath, 0x200 - 1);
+  i = lstrlen(szPath) - 1;
+  while (i >= 0 && (ch = szPath[i]) != '\\' && ch != '/')  i--;
+  if (i >= 0)  szPath[i] = 0;
+  lstrcpy(m_szPluginPath, szPath);
+  lstrcpy(m_szIniPath, szPath);
+  lstrcat(szPath, "\\Config\\*.*");
+  
+  m_bConfigFolderExists = false;
+  
+  WIN32_FIND_DATA fdata;
+  HANDLE          fhandle = FindFirstFile(szPath, &fdata);
+  if ((fhandle == INVALID_HANDLE_VALUE) || !fhandle)
+  {
+          //ShowWarning("FindFirstFile failed");
+    lstrcat(m_szIniPath, "\\Config");
+    if (CreateDirectory(m_szIniPath, NULL))
+    {
+          //ShowWarning("CreateDirectory OK");
+      m_bConfigFolderExists = true;
+    }
+    else
+    {
+          //ShowWarning("CreateDirectory failed");
+      lstrcpy(m_szIniPath, m_szPluginPath);
+    }
+  }
+  else
+  {
+          //ShowWarning("FindFirstFile OK");
+    FindClose(fhandle);
+    lstrcat(m_szIniPath, "\\Config");
+    m_bConfigFolderExists = true;
+  }
+  lstrcat(m_szIniPath, "\\");
+  lstrcat(m_szIniPath, INI_FILENAME);
+          //ShowWarning(m_szIniPath);
+}
+
+void CNppExec::OnCmdHistory(void)
+{
+  HMENU hMenu = GetMenu(m_nppData._nppHandle);
+  if (hMenu)
+  {
+    opt_bConsoleCmdHistory = !opt_bConsoleCmdHistory;
+    CheckMenuItem(hMenu, g_funcItem[N_CMDHISTORY]._cmdID,
+      MF_BYCOMMAND | (opt_bConsoleCmdHistory ? MF_CHECKED : MF_UNCHECKED));
+  }
+}
+
+void CNppExec::OnDoExec(void)
 {
   if (DialogBox(
         (HINSTANCE) m_hDllModule, 
@@ -711,6 +987,7 @@ void CNppExec::DoExec(void)
       {
         m_reConsole.m_hWnd = GetDlgItem(hConsoleDlg, IDC_RE_CONSOLE);
         m_reConsole.SetText("");
+
         ::SendMessage(m_nppData._nppHandle, WM_DMM_SHOW, 0, (LPARAM) hConsoleDlg);
         //ShowWindow(hConsoleDlg, SW_SHOW);
         //BringWindowToTop(hConsoleDlg);
@@ -746,92 +1023,7 @@ void CNppExec::DoExec(void)
   }
 }
 
-void CNppExec::Free(void)
-{
-  if (npp_bufFileNames.GetCount() > 0)
-  {
-    for (int i = 0; i < npp_bufFileNames.GetCount(); i++)
-    {
-      if (npp_bufFileNames[i] != NULL)
-      {
-        delete [] npp_bufFileNames[i];
-        npp_bufFileNames[i] = NULL;  // just in case
-      }
-    }
-  }
-  
-  if (_consoleProcessIsRunning)
-  {
-    TerminateProcess(_consoleProcessHandle, 0);
-    _consoleProcessIsRunning = false;
-    CloseHandle(_consoleProcessHandle);
-    _consoleProcessHandle = NULL;
-    CloseHandle(m_hStdOutReadPipe);  m_hStdOutReadPipe = NULL;
-    CloseHandle(m_hStdOutWritePipe); m_hStdOutWritePipe = NULL;
-    CloseHandle(m_hStdInReadPipe);   m_hStdInReadPipe = NULL;
-    CloseHandle(m_hStdInWritePipe);  m_hStdInWritePipe = NULL;
-    // you can ensure it's working !!!
-    // MessageBox(NULL, "Process is terminated", "", 0);
-  }
-
-  if (_consoleIsVisible)
-  {
-    _consoleIsVisible = false;
-    /*
-    ::SendMessage(m_nppData._nppHandle, WM_MODELESSDIALOG, 
-        (WPARAM) MODELESSDIALOGREMOVE, (LPARAM) _consoleParentWnd);
-    ::DestroyWindow(_consoleParentWnd);
-    */
-  }
-
-}
-
-void CNppExec::Init(void)
-{
-  INT   i;
-  TCHAR ch;
-  TCHAR szPath[0x200];
-  
-  GetModuleFileName(m_hDllModule /*NULL*/ , szPath, 0x200 - 1);
-  i = lstrlen(szPath) - 1;
-  while (i >= 0 && (ch = szPath[i]) != '\\' && ch != '/')  i--;
-  if (i >= 0)  szPath[i] = 0;
-  lstrcpy(m_szPluginPath, szPath);
-  lstrcpy(m_szIniPath, szPath);
-  lstrcat(szPath, "\\Config\\*.*");
-  
-  m_bConfigFolderExists = false;
-  
-  WIN32_FIND_DATA fdata;
-  HANDLE          fhandle = FindFirstFile(szPath, &fdata);
-  if ((fhandle == INVALID_HANDLE_VALUE) || !fhandle)
-  {
-          //ShowWarning("FindFirstFile failed");
-    lstrcat(m_szIniPath, "\\Config");
-    if (CreateDirectory(m_szIniPath, NULL))
-    {
-          //ShowWarning("CreateDirectory OK");
-      m_bConfigFolderExists = true;
-    }
-    else
-    {
-          //ShowWarning("CreateDirectory failed");
-      lstrcpy(m_szIniPath, m_szPluginPath);
-    }
-  }
-  else
-  {
-          //ShowWarning("FindFirstFile OK");
-    FindClose(fhandle);
-    lstrcat(m_szIniPath, "\\Config");
-    m_bConfigFolderExists = true;
-  }
-  lstrcat(m_szIniPath, "\\");
-  lstrcat(m_szIniPath, INI_FILENAME);
-          //ShowWarning(m_szIniPath);
-}
-
-void CNppExec::OEMOutput(void)
+void CNppExec::OnOEMOutput(void)
 {
   HMENU hMenu = GetMenu(m_nppData._nppHandle);
   if (hMenu)
@@ -842,6 +1034,63 @@ void CNppExec::OEMOutput(void)
   }
 }
 
+void CNppExec::OnOutputFilter(void)
+{
+  if (DialogBox(
+        (HINSTANCE) m_hDllModule, 
+        MAKEINTRESOURCE(IDD_CONSOLE_OUTPUTFILTER),
+        m_nppData._nppHandle,
+        ConsoleOutputFilterDlgProc) == 1)
+  {
+    HMENU hMenu = GetMenu(m_nppData._nppHandle);
+    if (hMenu)
+    {
+      CheckMenuItem(hMenu, g_funcItem[N_OUTPUT_FILTER]._cmdID,
+        MF_BYCOMMAND | (opt_ConsoleFilter_bEnable ? MF_CHECKED : MF_UNCHECKED));
+    }
+    /*
+    if (_consoleIsVisible)
+    {
+      if (!opt_ConsoleFilter_bEnable)
+      {
+        ::SendMessage(_consoleParentWnd, WM_SETTEXT, 0, (LPARAM) " Console ");
+      }
+      else
+      {
+        ::SendMessage(_consoleParentWnd, WM_SETTEXT, 0, (LPARAM) " Console* ");
+      }
+    }
+    */
+  }
+}
+
+void CNppExec::OnSelectConsoleFont(void)
+{
+  LOGFONT    lf;
+  CHOOSEFONT cf;
+  HWND       hEd = _consoleIsVisible ? m_reConsole.m_hWnd : NULL;
+  HFONT      hEdFont = _consoleFont;
+  
+  ZeroMemory(&lf, sizeof(LOGFONT));
+  GetObject(hEdFont ? hEdFont : GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &lf);
+
+  ZeroMemory(&cf, sizeof(CHOOSEFONT));
+  cf.lStructSize = sizeof(CHOOSEFONT);
+  cf.hwndOwner = m_nppData._nppHandle;
+  cf.lpLogFont = &lf;
+  cf.Flags = CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT | CF_SCREENFONTS;
+  
+  if (ChooseFont(&cf))
+  {
+    /*
+    if (lf.lfHeight > 0) 
+      lf.lfHeight = -lf.lfHeight;
+    */
+    SetConsoleFont(hEd, lf);
+  }
+
+}
+
 void CNppExec::ReadOptions(void)
 {
   TCHAR            path[0x200];
@@ -849,17 +1098,54 @@ void CNppExec::ReadOptions(void)
   tstr             Line;
 
   ///////////////////////////////////////////////////////////////////////////
-  // undocumented options for the child console process
+  // "hidden" options for the child console process and others
   //
-  const int   DEFAULT_STARTUPTIMEOUT_MS   = 120;
-  const int   DEFAULT_CYCLETIMEOUT_MS     = 120;
-  const TCHAR INI_KEY_STARTUPTIMEOUT_MS[] = "ChildProcess_StartupTimeout_ms";
-  const TCHAR INI_KEY_CYCLETIMEOUT_MS[]   = "ChildProcess_CycleTimeout_ms";
+  const int   DEFAULT_STARTUPTIMEOUT_MS     = 240;
+  const int   DEFAULT_CYCLETIMEOUT_MS       = 120;
+  const BOOL  DEFAULT_PATH_AUTODBLQUOTES    = FALSE;
+  const int   DEFAULT_CMDHISTORY_MAXITEMS   = 256;
+  const int   DEFAULT_EXEC_MAXCOUNT         = 100;
+  const int   DEFAULT_RICHEDIT_MAXTEXTLEN   = 4*1024*1024; // 4 MB
+  const TCHAR INI_KEY_STARTUPTIMEOUT_MS[]   = "ChildProcess_StartupTimeout_ms";
+  const TCHAR INI_KEY_CYCLETIMEOUT_MS[]     = "ChildProcess_CycleTimeout_ms";
+  const TCHAR INI_KEY_PATH_AUTODBLQUOTES[]  = "Path_AutoDblQuotes";
+  const TCHAR INI_KEY_CMDHISTORY_MAXITEMS[] = "CmdHistory_MaxItems";
+  const TCHAR INI_KEY_EXEC_MAXCOUNT[]       = "Exec_MaxCount";
+  const TCHAR INI_KEY_RICHEDIT_MAXTEXTLEN[] = "RichEdit_MaxTextLength";
   //
   opt_ChildProcess_dwStartupTimeout_ms = iniReadInt(INI_SECTION_CONSOLE, 
     INI_KEY_STARTUPTIMEOUT_MS, DEFAULT_STARTUPTIMEOUT_MS);
   opt_ChildProcess_dwCycleTimeout_ms = iniReadInt(INI_SECTION_CONSOLE, 
     INI_KEY_CYCLETIMEOUT_MS, DEFAULT_CYCLETIMEOUT_MS);
+  opt_Path_AutoDblQuotes = iniReadInt(INI_SECTION_CONSOLE,
+    INI_KEY_PATH_AUTODBLQUOTES, DEFAULT_PATH_AUTODBLQUOTES);
+  opt_nConsoleCmdHistory_MaxItems = iniReadInt(INI_SECTION_CONSOLE,
+    INI_KEY_CMDHISTORY_MAXITEMS, DEFAULT_CMDHISTORY_MAXITEMS);
+  opt_nExec_MaxCount = iniReadInt(INI_SECTION_CONSOLE,
+    INI_KEY_EXEC_MAXCOUNT, DEFAULT_EXEC_MAXCOUNT);
+  opt_nRichEdit_MaxTextLength = iniReadInt(INI_SECTION_CONSOLE,
+    INI_KEY_RICHEDIT_MAXTEXTLEN, DEFAULT_RICHEDIT_MAXTEXTLEN);
+  //
+  if (opt_ChildProcess_dwStartupTimeout_ms < 0)
+  {
+    opt_ChildProcess_dwStartupTimeout_ms = DEFAULT_STARTUPTIMEOUT_MS;
+  }
+  if (opt_ChildProcess_dwCycleTimeout_ms < 0)
+  {
+    opt_ChildProcess_dwCycleTimeout_ms = DEFAULT_CYCLETIMEOUT_MS;
+  }
+  if (opt_nConsoleCmdHistory_MaxItems < 2)
+  {
+    opt_nConsoleCmdHistory_MaxItems = DEFAULT_CMDHISTORY_MAXITEMS;
+  }
+  if (opt_nExec_MaxCount < 2)
+  {
+    opt_nExec_MaxCount = DEFAULT_EXEC_MAXCOUNT;
+  }
+  if (opt_nRichEdit_MaxTextLength < 0x10000)
+  {
+    opt_nRichEdit_MaxTextLength = 0x10000;
+  }
   //
   // these parameters can be specified manually in "NppExec.ini"
   ///////////////////////////////////////////////////////////////////////////
@@ -867,6 +1153,7 @@ void CNppExec::ReadOptions(void)
   opt_nConsoleHeight = iniReadInt(INI_SECTION_CONSOLE, INI_KEY_HEIGHT, -1);
   opt_bConsoleVisible = iniReadInt(INI_SECTION_CONSOLE, INI_KEY_VISIBLE, -1);
   opt_bConsoleOEM = iniReadInt(INI_SECTION_CONSOLE, INI_KEY_OEM, -1);
+  opt_bConsoleCmdHistory = iniReadInt(INI_SECTION_CONSOLE, INI_KEY_CMDHISTORY, -1);
   
   _consoleFont = NULL;
   ZeroMemory(&opt_ConsoleLogFont_0, sizeof(LOGFONT));
@@ -912,13 +1199,60 @@ void CNppExec::ReadOptions(void)
   opt_bConsoleVisible_0 = opt_bConsoleVisible;
   opt_bConsoleOEM_0 = opt_bConsoleOEM;
   opt_nHotKey_0 = opt_nHotKey;
+  opt_bConsoleCmdHistory_0 = opt_bConsoleCmdHistory;
 
-  if (opt_bConsoleVisible == -1)
+  if (opt_nConsoleHeight < 0)
+    opt_nConsoleHeight = 120;
+  if (opt_bConsoleVisible < 0)
     opt_bConsoleVisible = 0;
-  if (opt_bConsoleOEM == -1)
+  if (opt_bConsoleOEM < 0)
     opt_bConsoleOEM = 1;
+  if (opt_bConsoleCmdHistory < 0)
+    opt_bConsoleCmdHistory = 0;
   if (opt_nHotKey == 0)
     opt_nHotKey = VK_F6;
+
+  
+  opt_ConsoleFilter_bEnable = iniReadInt(
+    INI_SECTION_CONSOLEFILTER, INI_KEY_ENABLE, FALSE);                                      
+  opt_ConsoleFilter_bEnable_0 = opt_ConsoleFilter_bEnable;
+
+  opt_ConsoleFilter_bExcludeDupEmpty = iniReadInt(
+    INI_SECTION_CONSOLEFILTER, INI_KEY_EXCLUDEDUPEMTY, FALSE);
+  opt_ConsoleFilter_bExcludeDupEmpty_0 = opt_ConsoleFilter_bExcludeDupEmpty;
+
+  opt_ConsoleFilter_IncludeMask = iniReadInt(
+    INI_SECTION_CONSOLEFILTER, INI_KEY_INCLUDEMASK, 0);
+  opt_ConsoleFilter_IncludeMask_0 = opt_ConsoleFilter_IncludeMask;
+
+  opt_ConsoleFilter_ExcludeMask = iniReadInt(
+    INI_SECTION_CONSOLEFILTER, INI_KEY_EXCLUDEMASK, 0);
+  opt_ConsoleFilter_ExcludeMask_0 = opt_ConsoleFilter_ExcludeMask;
+    
+  TCHAR szKey[128];
+     
+  for (int i = 0; i < CConsoleOutputFilterDlg::FILTER_ITEMS; i++)
+  {
+    wsprintf(szKey, INI_KEY_INCLUDELINE_FMT, i);
+    path[0] = 0;
+    //path[1] = 0;  // path + 1
+    iniReadStr(INI_SECTION_CONSOLEFILTER, szKey, "", path, 0x200 - 1);
+    //opt_ConsoleFilter_IncludeLine[i].Copy(path + 1, lstrlen(path) - 2);
+    opt_ConsoleFilter_IncludeLine[i] = path;
+    opt_ConsoleFilter_IncludeLine_0[i] = opt_ConsoleFilter_IncludeLine[i];
+  }
+
+  for (int i = 0; i < CConsoleOutputFilterDlg::FILTER_ITEMS; i++)
+  {
+    wsprintf(szKey, INI_KEY_EXCLUDELINE_FMT, i);
+    path[0] = 0;
+    //path[1] = 0;  // path + 1
+    iniReadStr(INI_SECTION_CONSOLEFILTER, szKey, "", path, 0x200 - 1);
+    //opt_ConsoleFilter_ExcludeLine[i].Copy(path + 1, lstrlen(path) - 2);
+    opt_ConsoleFilter_ExcludeLine[i] = path;
+    opt_ConsoleFilter_ExcludeLine_0[i] = opt_ConsoleFilter_ExcludeLine[i];
+  }
+
   
   lstrcpy(path, m_szPluginPath);
   if (m_bConfigFolderExists)
@@ -963,6 +1297,11 @@ void CNppExec::SaveOptions(void)
   {
     iniWriteInt(INI_SECTION_CONSOLE, INI_KEY_OEM, opt_bConsoleOEM);
     opt_bConsoleOEM_0 = opt_bConsoleOEM;
+  }
+  if (opt_bConsoleCmdHistory_0 != opt_bConsoleCmdHistory)
+  {
+    iniWriteInt(INI_SECTION_CONSOLE, INI_KEY_CMDHISTORY, opt_bConsoleCmdHistory);
+    opt_bConsoleCmdHistory_0 = opt_bConsoleCmdHistory;
   }
 
   bool  bMatch = true;
@@ -1019,6 +1358,60 @@ void CNppExec::SaveOptions(void)
     iniWriteStr(INI_SECTION_OPTIONS, INI_KEY_HOTKEY, szHotKey);
     opt_nHotKey_0 = opt_nHotKey;
   }
+
+  if (opt_ConsoleFilter_bEnable_0 != opt_ConsoleFilter_bEnable)
+  {
+    iniWriteInt(INI_SECTION_CONSOLEFILTER, INI_KEY_ENABLE,
+      opt_ConsoleFilter_bEnable);                                      
+    opt_ConsoleFilter_bEnable_0 = opt_ConsoleFilter_bEnable;
+  }
+  if (opt_ConsoleFilter_bExcludeDupEmpty_0 != opt_ConsoleFilter_bExcludeDupEmpty)
+  {
+    iniWriteInt(INI_SECTION_CONSOLEFILTER, INI_KEY_EXCLUDEDUPEMTY,
+      opt_ConsoleFilter_bExcludeDupEmpty);
+    opt_ConsoleFilter_bExcludeDupEmpty_0 = opt_ConsoleFilter_bExcludeDupEmpty;
+  }
+  if (opt_ConsoleFilter_IncludeMask_0 != opt_ConsoleFilter_IncludeMask)
+  {
+    iniWriteInt(INI_SECTION_CONSOLEFILTER, INI_KEY_INCLUDEMASK,
+      opt_ConsoleFilter_IncludeMask);
+    opt_ConsoleFilter_IncludeMask_0 = opt_ConsoleFilter_IncludeMask;
+  }
+  if (opt_ConsoleFilter_ExcludeMask_0 != opt_ConsoleFilter_ExcludeMask)
+  {
+    iniWriteInt(INI_SECTION_CONSOLEFILTER, INI_KEY_EXCLUDEMASK,
+      opt_ConsoleFilter_ExcludeMask);
+    opt_ConsoleFilter_ExcludeMask_0 = opt_ConsoleFilter_ExcludeMask;
+  }
+    
+  TCHAR szKey[128];
+  tstr  s;
+     
+  for (int i = 0; i < CConsoleOutputFilterDlg::FILTER_ITEMS; i++)
+  {
+    if (opt_ConsoleFilter_IncludeLine_0[i] != opt_ConsoleFilter_IncludeLine[i])
+    {
+      wsprintf(szKey, INI_KEY_INCLUDELINE_FMT, i);
+      s = "\"";
+      s += opt_ConsoleFilter_IncludeLine[i];
+      s += "\"";
+      iniWriteStr(INI_SECTION_CONSOLEFILTER, szKey, s.c_str());
+      opt_ConsoleFilter_IncludeLine_0[i] = opt_ConsoleFilter_IncludeLine[i];
+    }
+  }
+
+  for (int i = 0; i < CConsoleOutputFilterDlg::FILTER_ITEMS; i++)
+  {
+    if (opt_ConsoleFilter_ExcludeLine_0[i] != opt_ConsoleFilter_ExcludeLine[i])
+    {
+      wsprintf(szKey, INI_KEY_EXCLUDELINE_FMT, i);
+      s = "\"";
+      s += opt_ConsoleFilter_ExcludeLine[i];
+      s += "\"";
+      iniWriteStr(INI_SECTION_CONSOLEFILTER, szKey, s.c_str());
+      opt_ConsoleFilter_ExcludeLine_0[i] = opt_ConsoleFilter_ExcludeLine[i];
+    }
+  }
     
   SaveScripts();
 
@@ -1074,33 +1467,6 @@ HWND CNppExec::ScintillaHandle(void)
   ::SendMessage(m_nppData._nppHandle, WM_GETCURRENTSCINTILLA, 
       0, (LPARAM)&currentEdit);
   return getCurrentScintilla(currentEdit);
-}
-
-void CNppExec::SelectConsoleFont(void)
-{
-  LOGFONT    lf;
-  CHOOSEFONT cf;
-  HWND       hEd = _consoleIsVisible ? m_reConsole.m_hWnd : NULL;
-  HFONT      hEdFont = _consoleFont;
-  
-  ZeroMemory(&lf, sizeof(LOGFONT));
-  GetObject(hEdFont ? hEdFont : GetStockObject(SYSTEM_FONT), sizeof(LOGFONT), &lf);
-
-  ZeroMemory(&cf, sizeof(CHOOSEFONT));
-  cf.lStructSize = sizeof(CHOOSEFONT);
-  cf.hwndOwner = m_nppData._nppHandle;
-  cf.lpLogFont = &lf;
-  cf.Flags = CF_FORCEFONTEXIST | CF_INITTOLOGFONTSTRUCT | CF_SCREENFONTS;
-  
-  if (ChooseFont(&cf))
-  {
-    /*
-    if (lf.lfHeight > 0) 
-      lf.lfHeight = -lf.lfHeight;
-    */
-    SetConsoleFont(hEd, lf);
-  }
-
 }
 
 void CNppExec::SetConsoleFont(HWND hWnd, const LOGFONT& lf)

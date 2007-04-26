@@ -3,8 +3,9 @@
 //---------------------------------------------------------------------------
 #include "base.h"
 
-DWORD WINAPI dwCreateConsoleProcess(LPVOID);
-int          ModifyCommandLine(LPTSTR lpCmdLine, LPCTSTR cszCmdLine);
+DWORD WINAPI     dwCreateConsoleProcess(LPVOID);
+int              ModifyCommandLine(LPTSTR lpCmdLine, LPCTSTR cszCmdLine);
+LRESULT CALLBACK nppPluginWndProc(HWND, UINT, WPARAM, LPARAM);
 
 //---------------------------------------------------------------------------
 #endif

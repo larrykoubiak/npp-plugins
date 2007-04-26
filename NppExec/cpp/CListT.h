@@ -1,6 +1,6 @@
 /***********************************************
  *  
- *  CListT ver. 1.0.3
+ *  CListT ver. 1.0.4
  *  --------------------------------  
  *  (C) DV, Nov 2006 - March 2007
  *  --------------------------------
@@ -49,7 +49,6 @@ public:
   void         DeleteAll();
   bool         DeleteFirst();
   bool         DeleteLast();
-  bool         Exchange(const void* pItemPtr1, const void* pItemPtr2);
   void*        FindExact(const T& item, const void* pStartItemPtr = NULL) const;
   inline int   GetCount() const  { return m_nCount; }
   inline void* GetFirst() const  { return m_pFirstItem; }
@@ -61,6 +60,7 @@ public:
   void*        InsertFirst(const T& item);
   bool         SetItem(const void* pItemPtr, const T& item);
   bool         Sort();
+  bool         Swap(const void* pItemPtr1, const void* pItemPtr2);
 };
 
 //----------------------------------------------------------------------------
@@ -77,7 +77,7 @@ template <class T> CListT<T>::~CListT()
   DeleteAll();
 }
 
-template <class T> void* CListT<T>::itemCreate(const T& item)
+template <class T> void* CListT<T>::itemCreate(const  T& item)
 {
   CListItemT<T>* pNewItem = new CListItemT<T>;
   if (pNewItem)
@@ -157,10 +157,13 @@ template <class T> bool CListT<T>::Delete(const void* pItemPtr)
     return false;
 
   CListItemT<T>* pItem = (CListItemT<T>*) pItemPtr;
+  CListT<T>* pListOwner = (CListT<T>*) pItem->pListOwner;
+  if (pListOwner != this)
+    return false;
+  
   CListItemT<T>* pPrev = (CListItemT<T>*) pItem->pPrevItem;
   CListItemT<T>* pNext = (CListItemT<T>*) pItem->pNextItem;
-  CListT<T>* pListOwner = (CListT<T>*) pItem->pListOwner;
-  
+    
   pListOwner->m_nCount--;
   if (pItem == pListOwner->m_pFirstItem)
     pListOwner->m_pFirstItem = pNext;
@@ -201,34 +204,27 @@ template <class T> bool CListT<T>::DeleteLast()
   return Delete(m_pLastItem);
 }
 
-template <class T> bool CListT<T>::Exchange(const void* pItemPtr1, 
-                                            const void* pItemPtr2)
-{
-  if (!pItemPtr1 || !pItemPtr2)
-    return false;
-
-  itemSwap( (CListItemT<T>*) pItem1, (CListItemT<T>*) pItem2 );
-    
-  return true;
-}
-
 template <class T> void* CListT<T>::FindExact(const T& item, 
                                               const void* pStartItemPtr ) const
 {
   CListItemT<T>* pItem = (CListItemT<T>*) (pStartItemPtr ? pStartItemPtr : m_pFirstItem);
-  while (pItem)
+  if (pItem && (pItem->pListOwner == this))
   {
-    if (pItem->item == item)
-      break;
-    else
-      pItem = (CListItemT<T>*) pItem->pNextItem;
+    while (pItem)
+    {
+      if (pItem->item == item)
+        break;
+      else
+        pItem = (CListItemT<T>*) pItem->pNextItem;
+    }
+    return pItem;
   }
-  return pItem;
+  return NULL;
 }
 
 template <class T> void* CListT<T>::GetNext(const void* pItemPtr) const
 {
-  if (!pItemPtr)
+  if ((!pItemPtr) || (((CListItemT<T>*) pItemPtr)->pListOwner != this))
     return NULL;
 
   return ((CListItemT<T>*) pItemPtr)->pNextItem;
@@ -236,7 +232,7 @@ template <class T> void* CListT<T>::GetNext(const void* pItemPtr) const
 
 template <class T> void* CListT<T>::GetPrev(const void* pItemPtr) const
 {
-  if (!pItemPtr)
+  if ((!pItemPtr) || (((CListItemT<T>*) pItemPtr)->pListOwner != this))
     return NULL;
 
   return ((CListItemT<T>*) pItemPtr)->pPrevItem;
@@ -245,7 +241,7 @@ template <class T> void* CListT<T>::GetPrev(const void* pItemPtr) const
 template <class T> bool CListT<T>::GetItem(const void* pItemPtr, 
                                            T& item) const
 {
-  if (!pItemPtr)
+  if ((!pItemPtr) || (((CListItemT<T>*) pItemPtr)->pListOwner != this))
     return false;
 
   item = ((CListItemT<T>*) pItemPtr)->item;
@@ -302,7 +298,7 @@ template <class T> void* CListT<T>::InsertFirst(const T& item)
 template <class T> bool CListT<T>::SetItem(const void* pItemPtr, 
                                            const T& item)
 {
-  if (!pItemPtr)
+  if ((!pItemPtr) || (((CListItemT<T>*) pItemPtr)->pListOwner != this))
     return false;
 
   ((CListItemT<T>*) pItemPtr)->item = item;
@@ -332,6 +328,23 @@ template <class T> bool CListT<T>::Sort()
     } // else out of memory: sorting is impossible
   } // else nothing to sort
   return false;
+}
+
+template <class T> bool CListT<T>::Swap(const void* pItemPtr1, 
+                                        const void* pItemPtr2)
+{
+  if (!pItemPtr1 || !pItemPtr2)
+    return false;
+
+  if (((CListItemT<T>*) pItemPtr1)->pListOwner != this ||
+      ((CListItemT<T>*) pItemPtr2)->pListOwner != this)
+  {
+    return false;
+  }
+
+  itemSwap( (CListItemT<T>*) pItemPtr1, (CListItemT<T>*) pItemPtr2 );
+    
+  return true;
 }
 
 //----------------------------------------------------------------------------

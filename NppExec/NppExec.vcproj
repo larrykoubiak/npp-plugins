@@ -115,6 +115,9 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
+				RelativePath=".\CAnyCheckBox.cpp">
+			</File>
+			<File
 				RelativePath=".\CAnyComboBox.cpp">
 			</File>
 			<File
@@ -133,10 +136,16 @@
 				RelativePath=".\DlgConsole.cpp">
 			</File>
 			<File
+				RelativePath=".\DlgConsoleOutputFilter.cpp">
+			</File>
+			<File
 				RelativePath=".\DlgDoExec.cpp">
 			</File>
 			<File
 				RelativePath=".\DlgHelpAbout.cpp">
+			</File>
+			<File
+				RelativePath=".\c_func\MatchMask.c">
 			</File>
 			<File
 				RelativePath=".\NppExec.cpp">
@@ -154,6 +163,9 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
 				RelativePath=".\base.h">
+			</File>
+			<File
+				RelativePath=".\CAnyCheckBox.h">
 			</File>
 			<File
 				RelativePath=".\CAnyComboBox.h">
@@ -186,6 +198,9 @@
 				RelativePath=".\DlgConsole.h">
 			</File>
 			<File
+				RelativePath=".\DlgConsoleOutputFilter.h">
+			</File>
+			<File
 				RelativePath=".\DlgDoExec.h">
 			</File>
 			<File
@@ -193,6 +208,9 @@
 			</File>
 			<File
 				RelativePath=".\Docking.h">
+			</File>
+			<File
+				RelativePath=".\c_func\MatchMask.h">
 			</File>
 			<File
 				RelativePath=".\Notepad_plus_msgs.h">

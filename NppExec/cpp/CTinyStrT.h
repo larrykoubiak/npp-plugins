@@ -1,6 +1,6 @@
 /***********************************************
  *  
- *  CTinyStrT ver. 1.0.3
+ *  CTinyStrT ver. 1.0.4
  *  --------------------------------  
  *  (C) DV, Nov 2006 - March 2007
  *  --------------------------------
@@ -279,9 +279,11 @@ template <class T> int CTinyStrT<T>::CalculateLength()
 
 template <class T> void CTinyStrT<T>::Clear()
 {
-  m_nLength = 0;
   if (m_pData != NULL)
+  {
     SetSize(0);
+  }
+  m_nLength = 0;  // must be AFTER SetSize(0)!!!
 }
 
 template <class T> int CTinyStrT<T>::Compare(const T* pStr, int nLength ) const
@@ -338,7 +340,7 @@ template <class T> int CTinyStrT<T>::Compare(const CTinyStrT& Str) const
 template <class T> T* CTinyStrT<T>::Copy(const T* pStr, int nLength )
 { 
   if (pStr != m_pData)
-  {
+  { 
     Clear(); 
     // works OK for pStr > m_pData && pStr < m_pData+nLength
     // due to implementation of Append()
@@ -589,13 +591,15 @@ template <class T> bool CTinyStrT<T>::SetSize(int nLength)
         copyStrMemory(pNewData, m_pData, m_nLength);
       delete [] m_pData;
     }
+    /*
     else
     {
       pNewData[0] = 0; // bug-fix !!!
     }
+    */
     m_pData = pNewData;
     m_nMemSize = nNewMemSize;
-    m_pData[nLength] = 0;
+    m_pData[m_nLength] = 0;  // SetSize does not modify the length
   }
   return true;
 }

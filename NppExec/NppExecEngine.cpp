@@ -24,6 +24,8 @@ const INT   CMDTYPE_NPPSWITCH      = 16;
 
 extern CNppExec g_nppExec;
 
+WNDPROC  nppOriginalWndProc;
+
 
 DWORD WINAPI dwCreateConsoleProcess(LPVOID)
 {
@@ -34,7 +36,6 @@ DWORD WINAPI dwCreateConsoleProcess(LPVOID)
   TCHAR        szCmdLine[0x400];
   
   // this variable is needed to prevent infinite loops
-  const int    MAX_EXEC_COUNTER = 100;
   int          nExecCounter;
   
   // following 4 variables are needed to prevent "npp_exec <self>"
@@ -177,7 +178,7 @@ DWORD WINAPI dwCreateConsoleProcess(LPVOID)
           bool bContinue = true;
           
           nExecCounter++;
-          if (nExecCounter > MAX_EXEC_COUNTER)
+          if (nExecCounter > g_nppExec.opt_nExec_MaxCount)
           {
             TCHAR szMsg[256];
             nExecCounter = 0;
@@ -186,7 +187,7 @@ DWORD WINAPI dwCreateConsoleProcess(LPVOID)
                 "NPP_EXEC was performed more than %ld times.\r\n" \
                 "Abort execution of this command?\r\n" \
                 "(Press Yes to abort or No to continue execution)",
-                MAX_EXEC_COUNTER
+                g_nppExec.opt_nExec_MaxCount
             );
             if (::MessageBox(g_nppExec.m_nppData._nppHandle, szMsg, 
                     "NppExec Warning: Possible infinite loop",
@@ -605,7 +606,7 @@ int ModifyCommandLine(LPTSTR lpCmdLine, LPCTSTR cszCmdLine)
 
     if (snum.length() > 0)
     {
-      k = atoi(snum.c_str());
+      k = _ttoi(snum.c_str());
       if (k > 0) 
       {
         // #doc = 1..nbFiles
@@ -659,34 +660,40 @@ int ModifyCommandLine(LPTSTR lpCmdLine, LPCTSTR cszCmdLine)
   
   // ... adding '\"' to the command if it's needed ...
   bHasSpaces = false;
-  if (!bDone && (S.GetAt(0) != '\"'))
+  // disabled by default  because of problems 
+  // for executables without extension i.e. 
+  // "cmd /c app.exe"  <-- "cmd" is without extension
+  if (g_nppExec.opt_Path_AutoDblQuotes)
   {
-    i = 0;
-    j = 0;
-    while (!bDone && (i < S.length()))
-    {
-      if (S[i] == ' ')
+      if (!bDone && (S.GetAt(0) != '\"'))
       {
-        bHasSpaces = true;
-        j = i - 1;
-        while (!bDone && j >= 0)
+        i = 0;
+        j = 0;
+        while (!bDone && (i < S.length()))
         {
-          ch = S[j];
-          if (ch == '.')
+          if (S[i] == ' ')
           {
-            S.Insert(i, '\"');
-            S.Insert(0, '\"');
-            bDone = true;
+            bHasSpaces = true;
+            j = i - 1;
+            while (!bDone && j >= 0)
+            {
+              ch = S[j];
+              if (ch == '.')
+              {
+                S.Insert(i, '\"');
+                S.Insert(0, '\"');
+                bDone = true;
+              }
+              else if (ch == '\\' || ch == '/')
+              {
+                j = 0; // j-- makes j<0 so this loop is over
+              }
+              j--;
+            }
           }
-          else if (ch == '\\' || ch == '/')
-          {
-            j = 0; // j-- makes j<0 so this loop is over
-          }
-          j--;
+          i++;
         }
       }
-      i++;
-    }
   }
 
   if (bHasSpaces && !bDone)
@@ -708,6 +715,31 @@ int ModifyCommandLine(LPTSTR lpCmdLine, LPCTSTR cszCmdLine)
   lstrcpy(lpCmdLine, S.c_str());
   //g_nppExec.ShowWarning(S.Insert(0, "Modified Command Line:\n  "));
   
+  //g_nppExec.ShowWarning(lpCmdLine);
+
   return nCmdType;
 }
 
+LRESULT CALLBACK nppPluginWndProc(HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam)
+{
+  if (uMessage == WM_CLOSE)
+  {
+    if (g_nppExec._consoleProcessIsRunning)
+    {
+      int nClose = MessageBox(hWnd, "Child process is still active.\n" \
+        "It will be terminated if you close Notepad++.\nClose the program?", 
+        "Notepad++ : NppExec Warning", MB_YESNO | MB_ICONWARNING);
+      
+      if (nClose == IDYES)
+      {
+        g_nppExec._consoleProcessBreak = true;
+      }
+      else
+      {
+        return 0;
+      }
+
+    }
+  }
+  return (::CallWindowProc(nppOriginalWndProc, hWnd, uMessage, wParam, lParam));
+}
