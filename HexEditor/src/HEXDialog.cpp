@@ -1038,13 +1038,13 @@ void HexEdit::Copy(void)
 			tClipboard	data = clipboard;
 			ChangeClipboardDataToHex(&data);
 			/* store selected text in scintilla clipboard */
-			::SendMessage(g_hSource, SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
+			::SendMessage(_hParentHandle, SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
 			delete [] data.text;
 		}
 		else
 		{
 			/* store selected text in scintilla clipboard */
-			::SendMessage(g_hSource, SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
+			::SendMessage(_hParentHandle, SCI_COPYTEXT, clipboard.length+1, (LPARAM)clipboard.text);
 		}
 
 		/* delete old text and store to clipboard */
@@ -1164,13 +1164,13 @@ void HexEdit::Cut(void)
 			tClipboard	data = clipboard;
 			ChangeClipboardDataToHex(&data);
 			/* store selected text in scintilla clipboard */
-			ScintillaMsg(SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
+			::SendMessage(_hParentHandle, SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
 			delete [] data.text;
 		}
 		else
 		{
 			/* store selected text in scintilla clipboard */
-			ScintillaMsg(SCI_COPYTEXT, clipboard.length+1, (LPARAM)clipboard.text);
+			::SendMessage(_hParentHandle, SCI_COPYTEXT, clipboard.length+1, (LPARAM)clipboard.text);
 		}
 
 		/* delete old text and store to clipboard */
