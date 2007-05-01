@@ -2,7 +2,7 @@
 Change-log for HexEditor.dll
 
 ------------------------------------------------------------------------------------
-07/05/03  v0.8.1 :
+07/05/02  v0.8.1 :
     Note: v0.8 Comes with Notepad++ 4.1. Please exchange this version.
 ------------------------------------------------------------------------------------
     Fix: After deleting a selected block, the selection wasn't cleared
