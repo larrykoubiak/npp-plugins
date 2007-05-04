@@ -304,7 +304,7 @@ void CWtlFileTreeCtrl::SetRootFolder(const std::string sPath) {
 		OnViewRefresh();
 }
 
-HTREEITEM CWtlFileTreeCtrl::InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM hParent, bool isFolder) {
+HTREEITEM CWtlFileTreeCtrl::InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM hParent, bool isFolder, LPCSTR desc) {
 	// Retreive the icon indexes for the specified file/folder
 	CUTL_BUFFER fullPath(sPath);
 
@@ -323,10 +323,7 @@ HTREEITEM CWtlFileTreeCtrl::InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM
 	//Add the actual item
 	CUTL_BUFFER displayString;
 
-	if(sFile != "")
-		displayString = sFile;
-	else
-		displayString = sPath;
+	displayString = (sFile != "") ? sFile : ((desc != NULL) ? desc : sPath);
 	
 	TV_INSERTSTRUCT tvis;
 
@@ -408,6 +405,50 @@ HTREEITEM CWtlFileTreeCtrl::InsertTreeNetworkItem(HTREEITEM hParent, LPCSTR sFQP
 	return hItem;
 }
 
+void CWtlFileTreeCtrl::GetDriveLabel(const CUTL_BUFFER& bufDrive, CUTL_BUFFER& bufDriveLabel) {
+	USES_CONVERSION;
+
+	//Let's start with the drive letter
+	bufDriveLabel = "?";
+
+	//Try to find the item directory using ParseDisplayName
+	LPITEMIDLIST lpItem;
+
+	HRESULT hr = m_pShellFolder->ParseDisplayName(NULL, NULL, T2W((LPTSTR) (LPCTSTR)bufDrive.GetSafe()), NULL, &lpItem, NULL);
+	if (SUCCEEDED(hr)) {
+		SHFILEINFO sfi;
+		if (SHGetFileInfo((LPCTSTR)lpItem, 0, &sfi, sizeof(sfi), SHGFI_PIDL | SHGFI_DISPLAYNAME))
+			bufDriveLabel = sfi.szDisplayName;
+
+		//Free the pidl now that we are finished with it
+		m_pMalloc->Free(lpItem);
+	}
+
+	// If the label has the unit name at the end, put it at the beginning
+	bufDriveLabel.Trim();
+	if (bufDriveLabel[bufDriveLabel.Len() - 1] == ')' && bufDriveLabel[bufDriveLabel.Len() - 4] == '(') {
+		CUTL_BUFFER temp, temp2;
+		UINT		found;
+
+		temp2.NCopy(bufDriveLabel.GetSafe(), bufDriveLabel.Len() - 4);
+		temp2.Trim();
+		if (temp2[temp2.Len() - 1] == ')' && temp2.Find(' ', found)) {
+			CUTL_BUFFER temp3, temp4, temp5;
+
+			temp3.NCopy(&temp2[0], found);
+			temp4.NCopy(&temp2[found + 2], temp2.Len() - found);
+			temp4[temp4.Len() - 1] = '\0'; 
+
+			temp5.Sf("%s\\%s", temp4.GetSafe(), temp3.GetSafe());
+			temp2 = temp5;
+		}
+
+		temp.Sf("%s %s", &bufDriveLabel[bufDriveLabel.Len() - 4], temp2.GetSafe());
+		bufDriveLabel = temp;
+	}
+
+}
+
 void CWtlFileTreeCtrl::DisplayDrives(HTREEITEM hParent) {
 	CWaitCursor c;
 
@@ -425,8 +466,14 @@ void CWtlFileTreeCtrl::DisplayDrives(HTREEITEM hParent) {
 			sDrive += ":\\";
 
 			if( sDrive == _T("A:\\") || sDrive == _T("B:\\") ){}
-			else 
-				InsertTreeItem("", sDrive.c_str(), hParent, true);
+			else {
+				CUTL_BUFFER volumenName(256), driveName, finalName;
+
+				driveName = sDrive.c_str();
+				GetDriveLabel(driveName, volumenName);
+
+				InsertTreeItem("", sDrive.c_str(), hParent, true, volumenName.GetSafe());
+			}
 		}
 		dwMask <<= 1;
 	}
@@ -464,7 +511,6 @@ void CWtlFileTreeCtrl::DisplayPath(LPCSTR folder, HTREEITEM parentItem) {
 		folderName[found] = '\0';
 		folderName.Reverse();
 
-		//InsertTreeItem(folderName.GetSafe(), (LPCSTR)folderIt, parentItem, true);
 		listElement.name		= folderName.GetSafe();
 		listElement.iterator	= (LPCSTR)folderIt;
 
@@ -483,7 +529,6 @@ void CWtlFileTreeCtrl::DisplayPath(LPCSTR folder, HTREEITEM parentItem) {
 	while(bIterating) {
 		iterator.GetNameExtension(fileName);
 
-		//InsertTreeItem(fileName.GetSafe(), (LPCSTR)iterator, parentItem, false);
 		listElement.name		= fileName.GetSafe();
 		listElement.iterator	= (LPCSTR)iterator;
 

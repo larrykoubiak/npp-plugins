@@ -106,6 +106,8 @@ public:
 
 		m_nNetworkIcon = -1;
 		m_nNetworkSelIcon = -1;
+
+		SHGetDesktopFolder(&m_pShellFolder);
 	}
 
 	virtual ~CWtlFileTreeCtrl(){
@@ -175,6 +177,7 @@ protected:
 	void				RemoveFromFavorites();
 	void				AddEditFavoriteFolderName();
 	void				FileExtensionToExecute();
+	void				GetDriveLabel(const CUTL_BUFFER& bufDrive, CUTL_BUFFER& bufDriveLabel);
 
 	bool				EnumNetwork(HTREEITEM hParent);
 
@@ -185,7 +188,7 @@ protected:
 
 	NETRESOURCE*		GetNetworkResource(HTREEITEM hItem);
 
-	HTREEITEM			InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM hParent, bool isFolder);
+	HTREEITEM			InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM hParent, bool isFolder, LPCSTR desc = NULL);
 	HTREEITEM			InsertTreeNetworkItem(HTREEITEM hParent, LPCSTR sFQPath, CCustomItemInfo* pCii);
 	HTREEITEM			FindSibling(HTREEITEM hParent, const std::string sItem);
 	HTREEITEM			AddSystemRoot(int nFolder, LPCSTR defaultName);
@@ -231,6 +234,7 @@ protected:
 	int				GetOverlayIcon(LPCSTR sPath, bool isFolder);
 
 	IShellFolder*				m_psfFolder;
+	IShellFolder*				m_pShellFolder;
 	LPITEMIDLIST*				m_pidlArray;	
 	int							m_nItems;
 	std::vector<std::string>	m_strArray;

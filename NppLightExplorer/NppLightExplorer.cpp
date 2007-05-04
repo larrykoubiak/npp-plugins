@@ -29,6 +29,7 @@
 //  WtlFileTreeCtrl.cpp		18.04.2007	Open search from a folder or a file: if search in files is available, use this
 //  WtlFileTreeCtrl.cpp		18.04.2007	Added execute context menu
 //  WtlFileTreeCtrl.cpp		25.04.2007	Added 'Load tree state on startup' option
+//  WtlFileTreeCtrl.cpp		04.05.2007	Show full description on drive units
 //
 //  PENDING:
 //  
