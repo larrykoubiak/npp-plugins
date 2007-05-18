@@ -1442,7 +1442,31 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 void CWtlFileTreeCtrl::DoCustomDelete() {
 	try {
-		systemMessage("DoCustomDelete");
+		HTREEITEM	hHitItem = GetSelectedItem();
+		int			itemType = GetItemType(hHitItem);
+
+		CUTL_PATH	current(GetItemTag(hHitItem));
+		CUTL_BUFFER msg;
+
+		msg.Sf("Delete %s '%s'", itemType == CCustomItemInfo::FOLDER ? "folder" : "file", (LPCSTR)current);
+		if (IDNO == ::MessageBox(m_hWnd, msg.GetSafe(), "lightExplorer", MB_YESNO | MB_ICONQUESTION)) return;
+
+		if (itemType == CCustomItemInfo::FOLDER) {
+			systemMessage("PENDIENTE");
+			/*
+			if (current.RemoveDirectoryA())
+				DeleteItem(hHitItem);
+			else 
+				systemMessage(msg.Sf("Could not delete folder '%s'", (LPCSTR)current));
+			*/
+		}
+		else if (itemType == CCustomItemInfo::FILE) {
+			if (current.Delete(FALSE))
+				DeleteItem(hHitItem);
+			else {
+				systemMessage(msg.Sf("Could not delete file '%s'", (LPCSTR)current));
+			}
+		}
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::DoCustomDelete.", __FILE__, __LINE__);
