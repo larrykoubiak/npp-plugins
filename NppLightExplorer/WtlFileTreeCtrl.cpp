@@ -1454,7 +1454,7 @@ void CWtlFileTreeCtrl::DoCustomDelete() {
 		if (itemType == CCustomItemInfo::FOLDER) {
 			systemMessage("PENDIENTE");
 			/*
-			if (current.RemoveDirectoryA())
+			if (current.RemoveDirectoryA()) ?????????????
 				DeleteItem(hHitItem);
 			else 
 				systemMessage(msg.Sf("Could not delete folder '%s'", (LPCSTR)current));
