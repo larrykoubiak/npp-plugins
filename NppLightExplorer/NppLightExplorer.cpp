@@ -29,7 +29,17 @@
 //  WtlFileTreeCtrl.cpp		18.04.2007	Open search from a folder or a file: if search in files is available, use this
 //  WtlFileTreeCtrl.cpp		18.04.2007	Added execute context menu
 //  WtlFileTreeCtrl.cpp		25.04.2007	Added 'Load tree state on startup' option
+//
+//	04.05.2007, v1.3 
+//
 //  WtlFileTreeCtrl.cpp		04.05.2007	Show full description on drive units
+//  WtlFileTreeCtrl.cpp		18.05.2007	Show full path on plug-in title
+//  WtlFileTreeCtrl.cpp		18.05.2007	Allow the use to choose not to use system icons
+//  WtlFileTreeCtrl.cpp		18.05.2007	Fixed behavior when Searching from a network resource
+//  WtlFileTreeCtrl.cpp		18.05.2007	Manage the intro to open file
+
+//  Still on the works!!!!!
+//  WtlFileTreeCtrl.cpp		18.05.2007	Custom rename and delete for folders and files
 //
 //  PENDING:
 //  
@@ -231,21 +241,19 @@ void openLightExplorerDlg()
 	_lightExplorerDlg.m_nppHandle			= nppData._nppHandle;
 	_lightExplorerDlg.m_scintillaMainHandle = nppData._scintillaMainHandle;
 
-	tTbData	data = {0};
-
 	if (!_lightExplorerDlg.isCreated())
 	{
-		_lightExplorerDlg.create(&data);
+		_lightExplorerDlg.create(&_lightExplorerDlg._data);
 
 		// define the default docking behaviour
-		data.uMask = DWS_DF_CONT_LEFT | DWS_ADDINFO | DWS_ICONTAB;
+		_lightExplorerDlg._data.uMask = DWS_DF_CONT_LEFT | DWS_ADDINFO | DWS_ICONTAB;
 
-		data.pszAddInfo		= "";
-		data.hIconTab		= (HICON)::LoadImage(_lightExplorerDlg.getHinst(), MAKEINTRESOURCE(IDI_LIGHTEXPLORER), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
-		data.pszModuleName  = _lightExplorerDlg.getPluginFileName();
-		data.dlgID			= DOCKABLE_LIGHTEXPLORER;
+		_lightExplorerDlg._data.pszAddInfo		= _lightExplorerDlg.m_windowTitle;
+		_lightExplorerDlg._data.hIconTab		= (HICON)::LoadImage(_lightExplorerDlg.getHinst(), MAKEINTRESOURCE(IDI_LIGHTEXPLORER), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
+		_lightExplorerDlg._data.pszModuleName  = _lightExplorerDlg.getPluginFileName();
+		_lightExplorerDlg._data.dlgID			= DOCKABLE_LIGHTEXPLORER;
 
-		::SendMessage(nppData._nppHandle, WM_DMM_REGASDCKDLG, 0, (LPARAM)&data);
+		::SendMessage(nppData._nppHandle, WM_DMM_REGASDCKDLG, 0, (LPARAM)&_lightExplorerDlg._data);
 		_lightExplorerDlg.display();
 	}
 	else

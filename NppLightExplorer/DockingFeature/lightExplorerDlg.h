@@ -28,7 +28,9 @@
 class lightExplorerDlg : public DockingDlgInterface 
 {
 public:
-	lightExplorerDlg() : DockingDlgInterface(IDD_LIGHTEXPLORER){};
+	lightExplorerDlg() : DockingDlgInterface(IDD_LIGHTEXPLORER){
+		::ZeroMemory(&m_windowTitle, sizeof(m_windowTitle));
+	};
 
 	~lightExplorerDlg() {
 		// Destroy our tree font
@@ -50,10 +52,20 @@ public:
 		::SendMessage(_hParent, WM_PIMENU_CHECK, funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)toShow);
 	}
 
+	tTbData						_data;
+
 	HWND m_nppHandle;
 	HWND m_scintillaMainHandle;
 
 	char m_iniFilePath[MAX_PATH];
+
+	void UpdateWindowTitle(LPCSTR title) { 
+		UTL_strncpy(m_windowTitle,  UTL_Null(title), sizeof(m_windowTitle) - 1); 
+		_data.pszAddInfo = m_windowTitle;
+		updateDockingDlg();
+	};
+
+	TCHAR				m_windowTitle[2024];
 
 protected:
 	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);

@@ -36,8 +36,11 @@ const UINT WM_ITEM_SELECTED = WM_APP + 2;
 #define EDIT_FAVORITE_FOLDER_NAME	12003
 #define FILE_EXTENSIONS_TO_EXECUTE  12004
 #define SEARCH_FROM_HERE			12005
-#define EXECUTE_FILE				12006
-#define LOAD_LAST_SESSION			12007
+#define CUSTOM_DELETE				12006
+#define CUSTOM_RENAME				10007
+#define EXECUTE_FILE				12008
+#define LOAD_LAST_SESSION			12009
+#define USE_SYSTEM_ICONS			12010
 
 // Roots
 #define ROOT_FAVORITES		"Favorites"
@@ -47,6 +50,8 @@ const UINT WM_ITEM_SELECTED = WM_APP + 2;
 // Dialogs proc
 BOOL CALLBACK FavoritesFolderNameDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 BOOL CALLBACK FileExtensionsToExcludeDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+
+class lightExplorerDlg;
 
 class CCustomItemInfo
 {
@@ -106,6 +111,7 @@ public:
 
 		m_nNetworkIcon = -1;
 		m_nNetworkSelIcon = -1;
+		m_nDefaultLeaveIcon = -1;
 
 		SHGetDesktopFolder(&m_pShellFolder);
 	}
@@ -121,7 +127,7 @@ public:
 
 	BOOL PreTranslateMessage(MSG* pMsg);
 
-	virtual BOOL SubclassWindow(HWND hWnd, LPSTR iniFilePath);
+	virtual BOOL SubclassWindow(lightExplorerDlg* ownerDockingDlgInterface, HWND hWnd, LPSTR iniFilePath);
 
 	// Public methods
 	void				SetRootFolder(const std::string sPath);
@@ -147,6 +153,7 @@ public:
 	BOOL onDeleteItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled);
 	BOOL OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BOOL byKeyboard);
 	BOOL OnLButtonDblClick(int idCtrl, LPNMHDR pnmh, BOOL& bHandled);
+	BOOL OnSelChanged(int idCtrl, LPNMHDR pnmh, BOOL& bHandled);
 
 	BOOL DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult);
 
@@ -163,6 +170,9 @@ public:
 
 	void SearchFromHere();
 	void ExecuteFile();
+	void DoChangeUseSystemIcons();
+	void DoCustomDelete();
+	void DoCustomRename();
 
 	LPCSTR				GetItemDisplayString(HTREEITEM hItem);
 	LPCSTR				GetItemTag(HTREEITEM hItem);
@@ -208,6 +218,9 @@ protected:
 
 	int					m_nNetworkIcon;
 	int					m_nNetworkSelIcon;
+	int					m_nDefaultLeaveIcon;
+
+	bool				m_useSystemIcons;
 
 	CUTL_BUFFER			m_iniFilePath;
 
@@ -238,6 +251,8 @@ protected:
 	LPITEMIDLIST*				m_pidlArray;	
 	int							m_nItems;
 	std::vector<std::string>	m_strArray;
+
+	lightExplorerDlg*			m_ownerDockingDlgInterface;
 };
 
 #endif //WTL_FILETREECTRL_H__

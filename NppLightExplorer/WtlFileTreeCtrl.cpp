@@ -12,6 +12,7 @@ E-mail: dengGB.balandro@gmail.com
 */
 
 #include "stdafx.h"
+#include "lightExplorerDlg.h"
 #include "WtlFileTreeCtrl.h"
 #include "Notepad_plus_msgs.h"
 #include "sysMsg.h"
@@ -60,10 +61,16 @@ CImageList* CSystemImageList::GetImageList() {
 }
 
 ////////////////////////////// Implementation of CWtlFileTreeCtrl /////////////////////////////////
-BOOL CWtlFileTreeCtrl::SubclassWindow(HWND hWnd, LPSTR iniFilePath) {
+BOOL CWtlFileTreeCtrl::SubclassWindow(lightExplorerDlg* ownerDockingDlgInterface, HWND hWnd, LPSTR iniFilePath) {
 	BOOL bRet = CWindowImpl<CWtlFileTreeCtrl, CTreeViewCtrl>::SubclassWindow(hWnd);
 	if(bRet) {
+		m_ownerDockingDlgInterface = ownerDockingDlgInterface;
 		m_iniFilePath = iniFilePath;
+
+		CUT2_INI	confIni(m_iniFilePath.GetSafe());
+
+		m_useSystemIcons = confIni.LoadInt("LightExplorer", "useSystemIcons", 1) ? true : false;
+
 		PostMessage(WM_POPULATE_TREE);
 	}
 	return bRet;
@@ -312,8 +319,17 @@ HTREEITEM CWtlFileTreeCtrl::InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM
 
 	int nIconIndex, nSelIconIndex;
 
-	nIconIndex		= GetIconIndex(fullPath);
-	nSelIconIndex	= GetSelIconIndex(fullPath);
+	if (!isFolder && !m_useSystemIcons) {
+		if (m_nDefaultLeaveIcon == -1) 
+			m_nDefaultLeaveIcon = GetIconIndex(fullPath);
+		
+		nIconIndex    = m_nDefaultLeaveIcon; 
+		nSelIconIndex = m_nDefaultLeaveIcon;
+	}
+	else {
+		nIconIndex		= GetIconIndex(fullPath); 
+		nSelIconIndex	= GetSelIconIndex(fullPath);
+	}
 
 	if( nIconIndex == -1 || nSelIconIndex == -1 ) {
 		ATLTRACE( _T("Failed in call to SHGetFileInfo for %s, GetLastError:%d\n"), sPath, ::GetLastError() );
@@ -703,8 +719,48 @@ BOOL CWtlFileTreeCtrl::onDeleteItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled) {
 }
 
 BOOL CWtlFileTreeCtrl::OnItemClick(int idCtrl, LPNMHDR pnmh, BOOL& bHandled) {
-	bHandled = TRUE;
-	return 0; // Do nothing for now
+	try {
+		bHandled = TRUE;
+	}
+	catch (...) {
+		systemMessage("Error at CWtlFileTreeCtrl::OnItemClick.");
+	}
+	return 0;
+}
+
+BOOL CWtlFileTreeCtrl::OnSelChanged(int idCtrl, LPNMHDR pnmh, BOOL& bHandled) {
+	try {
+		NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pnmh;
+
+		CCustomItemInfo* cii = (CCustomItemInfo*)pNMTreeView->itemNew.lParam;
+
+		if (cii != NULL) {
+			CUTL_PATH	fullPath(cii->getTag());
+			CUTL_BUFFER folderName;
+
+			if (fullPath[0] == '\\' && fullPath[1] == '\\') {
+				CUTL_BUFFER tempBuf(cii->getTag());
+				UINT lastSlash;
+
+				tempBuf.ReverseFind('\\', lastSlash);
+
+				if (lastSlash > 1)
+					folderName.NCopy(tempBuf, lastSlash);
+				else
+					folderName = tempBuf;
+			}
+			else
+				fullPath.GetDriveDirectory(folderName);
+
+			if (folderName[folderName.Len() - 1] != '\\') folderName += "\\";
+			m_ownerDockingDlgInterface->UpdateWindowTitle(folderName.GetSafe());
+		}
+		bHandled = TRUE;
+	}
+	catch (...) {
+		systemMessage("Error at CWtlFileTreeCtrl::OnSelChanged.");
+	}
+	return 0;
 }
 
 BOOL CWtlFileTreeCtrl::OnLButtonDblClick(int idCtrl, LPNMHDR pnmh, BOOL& bHandled) {
@@ -1064,7 +1120,7 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 			// Add to favorites folder
 			mii.wID			= FILE_EXTENSIONS_TO_EXECUTE;
-			mii.dwTypeData	= "File extensions to execute";
+			mii.dwTypeData	= "File extensions to execute ...";
 			mii.cch			= UTL_strlen(mii.dwTypeData);
 			mii.fState		= MFS_ENABLED;
 
@@ -1077,6 +1133,14 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			mii.fState		= initialLoadOnStartup ? MFS_ENABLED | MFS_CHECKED : MFS_ENABLED | MFS_UNCHECKED;
 
 			::InsertMenuItem(hPopupMenu, LOAD_LAST_SESSION, FALSE, &mii);
+
+			// Show system icons: this should made the control speedier
+			mii.wID			= USE_SYSTEM_ICONS;
+			mii.dwTypeData	= "Use system icons";
+			mii.cch			= UTL_strlen(mii.dwTypeData);
+			mii.fState		= m_useSystemIcons ? MFS_ENABLED | MFS_CHECKED : MFS_ENABLED | MFS_UNCHECKED;
+
+			::InsertMenuItem(hPopupMenu, USE_SYSTEM_ICONS, FALSE, &mii);
 
 			// Let's open the context menu
 			int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
@@ -1092,6 +1156,10 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 				case LOAD_LAST_SESSION:
 					confIni.Write("startContext", "loadOnStartup", initialLoadOnStartup ? "0" : "1");
+					break;
+
+				case USE_SYSTEM_ICONS:
+					DoChangeUseSystemIcons();
 					break;
 
 				default:
@@ -1157,13 +1225,38 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 			::InsertMenuItem(hPopupMenu, GET_PROPERTIES, FALSE, &mii);
 
-			// Search from here
-			mii.wID			= SEARCH_FROM_HERE;
-			mii.dwTypeData	= "Search from here";
-			mii.cch			= UTL_strlen(mii.dwTypeData);
-			mii.fState		= MFS_ENABLED;
+			CUTL_BUFFER itemTag(GetItemTag(hHitItem));
 
-			::InsertMenuItem(hPopupMenu, SEARCH_FROM_HERE, FALSE, &mii);
+			// Don't affer to search on root disks
+			if (itemTag[itemTag.Len() - 2] != ':') {
+				// Search from here
+				mii.wID			= SEARCH_FROM_HERE;
+				mii.dwTypeData	= "Search from here";
+				mii.cch			= UTL_strlen(mii.dwTypeData);
+				mii.fState		= MFS_ENABLED;
+
+				::InsertMenuItem(hPopupMenu, SEARCH_FROM_HERE, FALSE, &mii);
+			}
+
+			// Add 'custom rename' and 'custom delete': only if it is a 'real' folder
+			if (itemTag[0] != '\\' && itemTag[1] != '\\' && itemTag[itemTag.Len() - 2] != ':') {
+				// Custom Delete
+				mii.wID			= CUSTOM_DELETE;
+				mii.dwTypeData	= "Delete";
+				mii.cch			= UTL_strlen(mii.dwTypeData);
+				mii.fState		= MFS_ENABLED;
+
+				::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
+				::InsertMenuItem(hPopupMenu, CUSTOM_DELETE, FALSE, &mii);
+
+				// Custom Rename
+				mii.wID			= CUSTOM_RENAME;
+				mii.dwTypeData	= "Rename";
+				mii.cch			= UTL_strlen(mii.dwTypeData);
+				mii.fState		= MFS_ENABLED;
+
+				::InsertMenuItem(hPopupMenu, CUSTOM_RENAME, FALSE, &mii);
+			}
 		}
 		else if (itemType == CCustomItemInfo::FAVORITE) {
 			MENUITEMINFO mii;
@@ -1235,13 +1328,30 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		mii.cbSize		= sizeof(mii);
 		mii.fMask		= MIIM_STRING | MIIM_DATA | MIIM_STATE | MIIM_ID;
 
+		// File extensions to execute
+		mii.wID			= FILE_EXTENSIONS_TO_EXECUTE;
+		mii.dwTypeData	= "File extensions to execute ...";
+		mii.cch			= UTL_strlen(mii.dwTypeData);
+		mii.fState		= MFS_ENABLED;
+
+		::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
+		::InsertMenuItem(hPopupMenu, FILE_EXTENSIONS_TO_EXECUTE, FALSE, &mii);
+
 		mii.wID			= LOAD_LAST_SESSION;
 		mii.dwTypeData	= "Load tree state on startup";
 		mii.cch			= UTL_strlen(mii.dwTypeData);
 		mii.fState		= initialLoadOnStartup ? MFS_ENABLED | MFS_CHECKED : MFS_ENABLED | MFS_UNCHECKED;
 
-		::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
 		::InsertMenuItem(hPopupMenu, LOAD_LAST_SESSION, FALSE, &mii);
+
+		// Here we also show 'Use system icons'
+		// Show system icons: this should made the control speedier
+		mii.wID			= USE_SYSTEM_ICONS;
+		mii.dwTypeData	= "Use system icons";
+		mii.cch			= UTL_strlen(mii.dwTypeData);
+		mii.fState		= m_useSystemIcons ? MFS_ENABLED | MFS_CHECKED : MFS_ENABLED | MFS_UNCHECKED;
+
+		::InsertMenuItem(hPopupMenu, USE_SYSTEM_ICONS, FALSE, &mii);
 
 		// Let's open the context menu
 		int resp = ::TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_RETURNCMD , screenPoint.x, screenPoint.y, 0, m_hWnd, NULL);
@@ -1270,6 +1380,10 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		{
 			switch (resp) 
 			{
+				case FILE_EXTENSIONS_TO_EXECUTE:
+					FileExtensionToExecute();
+					break;
+
 				case REMOVE_FROM_FAVORITES:
 					RemoveFromFavorites();
 					break;
@@ -1294,6 +1408,18 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 				case LOAD_LAST_SESSION:
 					confIni.Write("startContext", "loadOnStartup", initialLoadOnStartup ? "0" : "1");
 					break;
+
+				case USE_SYSTEM_ICONS:
+					DoChangeUseSystemIcons();
+					break;
+
+				case CUSTOM_DELETE:
+					DoCustomDelete();
+					break;
+
+				case CUSTOM_RENAME:
+					DoCustomRename();
+					break;
 			}
 		}
 
@@ -1307,12 +1433,66 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			m_pidlArray = NULL;
 		}
 		if (pContextMenu != NULL) pContextMenu->Release();
-
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::OnRClickItem.", __FILE__, __LINE__);
 	}
 	return 0;
+}
+
+void CWtlFileTreeCtrl::DoCustomDelete() {
+	try {
+		systemMessage("DoCustomDelete");
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::DoCustomDelete.", __FILE__, __LINE__);
+	}
+}
+
+void CWtlFileTreeCtrl::DoCustomRename() {
+	try {
+		systemMessage("DoCustomRename");
+/*
+		CUTL_PATH	fullPath(GetItemTag(GetSelectedItem()));
+		CUTL_BUFFER	nameExtension;
+
+		// For the future: we should be able to work here with UNC
+		fullPath.GetNameExtension(nameExtension);
+xxxxxxxxxx
+		if (nameExtension.Len()) {
+			fullPath.Re
+		}
+		else {
+		}
+*/
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::DoCustomRename.", __FILE__, __LINE__);
+	}
+}
+
+void CWtlFileTreeCtrl::DoChangeUseSystemIcons() {
+	try {
+		CUT2_INI	confIni(m_iniFilePath);
+
+		m_useSystemIcons = m_useSystemIcons ? false : true;
+		confIni.Write("LightExplorer", "useSystemIcons", m_useSystemIcons ? "0" : "1");
+		// Save current 
+		SaveState();
+		// Read current config
+		int loadOnStartUp = confIni.LoadInt("startContext", "loadOnStartup", 1);
+		// Change it
+		confIni.Write("startContext", "loadOnStartup", "1");
+		// Delete everything
+		this->DeleteAllItems();
+		// Rebuild all
+		PostMessage(WM_POPULATE_TREE);
+		// Put back original state
+		confIni.Write("startContext", "loadOnStartup", loadOnStartUp ? "1" : "0");
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::DoChangeUseSystemIcons.", __FILE__, __LINE__);
+	}
 }
 
 void CWtlFileTreeCtrl::ExecuteFile() {
@@ -1362,8 +1542,33 @@ void CWtlFileTreeCtrl::SearchFromHere() {
 		CUTL_PATH fullPath(GetItemTag(hSelItem));
 		CUTL_BUFFER driveDir, tempBuf, extension;
 
-		fullPath.GetDriveDirectory(driveDir);
-		fullPath.GetExtension(tempBuf);
+		if (fullPath[0] == '\\' && fullPath[1] == '\\') {
+			if (GetItemType(hSelItem) == CCustomItemInfo::FOLDER) {
+				driveDir	= fullPath;
+				tempBuf		= "";
+			}
+			else {
+				UINT lastSlash;
+
+				tempBuf = GetItemTag(hSelItem);
+				tempBuf.ReverseFind('\\', lastSlash);
+
+				if (lastSlash > 1) {
+					driveDir.NCopy(tempBuf, lastSlash);
+
+					tempBuf.ReverseFind('.', lastSlash);
+					tempBuf.Copy(&fullPath[lastSlash + 1]); 
+				}
+				else {
+					driveDir	= tempBuf;
+					tempBuf		= "";
+				}
+			}
+		}
+		else {
+			fullPath.GetDriveDirectory(driveDir);
+			fullPath.GetExtension(tempBuf);
+		}
 
 		if (tempBuf == "") 
 			extension = "*.*";
@@ -1701,6 +1906,11 @@ BOOL CWtlFileTreeCtrl::DefaultReflectionHandler(HWND hWnd, UINT uMsg, WPARAM wPa
 			case WM_KEYUP:
 				if (wParam == VK_TAB || wParam == VK_ESCAPE) 
 					::SendMessage(m_nppScintilla, WM_SETFOCUS, (WPARAM)hWnd, 0L); // Give the focus to notepad++
+				else if (wParam == VK_RETURN) {
+					BOOL bHandled;
+
+					OnLButtonDblClick(IDC_TREECTRL, NULL, bHandled);
+				}
 				break;
 
 			case WM_CONTEXTMENU:

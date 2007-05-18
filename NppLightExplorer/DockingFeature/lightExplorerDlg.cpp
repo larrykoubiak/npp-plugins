@@ -36,7 +36,7 @@ BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM 
 				m_font.CreateFontA(-11,0,0,0,FW_BOLD,0,0,0,0,0,0,0,0,"Tahoma");
 
 			// Subclass the tree control
-			m_wndTreeCtrl.SubclassWindow(::GetDlgItem(_hSelf, IDC_TREECTRL), m_iniFilePath);
+			m_wndTreeCtrl.SubclassWindow(this, ::GetDlgItem(_hSelf, IDC_TREECTRL), m_iniFilePath);
 			m_wndTreeCtrl.SetFont(m_font);
 			m_wndTreeCtrl.setNppHandles(m_nppHandle, m_scintillaMainHandle);
 			return TRUE;
@@ -74,6 +74,9 @@ BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM 
 
 					case TVN_DELETEITEM:
 						return m_wndTreeCtrl.onDeleteItem(IDC_TREECTRL, pNMHDR, bHandled);
+
+					case TVN_SELCHANGED:
+						return m_wndTreeCtrl.OnSelChanged(IDC_TREECTRL, pNMHDR, bHandled);
 
 					default: 
 						return (BOOL)::SendMessage(::GetDlgItem(_hSelf, IDC_TREECTRL), message, wParam, lParam);
