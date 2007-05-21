@@ -38,9 +38,10 @@ const UINT WM_ITEM_SELECTED = WM_APP + 2;
 #define SEARCH_FROM_HERE			12005
 #define CUSTOM_DELETE				12006
 #define CUSTOM_RENAME				10007
-#define EXECUTE_FILE				12008
-#define LOAD_LAST_SESSION			12009
-#define USE_SYSTEM_ICONS			12010
+#define CUSTOM_NEWFOLDER			10008
+#define EXECUTE_FILE				12009
+#define LOAD_LAST_SESSION			12010
+#define USE_SYSTEM_ICONS			12011
 
 // Roots
 #define ROOT_FAVORITES		"Favorites"
@@ -59,7 +60,7 @@ public:
 	CCustomItemInfo(LPCSTR displayString, LPCSTR tag, int itemType, NETRESOURCE* pNetResource) : m_displayString(displayString), m_tag(tag) {
 		m_pNetResource = pNetResource;
 		m_itemType = itemType;
-	}
+	};
 
 	~CCustomItemInfo() {
 		if (m_pNetResource) {
@@ -69,8 +70,7 @@ public:
 			if (m_pNetResource->lpProvider) free(m_pNetResource->lpProvider);
 			delete m_pNetResource;
 		}
-	}
-
+	};
 
 	enum {ROOT, FOLDER, FILE, NETWORK, FAVORITE} ItemType;
 
@@ -78,6 +78,7 @@ public:
 	void			setDisplayString(LPCSTR newDisplayString) { m_displayString = newDisplayString; }
 
 	LPCSTR			getTag() { return m_tag.GetSafe(); };
+	void			setTag(LPCSTR newTag) { m_tag = newTag; }
 	int				getType() { return m_itemType; };
 	NETRESOURCE*	getNetSource() { return m_pNetResource; };
 
@@ -114,9 +115,11 @@ public:
 		m_nDefaultLeaveIcon = -1;
 
 		SHGetDesktopFolder(&m_pShellFolder);
+
+		m_actionState = CWtlFileTreeCtrl::CUSTOM_NONE_STATE;
 	}
 
-	virtual ~CWtlFileTreeCtrl(){
+	~CWtlFileTreeCtrl() {
 		m_pMalloc->Release();
 
 		if (m_pidlArray != NULL) {
@@ -124,6 +127,8 @@ public:
 			m_pidlArray = NULL;
 		}
 	};
+
+	enum {CUSTOM_NONE_STATE, CUSTOM_RENAME_STATE, CUSTOM_NEWFOLDER_STATE} ActionState;
 
 	BOOL PreTranslateMessage(MSG* pMsg);
 
@@ -135,11 +140,15 @@ public:
 
 	HTREEITEM			SetSelectedPath(const std::string sPath, BOOL bExpanded = FALSE);
 	HTREEITEM			GetMyFavoritesRoot() { return m_hMyFavoritesRoot; };
+	HTREEITEM			InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM hParent, bool isFolder, LPCSTR desc = NULL);
+
 	CCustomItemInfo*	GetItemCustomInfo(HTREEITEM hItem);
 
 	int					GetIconIndex(const CUTL_BUFFER sFilename);
 	int					GetSelIconIndex(const CUTL_BUFFER sFilename);
 	LPCSTR				GetIniFilePath() { return m_iniFilePath.GetSafe(); };
+	int					GetActionState() { return m_actionState; };
+	void				SetActionState(int newState) { m_actionState = newState; };
 
 	void				SetShowFiles(BOOL bFiles);
 	
@@ -173,9 +182,12 @@ public:
 	void DoChangeUseSystemIcons();
 	void DoCustomDelete();
 	void DoCustomRename();
+	void DoCustomNewFolder();
 
 	LPCSTR				GetItemDisplayString(HTREEITEM hItem);
+	bool				SetItemDisplayString(HTREEITEM hItem, LPCSTR newDisplayString);
 	LPCSTR				GetItemTag(HTREEITEM hItem);
+	bool				SetItemTag(HTREEITEM hItem, LPCSTR newtag);
 	LPCSTR				GetSelectedPath();
 	int					GetItemType(HTREEITEM hItem);
 
@@ -198,7 +210,6 @@ protected:
 
 	NETRESOURCE*		GetNetworkResource(HTREEITEM hItem);
 
-	HTREEITEM			InsertTreeItem(LPCSTR sFile, LPCSTR sPath, HTREEITEM hParent, bool isFolder, LPCSTR desc = NULL);
 	HTREEITEM			InsertTreeNetworkItem(HTREEITEM hParent, LPCSTR sFQPath, CCustomItemInfo* pCii);
 	HTREEITEM			FindSibling(HTREEITEM hParent, const std::string sItem);
 	HTREEITEM			AddSystemRoot(int nFolder, LPCSTR defaultName);
@@ -219,6 +230,7 @@ protected:
 	int					m_nNetworkIcon;
 	int					m_nNetworkSelIcon;
 	int					m_nDefaultLeaveIcon;
+	int					m_actionState;
 
 	bool				m_useSystemIcons;
 

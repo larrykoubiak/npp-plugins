@@ -38,8 +38,10 @@
 //  WtlFileTreeCtrl.cpp		18.05.2007	Fixed behavior when Searching from a network resource
 //  WtlFileTreeCtrl.cpp		18.05.2007	Manage the intro to open file
 
-//  Still on the works!!!!!
-//  WtlFileTreeCtrl.cpp		18.05.2007	Custom rename and delete for folders and files
+//  NppLightExplorer.cpp	21.05.2007	We don't give focus to Npp anymore at 'beNotified'|NPPN_READY
+//  WtlFileTreeCtrl.cpp		21.05.2007	Rename and delete folders and files option
+//  WtlFileTreeCtrl.cpp		21.05.2007	New folder option
+//  WtlFileTreeCtrl.cpp		21.05.2007	Get rid of the 'extensions to execute' option
 //
 //  PENDING:
 //  
@@ -196,8 +198,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 				putCheck = true;
 
 			::SendMessage(nppData._nppHandle, WM_PIMENU_CHECK, funcItem[DOCKABLE_LIGHTEXPLORER]._cmdID, (LPARAM)putCheck);
-			// Give focus to notepad++ (should we be doing this?)
-			::SendMessage(nppData._scintillaMainHandle, WM_SETFOCUS, (WPARAM)_lightExplorerDlg.getHSelf(), 0L);
 		}
 	}
 }

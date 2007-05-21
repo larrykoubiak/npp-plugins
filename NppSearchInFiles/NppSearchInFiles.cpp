@@ -45,6 +45,10 @@
 //	SearchInFilesDock.cpp		20.04.2007	Fixed error: multiple dialogs could be opened using ALT+Q
 //  SearchInFiles.rc			20.04.2007	Rearrange the Input Parameters Dialog
 //
+//  21.04.2007 Release v1.11
+//
+//  NppSearchInFiles.cpp		21.05.2007	We don't give focus to Npp anymore at 'beNotified'|NPPN_READY
+//
 //  PENDING:
 //  Regular expresions
 
@@ -217,6 +221,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			g_TBSearchInFiles.hToolbarBmp = (HBITMAP)::LoadImage(_searchInFilesDock.getHinst(), MAKEINTRESOURCE(IDB_TB_SEARCHINFILES), IMAGE_BITMAP, 0, 0, (LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 			::SendMessage(nppData._nppHandle, WM_ADDTOOLBARICON, (WPARAM)funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)&g_TBSearchInFiles);
 		}
+		
 		if (notifyCode->nmhdr.code == NPPN_READY)
 		{
 			_nppReady = true;
@@ -224,12 +229,10 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			bool putCheck = false;
 
 			if (_searchInFilesDock.isVisible() ||
-				::SendMessage(nppData._nppHandle, WM_DMM_GETPLUGINHWNDBYNAME, 0, (LPARAM)"NppSearchInFiles.dll") != NULL)
+				::SendMessage(nppData._nppHandle, WM_DMM_GETPLUGINHWNDBYNAME, 0, (LPARAM)"NppSearchInFiles.dll") != NULL) 
 				putCheck = true;
 
 			::SendMessage(nppData._nppHandle, WM_PIMENU_CHECK, funcItem[DOCKABLE_SEARCHINFILES]._cmdID, (LPARAM)putCheck);
-			// Give focus to notepad++ (should we be doing this?)
-			::SendMessage(nppData._scintillaMainHandle, WM_SETFOCUS, (WPARAM)_searchInFilesDock.getHSelf(), 0L);
 		}
 	}
 }

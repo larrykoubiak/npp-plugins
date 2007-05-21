@@ -565,6 +565,7 @@
 #define VK_SEPARATOR                    0x6C
 #define IDD_HELP_DLG                    108
 #define VK_SUBTRACT                     0x6D
+#define IDD_EDIT_DLG                    109
 #define VK_DECIMAL                      0x6E
 #define VK_DIVIDE                       0x6F
 #define VK_F1                           0x70
@@ -902,6 +903,9 @@
 #define IDC_EXTENSIONS_LIST             1004
 #define IDC_EMAIL_LINK                  1005
 #define IDC_NPP_PLUGINS_URL             1006
+#define IDC_MESSAGE                     1008
+#define IDC_EDIT                        1009
+#define IDC_EDIT_MESSAGE                1010
 #define CF_GDIOBJLAST                   0x03FF
 #define WM_USER                         0x0400
 #define WVR_VALIDRECTS                  0x0400
@@ -1209,9 +1213,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        109
+#define _APS_NEXT_RESOURCE_VALUE        110
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1007
+#define _APS_NEXT_CONTROL_VALUE         1011
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -179,6 +179,27 @@ LPCSTR CWtlFileTreeCtrl::GetItemDisplayString(HTREEITEM hItem) {
 	}
 }
 
+bool CWtlFileTreeCtrl::SetItemDisplayString(HTREEITEM hItem, LPCSTR newDisplayString) {
+	if (hItem == NULL || !UTL_strlen(newDisplayString)) return false;
+	
+	TV_ITEM tvi;
+
+	ZeroMemory(&tvi, sizeof(TV_ITEM));
+	tvi.mask	= TVIF_PARAM;
+	tvi.hItem	= hItem;
+	if(!GetItem(&tvi)) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::SetItemDisplayString", __FILE__, __LINE__);
+		return false;
+	}
+	else {
+		CCustomItemInfo* pCii = (CCustomItemInfo*)tvi.lParam;
+
+		pCii->setDisplayString(newDisplayString);
+		return true;
+	}
+}
+
+
 LPCSTR CWtlFileTreeCtrl::GetItemTag(HTREEITEM hItem) {
 	if (hItem == NULL) return "";
 	
@@ -196,6 +217,27 @@ LPCSTR CWtlFileTreeCtrl::GetItemTag(HTREEITEM hItem) {
 
 		return pCii->getTag();
 	}
+}
+
+bool CWtlFileTreeCtrl::SetItemTag(HTREEITEM hItem, LPCSTR newTag) {
+	if (hItem == NULL || !UTL_strlen(newTag)) return false;
+	
+	TV_ITEM tvi;
+
+	ZeroMemory(&tvi, sizeof(TV_ITEM));
+	tvi.mask	= TVIF_PARAM;
+	tvi.hItem	= hItem;
+	if(!GetItem(&tvi)) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::GetItemTag", __FILE__, __LINE__);
+		return false;
+	}
+	else {
+		CCustomItemInfo* pCii = (CCustomItemInfo*)tvi.lParam;
+
+		pCii->setTag(newTag);
+		return true;
+	}
+
 }
 
 int CWtlFileTreeCtrl::GetItemType(HTREEITEM hItem) {
@@ -1118,13 +1160,15 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 			HMENU hPopupMenu = ::CreatePopupMenu();
 
-			// Add to favorites folder
+			// File extensions to execute
+			/*
 			mii.wID			= FILE_EXTENSIONS_TO_EXECUTE;
 			mii.dwTypeData	= "File extensions to execute ...";
 			mii.cch			= UTL_strlen(mii.dwTypeData);
 			mii.fState		= MFS_ENABLED;
 
 			::InsertMenuItem(hPopupMenu, FILE_EXTENSIONS_TO_EXECUTE, FALSE, &mii);
+			*/
 
 			// Load last session tree state on startup
 			mii.wID			= LOAD_LAST_SESSION;
@@ -1150,9 +1194,11 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 			switch (resp) 
 			{
+				/*
 				case FILE_EXTENSIONS_TO_EXECUTE:
 					FileExtensionToExecute();
 					break;
+				*/
 
 				case LOAD_LAST_SESSION:
 					confIni.Write("startContext", "loadOnStartup", initialLoadOnStartup ? "0" : "1");
@@ -1256,6 +1302,17 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 				mii.fState		= MFS_ENABLED;
 
 				::InsertMenuItem(hPopupMenu, CUSTOM_RENAME, FALSE, &mii);
+
+
+				if (itemType == CCustomItemInfo::FOLDER) {
+					// Custom New folder
+					mii.wID			= CUSTOM_NEWFOLDER;
+					mii.dwTypeData	= "New folder";
+					mii.cch			= UTL_strlen(mii.dwTypeData);
+					mii.fState		= MFS_ENABLED;
+
+					::InsertMenuItem(hPopupMenu, CUSTOM_NEWFOLDER, FALSE, &mii);
+				}
 			}
 		}
 		else if (itemType == CCustomItemInfo::FAVORITE) {
@@ -1328,14 +1385,17 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		mii.cbSize		= sizeof(mii);
 		mii.fMask		= MIIM_STRING | MIIM_DATA | MIIM_STATE | MIIM_ID;
 
+		::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
+
 		// File extensions to execute
+		/*
 		mii.wID			= FILE_EXTENSIONS_TO_EXECUTE;
 		mii.dwTypeData	= "File extensions to execute ...";
 		mii.cch			= UTL_strlen(mii.dwTypeData);
 		mii.fState		= MFS_ENABLED;
 
-		::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
 		::InsertMenuItem(hPopupMenu, FILE_EXTENSIONS_TO_EXECUTE, FALSE, &mii);
+		*/
 
 		mii.wID			= LOAD_LAST_SESSION;
 		mii.dwTypeData	= "Load tree state on startup";
@@ -1380,9 +1440,11 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		{
 			switch (resp) 
 			{
+				/*
 				case FILE_EXTENSIONS_TO_EXECUTE:
 					FileExtensionToExecute();
 					break;
+				*/
 
 				case REMOVE_FROM_FAVORITES:
 					RemoveFromFavorites();
@@ -1420,6 +1482,10 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 				case CUSTOM_RENAME:
 					DoCustomRename();
 					break;
+
+				case CUSTOM_NEWFOLDER:
+					DoCustomNewFolder();
+					break;
 			}
 		}
 
@@ -1452,16 +1518,13 @@ void CWtlFileTreeCtrl::DoCustomDelete() {
 		if (IDNO == ::MessageBox(m_hWnd, msg.GetSafe(), "lightExplorer", MB_YESNO | MB_ICONQUESTION)) return;
 
 		if (itemType == CCustomItemInfo::FOLDER) {
-			systemMessage("PENDIENTE");
-			/*
-			if (current.RemoveDirectoryA()) ?????????????
+			if (current.RemoveDirectory())
 				DeleteItem(hHitItem);
 			else 
 				systemMessage(msg.Sf("Could not delete folder '%s'", (LPCSTR)current));
-			*/
 		}
 		else if (itemType == CCustomItemInfo::FILE) {
-			if (current.Delete(FALSE))
+			if (current.Delete(TRUE))
 				DeleteItem(hHitItem);
 			else {
 				systemMessage(msg.Sf("Could not delete file '%s'", (LPCSTR)current));
@@ -1473,22 +1536,196 @@ void CWtlFileTreeCtrl::DoCustomDelete() {
 	}
 }
 
+BOOL CALLBACK EditDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+	static CWtlFileTreeCtrl* ownerDlg;
+	try {
+		switch(message)
+		{
+			case WM_INITDIALOG:
+				{
+					// Asign owner
+					ownerDlg = (CWtlFileTreeCtrl*)lParam;
+
+					CUTL_PATH	fullPath(ownerDlg->GetItemTag(ownerDlg->GetSelectedItem()));
+
+					if (ownerDlg->GetActionState() == CWtlFileTreeCtrl::CUSTOM_RENAME_STATE) {
+						CUTL_BUFFER message, itemName, temp;
+						UINT		found;
+
+						if (ownerDlg->GetItemType(ownerDlg->GetSelectedItem()) == CCustomItemInfo::FILE) {
+							fullPath.GetNameExtension(itemName);
+							message.Sf("Rename file '%s' as ", itemName.GetSafe());
+						}
+						else {
+							fullPath.GetDirectory(itemName);
+
+							if (itemName.ReverseFind('\\', found)) {
+								temp = &itemName[found + 1];
+								itemName = temp;
+							}
+
+							message.Sf("Rename folder '%s' as ", itemName.GetSafe());
+						}
+						
+						::SetWindowText(::GetDlgItem(hDlg, IDC_EDIT_MESSAGE), message.GetSafe());
+						::SetWindowText(::GetDlgItem(hDlg, IDC_EDIT), ownerDlg->GetItemDisplayString(ownerDlg->GetSelectedItem()));
+						::SendMessage(::GetDlgItem(hDlg, IDC_EDIT), CB_SETCURSEL, 0, 0L);
+					}
+					else if (ownerDlg->GetActionState() == CWtlFileTreeCtrl::CUSTOM_NEWFOLDER_STATE) 
+						::SetWindowText(::GetDlgItem(hDlg, IDC_EDIT_MESSAGE), "Create a new folder:");
+
+					// Place the dialog
+					RECT rc, rcDlg;
+					POINT upperMiddle;
+
+					::GetWindowRect(::GetDesktopWindow(), &rc);
+					::GetWindowRect(hDlg, &rcDlg);
+
+					upperMiddle.x = rc.left + ((rc.right - rc.left) / 2);
+					upperMiddle.y = rc.top + ((rc.bottom - rc.top) / 4);
+
+					int x = upperMiddle.x - ((rcDlg.right - rcDlg.left) / 2);
+					int y = upperMiddle.y - ((rcDlg.bottom - rcDlg.top) / 2);
+
+					::SetWindowPos(hDlg, HWND_TOP, x, y, rcDlg.right - rcDlg.left, rcDlg.bottom - rcDlg.top, SWP_SHOWWINDOW);
+
+					::SetFocus(::GetDlgItem(hDlg, IDC_EDIT_MESSAGE));
+				}
+				return TRUE;
+
+			case WM_COMMAND:
+				{
+					if (LOWORD(wParam) == IDOK) {
+						// Let'read the dialog new name
+						CUTL_BUFFER newName(MAX_PATH);
+
+						::GetWindowText(::GetDlgItem(hDlg, IDC_EDIT), newName, MAX_PATH - 1);
+
+						if (!newName.Len()) {
+							::MessageBox(hDlg, "New name cannot be empty ...", "Light Explorer", MB_OK | MB_ICONSTOP);
+							::SetFocus(::GetDlgItem(hDlg, IDC_EDIT_MESSAGE));
+							break;
+						}
+
+						CUTL_PATH	fullPath(ownerDlg->GetItemTag(ownerDlg->GetSelectedItem()));
+
+						if (ownerDlg->GetActionState() == CWtlFileTreeCtrl::CUSTOM_RENAME_STATE) {
+							CUTL_BUFFER message, itemName, temp;
+							UINT		found;
+
+							if (ownerDlg->GetItemType(ownerDlg->GetSelectedItem()) == CCustomItemInfo::FILE) {
+								CUTL_PATH newPath(fullPath);
+
+								newPath.SetNameExtension(newName.GetSafe());
+								if (fullPath.Rename(newPath)) {
+									ownerDlg->SetItemText(ownerDlg->GetSelectedItem(), newName.GetSafe());
+									ownerDlg->SetItemTag(ownerDlg->GetSelectedItem(), (LPCSTR)newPath);
+									ownerDlg->SetItemDisplayString(ownerDlg->GetSelectedItem(), newName.GetSafe());
+								}
+								else {
+									systemMessage(message.Sf("Unable to rename '%s' as '%s':", (LPCSTR)fullPath, (LPCSTR)newPath));
+									::SetFocus(::GetDlgItem(hDlg, IDC_EDIT_MESSAGE));
+									::SendMessage(::GetDlgItem(hDlg, IDC_EDIT), CB_SETCURSEL, 0, 0L);
+									break;
+								}
+							}
+							else {
+								fullPath.GetDirectory(itemName);
+
+								if (itemName.ReverseFind('\\', found) && found) {
+									temp.NCopy(itemName, found);
+									temp.Cat("\\");
+									temp.Cat(newName.GetSafe());
+								}
+								else {
+									temp = "\\";
+									temp += newName.GetSafe();
+								}
+
+								CUTL_PATH newPath(fullPath);
+
+								newPath.SetDirectory(temp.GetSafe());
+
+								message.Sf("Rename folder '%s' as '%s'", (LPCSTR)fullPath, (LPCSTR)newPath);
+
+								if (fullPath.Rename(newPath)) {
+									ownerDlg->SetItemText(ownerDlg->GetSelectedItem(), newName.GetSafe());
+									ownerDlg->SetItemTag(ownerDlg->GetSelectedItem(), (LPCSTR)newPath);
+									ownerDlg->SetItemDisplayString(ownerDlg->GetSelectedItem(), newName.GetSafe());
+								}
+								else {
+									systemMessage(message.Sf("Unable to rename folder '%s' as '%s':", (LPCSTR)fullPath, (LPCSTR)newPath));
+									::SetFocus(::GetDlgItem(hDlg, IDC_EDIT_MESSAGE));
+									::SendMessage(::GetDlgItem(hDlg, IDC_EDIT), CB_SETCURSEL, 0, 0L);
+									break;
+								}
+							}
+						}
+						else if (ownerDlg->GetActionState() == CWtlFileTreeCtrl::CUSTOM_NEWFOLDER_STATE) {
+							CUTL_PATH	fullPath(ownerDlg->GetItemTag(ownerDlg->GetSelectedItem()));
+
+							if (fullPath.DirectoryExists()) {
+								fullPath.AppendDirectory(newName.GetSafe());
+								if (fullPath.CreateDirectory()) {
+									// Create a new treeitem under current
+									HTREEITEM newItem = ownerDlg->InsertTreeItem(newName.GetSafe(), (LPCSTR)fullPath, ownerDlg->GetSelectedItem(), true);
+
+									ownerDlg->Expand(ownerDlg->GetSelectedItem(), TVE_EXPAND); 
+									ownerDlg->EnsureVisible(newItem);
+								}
+								else {
+									CUTL_BUFFER message;
+
+									systemMessage(message.Sf("Unable to create folder '%s':", (LPCSTR)fullPath));
+									::SetFocus(::GetDlgItem(hDlg, IDC_EDIT_MESSAGE));
+									::SendMessage(::GetDlgItem(hDlg, IDC_EDIT), CB_SETCURSEL, 0, 0L);
+									break;
+								}
+							}
+						}
+
+					}
+					if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) {
+						ownerDlg->SetActionState(CWtlFileTreeCtrl::CUSTOM_NONE_STATE);
+						::EndDialog(hDlg, 0);
+					}
+				}
+				break;
+
+			default:
+				break;
+		}
+	}
+	catch (...) {
+		systemMessageEx("Error at EditDlgProc", __FILE__, __LINE__);
+	}
+	return FALSE;
+}
+
+void CWtlFileTreeCtrl::DoCustomNewFolder() {
+	try {
+		m_actionState = CUSTOM_NEWFOLDER_STATE;
+
+		DialogBoxParam(_AtlBaseModule.GetModuleInstance(), 
+						(LPCTSTR)IDD_EDIT_DLG,
+						m_hWnd, 
+					    (DLGPROC)EditDlgProc, 
+						(LPARAM)this);
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::DoCustomNewFolder.", __FILE__, __LINE__);
+	}
+}
+
 void CWtlFileTreeCtrl::DoCustomRename() {
 	try {
-		systemMessage("DoCustomRename");
-/*
-		CUTL_PATH	fullPath(GetItemTag(GetSelectedItem()));
-		CUTL_BUFFER	nameExtension;
+		m_actionState = CUSTOM_NEWFOLDER_STATE;
 
-		// For the future: we should be able to work here with UNC
-		fullPath.GetNameExtension(nameExtension);
-xxxxxxxxxx
-		if (nameExtension.Len()) {
-			fullPath.Re
-		}
-		else {
-		}
-*/
+		DialogBoxParam(_AtlBaseModule.GetModuleInstance(), 
+						(LPCTSTR)IDD_EDIT_DLG,
+						m_hWnd, 
+					    (DLGPROC)EditDlgProc, 
+						(LPARAM)this);
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::DoCustomRename.", __FILE__, __LINE__);
@@ -1610,6 +1847,7 @@ void CWtlFileTreeCtrl::SearchFromHere() {
 }
 
 void CWtlFileTreeCtrl::FileExtensionToExecute() {
+	/*
 	try {
 		// Let's get a tag for this item thru a dialog
 		DialogBoxParam(_AtlBaseModule.GetModuleInstance(), 
@@ -1621,6 +1859,7 @@ void CWtlFileTreeCtrl::FileExtensionToExecute() {
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::FileExtensionToExecute.", __FILE__, __LINE__);
 	}
+	*/
 }
 
 void CWtlFileTreeCtrl::AddEditFavoriteFolderName() {
@@ -1973,6 +2212,21 @@ BOOL CALLBACK FavoritesFolderNameDlgProc(HWND hDlg, UINT message, WPARAM wParam,
 					::SetWindowText(::GetDlgItem(hDlg, IDC_EDIT_NAME), (LPSTR)pCurrentCii->getDisplayString());
 					::SendMessage(::GetDlgItem(hDlg, IDC_EDIT_NAME), EM_SETSEL, 0, -1);
 					::SetFocus(::GetDlgItem(hDlg, IDC_EDIT_NAME));
+
+					// Place the dialog
+					RECT rc, rcDlg;
+					POINT upperMiddle;
+
+					::GetWindowRect(::GetDesktopWindow(), &rc);
+					::GetWindowRect(hDlg, &rcDlg);
+
+					upperMiddle.x = rc.left + ((rc.right - rc.left) / 2);
+					upperMiddle.y = rc.top + ((rc.bottom - rc.top) / 4);
+
+					int x = upperMiddle.x - ((rcDlg.right - rcDlg.left) / 2);
+					int y = upperMiddle.y - ((rcDlg.bottom - rcDlg.top) / 2);
+
+					::SetWindowPos(hDlg, HWND_TOP, x, y, rcDlg.right - rcDlg.left, rcDlg.bottom - rcDlg.top, SWP_SHOWWINDOW);
 				}
 				break;
 

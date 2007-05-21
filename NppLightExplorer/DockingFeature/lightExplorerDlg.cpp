@@ -39,6 +39,8 @@ BOOL CALLBACK lightExplorerDlg::run_dlgProc(UINT message, WPARAM wParam, LPARAM 
 			m_wndTreeCtrl.SubclassWindow(this, ::GetDlgItem(_hSelf, IDC_TREECTRL), m_iniFilePath);
 			m_wndTreeCtrl.SetFont(m_font);
 			m_wndTreeCtrl.setNppHandles(m_nppHandle, m_scintillaMainHandle);
+
+			TreeView_SetUnicodeFormat(m_wndTreeCtrl.m_hWnd, FALSE);
 			return TRUE;
 		}
 

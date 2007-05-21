@@ -762,7 +762,7 @@ BOOL CUTL_PATH::CreateDirectory(BOOL createIntermediates) {
    StripTrailingBackslash(pathText);
    result = (_mkdir(pathText) ==  0);
    if (!result)
-      result = ChangeDirectory();
+      ChangeDirectory();
    if (!result && createIntermediates) {
       if (!pathText.ReverseFind(PATH_DIR_DELIMITER, delimiter)) return FALSE;
       pathText[delimiter] = '\0';
@@ -865,7 +865,8 @@ BOOL CUTL_PATH::Delete(BOOL evenIfReadOnly) {
    //REMOVE will not actually remove read only files
    //so we might want to set the readonly property
    //off
-   if(evenIfReadOnly && _access(m_path, _S_IWRITE) != -1) { //does the file have write access
+   //if(evenIfReadOnly && _waccess((const wchar_t*)(LPCSTR)m_path, _S_IWRITE) != -1) { //does the file have write access
+   if(evenIfReadOnly) { //does the file have write access
       if(_chmod(m_path, _S_IWRITE) == -1) 
          return FALSE;
    }

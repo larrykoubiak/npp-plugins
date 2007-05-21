@@ -42,7 +42,7 @@ void systemMessage(const char *title)
 
   sprintf(message, "%s\r\n\r\n%s", title, lpMsgBuf);
 
-  ::MessageBox(NULL, message, "Search In Files", MB_OK | MB_ICONSTOP);
+  ::MessageBox(NULL, message, "Light Explorer", MB_OK | MB_ICONSTOP);
   ::LocalFree(lpMsgBuf);
 }
 
@@ -61,7 +61,7 @@ void systemMessageEx(const char *title, const char *fileName, int lineNumber)
 
 		sprintf(message, "%s\r\n\r\n%s (%d)\r\n\r\n%s", title, fileName, lineNumber, lpMsgBuf);
 
-		::MessageBox(NULL, message, "Search In Files", MB_OK | MB_ICONSTOP);
+		::MessageBox(NULL, message, "Light Explorer", MB_OK | MB_ICONSTOP);
 		::LocalFree(lpMsgBuf);
 	}
 	catch (...) {
