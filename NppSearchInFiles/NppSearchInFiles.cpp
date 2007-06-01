@@ -49,6 +49,10 @@
 //
 //  NppSearchInFiles.cpp		21.05.2007	We don't give focus to Npp anymore at 'beNotified'|NPPN_READY
 //
+//____________________________________________________________________________________________________________
+//  ¡After the release!
+//  searchInFiles.rc		    28.05.2007  Update help dialog to show the correct version number 1.3
+
 //  PENDING:
 //  Regular expresions
 

@@ -85,7 +85,7 @@ BEGIN
     LTEXT           "eMail:",IDC_STATIC,12,41,21,9
     CTEXT           "Many thanks to Jens for helping me to write this plugin.",IDC_STATIC,7,73,216,11
     LTEXT           "Search in Files ...\tShows the Search In Files params\n\t\t\tdialog\n\t\t\t(ALT + Q)",IDC_STATIC,15,105,203,25
-    CTEXT           "Search In Files Plugin for Notepad++ v4.x                        v1.10",IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | WS_EX_TRANSPARENT
+    CTEXT           "Search In Files Plugin for Notepad++ v4.x                        v1.11",IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | WS_EX_TRANSPARENT
     LTEXT           "Show / Hide results ...\tToggle the results pane visibility\n\t\t\t(ALT + Z)",IDC_STATIC,15,163,203,18
     LTEXT           "URL:",IDC_STATIC,12,52,21,9
     LTEXT           "http://sourceforge.net/projects/npp-plugins",IDC_NPP_PLUGINS_URL,65,52,158,8
@@ -158,8 +158,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,10,0,0
- PRODUCTVERSION 1,10,0,0
+ FILEVERSION 1,11,0,0
+ PRODUCTVERSION 1,11,0,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -175,12 +175,12 @@ BEGIN
         BLOCK "000904b0"
         BEGIN
             VALUE "FileDescription", "searchInFiles"
-            VALUE "FileVersion", "1, 10, 0, 0"
+            VALUE "FileVersion", "1, 11, 0, 0"
             VALUE "InternalName", "searchInFiles"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "searchInFiles.rc"
             VALUE "ProductName", " searchInFiles"
-            VALUE "ProductVersion", "1, 10, 0, 0"
+            VALUE "ProductVersion", "1, 11, 0, 0"
         END
     END
     BLOCK "VarFileInfo"
