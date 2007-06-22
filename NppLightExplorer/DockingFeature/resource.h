@@ -554,7 +554,6 @@
 #define IDD_FAVORITES_FOLDER_NAME       103
 #define IDD_FILE_EXTENSIONS_TO_EXCLUDE  104
 #define VK_NUMPAD8                      0x68
-#define IDD_FILE_EXTENSIONS_TO_EXECUTE  104
 #define VK_NUMPAD9                      0x69
 #define IDB_BITMAP1                     105
 #define IDB_TB_LIGHTEXPLORER            105
@@ -896,11 +895,8 @@
 #define WM_DDE_FIRST                    0x03E0
 #define IDC_TREECTRL                    1000
 #define IDC_EDIT_NAME                   1001
-#define IDC_EXTENSION                   1002
 #define IDC_EXCLUDE_EXT                 1003
-#define IDC_EXECUTE_EXT                 1003
 #define IDC_EXCLUDE_LIST                1004
-#define IDC_EXTENSIONS_LIST             1004
 #define IDC_EMAIL_LINK                  1005
 #define IDC_NPP_PLUGINS_URL             1006
 #define IDC_MESSAGE                     1008
@@ -1215,7 +1211,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        110
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1011
+#define _APS_NEXT_CONTROL_VALUE         1012
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

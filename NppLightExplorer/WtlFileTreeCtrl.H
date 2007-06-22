@@ -42,6 +42,7 @@ const UINT WM_ITEM_SELECTED = WM_APP + 2;
 #define EXECUTE_FILE				12009
 #define LOAD_LAST_SESSION			12010
 #define USE_SYSTEM_ICONS			12011
+#define SYNCRONIZE					12012
 
 // Roots
 #define ROOT_FAVORITES		"Favorites"
@@ -50,7 +51,6 @@ const UINT WM_ITEM_SELECTED = WM_APP + 2;
 
 // Dialogs proc
 BOOL CALLBACK FavoritesFolderNameDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK FileExtensionsToExcludeDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 class lightExplorerDlg;
 
@@ -183,6 +183,7 @@ public:
 	void DoCustomDelete();
 	void DoCustomRename();
 	void DoCustomNewFolder();
+	void SynchronizeTree();
 
 	LPCSTR				GetItemDisplayString(HTREEITEM hItem);
 	bool				SetItemDisplayString(HTREEITEM hItem, LPCSTR newDisplayString);
@@ -198,7 +199,6 @@ protected:
 	void				ShowProperties();
 	void				RemoveFromFavorites();
 	void				AddEditFavoriteFolderName();
-	void				FileExtensionToExecute();
 	void				GetDriveLabel(const CUTL_BUFFER& bufDrive, CUTL_BUFFER& bufDriveLabel);
 
 	bool				EnumNetwork(HTREEITEM hParent);

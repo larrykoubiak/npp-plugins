@@ -43,9 +43,12 @@
 //  WtlFileTreeCtrl.cpp		21.05.2007	New folder option
 //  WtlFileTreeCtrl.cpp		21.05.2007	Get rid of the 'extensions to execute' option
 //
-//  ¡After the release!
-//  lightExplorer.rc		28.05.2007  Update help dialog to show the correct version number 1.3
+//
+//  For version 1.4
+//
+//  lightExplorer.rc		28.05.2007  Update help dialog to show the correct version number 1.4
 //  lightExplorer.rc		28.05.2007  Modify the tree control style not to allow in-site edit
+//  WtlFileTreeCtrl.cpp		06.06.2007	Fixed custom folder rename
 //  
 
 #include "stdafx.h"

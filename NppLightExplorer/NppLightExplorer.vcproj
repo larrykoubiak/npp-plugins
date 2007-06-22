@@ -323,6 +323,10 @@
 				RelativePath="DockingFeature\Window.h"
 				>
 			</File>
+			<File
+				RelativePath=".\WtlFileTreeCtrl.H"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

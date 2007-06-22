@@ -696,7 +696,7 @@ HTREEITEM CWtlFileTreeCtrl::SetSelectedPath(const std::string sPath, BOOL bExpan
 		if ( hItemFound == NULL )
 			break;
 		else
-			Expand( hItemFound, TVE_EXPAND );
+			Expand(hItemFound, TVE_EXPAND);
 
 		sSearch = sSearch.substr( sSearch.size() - nFound - 1 );
 		nFound = (int)sSearch.find( _T('\\') );
@@ -1160,15 +1160,12 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 			HMENU hPopupMenu = ::CreatePopupMenu();
 
-			// File extensions to execute
-			/*
-			mii.wID			= FILE_EXTENSIONS_TO_EXECUTE;
-			mii.dwTypeData	= "File extensions to execute ...";
+			mii.wID			= SYNCRONIZE;
+			mii.dwTypeData	= "Syncronize tree with current document";
 			mii.cch			= UTL_strlen(mii.dwTypeData);
 			mii.fState		= MFS_ENABLED;
 
-			::InsertMenuItem(hPopupMenu, FILE_EXTENSIONS_TO_EXECUTE, FALSE, &mii);
-			*/
+			::InsertMenuItem(hPopupMenu, SYNCRONIZE, FALSE, &mii);
 
 			// Load last session tree state on startup
 			mii.wID			= LOAD_LAST_SESSION;
@@ -1194,11 +1191,9 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 			switch (resp) 
 			{
-				/*
-				case FILE_EXTENSIONS_TO_EXECUTE:
-					FileExtensionToExecute();
+				case SYNCRONIZE:
+					SynchronizeTree();
 					break;
-				*/
 
 				case LOAD_LAST_SESSION:
 					confIni.Write("startContext", "loadOnStartup", initialLoadOnStartup ? "0" : "1");
@@ -1397,6 +1392,13 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		::InsertMenuItem(hPopupMenu, FILE_EXTENSIONS_TO_EXECUTE, FALSE, &mii);
 		*/
 
+		mii.wID			= SYNCRONIZE;
+		mii.dwTypeData	= "Syncronize tree with current document";
+		mii.cch			= UTL_strlen(mii.dwTypeData);
+		mii.fState		= MFS_ENABLED;
+
+		::InsertMenuItem(hPopupMenu, SYNCRONIZE, FALSE, &mii);
+
 		mii.wID			= LOAD_LAST_SESSION;
 		mii.dwTypeData	= "Load tree state on startup";
 		mii.cch			= UTL_strlen(mii.dwTypeData);
@@ -1440,12 +1442,6 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		{
 			switch (resp) 
 			{
-				/*
-				case FILE_EXTENSIONS_TO_EXECUTE:
-					FileExtensionToExecute();
-					break;
-				*/
-
 				case REMOVE_FROM_FAVORITES:
 					RemoveFromFavorites();
 					break;
@@ -1465,6 +1461,10 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 				case EXECUTE_FILE:
 					ExecuteFile();
+					break;
+
+				case SYNCRONIZE:
+					SynchronizeTree();
 					break;
 
 				case LOAD_LAST_SESSION:
@@ -1702,6 +1702,40 @@ BOOL CALLBACK EditDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return FALSE;
 }
 
+void CWtlFileTreeCtrl::SynchronizeTree() {
+	char	path[MAX_PATH];
+
+	::SendMessage(m_nppHandle, WM_GET_FULLCURRENTPATH, 0, (LPARAM)path);
+	
+	CUTL_BUFFER currDocBuffer(path);
+
+	if (currDocBuffer[0] == '\\')
+		systemMessage(path);
+	else {
+		UINT found;
+		int	 start = 0;
+		CUTL_BUFFER result, tempBuf;
+
+		result = GetItemTag(m_hMyComputerRoot);
+		result += ",";
+
+		while(currDocBuffer.Find("\\", found, start)) {
+			tempBuf.NCopy(&currDocBuffer[0], start = found + 1);
+			result += tempBuf.GetSafe();
+			result += ",";
+		}
+		result += currDocBuffer.GetSafe();
+
+		// Let's save the result
+		CUT2_INI	confIni(m_iniFilePath);
+
+		confIni.Write("startContext", "currItem", result.GetSafe());
+
+		// And now, let's synchronize
+		LoadState();
+	}
+}
+
 void CWtlFileTreeCtrl::DoCustomNewFolder() {
 	try {
 		m_actionState = CUSTOM_NEWFOLDER_STATE;
@@ -1719,7 +1753,7 @@ void CWtlFileTreeCtrl::DoCustomNewFolder() {
 
 void CWtlFileTreeCtrl::DoCustomRename() {
 	try {
-		m_actionState = CUSTOM_NEWFOLDER_STATE;
+		m_actionState = CUSTOM_RENAME_STATE;
 
 		DialogBoxParam(_AtlBaseModule.GetModuleInstance(), 
 						(LPCTSTR)IDD_EDIT_DLG,
@@ -1844,22 +1878,6 @@ void CWtlFileTreeCtrl::SearchFromHere() {
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::SearchFromHere.", __FILE__, __LINE__);
 	}
-}
-
-void CWtlFileTreeCtrl::FileExtensionToExecute() {
-	/*
-	try {
-		// Let's get a tag for this item thru a dialog
-		DialogBoxParam(_AtlBaseModule.GetModuleInstance(), 
-						(LPCTSTR)IDD_FILE_EXTENSIONS_TO_EXECUTE, 
-						m_hWnd, 
-						(DLGPROC)FileExtensionsToExcludeDlgProc,
-						(LPARAM)this);
-	}
-	catch (...) {
-		systemMessageEx("Error at CWtlFileTreeCtrl::FileExtensionToExecute.", __FILE__, __LINE__);
-	}
-	*/
 }
 
 void CWtlFileTreeCtrl::AddEditFavoriteFolderName() {
@@ -2107,10 +2125,13 @@ void CWtlFileTreeCtrl::LoadState() {
 
 			while (true){
 				if (!UTL_strcmp(GetItemTag(hCurrItem), startContextParse.StrArg(i))) {
+					EnsureVisible(hCurrItem);
+
 					if (GetItemType(hCurrItem) == CCustomItemInfo::FILE || i == startContextParse.NumArgs()) 
 						SelectItem(hCurrItem);
-					else
+					else 
 						Expand(hCurrItem, TVE_EXPAND);
+
 					break;
 				}
 
@@ -2120,7 +2141,7 @@ void CWtlFileTreeCtrl::LoadState() {
 			}
 		}
 
-		if (hCurrItem != NULL) EnsureVisible(hCurrItem);
+		//if (hCurrItem != NULL) EnsureVisible(hCurrItem);
 	}
 	catch (...) {
 		systemMessageEx("Error at CWtlFileTreeCtrl::SaveState", __FILE__, __LINE__);
@@ -2286,127 +2307,3 @@ BOOL CALLBACK FavoritesFolderNameDlgProc(HWND hDlg, UINT message, WPARAM wParam,
 	return FALSE;
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Extensions to execute from tree input dialog proc
-///////////////////////////////////////////////////////////////////////////////////////////////////
-BOOL CALLBACK FileExtensionsToExcludeDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
-	static CWtlFileTreeCtrl* ownerDlg;
-
-	try {
-		switch(message)
-		{
-			case WM_INITDIALOG:
-				{
-					// Asign owner
-					ownerDlg = (CWtlFileTreeCtrl*)lParam;
-
-					// Fill Exclued extensions list
-					CUT2_INI confIni(ownerDlg->GetIniFilePath());
-					CUTL_BUFFER executeExtensionsList, tempBuf;
-
-					executeExtensionsList = confIni.LoadStr("Extensions", "Execute", "");
-
-					if (executeExtensionsList.Len()) {
-						tempBuf.Sf("#%s;", executeExtensionsList.GetSafe());
-
-						CUTL_PARSE excludeParse(tempBuf.GetSafe(), NULL, '#');
-
-						excludeParse.NextToken();
-
-						for (UINT i = 1; i <= excludeParse.NumArgs(); i++) 
-							::SendMessage(::GetDlgItem(hDlg, IDC_EXTENSIONS_LIST), LB_ADDSTRING, 0, (LPARAM)excludeParse.StrArg(i));
-					}
-
-					// Place the dialog
-					RECT rc, rcDlg;
-					POINT upperMiddle;
-
-					::GetWindowRect(::GetDesktopWindow(), &rc);
-					::GetWindowRect(hDlg, &rcDlg);
-
-					upperMiddle.x = rc.left + ((rc.right - rc.left) / 2);
-					upperMiddle.y = rc.top + ((rc.bottom - rc.top) / 4);
-
-					int x = upperMiddle.x - ((rcDlg.right - rcDlg.left) / 2);
-					int y = upperMiddle.y - ((rcDlg.bottom - rcDlg.top) / 2);
-
-					::SetWindowPos(hDlg, HWND_TOP, x, y, rcDlg.right - rcDlg.left, rcDlg.bottom - rcDlg.top, SWP_SHOWWINDOW);
-				}
-				break;
-
-			case WM_COMMAND:
-				{	
-					if (LOWORD(wParam) == IDC_EXECUTE_EXT) {
-						// Read the new extension
-						CUTL_BUFFER newExtension(256);
-						UINT	found;
-
-						::GetWindowText(::GetDlgItem(hDlg, IDC_EXTENSION), (LPSTR)newExtension.GetSafe(), 255);
-
-						// Is it already on the list?
-						if (LB_ERR != ::SendMessage(::GetDlgItem(hDlg, IDC_EXTENSIONS_LIST), LB_FINDSTRINGEXACT, -1, (LPARAM)newExtension.GetSafe())) {
-							::MessageBox(hDlg, "This extension is alredy on the list", "Light Explorer", MB_OK);
-							::SendMessage(::GetDlgItem(hDlg, IDC_EXTENSION), EM_SETSEL, 0, -1);
-						}
-						else if (newExtension.FindOneOf(".@,;:?<>/\\", found)) {
-							::MessageBox(hDlg, "Don't include any of these characters in the extension: '.@,;:?<>/\\'", "Light Explorer", MB_OK);
-							::SendMessage(::GetDlgItem(hDlg, IDC_EXTENSION), EM_SETSEL, 0, -1);
-						}
-						else {
-							::SendMessage(::GetDlgItem(hDlg, IDC_EXTENSIONS_LIST), LB_ADDSTRING, 0, (LPARAM)newExtension.GetSafe());
-							::SetWindowText(::GetDlgItem(hDlg, IDC_EXTENSION), "");
-
-						}
-						::SetFocus(::GetDlgItem(hDlg, IDC_EXTENSION));
-						return FALSE;
-					}
-
-					if (LOWORD(wParam) == IDC_EXTENSIONS_LIST) {
-						if (HIWORD(wParam) == LBN_DBLCLK) {
-							int selIndex = (int)::SendMessage((HWND)lParam, LB_GETCURSEL, 0, 0L);
-
-							if (selIndex != LB_ERR) 
-								::SendMessage((HWND)lParam, LB_DELETESTRING, selIndex, 0l);
-						}
-						return FALSE;
-					}
-
-					if (LOWORD(wParam) == IDOK) {
-						// Save the extension files to exclude
-						CUTL_BUFFER extensionsToExecute;
-						CUTL_BUFFER temp;
-
-						int i = 0, length;
-
-						while(LB_ERR != (length = (int)::SendMessage(::GetDlgItem(hDlg, IDC_EXTENSIONS_LIST), LB_GETTEXTLEN, (WPARAM)i, 0L))) {
-							temp.Realloc(length + 1);
-
-							::SendMessage(::GetDlgItem(hDlg, IDC_EXCLUDE_LIST), LB_GETTEXT, (WPARAM)i++, (LPARAM)temp.GetSafe());
-
-							if (extensionsToExecute.Len()) extensionsToExecute += ",";
-							extensionsToExecute += temp.GetSafe();
-						}
-
-						if (extensionsToExecute.Len()) {
-							CUT2_INI	confIni(ownerDlg->GetIniFilePath());
-
-							confIni.Write("Extensions", "Execute", extensionsToExecute.GetSafe());
-						}
-						::EndDialog(hDlg, IDOK);
-					}
-
-					if (LOWORD(wParam) == IDCANCEL) {
-						::EndDialog(hDlg, IDCANCEL);
-					}
-				}
-				break;
-
-			default:
-				break;
-		}
-	}
-	catch (...) {
-		systemMessageEx("Error en SearchInputDlg::FileExtensionsToExcludeDlgProc", __FILE__, __LINE__);
-	}
-	return FALSE;
-}
