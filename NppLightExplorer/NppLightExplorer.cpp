@@ -51,6 +51,7 @@
 //  WtlFileTreeCtrl.cpp		06.06.2007	Fixed custom folder rename
 //  WtlFileTreeCtrl.cpp		14.06.2007	Added 'Syncronize with current file' context menu option
 //  WtlFileTreeCtrl.cpp		26.06.2007	Added 'Open Folder' context menu option
+//										Added 'Open command line here' context menu option
 //  
 
 #include "stdafx.h"
