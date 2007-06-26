@@ -333,11 +333,11 @@ long CUT2_INI::LoadLong(LPCSTR section, LPCSTR entry, long def) {
 
 LPCSTR CUT2_INI::LoadStr(LPCSTR section, LPCSTR entry, LPCSTR def) {
    int size;
-   CUTL_BUFFER buf(512);                          
+   CUTL_BUFFER buf(10*1024);                          
 
    if (!_CRVERIFY(m_file.data)) return 0; //Falta definir el fichero con SetFileName
    _CRCHECK(section && entry);
-   size = ::GetPrivateProfileString(section, entry, UTL_Null(def), LPSTR(buf), 512, m_file);
+   size = ::GetPrivateProfileString(section, entry, UTL_Null(def), LPSTR(buf), 10*1024, m_file);
    CUTL_BUFFER::operator=(buf);    
    return (size) ? data : NULL;
 }
@@ -379,11 +379,11 @@ BOOL CUT2_INI::Flush() const {
 
 LPCSTR CUT2_INI::LoadEntries(LPCSTR section) {
    int size;
-   CUTL_BUFFER buf(32*1024);
+   CUTL_BUFFER buf(64*1024);
  
    if (!_CRVERIFY(m_file.data)) return 0; // Falta definir el fichero con SetFileName
    _CRCHECK(section);
-   size = ::GetPrivateProfileString(section, NULL, "", LPSTR(buf), 32*1024, m_file);
+   size = ::GetPrivateProfileString(section, NULL, "", LPSTR(buf), 64*1024, m_file);
    Realloc(size+2);
    UTL_memcpy(data, LPSTR(buf), size+2);      
    return (size) ? data : NULL;
@@ -391,10 +391,10 @@ LPCSTR CUT2_INI::LoadEntries(LPCSTR section) {
 
 LPCSTR CUT2_INI::LoadSections() {
    int size;
-   CUTL_BUFFER buf(1024);
+   CUTL_BUFFER buf(10*1024);
 
    if (!_CRVERIFY(m_file.data)) return 0; //Falta definir el fichero con SetFileName
-   size = ::GetPrivateProfileString(NULL, NULL, "", LPSTR(buf), 1024, m_file);
+   size = ::GetPrivateProfileString(NULL, NULL, "", LPSTR(buf), 10*1024, m_file);
    Realloc(size+2);
    UTL_memcpy(data, LPSTR(buf), size+2);      
    return (size) ? data : NULL;

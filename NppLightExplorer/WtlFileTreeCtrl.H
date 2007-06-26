@@ -43,6 +43,8 @@ const UINT WM_ITEM_SELECTED = WM_APP + 2;
 #define LOAD_LAST_SESSION			12010
 #define USE_SYSTEM_ICONS			12011
 #define SYNCRONIZE					12012
+#define OPEN_FOLDER					12013
+#define OPEN_COMMANDLINE			12014
 
 // Roots
 #define ROOT_FAVORITES		"Favorites"
@@ -184,6 +186,8 @@ public:
 	void DoCustomRename();
 	void DoCustomNewFolder();
 	void SynchronizeTree();
+	void DoOpenFolder();
+	void DoOpenCommandLine();
 
 	LPCSTR				GetItemDisplayString(HTREEITEM hItem);
 	bool				SetItemDisplayString(HTREEITEM hItem, LPCSTR newDisplayString);

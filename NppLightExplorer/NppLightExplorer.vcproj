@@ -67,7 +67,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib mpr.lib"
-				OutputFile="C:\Program Files\Notepad++\plugins\NppLightExplorer.dll"
+				OutputFile="C:\Program Files\Notepad++\plugins\LightExplorer.dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/NppLightExplorer.pdb"
@@ -146,7 +146,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib mpr.lib"
-				OutputFile="C:\Program Files\Notepad++\plugins\NppLightExplorer.dll"
+				OutputFile="C:\Program Files\Notepad++\plugins\LightExplorer.dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
 				SubSystem="2"

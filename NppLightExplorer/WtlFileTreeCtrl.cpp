@@ -1120,6 +1120,8 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		UINT		uFlags;
 		HMENU		hStandardMenu = NULL;
 		CUT2_INI	confIni(m_iniFilePath);
+		bool		enableSyncronizeOption = false;
+		bool		leftItemIsLocalResource = false;
 
 		bool		initialLoadOnStartup = confIni.LoadInt("startContext", "loadOnStartup", 1) ? true : false;
 
@@ -1149,6 +1151,13 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			ScreenToClient(&clientPoint);
 		}
 
+		// Decide wether to show the SYNCRONIZE option menu
+		char	path[MAX_PATH];
+
+		::SendMessage(m_nppHandle, WM_GET_FULLCURRENTPATH, 0, (LPARAM)path);
+		
+		enableSyncronizeOption = (path[1] == ':') ? true : false;
+
 		HTREEITEM hHitItem = HitTest(clientPoint, &uFlags);
 
 		if (hHitItem == NULL || (!(TVHT_ONITEMICON & uFlags) && !(TVHT_ONITEMLABEL & uFlags))) {
@@ -1163,9 +1172,24 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			mii.wID			= SYNCRONIZE;
 			mii.dwTypeData	= "Syncronize tree with current document";
 			mii.cch			= UTL_strlen(mii.dwTypeData);
-			mii.fState		= MFS_ENABLED;
+			mii.fState		= enableSyncronizeOption ? MFS_ENABLED : MFS_DISABLED;
 
 			::InsertMenuItem(hPopupMenu, SYNCRONIZE, FALSE, &mii);
+
+			mii.wID			= OPEN_FOLDER;
+			mii.dwTypeData	= "Open folder";
+			mii.cch			= UTL_strlen(mii.dwTypeData);
+			mii.fState		= MFS_DISABLED;
+
+			::InsertMenuItem(hPopupMenu, OPEN_FOLDER, FALSE, &mii);
+
+			mii.wID			= OPEN_COMMANDLINE;
+			mii.dwTypeData	= "Open command line here";
+			mii.cch			= UTL_strlen(mii.dwTypeData);
+			mii.fState		= MFS_DISABLED;
+
+			::InsertMenuItem(hPopupMenu, OPEN_COMMANDLINE, FALSE, &mii);
+			::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
 
 			// Load last session tree state on startup
 			mii.wID			= LOAD_LAST_SESSION;
@@ -1195,6 +1219,14 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 					SynchronizeTree();
 					break;
 
+				case OPEN_FOLDER:
+					DoOpenFolder();
+					break;
+
+				case OPEN_COMMANDLINE:
+					DoOpenCommandLine();
+					break;
+
 				case LOAD_LAST_SESSION:
 					confIni.Write("startContext", "loadOnStartup", initialLoadOnStartup ? "0" : "1");
 					break;
@@ -1217,9 +1249,12 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		HMENU hPopupMenu;
 
 		// Manage the standard menu
-		int		iMenuType = 0;
+		int			iMenuType = 0;
+		CUTL_BUFFER itemTag(GetItemTag(hHitItem));
 
 		SetObjects(GetItemTag(hHitItem));
+		
+		leftItemIsLocalResource = (itemTag[1] == ':') ? true : false;
 
 		if (m_pidlArray != NULL) {
 			hStandardMenu = ::CreateMenu();
@@ -1382,22 +1417,27 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 		::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
 
-		// File extensions to execute
-		/*
-		mii.wID			= FILE_EXTENSIONS_TO_EXECUTE;
-		mii.dwTypeData	= "File extensions to execute ...";
-		mii.cch			= UTL_strlen(mii.dwTypeData);
-		mii.fState		= MFS_ENABLED;
-
-		::InsertMenuItem(hPopupMenu, FILE_EXTENSIONS_TO_EXECUTE, FALSE, &mii);
-		*/
-
 		mii.wID			= SYNCRONIZE;
 		mii.dwTypeData	= "Syncronize tree with current document";
 		mii.cch			= UTL_strlen(mii.dwTypeData);
-		mii.fState		= MFS_ENABLED;
+		mii.fState		= enableSyncronizeOption ? MFS_ENABLED : MFS_DISABLED;
 
 		::InsertMenuItem(hPopupMenu, SYNCRONIZE, FALSE, &mii);
+
+		mii.wID			= OPEN_FOLDER;
+		mii.dwTypeData	= "Open folder";
+		mii.cch			= UTL_strlen(mii.dwTypeData);
+		mii.fState		= itemType == CCustomItemInfo::FOLDER ? MFS_ENABLED : MFS_DISABLED;
+
+		::InsertMenuItem(hPopupMenu, OPEN_FOLDER, FALSE, &mii);
+
+		mii.wID			= OPEN_COMMANDLINE;
+		mii.dwTypeData	= "Open command line here";
+		mii.cch			= UTL_strlen(mii.dwTypeData);
+		mii.fState		= (itemType == CCustomItemInfo::FOLDER && leftItemIsLocalResource) ? MFS_ENABLED : MFS_DISABLED;
+
+		::InsertMenuItem(hPopupMenu, OPEN_COMMANDLINE, FALSE, &mii);
+		::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
 
 		mii.wID			= LOAD_LAST_SESSION;
 		mii.dwTypeData	= "Load tree state on startup";
@@ -1467,6 +1507,14 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 					SynchronizeTree();
 					break;
 
+				case OPEN_FOLDER:
+					DoOpenFolder();
+					break;
+
+				case OPEN_COMMANDLINE:
+					DoOpenCommandLine();
+					break;
+
 				case LOAD_LAST_SESSION:
 					confIni.Write("startContext", "loadOnStartup", initialLoadOnStartup ? "0" : "1");
 					break;
@@ -1504,6 +1552,60 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		systemMessageEx("Error at CWtlFileTreeCtrl::OnRClickItem.", __FILE__, __LINE__);
 	}
 	return 0;
+}
+
+void CWtlFileTreeCtrl::DoOpenCommandLine() {
+	try {
+		CUTL_PATH   currFullPath(GetSelectedPath());
+		CUTL_BUFFER driveDir, parameters, bufTemp;
+
+		parameters.Sf("/E:ON /k pushd \"%s\"", (LPCSTR)currFullPath); 
+
+		SHELLEXECUTEINFO  si;
+		// Preparamos el si
+		ZeroMemory(&si, sizeof(si));
+		si.cbSize         = sizeof(SHELLEXECUTEINFO);
+		si.fMask          = SEE_MASK_INVOKEIDLIST;
+		si.hwnd           = NULL;
+		si.lpVerb         = "open";
+		si.lpFile         = "cmd.exe";
+		si.lpParameters   = parameters.GetSafe(); // driveDir.GetSafe();
+		si.lpDirectory    = NULL;
+		si.nShow          = SW_SHOWNORMAL;
+
+		if (!ShellExecuteEx(&si)) 
+			systemMessage(bufTemp.Sf("Error opening cmd on folder '%s'.", driveDir.GetSafe()));
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::DoOpenCommandLine.", __FILE__, __LINE__);
+	}
+}
+
+void CWtlFileTreeCtrl::DoOpenFolder() {
+	try {
+		CUTL_PATH   currFullPath(GetSelectedPath());
+		CUTL_BUFFER driveDir, bufTemp;
+
+		currFullPath.GetDriveDirectory(driveDir);
+
+		SHELLEXECUTEINFO  si;
+		// Preparamos el si
+		ZeroMemory(&si, sizeof(si));
+		si.cbSize         = sizeof(SHELLEXECUTEINFO);
+		si.fMask          = SEE_MASK_INVOKEIDLIST;
+		si.hwnd           = NULL;
+		si.lpVerb         = "open";
+		si.lpFile         = driveDir.GetSafe();
+		si.lpParameters   = NULL;
+		si.lpDirectory    = NULL;
+		si.nShow          = SW_SHOWNORMAL;
+
+		if (!ShellExecuteEx(&si)) 
+			systemMessage(bufTemp.Sf("Error executing folder'%s'.", driveDir.GetSafe()));
+	}
+	catch (...) {
+		systemMessageEx("Error at CWtlFileTreeCtrl::DoOpenFolder.", __FILE__, __LINE__);
+	}
 }
 
 void CWtlFileTreeCtrl::DoCustomDelete() {
