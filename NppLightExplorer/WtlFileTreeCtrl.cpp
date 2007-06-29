@@ -1120,7 +1120,7 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 		UINT		uFlags;
 		HMENU		hStandardMenu = NULL;
 		CUT2_INI	confIni(m_iniFilePath);
-		bool		enableSyncronizeOption = false;
+		bool		enableSynchronizeOption = false;
 		bool		leftItemIsLocalResource = false;
 
 		bool		initialLoadOnStartup = confIni.LoadInt("startContext", "loadOnStartup", 1) ? true : false;
@@ -1151,12 +1151,12 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 			ScreenToClient(&clientPoint);
 		}
 
-		// Decide wether to show the SYNCRONIZE option menu
+		// Decide wether to show the SYNCHRONIZE option menu
 		char	path[MAX_PATH];
 
 		::SendMessage(m_nppHandle, WM_GET_FULLCURRENTPATH, 0, (LPARAM)path);
 		
-		enableSyncronizeOption = (path[1] == ':') ? true : false;
+		enableSynchronizeOption = (path[1] == ':') ? true : false;
 
 		HTREEITEM hHitItem = HitTest(clientPoint, &uFlags);
 
@@ -1169,12 +1169,12 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 			HMENU hPopupMenu = ::CreatePopupMenu();
 
-			mii.wID			= SYNCRONIZE;
-			mii.dwTypeData	= "Syncronize tree with current document";
+			mii.wID			= SYNCHRONIZE_THREE;
+			mii.dwTypeData	= "Synchronize tree with current document";
 			mii.cch			= UTL_strlen(mii.dwTypeData);
-			mii.fState		= enableSyncronizeOption ? MFS_ENABLED : MFS_DISABLED;
+			mii.fState		= enableSynchronizeOption ? MFS_ENABLED : MFS_DISABLED;
 
-			::InsertMenuItem(hPopupMenu, SYNCRONIZE, FALSE, &mii);
+			::InsertMenuItem(hPopupMenu, SYNCHRONIZE, FALSE, &mii);
 
 			mii.wID			= OPEN_FOLDER;
 			mii.dwTypeData	= "Open folder";
@@ -1215,7 +1215,7 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 			switch (resp) 
 			{
-				case SYNCRONIZE:
+				case SYNCHRONIZE_THREE:
 					SynchronizeTree();
 					break;
 
@@ -1417,12 +1417,12 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 
 		::AppendMenu(hPopupMenu, MF_SEPARATOR, 0, 0);
 
-		mii.wID			= SYNCRONIZE;
-		mii.dwTypeData	= "Syncronize tree with current document";
+		mii.wID			= SYNCHRONIZE_THREE;
+		mii.dwTypeData	= "Synchronize tree with current document";
 		mii.cch			= UTL_strlen(mii.dwTypeData);
-		mii.fState		= enableSyncronizeOption ? MFS_ENABLED : MFS_DISABLED;
+		mii.fState		= enableSynchronizeOption ? MFS_ENABLED : MFS_DISABLED;
 
-		::InsertMenuItem(hPopupMenu, SYNCRONIZE, FALSE, &mii);
+		::InsertMenuItem(hPopupMenu, SYNCHRONIZE, FALSE, &mii);
 
 		mii.wID			= OPEN_FOLDER;
 		mii.dwTypeData	= "Open folder";
@@ -1503,7 +1503,7 @@ BOOL CWtlFileTreeCtrl::OnRClickItem(int idCtrl, LPNMHDR pnmh, BOOL& bHandled, BO
 					ExecuteFile();
 					break;
 
-				case SYNCRONIZE:
+				case SYNCHRONIZE_THREE:
 					SynchronizeTree();
 					break;
 
