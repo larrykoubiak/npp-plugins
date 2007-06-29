@@ -811,35 +811,9 @@ BOOL CWtlFileTreeCtrl::OnLButtonDblClick(int idCtrl, LPNMHDR pnmh, BOOL& bHandle
 
 	bHandled = FALSE; // Let's the message move on
 	// If it is a file let's open it, nothing to do now if it's a folder, a root or the network
-	if (GetItemType(currItem) == CCustomItemInfo::FILE) {
-		CUTL_BUFFER executeExtensions, fileExtension, bufTemp;
-		CUT2_INI	confIni(m_iniFilePath.GetSafe());
-		CUTL_PATH	filePath(bufPath.GetSafe());
-		UINT		found;
+	if (GetItemType(currItem) == CCustomItemInfo::FILE) 
+		::SendMessage(m_nppHandle, WM_DOOPEN, 0, (LPARAM)bufPath.GetSafe());
 
-		filePath.GetExtension(fileExtension);
-		executeExtensions = confIni.LoadStr("Extensions", "Execute");
-		executeExtensions.Lower();
-
-		if (executeExtensions.Find(fileExtension.Lower(), found)) {
-			SHELLEXECUTEINFO  si;
-			// Preparamos el si
-			ZeroMemory(&si, sizeof(si));
-			si.cbSize         = sizeof(SHELLEXECUTEINFO);
-			si.fMask          = SEE_MASK_INVOKEIDLIST;
-			si.hwnd           = NULL;
-			si.lpVerb         = "open";
-			si.lpFile         = (LPCSTR)bufPath.GetSafe();
-			si.lpParameters   = NULL;
-			si.lpDirectory    = NULL;
-			si.nShow          = SW_SHOWNORMAL;
-
-			if (!ShellExecuteEx(&si)) 
-				systemMessage(bufTemp.Sf("Error executing file'%s'.", bufPath.GetSafe()));
-		}
-		else
-			::SendMessage(m_nppHandle, WM_DOOPEN, 0, (LPARAM)bufPath.GetSafe());
-	}
 	return 0;	
 }
 
