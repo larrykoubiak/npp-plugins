@@ -119,7 +119,7 @@
 			<Linker Name="ExeDescription"></Linker>
 		</Linker>
 		<Directories>
-			<Directories Name="OutputDir">C:\Documents and Settings\Martijn\Application Data\Notepad++\plugins</Directories>
+			<Directories Name="OutputDir">..\out</Directories>
 			<Directories Name="UnitOutputDir">..\out\DCU</Directories>
 			<Directories Name="PackageDLLOutputDir"></Directories>
 			<Directories Name="PackageDCPOutputDir"></Directories>
@@ -131,7 +131,7 @@
 		</Directories>
 		<Parameters>
 			<Parameters Name="RunParams"></Parameters>
-			<Parameters Name="HostApplication">C:\Program Files\Office\Notepad++\notepad++.exe</Parameters>
+			<Parameters Name="HostApplication">C:\Program Files\Office\MC\Notepad++\notepad++.exe</Parameters>
 			<Parameters Name="Launcher"></Parameters>
 			<Parameters Name="UseLauncher">False</Parameters>
 			<Parameters Name="DebugCWD"></Parameters>
