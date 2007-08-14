@@ -10,7 +10,8 @@ uses
   NppScintillaConstants in '..\Src\LibNppPlugin\NppScintillaConstants.pas',
   NppSimpleObjects in '..\Src\LibNppPlugin\NppSimpleObjects.pas',
   L_ActiveX in '..\Src\Common\L_ActiveX.pas',
-  L_DebugLogger in '..\Src\Common\L_DebugLogger.pas';
+  L_DebugLogger in '..\Src\Common\L_DebugLogger.pas',
+  L_GetLongPath in '..\Src\Common\L_GetLongPath.pas';
 
 var
   PrevDllProcEx: procedure(reasonForCall: integer; lpReserved: integer);
