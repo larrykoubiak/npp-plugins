@@ -1,16 +1,15 @@
 [Introduction]
 This plug-in provides two core functions to Notepad++:
-- HTML and XML tag matching, like 
-- HTML entity encoding/decoding (example: é to &eacute;)
+- HTML and XML tag matching, like the built-in highlighting of matching braces
+- HTML entity encoding/decoding (example: é to &eacute; and back)
 
 It originated in these requests on the Plugin Development forum on SourceForge.net:
 - http://sourceforge.net/forum/message.php?msg_id=4284078
-- https://sourceforge.net/forum/message.php?msg_id=4443898
+- http://sourceforge.net/forum/message.php?msg_id=4443898
 
 
 [Installation]
-As usual:  
-Extract the DLL and accompanying files to the plugins folder under 
+As usual: extract the DLL and accompanying files to the plugins folder under 
 %ProgramFiles%\Notepad++ (or wherever you're running Notepad++ from) or %AppData%\Notepad++, and 
 (re)start Np++.
 
@@ -19,7 +18,7 @@ Extract the DLL and accompanying files to the plugins folder under
 - Ctrl+T to select the matching tag;
 - Shift+Ctrl+T to select both tags and the entire contents in between. 
 
-- Ctrl+E to encode all selected non-ASCII characters to their HTML entities;
+- Ctrl+E to Encode all selected non-ASCII characters to their HTML entities;
 - Shift+Ctrl+E to dEcode all selected HTML entities.
 
 All options are available under the Plugins menu item 'HTML Tag'; the shortcut keys can be adjusted 
@@ -39,13 +38,19 @@ HTMLTag-readme.txt		The file you're reading now.
   * Initial publication
 - 0.2 - 2007-08-12 18:00
   * Added entity encoding/decoding
+  * Tag detection is now case-sensitive in XML files (where the XML highlighter is used; 
+    i.e. LangType = L_XML)
+  * Uploaded the source to the Npp-plugins projects on SF.net 
+
 
 [To do]
-* Make tag detection case-sensitive in XML files 
 * Make it play nice with PHP & ASP tags (either highlight those separately or ignore them) 
-* Upload the source to the Npp-plugins projects on SF.net 
 * Write up a little readme, include that in the distribution zip, and post it on some web page 
-* Make it behave like bracket highlighting 
+* Make highlighting behave like brace highlighting (e.g. highlight current tag name and matching
+  tag name when the text cursor is within either tag)
+* Once live highlighting is implemented, add options window to specify which languages should 
+  support Live Tag highlighting, and enable turning it off altogether
+* Take CDATA segments into account
 
 
 [About]
