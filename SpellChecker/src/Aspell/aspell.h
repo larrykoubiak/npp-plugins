@@ -9,8 +9,10 @@
 #ifndef ASPELL_ASPELL__H
 #define ASPELL_ASPELL__H
 
+#include "SpellChecker.h"
 
-BOOL LoadAspell(void);
+
+BOOL LoadAspell(tSCProp* pSCProp);
 void UnloadAspell(void);
 
 #ifdef __cplusplus
