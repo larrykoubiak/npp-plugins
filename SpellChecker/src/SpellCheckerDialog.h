@@ -34,7 +34,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 using namespace std;
 
 
-#define MAX_WORD    256
+#define MAX_WORD		MAX_PATH
+#define MAX_WORD_UNI	(MAX_PATH+MAX_PATH)
+
 
 typedef enum RTHR {
     SC_STOP = FALSE,
@@ -45,12 +47,22 @@ typedef enum {
     EID_REPLACE,
     EID_LERN,
     EID_IGNORE,
+	EID_IGNOREALL,
     EID_CHANGE_LANG,
     EID_CANCEL,
     EID_MAX
 } eEventId;
 
+const char szEnc[][11] = {
+	_T("iso8859-15"),
+	_T("utf-8"),
+};
 
+typedef enum UniMode {
+	uni8Bit,
+	uniUTF8,
+	uniEnd
+};
 
 class SpellCheckerDialog : public StaticDialog
 {
@@ -85,10 +97,18 @@ protected:
     void CreateThreadResources(void);
     void DestroyThreadResources(void);
 
+	UniMode GetCurrentEncoding(void);
+
+	void GetEditText(HWND hWnd, char* pszString, int nMaxCount);
+	void SetEditText(HWND hWnd, char* pszString);
+
 private:
 	/* Handles */
 	NppData					_nppData;
     BOOL                    _bUpdateNewEdit;
+
+	/* Current UNI mode */
+	UniMode					_uniMode;
 
 	/* handles of controls */
 	HWND					_hStaticWord;
