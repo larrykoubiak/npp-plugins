@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../src,../../src/HelpDlg,../../src/Aspell"
+				AdditionalIncludeDirectories="../../src,../../src/HelpDlg,../../src/Aspell,../../../Common/Ccpp"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;SPELLCHECKER_EXPORTS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -67,7 +67,7 @@
 				InlineFunctionExpansion="1"
 				FavorSizeOrSpeed="2"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="../../src,../../src/HelpDlg,../../src/Aspell"
+				AdditionalIncludeDirectories="../../src,../../src/HelpDlg,../../src/Aspell,../../../Common/Ccpp"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;SPELLCHECKER_EXPORTS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -116,16 +116,16 @@
 				RelativePath="..\..\src\HelpDlg\NotAvailableDialog.cpp">
 			</File>
 			<File
-				RelativePath="..\..\src\PluginInterface.cpp">
+				RelativePath="..\..\src\SpellChecker.cpp">
 			</File>
 			<File
 				RelativePath="..\..\src\SpellCheckerDialog.cpp">
 			</File>
 			<File
-				RelativePath="..\..\src\StaticDialog.cpp">
+				RelativePath="..\..\..\Common\Ccpp\StaticDialog.cpp">
 			</File>
 			<File
-				RelativePath="..\..\src\SysMsg.cpp">
+				RelativePath="..\..\..\Common\Ccpp\SysMsg.cpp">
 			</File>
 			<File
 				RelativePath="..\..\src\HelpDlg\URLCtrl.cpp">
@@ -134,7 +134,7 @@
 				RelativePath="..\..\src\Aspell\aspell.cpp">
 			</File>
 			<File
-				RelativePath="..\..\src\stdafx.cpp">
+				RelativePath="..\..\..\Common\Ccpp\stdafx.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -147,25 +147,31 @@
 				RelativePath="..\..\src\HelpDlg\NotAvailableDialog.h">
 			</File>
 			<File
-				RelativePath="..\..\src\PluginInterface.h">
+				RelativePath="..\..\..\Common\Ccpp\Notepad_plus_msgs.h">
 			</File>
 			<File
-				RelativePath="..\..\src\Scintilla.h">
+				RelativePath="..\..\..\Common\Ccpp\PluginInterface.h">
+			</File>
+			<File
+				RelativePath="..\..\..\Common\Ccpp\Scintilla.h">
+			</File>
+			<File
+				RelativePath="..\..\src\SpellChecker.h">
 			</File>
 			<File
 				RelativePath="..\..\src\SpellCheckerDialog.h">
 			</File>
 			<File
-				RelativePath="..\..\src\StaticDialog.h">
+				RelativePath="..\..\..\Common\Ccpp\StaticDialog.h">
 			</File>
 			<File
-				RelativePath="..\..\src\SysMsg.h">
+				RelativePath="..\..\..\Common\Ccpp\SysMsg.h">
 			</File>
 			<File
 				RelativePath="..\..\src\HelpDlg\URLCtrl.h">
 			</File>
 			<File
-				RelativePath="..\..\src\Window.h">
+				RelativePath="..\..\..\Common\Ccpp\Window.h">
 			</File>
 			<File
 				RelativePath="..\..\src\Aspell\aspell.h">
@@ -177,7 +183,7 @@
 				RelativePath="..\..\src\resource.h">
 			</File>
 			<File
-				RelativePath="..\..\src\stdafx.h">
+				RelativePath="..\..\..\Common\Ccpp\stdafx.h">
 			</File>
 		</Filter>
 		<Filter
