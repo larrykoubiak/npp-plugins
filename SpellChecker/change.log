@@ -2,14 +2,23 @@
 Change-log for SpellChecker.dll
 
 ------------------------------------------------------------------------------------
+07/09/09  v1.2 :
+------------------------------------------------------------------------------------
+    Fix: Supports now UNICODE correctly
+    New: Add button "Ignore All" to skip specific words within a session
+    New: Aspell could also be used on mass storages
+    New: Now filter implemented for HTML and TeX
+    Change: Now using NPPM_GETPLUGINSCONFIGDIR to get ini file location
+
+------------------------------------------------------------------------------------
 07/03/31  v1.1 :
 ------------------------------------------------------------------------------------
-	Fix: Now on W9x platforms the combo box enlarged correctly
+    Fix: Now on W9x platforms the combo box enlarged correctly
     Fix: Dialog boxes are not system modal
-	Fix: The configuration is stored in "Spellchecker.ini"
+    Fix: The configuration is stored in "Spellchecker.ini"
     Fix: Changed typo "Lern" to "Learn"
-	
+
 ------------------------------------------------------------------------------------
 07/03/13  v1.0 :
 ------------------------------------------------------------------------------------
-	First official release.
+    First official release.
