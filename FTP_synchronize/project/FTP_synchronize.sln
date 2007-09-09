@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FTP_synchronize", "FTP_synchronize.vcproj", "{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Debug.ActiveCfg = Debug|Win32
+		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Debug.Build.0 = Debug|Win32
+		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Release.ActiveCfg = Release|Win32
+		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal
