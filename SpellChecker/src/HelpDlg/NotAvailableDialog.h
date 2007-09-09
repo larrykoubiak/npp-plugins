@@ -21,8 +21,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef NOTAVAIL_DEFINE_H
 #define NOTAVAIL_DEFINE_H
 
+#include "SpellChecker.h"
 #include "StaticDialog.h"
-#include "PluginInterface.h"
 #include "URLCtrl.h"
 #include "resource.h"
 
@@ -40,7 +40,7 @@ public:
 		Window::init(hInst, nppData._nppHandle);
 	};
 
-   	UINT doDialog(void);
+   	UINT doDialog(tSCProp* pSCProp);
 
     virtual void destroy() {
         _urlAspellWin32.destroy();
@@ -53,6 +53,9 @@ protected :
 private:
 	/* Handles */
 	NppData			_nppData;
+
+	/* Global data */
+	tSCProp*		_pSCProp;
 
 	/* for eMail */
     URLCtrl			_urlAspellWin32;

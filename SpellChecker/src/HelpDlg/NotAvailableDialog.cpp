@@ -18,12 +18,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 #include "NotAvailableDialog.h"
-#include "PluginInterface.h"
 
 
-UINT NotAvailableDialog::doDialog(void)
+UINT NotAvailableDialog::doDialog(tSCProp* pSCProp)
 {
-	return ::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_NOTAVAILABLE_DLG), _hParent, (DLGPROC)dlgProc, (LPARAM)this);
+	_pSCProp = pSCProp;
+	return (UINT)::DialogBoxParam(_hInst, MAKEINTRESOURCE(IDD_NOTAVAILABLE_DLG), _hParent, (DLGPROC)dlgProc, (LPARAM)this);
 }
 
 
@@ -33,6 +33,8 @@ BOOL CALLBACK NotAvailableDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wP
 	{
         case WM_INITDIALOG :
 		{
+			::SetDlgItemText(_hSelf, IDC_EDIT_RELPATH, _pSCProp->szRelPath);
+
             _urlAspellWin32.init(_hInst, _hSelf);
             _urlAspellWin32.create(::GetDlgItem(_hSelf, IDC_ASPELL_WIN_URL), "http://aspell.net/win32/");
 
@@ -43,7 +45,10 @@ BOOL CALLBACK NotAvailableDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wP
 			switch (wParam)
 			{
                 case IDCANCEL :
+					::EndDialog(_hSelf, 0);
+					return TRUE;
 				case IDOK :
+					::GetDlgItemText(_hSelf, IDC_EDIT_RELPATH, _pSCProp->szRelPath, MAX_PATH);
 					::EndDialog(_hSelf, 0);
 					return TRUE;
 
