@@ -41,9 +41,9 @@ void Profile::allocatebuffers() {
 }
 
 void Profile::reload() {
-	GetPrivateProfileString(this->name, TEXT("Address"), NULL, this->address, BUFFERSIZE, this->iniFile);
-	GetPrivateProfileString(this->name, TEXT("Username"), NULL, this->username, BUFFERSIZE, this->iniFile);
-	GetPrivateProfileString(this->name, TEXT("Password"), NULL, this->password, BUFFERSIZE, this->iniFile);
+	GetPrivateProfileString(this->name, TEXT("Address"), TEXT(""), this->address, BUFFERSIZE, this->iniFile);
+	GetPrivateProfileString(this->name, TEXT("Username"), TEXT(""), this->username, BUFFERSIZE, this->iniFile);
+	GetPrivateProfileString(this->name, TEXT("Password"), TEXT(""), this->password, BUFFERSIZE, this->iniFile);
 #ifdef UNICODE
 	WideCharToMultiByte(CP_ACP, 0, this->address, -1, this->addressA, BUFFERSIZE, NULL, NULL);
 	WideCharToMultiByte(CP_ACP, 0, this->username, -1, this->usernameA, BUFFERSIZE, NULL, NULL);

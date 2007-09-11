@@ -6,13 +6,19 @@ EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
+		Debug ANSI = Debug ANSI
 		Release = Release
+		Release ANSI = Release ANSI
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
 		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Debug.ActiveCfg = Debug|Win32
 		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Debug.Build.0 = Debug|Win32
+		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Debug ANSI.ActiveCfg = Debug ANSI|Win32
+		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Debug ANSI.Build.0 = Debug ANSI|Win32
 		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Release.ActiveCfg = Release|Win32
 		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Release.Build.0 = Release|Win32
+		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Release ANSI.ActiveCfg = Release ANSI|Win32
+		{2B7769E9-CB4A-40A6-965E-C2E4F333CC60}.Release ANSI.Build.0 = Release ANSI|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

@@ -13,8 +13,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\..\build\Debug"
-			IntermediateDirectory=".\..\build\Debug"
+			OutputDirectory=".\..\build\$(ConfigurationName)"
+			IntermediateDirectory=".\..\build\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="2">
 			<Tool
@@ -66,18 +66,18 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\..\build\Release"
-			IntermediateDirectory=".\..\build\Release"
+			OutputDirectory=".\..\build\$(ConfigurationName)"
+			IntermediateDirectory=".\..\build\$(ConfigurationName)"
 			ConfigurationType="2"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
-				AdditionalIncludeDirectories=".\..\src\Notepad_specific;.\..\..\Common\Ccpp\"
 				GlobalOptimizations="TRUE"
 				FavorSizeOrSpeed="2"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FTP_SYNCHRONIZE_EXPORTS;UNICODE;_UNICODE"
+				AdditionalIncludeDirectories=".\..\src\Notepad_specific;.\..\..\Common\Ccpp\"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FTP_SYNCHRONIZE_EXPORTS;_UNICODE;UNICODE"
 				StringPooling="TRUE"
 				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
@@ -100,6 +100,118 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				OptimizeForWindows98="1"
+				ImportLibrary="$(OutDir)/FTP_synchronize.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release ANSI|Win32"
+			OutputDirectory=".\..\build\$(ConfigurationName)"
+			IntermediateDirectory=".\..\build\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				GlobalOptimizations="TRUE"
+				FavorSizeOrSpeed="2"
+				OptimizeForWindowsApplication="TRUE"
+				AdditionalIncludeDirectories=".\..\src\Notepad_specific;.\..\..\Common\Ccpp\"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FTP_SYNCHRONIZE_EXPORTS"
+				StringPooling="TRUE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
+				EnableEnhancedInstructionSet="2"
+				UsePrecompiledHeader="3"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="wsock32.lib shlwapi.lib comctl32.lib unicows.lib"
+				OutputFile="$(OutDir)/../FTP_synchronizeA.dll"
+				LinkIncremental="1"
+				IgnoreAllDefaultLibraries="FALSE"
+				GenerateDebugInformation="FALSE"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				ImportLibrary="$(OutDir)/FTP_synchronize.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Debug ANSI|Win32"
+			OutputDirectory=".\..\build\$(ConfigurationName)"
+			IntermediateDirectory=".\..\build\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories=".\..\src\Notepad_specific;.\..\..\Common\Ccpp\"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FTP_SYNCHRONIZE_EXPORTS"
+				MinimalRebuild="TRUE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				RuntimeTypeInfo="TRUE"
+				UsePrecompiledHeader="3"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="4"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="wsock32.lib shlwapi.lib comctl32.lib"
+				OutputFile="$(OutDir)/../FTP_synchronizeA_D.dll"
+				LinkIncremental="2"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/FTP_synchronize.pdb"
+				SubSystem="2"
+				BaseAddress="656211968"
 				ImportLibrary="$(OutDir)/FTP_synchronize.lib"
 				TargetMachine="1"/>
 			<Tool
@@ -160,6 +272,18 @@
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="1"/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Release ANSI|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug ANSI|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -212,7 +336,7 @@
 					RelativePath=".\..\..\Common\Ccpp\Scintilla.h">
 				</File>
 				<File
-					RelativePath=".\..\..\Common\Ccpp\ScintillaEditView.h">
+					RelativePath="..\src\Notepad_specific\ScintillaEditView.h">
 				</File>
 			</Filter>
 		</Filter>

@@ -256,7 +256,7 @@ void readProfiles() {
 		if (*(CharNext(curStringOffset)) == 0) {	//end of string
 			if (lstrcmpi(beginStringOffset, TEXT("FTP_Settings"))) {	//profile section
 				//err(beginStringOffset);
-				GetPrivateProfileString(beginStringOffset, TEXT("Port"), NULL, test, INIBUFSIZE, iniFile);
+				GetPrivateProfileString(beginStringOffset, TEXT("Port"), TEXT(""), test, INIBUFSIZE, iniFile);
 				if (test[0]) {	//the section is considered valid if a port is given, ie not an empty string
 					vProfiles->push_back( new Profile(beginStringOffset, iniFile) );
 				}
@@ -591,6 +591,7 @@ void connect() {
 	DWORD id;
 	if (CreateThread(NULL, 0, doConnect, NULL, 0, &id) == NULL) {
 		printf("Error creating connection thread: %d\n", GetLastError());
+		busy = false;
 	}
 }
 
@@ -603,6 +604,7 @@ void disconnect() {
 	DWORD id;
 	if (CreateThread(NULL, 0, doDisconnect, NULL, 0, &id) == NULL) {
 		printf("Error creating disconnection thread: %d\n", GetLastError());
+		busy = false;
 	}
 }
 
@@ -630,8 +632,10 @@ void download() {
 	}
 	lt->server = serverpath;
 	lt->localname = path;
-	if (CreateThread(NULL, 0, doDownload, lt, NULL, NULL) == NULL) {
+	DWORD id;
+	if (CreateThread(NULL, 0, doDownload, lt, NULL, &id) == NULL) {
 		printf("Error creating download thread: %d\n", GetLastError());
+		busy = false;
 	}
 	//delete [] path;
 }
@@ -669,8 +673,10 @@ void downloadSpecified() {
 	}
 	lt->server = serverpath;
 	lt->localname = path;
-	if (CreateThread(NULL, 0, doDownload, lt, NULL, NULL) == NULL) {
+	DWORD id;
+	if (CreateThread(NULL, 0, doDownload, lt, NULL, &id) == NULL) {
 		printf("Error creating download thread: %d\n", GetLastError());
+		busy = false;
 	}
 }
 
@@ -717,8 +723,10 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 			i++;
 		}
 		lt->server = servername;
-		if (CreateThread(NULL, 0, doUpload, lt, NULL, NULL) == NULL) {
+		DWORD id;
+		if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
 			printf("Error creating upload thread: %d\n", GetLastError());
+			busy = false;
 		} else {
 			return;
 		}
@@ -764,8 +772,10 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		lstrcat(serverfilepath, filename);
 		delete [] filename;
 		lt->server = serverfilepath;
-		if (CreateThread(NULL, 0, doUpload, lt, NULL, NULL) == NULL) {
+		DWORD id;
+		if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
 			printf("Error creating upload thread: %d\n", GetLastError());
+			busy = false;
 		} else {
 			return;
 		}
@@ -814,8 +824,10 @@ void uploadSpecified() {
 		i++;
 	}
 	lt->server = servername;
-	if (CreateThread(NULL, 0, doUpload, lt, NULL, NULL) == NULL) {
+	DWORD id;
+	if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
 		printf("Error creating upload thread: %d\n", GetLastError());
+		busy = false;
 	} else {
 		busy = false;
 		return;
@@ -835,6 +847,7 @@ void createDir() {
 	DWORD id;
 	if (CreateThread(NULL, 0, doCreateDirectory, NULL, 0, &id) == NULL) {
 		printf("Error creating doCreateDirectory thread: %d\n", GetLastError());
+		busy = false;
 	}
 }
 
@@ -847,6 +860,7 @@ void deleteDir() {
 	DWORD id;
 	if (CreateThread(NULL, 0, doDeleteDirectory, NULL, 0, &id) == NULL) {
 		printf("Error creating doDeleteDirectory thread: %d\n", GetLastError());
+		busy = false;
 	}
 }
 
@@ -858,6 +872,7 @@ void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree) {
 	DWORD id;
 	if (CreateThread(NULL, 0, doGetDirectory, dt, NULL, &id) == NULL) {
 		printf("Error creating directory thread: %d\n", GetLastError());
+		busy = false;
 	}
 }
 
