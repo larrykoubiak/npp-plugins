@@ -137,7 +137,7 @@ public:
 	bool renameDirectory(DIRECTORY * dir, const char * newName);
 	bool renameFile(FILEOBJECT * file, const char * newName);
 
-	DIRECTORY * getRoot() { return root; };
+	DIRECTORY * getRoot();
 	~FTP_Service();
 
 	//public due to implementation, do not call
@@ -205,7 +205,7 @@ private:
 	bool createPassiveConnection(SOCKCALLBACKFORMAT * params);
 	bool createDataConnection(const char * type, const char * command, SOCKCALLBACKFORMAT * sbf);
 
-	void waitForDataConnection();	//to be used in ACTIVE mode
+	bool waitForDataConnection();	//to be used in ACTIVE mode
 
 	bool sendMessage(const char *, int, SOCKET&, bool print = true);
 	int waitForReply(int timeout);
@@ -228,6 +228,8 @@ private:
 	bool getCurrentDirectory(char * buffer);
 
 	void deleteObjectFromDirectory(DIRECTORY * currentDir, void * object, int type);
+
+	void threadError(const char * threadName);
 };
 
 //Threads

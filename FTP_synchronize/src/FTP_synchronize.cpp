@@ -78,6 +78,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			HANDLE hStdout = writeHandle;						//get win32 handle for stdout
 			int hCrt = _open_osfhandle((long)hStdout,0);		//get a C-runtime library handle based of win32 stdout handle
 			FILE * hf = _fdopen( hCrt, "w" );					//use the one above to create a FILE * to use for stdout
+			stdoutOrig = *stdout;								//Save original stdout
 			*stdout = *hf;										//set c-stdout to win32 version
 			setvbuf( stdout, NULL, _IONBF, 0 );					//disable buffering
 
@@ -122,7 +123,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			break;
 		}
 		case DLL_PROCESS_DETACH:{
-			saveGlobalSettings();	//save settings
 			//restore NPP main function
 			SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
 			nppData._nppHandle = NULL;
@@ -590,7 +590,7 @@ void connect() {
 	busy = true;
 	DWORD id;
 	if (CreateThread(NULL, 0, doConnect, NULL, 0, &id) == NULL) {
-		printf("Error creating connection thread: %d\n", GetLastError());
+		threadError("doConnect");
 		busy = false;
 	}
 }
@@ -603,7 +603,7 @@ void disconnect() {
 	busy = true;
 	DWORD id;
 	if (CreateThread(NULL, 0, doDisconnect, NULL, 0, &id) == NULL) {
-		printf("Error creating disconnection thread: %d\n", GetLastError());
+		threadError("doDisconnect");
 		busy = false;
 	}
 }
@@ -634,7 +634,7 @@ void download() {
 	lt->localname = path;
 	DWORD id;
 	if (CreateThread(NULL, 0, doDownload, lt, NULL, &id) == NULL) {
-		printf("Error creating download thread: %d\n", GetLastError());
+		threadError("doDownload");
 		busy = false;
 	}
 	//delete [] path;
@@ -675,7 +675,7 @@ void downloadSpecified() {
 	lt->localname = path;
 	DWORD id;
 	if (CreateThread(NULL, 0, doDownload, lt, NULL, &id) == NULL) {
-		printf("Error creating download thread: %d\n", GetLastError());
+		threadError("doDownload");
 		busy = false;
 	}
 }
@@ -725,7 +725,7 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		lt->server = servername;
 		DWORD id;
 		if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
-			printf("Error creating upload thread: %d\n", GetLastError());
+			threadError("doUpload");
 			busy = false;
 		} else {
 			return;
@@ -774,7 +774,7 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		lt->server = serverfilepath;
 		DWORD id;
 		if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
-			printf("Error creating upload thread: %d\n", GetLastError());
+			threadError("doUpload");
 			busy = false;
 		} else {
 			return;
@@ -826,7 +826,7 @@ void uploadSpecified() {
 	lt->server = servername;
 	DWORD id;
 	if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
-		printf("Error creating upload thread: %d\n", GetLastError());
+		threadError("doUpload");
 		busy = false;
 	} else {
 		busy = false;
@@ -846,7 +846,7 @@ void createDir() {
 	busy = true;
 	DWORD id;
 	if (CreateThread(NULL, 0, doCreateDirectory, NULL, 0, &id) == NULL) {
-		printf("Error creating doCreateDirectory thread: %d\n", GetLastError());
+		threadError("doCreateDirectory");
 		busy = false;
 	}
 }
@@ -859,19 +859,23 @@ void deleteDir() {
 	busy = true;
 	DWORD id;
 	if (CreateThread(NULL, 0, doDeleteDirectory, NULL, 0, &id) == NULL) {
-		printf("Error creating doDeleteDirectory thread: %d\n", GetLastError());
+		threadError("doDeleteDirectory");
 		busy = false;
 	}
 }
 
 void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree) {
+	if (!connected)
+		return;
+	if (busy)
+		return;
 	DIRTHREAD * dt = new DIRTHREAD;
 	dt->treeItem = directory;
 	dt->refresh = doRefresh;
 	dt->expand = expandTree;
 	DWORD id;
 	if (CreateThread(NULL, 0, doGetDirectory, dt, NULL, &id) == NULL) {
-		printf("Error creating directory thread: %d\n", GetLastError());
+		threadError("doGetDirectory");
 		busy = false;
 	}
 }
@@ -888,7 +892,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 		//acceptedEvents |= type;
 		return;
 	}
-	switch(type) {
+	switch(type) {	//0 success, 1 failure, 2 initiated
 		case Event_Connection: {
 			if (code == 0) {		//connected
 				setStatusMessage(TEXT("Connected"));
@@ -947,6 +951,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					setToolbarState(IDB_BUTTON_TOOLBAR_ABORT, FALSE);
 					break;
 				case 2:
+					setStatusMessage(TEXT("Downloading"));
 					setToolbarState(IDB_BUTTON_TOOLBAR_ABORT, TRUE);
 					break;
 			}
@@ -963,6 +968,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					setToolbarState(IDB_BUTTON_TOOLBAR_ABORT, FALSE);
 					break;
 				case 2:
+					setStatusMessage(TEXT("Uploading"));
 					setToolbarState(IDB_BUTTON_TOOLBAR_ABORT, TRUE);
 					break;
 			}
@@ -979,6 +985,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					setToolbarState(IDB_BUTTON_TOOLBAR_ABORT, FALSE);
 					break;
 				case 2:
+					setStatusMessage(TEXT("Getting directory contents"));
 					setToolbarState(IDB_BUTTON_TOOLBAR_ABORT, TRUE);
 					break;
 			}
@@ -1029,7 +1036,6 @@ DWORD WINAPI doDisconnect(LPVOID param) {
 
 DWORD WINAPI doDownload(LPVOID param) {
 	LOADTHREAD * lt = (LOADTHREAD *) param;
-	setStatusMessage(TEXT("Downloading"));
 	unsigned int events = acceptedEvents;
 	acceptedEvents = Event_Download;
 #ifdef UNICODE
@@ -1074,7 +1080,6 @@ DWORD WINAPI doDownload(LPVOID param) {
 
 DWORD WINAPI doUpload(LPVOID param) {
 	LOADTHREAD * lt = (LOADTHREAD *) param;
-	setStatusMessage(TEXT("Uploading"));
 	unsigned int events = acceptedEvents;
 	acceptedEvents = Event_Upload;
 #ifdef UNICODE
@@ -1085,14 +1090,16 @@ DWORD WINAPI doUpload(LPVOID param) {
 #else
 	bool result = mainService->uploadFile(lt->local, lt->server);
 #endif
-	if (result && lt->targetTreeDir)	//only refresh if a directory is given, and upload succeeded
-		reloadTreeDirectory(lt->targetTreeDir, true, true);
 	acceptedEvents = events;
 	SendMessage(hProgressbar, PBM_SETPOS, (WPARAM)0, 0);
-	busy = false;
 	CloseHandle(lt->local);
 	delete [] lt->server;
 	delete [] lt->localname;
+
+	busy = false;
+
+	if (result && lt->targetTreeDir)	//only refresh if a directory is given, and upload succeeded
+		reloadTreeDirectory(lt->targetTreeDir, true, true);
 	delete lt;
 	return 0;
 }
@@ -1107,17 +1114,17 @@ DWORD WINAPI doGetDirectory(LPVOID param) {
 	if (TreeView_GetItem(hTreeview, &tvi)) {
 		DIRECTORY * dir = (DIRECTORY *) tvi.lParam;
 		bool result = true;
-		if (dt->refresh) {
-			if (acceptedEvents & Event_Directory)
-				setStatusMessage(TEXT("Getting directory contents"));
+		if (dt->refresh) {	
 			result = mainService->getDirectoryContents(dir);
 		}
-
+		
 		deleteAllChildItems(dt->treeItem);
-		fillTreeDirectory(dt->treeItem, dir);
-		if (dt->expand) {
-			//TreeView_Expand(hTreeview, dt->treeItem, TVE_COLLAPSE | TVE_COLLAPSERESET);
-			TreeView_Expand(hTreeview, dt->treeItem, TVE_EXPAND);
+		if (result) {
+			fillTreeDirectory(dt->treeItem, dir);
+			if (dt->expand) {
+				//TreeView_Expand(hTreeview, dt->treeItem, TVE_COLLAPSE | TVE_COLLAPSERESET);
+				TreeView_Expand(hTreeview, dt->treeItem, TVE_EXPAND);
+			}
 		}
 	} else {
 		err(TEXT("Unable to retrieve treeItem data"));
@@ -1147,12 +1154,17 @@ DWORD WINAPI doCreateDirectory(LPVOID param) {
 		//}
 	}
 	delete [] newname;
+	busy = false;
 	return 0;
 }
 
 DWORD WINAPI doDeleteDirectory(LPVOID param) {
 	DIRECTORY * dir = lastDirectoryItemParam;
 	DIRECTORY * root = dir->parent;
+	if (dir == mainService->getRoot()) {
+		printf("Not allowed to delete root!\n");
+		return 0;
+	}
 
 	bool isCached = false;
 	TCHAR * path = new TCHAR[MAX_PATH], * newpath = new TCHAR[MAX_PATH];
@@ -1618,15 +1630,24 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					return TRUE;
 					break; }
 				case IDM_POPUP_RENAMEDIR: {
-					CreateThread(NULL, 0, doRenameDirectory, NULL, 0, NULL);
+					DWORD id;
+					if (CreateThread(NULL, 0, doRenameDirectory, NULL, 0, &id) == NULL) {
+						threadError("doRenameDirectory");
+					}
 					return TRUE;
 					break; }
 				case IDM_POPUP_RENAMEFILE: {
-					CreateThread(NULL, 0, doRenameFile, NULL, 0, NULL);
+					DWORD id;
+					if (CreateThread(NULL, 0, doRenameFile, NULL, 0, &id) == NULL) {
+						threadError("doRenameFile");
+					}
 					return TRUE;
 					break; }
 				case IDM_POPUP_DELETEFILE: {
-					CreateThread(NULL, 0, doDeleteFile, NULL, 0, NULL);
+					DWORD id;
+					if (CreateThread(NULL, 0, doDeleteFile, NULL, 0, &id) == NULL) {
+						threadError("doDeleteFile");
+					}
 					return TRUE;
 					break; }
 				case IDB_BUTTON_TOOLBAR_CONNECT: {
@@ -1987,7 +2008,10 @@ BOOL CALLBACK OutDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			hOutputEdit = GetDlgItem(hWnd, IDC_EDIT_OUTPUT);
 			DefaultMessageEditWindowProc = (WNDPROC) SetWindowLongPtr(hOutputEdit,GWLP_WNDPROC,(LONG)&MessageEditWindowProc);
 			DWORD id;
-			CreateThread(NULL, 0, outputProc, (LPVOID)lParam, 0, &id);
+			if (CreateThread(NULL, 0, outputProc, (LPVOID)lParam, 0, &id) == NULL) {
+				err(TEXT("Error: could not create outputProc thread!"));
+				*stdout = stdoutOrig;
+			}
 			return TRUE;	//let windows set focus
 			break; }
 		case WM_SIZE:{
@@ -2082,6 +2106,7 @@ LRESULT CALLBACK MessageEditWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
 					return SendMessage(hwnd, WM_SETTEXT, (WPARAM)0, (LPARAM)"");
 					break; }
 				case IDM_POPUP_SELECTALL: {
+					SetFocus(hwnd);
 					return SendMessage(hwnd, EM_SETSEL, 0, -1);
 					break; }
 			}
@@ -2172,4 +2197,9 @@ void strcpyAtoW(LPTSTR target, const char * ansi, int buflenchar) {
 #else
 	strcpy(target, ansi);
 #endif
+}
+
+//other
+void threadError(const char * threadName) {
+	printf("Error: Unable to create thread %s: %d\n", threadName, GetLastError());
 }

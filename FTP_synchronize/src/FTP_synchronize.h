@@ -102,6 +102,8 @@ int connectBitmapIndex, disconnectBitmapIndex;
 
 //Globals
 
+FILE stdoutOrig;
+
 //storage for treeview commands
 FILEOBJECT * lastFileItemParam;
 HTREEITEM lastFileItem;
@@ -224,6 +226,8 @@ DWORD WINAPI outputProc(LPVOID param);
 
 void strcatAtoW(LPTSTR target, const char * ansi, int buflenchar);
 void strcpyAtoW(LPTSTR target, const char * ansi, int buflenchar);
+
+void threadError(const char * threadName);
 
 struct CONNECTIONDATA {	//connection thread
 	LPTSTR address;
