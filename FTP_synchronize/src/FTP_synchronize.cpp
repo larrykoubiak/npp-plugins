@@ -894,51 +894,54 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 	}
 	switch(type) {	//0 success, 1 failure, 2 initiated
 		case Event_Connection: {
-			if (code == 0) {		//connected
-				setStatusMessage(TEXT("Connected"));
-				setTitleBarAddon(TEXT("Connected"));
-				setOutputTitleAddon(currentProfile->getAddress());
-				DIRECTORY * rootDir = mainService->getRoot();
-				HTREEITEM rootTree = addRoot(rootDir);
-				lastDirectoryItem = rootTree;
-				lastDirectoryItemParam = rootDir;
+			switch (code) {
+				case 0: {		//connected
+					setStatusMessage(TEXT("Connected"));
+					setTitleBarAddon(TEXT("Connected"));
+					setOutputTitleAddon(currentProfile->getAddress());
+					DIRECTORY * rootDir = mainService->getRoot();
+					HTREEITEM rootTree = addRoot(rootDir);
+					lastDirectoryItem = rootTree;
+					lastDirectoryItemParam = rootDir;
 
-				//mainService->getDirectoryContents(rootDir);
-				//fillTreeDirectory(rootTree, rootDir);
-				//TreeView_Expand(hTreeview, rootTree, TVE_EXPAND);
+					//mainService->getDirectoryContents(rootDir);
+					//fillTreeDirectory(rootTree, rootDir);
+					//TreeView_Expand(hTreeview, rootTree, TVE_EXPAND);
 
-				lstrcpy(storage, dllPath);
-				lstrcat(storage, dllName);
-				PathRemoveExtension(storage);
-				lstrcat(storage, TEXT("\\"));
-				lstrcat(storage, currentProfile->getUsername());
-				lstrcat(storage, TEXT("@"));
-				lstrcat(storage, currentProfile->getAddress());
-				lstrcat(storage, TEXT("\\"));
-				if (!createDirectory(storage))
-					printf("Could not create storage cache '%s',\n\terror %d\n", storage, GetLastError());
-				//SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,(WPARAM)funcItem[0]._cmdID,(LPARAM)TRUE);	//Check the menu item
-				connected = true;
-				SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(connectBitmapIndex, 0));
-			} else if (code == 1) {	//disconnected
-				TreeView_DeleteAllItems(hTreeview);
-				setTitleBarAddon(TEXT("Disconnected"));
-				setOutputTitleAddon(TEXT("No connection"));
-				if (service != mainService) {
-					delete service;
+					lstrcpy(storage, dllPath);
+					lstrcat(storage, dllName);
+					PathRemoveExtension(storage);
+					lstrcat(storage, TEXT("\\"));
+					lstrcat(storage, currentProfile->getUsername());
+					lstrcat(storage, TEXT("@"));
+					lstrcat(storage, currentProfile->getAddress());
+					lstrcat(storage, TEXT("\\"));
+					if (!createDirectory(storage))
+						printf("Could not create storage cache '%s',\n\terror %d\n", storage, GetLastError());
+					//SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,(WPARAM)funcItem[0]._cmdID,(LPARAM)TRUE);	//Check the menu item
+					connected = true;
+					SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(connectBitmapIndex, 0));
+					break; }
+				case 1: {	//disconnected
+					TreeView_DeleteAllItems(hTreeview);
+					setTitleBarAddon(TEXT("Disconnected"));
+					setOutputTitleAddon(TEXT("No connection"));
+					if (service != mainService) {
+						delete service;
+					}
+					if (expectedDisconnect || noConnection) {
+						expectedDisconnect = false;
+					} else {
+						//setStatusMessage(TEXT("Connection lost"));
+						setStatusMessage(TEXT("Unexpected Disconnect"));
+					}
+					noConnection = true;
+					connected = false;
+					setToolbarState(IDB_BUTTON_TOOLBAR_UPLOAD, FALSE);
+					setToolbarState(IDB_BUTTON_TOOLBAR_DOWNLOAD, FALSE);
+					SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(disconnectBitmapIndex, 0));
+					break; }
 				}
-				if (expectedDisconnect || noConnection) {
-					expectedDisconnect = false;
-				} else {
-					//setStatusMessage(TEXT("Connection lost"));
-					setStatusMessage(TEXT("Unexpected Disconnect"));
-				}
-				noConnection = true;
-				connected = false;
-				setToolbarState(IDB_BUTTON_TOOLBAR_UPLOAD, FALSE);
-				setToolbarState(IDB_BUTTON_TOOLBAR_DOWNLOAD, FALSE);
-				SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(disconnectBitmapIndex, 0));
-			}
 			break; }
 		case Event_Download:
 			switch (code) {
@@ -1050,7 +1053,7 @@ DWORD WINAPI doDownload(LPVOID param) {
 	acceptedEvents = events;
 	SendMessage(hProgressbar, PBM_SETPOS, (WPARAM)0, 0);
 
-	if (lt->openFile == 2) {
+	if (result && lt->openFile == 2) {
 		if (MessageBox(nppData._nppHandle, TEXT("Do you wish to open the file in Notepad++?"), TEXT("FTP_Synchronize"), MB_YESNO) == IDYES) {
 			lt->openFile = TRUE;
 		} else {
@@ -1090,7 +1093,6 @@ DWORD WINAPI doUpload(LPVOID param) {
 #else
 	bool result = mainService->uploadFile(lt->local, lt->server);
 #endif
-	acceptedEvents = events;
 	SendMessage(hProgressbar, PBM_SETPOS, (WPARAM)0, 0);
 	CloseHandle(lt->local);
 	delete [] lt->server;
@@ -1100,6 +1102,7 @@ DWORD WINAPI doUpload(LPVOID param) {
 
 	if (result && lt->targetTreeDir)	//only refresh if a directory is given, and upload succeeded
 		reloadTreeDirectory(lt->targetTreeDir, true, true);
+	acceptedEvents = events;
 	delete lt;
 	return 0;
 }

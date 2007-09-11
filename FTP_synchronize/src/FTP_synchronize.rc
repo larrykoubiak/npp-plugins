@@ -191,7 +191,7 @@ IDB_BITMAP_MESSAGES     BITMAP                  "bitmaps\\toolbar_messages.bmp"
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON_FOLDERS        ICON                    "bitmaps\\icon_folder.ico"
+IDI_ICON_FOLDERS        ICON                    "..\\src\\bitmaps\\icon_folder.ico"
 IDI_ICON_MESSAGES       ICON                    "bitmaps\\icon_messages.ico"
 
 /////////////////////////////////////////////////////////////////////////////

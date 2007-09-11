@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define recieve_buffer_size		response_buffer_size - 1
 #define codeSize				3
 
-#define WAITEVENTPARSETIME		50000		//time the socket reader waits before setting a new response. Effectively means the application cannot take longer than 50 seconds before things may get corrupted
+#define WAITEVENTPARSETIME		5000		//time the socket reader waits before setting a new response. Effectively means the application cannot take longer than 50 seconds before things may get corrupted
 
 enum Connection_Mode {Mode_Passive = 0, Mode_Active};
 enum Event_Type {Event_Connection=1, Event_Download=2, Event_Upload=4, Event_Directory=8};
@@ -188,6 +188,7 @@ private:
 	bool checkmultiline;
 	int codeSizeLeft;
 	char * codebuffer;
+	bool wasAborted;
 
 	//directory parsing
 	char * lastFileDescriptor;
