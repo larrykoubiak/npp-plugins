@@ -145,7 +145,10 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 
 			delete mainService;
 
+			//reset output
+			*stdout = stdoutOrig;
 			CloseHandle(writeHandle);
+
 			DeleteObject(iconFolderDock); DeleteObject(iconOuputDock);	//when custom icons are used
 
 			break;}
@@ -423,6 +426,7 @@ void showFolders() {
 }
 
 void showOutput() {
+
 	if (!outputWindowVisible) {
 		outputWindowVisible = true;
 		if (!outputWindowInitialized) {
@@ -618,8 +622,11 @@ void download() {
 	TCHAR * path = new TCHAR[MAX_PATH], * serverpath = new TCHAR[MAX_PATH];
 	lstrcpy(path, storage);
 	strcatAtoW(path, file->fullfilepath, MAX_PATH - lstrlen(path));
-	if (!createDirectory(path))
+	if (!createDirectory(path)) {
+		delete [] path; delete [] serverpath;
+		busy = false;
 		return;
+	}
 	strcpyAtoW(serverpath, file->fullfilepath, MAX_PATH);
 	LOADTHREAD * lt = new LOADTHREAD;
 	lt->openFile = TRUE;
@@ -628,6 +635,7 @@ void download() {
 		delete [] lt->server;
 		delete [] lt->localname;
 		delete lt;
+		busy = false;
 		return;
 	}
 	lt->server = serverpath;
@@ -635,6 +643,9 @@ void download() {
 	DWORD id;
 	if (CreateThread(NULL, 0, doDownload, lt, NULL, &id) == NULL) {
 		threadError("doDownload");
+		delete [] lt->server;
+		delete [] lt->localname;
+		delete lt;
 		busy = false;
 	}
 	//delete [] path;
@@ -646,17 +657,20 @@ void downloadSpecified() {
 	if (busy)
 		return;
 
+	busy = true;
 	FILEOBJECT * file = lastFileItemParam;
 	TCHAR * path = new TCHAR[MAX_PATH];
 	strcpyAtoW(path, file->filename, MAX_PATH);
 	
 	if (!browseFile(path, MAX_PATH, FALSE, FALSE, TRUE)) {
 		delete [] path;
+		busy = false;
 		return;
 	}
 
 	if (!createDirectory(path)) {
 		delete [] path;
+		busy = false;
 		return;
 	}
 
@@ -669,6 +683,7 @@ void downloadSpecified() {
 		delete [] lt->server;
 		delete [] lt->localname;
 		delete lt;
+		busy = false;
 		return;
 	}
 	lt->server = serverpath;
@@ -676,6 +691,9 @@ void downloadSpecified() {
 	DWORD id;
 	if (CreateThread(NULL, 0, doDownload, lt, NULL, &id) == NULL) {
 		threadError("doDownload");
+		delete [] lt->server;
+		delete [] lt->localname;
+		delete lt;
 		busy = false;
 	}
 }
@@ -893,7 +911,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 		return;
 	}
 	switch(type) {	//0 success, 1 failure, 2 initiated
-		case Event_Connection: {
+		case Event_Connection:
 			switch (code) {
 				case 0: {		//connected
 					setStatusMessage(TEXT("Connected"));
@@ -926,9 +944,6 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					TreeView_DeleteAllItems(hTreeview);
 					setTitleBarAddon(TEXT("Disconnected"));
 					setOutputTitleAddon(TEXT("No connection"));
-					if (service != mainService) {
-						delete service;
-					}
 					if (expectedDisconnect || noConnection) {
 						expectedDisconnect = false;
 					} else {
@@ -942,7 +957,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(disconnectBitmapIndex, 0));
 					break; }
 				}
-			break; }
+			break;
 		case Event_Download:
 			switch (code) {
 				case 0:
@@ -1030,7 +1045,7 @@ DWORD WINAPI doDisconnect(LPVOID param) {
 	if (mainService->disconnect()) {
 		setStatusMessage(TEXT("Disconnected"));
 	} else {
-		setStatusMessage(TEXT("Disconnect failed"));
+		setStatusMessage(TEXT("Disconnect problem"));
 		expectedDisconnect = false;
 	}
 	busy = false;
@@ -1669,6 +1684,10 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					TrackPopupMenu(popupProfiles, TPM_LEFTALIGN | TPM_LEFTBUTTON, pos.x, pos.y, 0, hFolderWindow, NULL);
 					return TRUE;
 					break;}
+				case IDB_BUTTON_TOOLBAR_DOWNLOAD: {
+					download();
+					return TRUE;
+					break; }
 				case IDB_BUTTON_TOOLBAR_UPLOAD: {
 					upload(TRUE, TRUE);		//upload to cached folder is present, else upload to last selected folder
 					return TRUE;
@@ -2011,7 +2030,7 @@ BOOL CALLBACK OutDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			hOutputEdit = GetDlgItem(hWnd, IDC_EDIT_OUTPUT);
 			DefaultMessageEditWindowProc = (WNDPROC) SetWindowLongPtr(hOutputEdit,GWLP_WNDPROC,(LONG)&MessageEditWindowProc);
 			DWORD id;
-			if (CreateThread(NULL, 0, outputProc, (LPVOID)lParam, 0, &id) == NULL) {
+			if ((hReadThread = CreateThread(NULL, 0, outputProc, (LPVOID)lParam, 0, &id)) == NULL) {
 				err(TEXT("Error: could not create outputProc thread!"));
 				*stdout = stdoutOrig;
 			}
@@ -2174,6 +2193,7 @@ DWORD WINAPI outputProc(LPVOID param) {
 	}
 	CloseHandle(readHandle);
 	delete [] buffer; delete [] newlinebuffer;
+	ExitThread(0);
 	return 0;
 }
 

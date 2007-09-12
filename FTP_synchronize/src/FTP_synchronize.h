@@ -103,6 +103,7 @@ int connectBitmapIndex, disconnectBitmapIndex;
 //Globals
 
 FILE stdoutOrig;
+HANDLE hReadThread;
 
 //storage for treeview commands
 FILEOBJECT * lastFileItemParam;
