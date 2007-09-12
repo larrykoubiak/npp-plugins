@@ -18,7 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 #pragma once
-
+//
 #include "PluginInterface.h"
 #include "Scintilla.h"
 #include "ScintillaEditView.h"
@@ -41,7 +41,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "FTP_service.h"
 #include "Profile.h"
-
+//
 #ifdef UNICODE	//disable DBCS functions
 #define CharNext(pc)    ((*pc) ? pc + 1 : pc) 
 #define CharPrev(pcStart, pc) ((pc > pcStart) ? pc - 1 : pcStart)
@@ -97,11 +97,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define IDB_BUTTON_TOOLBAR_MESSAGES	506
 
 #define FolderWindowClassName TEXT("N++FTPFOLDERDOCKDLG")
+//
 
-int connectBitmapIndex, disconnectBitmapIndex;
 
 //Globals
-
+int connectBitmapIndex, disconnectBitmapIndex;
 FILE stdoutOrig;
 HANDLE hReadThread;
 
@@ -121,7 +121,7 @@ FTP_Service * mainService;
 HWND hFolderWindow, hTreeview, hStatusbar, hProgressbar, hFolderToolbar, hOutputWindow, hOutputEdit, hButtonClear;
 bool folderWindowInitialized, folderWindowVisible, outputWindowInitialized, outputWindowVisible;
 HMENU contextDirectory, contextFile, contextMessages, popupProfiles;
-HWND hAddress, hPort, hUsername, hPassword, hTimeout, hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hProfileList, hProfileName, hRadioActive, hRadioPassive;
+HWND hAddress, hPort, hUsername, hPassword, hTimeout, hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hProfileList, hProfileName, hRadioActive, hRadioPassive, hCheckFindRoot;
 
 //for docking dlg
 HICON iconFolderDock, iconOuputDock;

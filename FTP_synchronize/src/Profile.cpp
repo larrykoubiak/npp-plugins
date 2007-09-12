@@ -52,6 +52,7 @@ void Profile::reload() {
 	this->setPort( GetPrivateProfileInt(this->name, TEXT("Port"), 21, this->iniFile));
 	this->setTimeout( GetPrivateProfileInt(this->name, TEXT("Timeout"), 30, this->iniFile) );
 	this->setMode( (Connection_Mode) GetPrivateProfileInt(this->name, TEXT("TransferMode"), 0, this->iniFile) );
+	this->setFindRoot( GetPrivateProfileInt(this->name, TEXT("FindRoot"), 0, this->iniFile) == 1 );
 }
 
 void Profile::save() {
@@ -65,6 +66,7 @@ void Profile::save() {
 	WritePrivateProfileString(this->name, TEXT("TransferMode"), (this->transfermode == Mode_Active)?TEXT("1"):TEXT("0"), iniFile);
 	WritePrivateProfileString(this->name, TEXT("Username"), this->username, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("Password"), this->password, this->iniFile);
+	WritePrivateProfileString(this->name, TEXT("FindRoot"), (this->findRoot == true)?TEXT("1"):TEXT("0"), iniFile);
 }
 
 void Profile::remove() {
@@ -119,6 +121,10 @@ void Profile::setMode(Connection_Mode newmode) {
 		this->transfermode = Mode_Passive;
 }
 
+void Profile::setFindRoot(bool find) {
+	findRoot = find;
+}
+
 LPCTSTR Profile::getName() {
 	return this->name;
 }
@@ -145,6 +151,10 @@ int Profile::getTimeout() {
 
 Connection_Mode Profile::getMode() {
 	return this->transfermode;
+}
+
+bool Profile::getFindRoot() {
+	return findRoot;
 }
 
 #ifdef UNICODE

@@ -118,6 +118,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			mainService->setProgressCallback(&progress);
 			mainService->setTimeoutEventCallback(&onTimeout, 30);
 			mainService->setMode(Mode_Passive);
+			mainService->setFindRootParent(false);
 
 			currentProfile = NULL;
 			break;
@@ -293,7 +294,7 @@ void readGlobalSettings() {
 	uploadCurrentOnUncached = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("UploadCurrentOnUncached"), 1, iniFile);
 	uploadOnSave = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("UploadOnSave"), 1, iniFile);
 	//You only need to store if the window is visible, default notepad++ behaviour is circumvented because its not in the menu. The position gets saved though
-	outputWindowVisible = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("OutputWindowVisible"), 1, iniFile);
+	outputWindowVisible = GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("OutputWindowVisible"), 1, iniFile) == 1;
 }
 
 void saveGlobalSettings() {
@@ -1020,6 +1021,7 @@ DWORD WINAPI doConnect(LPVOID param) {
 	expectedDisconnect = false;
 	mainService->setTimeoutEventCallback(&onTimeout, currentProfile->getTimeout());
 	mainService->setMode(currentProfile->getMode());
+	mainService->setFindRootParent(currentProfile->getFindRoot());
 	setStatusMessage(TEXT("Connecting"));
 	bool result = mainService->connectToServer(currentProfile->TVAR(getAddress)(), currentProfile->getPort());
 	if (!result) {
@@ -1588,10 +1590,12 @@ void fillProfileData() {
 	_itot(currentProfile->getTimeout(), buf, 10);
 	SendMessage(hTimeout, WM_SETTEXT, 0, (LPARAM)buf);
 	delete [] buf;
-	//CheckRadioButton(hWnd, IDC_RADIO_ACTIVE, IDC_RADIO_PASSIVE, (currentProfile->getMode()==Mode_Active)?IDC_RADIO_ACTIVE:IDC_RADIO_PASSIVE);
+
 	bool activeState = (currentProfile->getMode() == Mode_Active);
 	SendMessage(hRadioActive, BM_SETCHECK, (WPARAM) activeState, 0);
 	SendMessage(hRadioPassive, BM_SETCHECK, (WPARAM) !activeState, 0);
+
+	SendMessage(hCheckFindRoot, BM_SETCHECK, (WPARAM) currentProfile->getFindRoot(), 0);
 }
 
 //Window procedures
@@ -1873,6 +1877,7 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			hProfileName = GetDlgItem(hWnd,IDC_SETTINGS_NAME);
 			hRadioActive = GetDlgItem(hWnd,IDC_RADIO_ACTIVE);
 			hRadioPassive = GetDlgItem(hWnd,IDC_RADIO_PASSIVE);
+			hCheckFindRoot = GetDlgItem(hWnd, IDC_CHECK_FINDROOT);
 
 			hCacheDirect = GetDlgItem(hWnd,IDC_CHECK_CACHE);
 			hOpenCache = GetDlgItem(hWnd,IDC_CHECK_CACHEOPEN);
@@ -1913,6 +1918,8 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 						currentProfile->setTimeout(test);
 
 						currentProfile->setMode( (IsDlgButtonChecked(hWnd, IDC_RADIO_ACTIVE) == BST_CHECKED)?Mode_Active:Mode_Passive );
+						int state = (int)SendMessage(hCheckFindRoot, BM_GETCHECK, 0, 0);
+						currentProfile->setFindRoot( state != 0 );
 
 						//SendMessage(hProfileName, WM_GETTEXT, (WPARAM)INIBUFSIZE, (LPARAM)buf);
 						//currentProfile->setName(buf);

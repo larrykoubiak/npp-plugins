@@ -119,6 +119,8 @@ public:
 	bool uploadFile(HANDLE localFile,const char * serverFileName);
 	bool disconnect();
 
+	void setFindRootParent(bool find);
+
 	void setProgressCallback(void (FTP_Service *, int, int));
 	void setEventCallback(void (FTP_Service *, unsigned int, int));
 	void setTimeoutEventCallback(void (FTP_Service *, int), int);	//although a zero timeleft value may be passed, the timeout may or may not already have occured, depending on which thread is faster (time thread or FTP_Service's calling thread). Recommended to check for timeouts using the function and waiting for functions to finish (at least do not use both methods).
@@ -170,6 +172,7 @@ private:
 	SOCKET lastConnectionForAbort;	//socket to close when calling abort operations;
 	DIRECTORY * emptyDir;
 	DIRECTORY * root;
+	bool findRootParent;	//true if parent directories of root should be parsed
 	static int amount;
 	bool busy;			//true when doing something
 	int connectionStatus;

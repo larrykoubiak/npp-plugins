@@ -38,6 +38,7 @@ public:
 	void setPort(int newport);
 	void setTimeout(int newtimeout);
 	void setMode(Connection_Mode newmode);
+	void setFindRoot(bool find);
 	LPCTSTR getName();
 	LPCTSTR getAddress();
 	LPCTSTR getUsername();
@@ -45,6 +46,7 @@ public:
 	int getPort();
 	int getTimeout();
 	Connection_Mode getMode();
+	bool getFindRoot();
 #ifdef UNICODE
 	LPCSTR getAddressA();
 	LPCSTR getUsernameA();
@@ -62,5 +64,6 @@ private:
 	int port;
 	int timeout;
 	Connection_Mode transfermode;
+	bool findRoot;
 	TCHAR * iniFile;
 };
