@@ -1,0 +1,8 @@
+There are now 2 files in the package. One file is Unicode, the other one is ANSI. 
+I recommend the Unicode version on WinNT and later, and ANSI on Win9x/WinME.
+Unicode:
+  FTP_synchronize.dll
+ANSI:
+  FTP_synchronizeA.dll
+
+you can still use the unicode version on Win9x if you have unicows.dll installed
