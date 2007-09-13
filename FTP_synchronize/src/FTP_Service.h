@@ -19,18 +19,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #pragma once
 
-//FTP_service in ANSI, FTP is ANSI
+//FTP_service is ANSI, FTP is ANSI
 
 #include "Socket.h"
 #include "ServerSocket.h"
 #include "stdio.h"
-#include <tchar.h>
 
 #define response_buffer_size	2048
 #define recieve_buffer_size		response_buffer_size - 1
 #define codeSize				3
 
-#define WAITEVENTPARSETIME		5000		//time the socket reader waits before setting a new response. Effectively means the application cannot take longer than 50 seconds before things may get corrupted
+#define WAITEVENTPARSETIME		5000		//time the socket reader waits before setting a new response. Effectively means the application cannot take longer than 5 seconds before things may get corrupted
 
 enum Connection_Mode {Mode_Passive = 0, Mode_Active};
 enum Event_Type {Event_Connection=1, Event_Download=2, Event_Upload=4, Event_Directory=8};
@@ -245,3 +244,5 @@ DWORD WINAPI timerThread(LPVOID param);
 int parseAsciiToDecimal(const char * string, int * result);		//read begin of string for number with separator dots
 void enableDirectoryContents(DIRECTORY * currentdir, int type);	//make sure enough memory allocated for directory
 void sortDirectory(DIRECTORY * dir, bool sortDirs, bool sortFiles);
+
+void printMessage(const char * msg);

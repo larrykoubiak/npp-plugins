@@ -20,6 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #pragma once
 //profile class, simple class to store profiles, supports ANSI ftp settings when build in Unicode
 
+#include <tchar.h>
 #include "FTP_service.h"
 
 #define BUFFERSIZE	1024

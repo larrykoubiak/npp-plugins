@@ -116,7 +116,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			mainService = new FTP_Service();
 			mainService->setEventCallback(&onEvent);
 			mainService->setProgressCallback(&progress);
-			mainService->setTimeoutEventCallback(&onTimeout, 30);
+			mainService->setTimeoutEventCallback(&onTimeout, 1);
 			mainService->setMode(Mode_Passive);
 			mainService->setFindRootParent(false);
 
