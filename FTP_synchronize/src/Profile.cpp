@@ -32,11 +32,13 @@ void Profile::allocatebuffers() {
 	address = new TCHAR[BUFFERSIZE];
 	username = new TCHAR[BUFFERSIZE];
 	password = new TCHAR[BUFFERSIZE];
+	initialDir = new TCHAR[MAX_PATH];
 	iniFile = new TCHAR[MAX_PATH];
 #ifdef UNICODE
 	addressA = new char[BUFFERSIZE];
 	usernameA = new char[BUFFERSIZE];
 	passwordA = new char[BUFFERSIZE];
+	initialDirA = new char[MAX_PATH];
 #endif
 }
 
@@ -44,10 +46,12 @@ void Profile::reload() {
 	GetPrivateProfileString(this->name, TEXT("Address"), TEXT(""), this->address, BUFFERSIZE, this->iniFile);
 	GetPrivateProfileString(this->name, TEXT("Username"), TEXT(""), this->username, BUFFERSIZE, this->iniFile);
 	GetPrivateProfileString(this->name, TEXT("Password"), TEXT(""), this->password, BUFFERSIZE, this->iniFile);
+	GetPrivateProfileString(this->name, TEXT("InitialDirectory"), TEXT(""), this->initialDir, MAX_PATH, this->iniFile);
 #ifdef UNICODE
 	WideCharToMultiByte(CP_ACP, 0, this->address, -1, this->addressA, BUFFERSIZE, NULL, NULL);
 	WideCharToMultiByte(CP_ACP, 0, this->username, -1, this->usernameA, BUFFERSIZE, NULL, NULL);
 	WideCharToMultiByte(CP_ACP, 0, this->password, -1, this->passwordA, BUFFERSIZE, NULL, NULL);
+	WideCharToMultiByte(CP_ACP, 0, this->initialDir, -1, this->initialDirA, MAX_PATH, NULL, NULL);
 #endif
 	this->setPort( GetPrivateProfileInt(this->name, TEXT("Port"), 21, this->iniFile));
 	this->setTimeout( GetPrivateProfileInt(this->name, TEXT("Timeout"), 30, this->iniFile) );
@@ -66,6 +70,7 @@ void Profile::save() {
 	WritePrivateProfileString(this->name, TEXT("TransferMode"), (this->transfermode == Mode_Active)?TEXT("1"):TEXT("0"), iniFile);
 	WritePrivateProfileString(this->name, TEXT("Username"), this->username, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("Password"), this->password, this->iniFile);
+	WritePrivateProfileString(this->name, TEXT("InitialDirectory"), this->initialDir, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("FindRoot"), (this->findRoot == true)?TEXT("1"):TEXT("0"), iniFile);
 }
 
@@ -97,6 +102,13 @@ void Profile::setPassword(LPCTSTR newpassword) {
 	lstrcpy(this->password, newpassword);
 #ifdef UNICODE
 	WideCharToMultiByte(CP_ACP, 0, newpassword, -1, this->passwordA, BUFFERSIZE, NULL, NULL);
+#endif
+}
+
+void Profile::setInitDir(LPCTSTR dir) {
+	lstrcpy(this->initialDir, dir);
+#ifdef UNICODE
+	WideCharToMultiByte(CP_ACP, 0, dir, -1, this->initialDirA, MAX_PATH, NULL, NULL);
 #endif
 }
 
@@ -141,6 +153,10 @@ LPCTSTR Profile::getPassword() {
 	return this->password;
 }
 
+LPCTSTR Profile::getInitDir() {
+	return this->initialDir;
+}
+
 int Profile::getPort() {
 	return this->port;
 }
@@ -168,6 +184,10 @@ LPCSTR Profile::getUsernameA() {
 
 LPCSTR Profile::getPasswordA() {
 	return this->passwordA;
+}
+
+LPCSTR Profile::getInitDirA() {
+	return this->initialDirA;
 }
 #endif
 

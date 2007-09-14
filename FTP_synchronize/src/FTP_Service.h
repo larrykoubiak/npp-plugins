@@ -82,7 +82,7 @@ struct FILEOBJECT {
 	int filesize;
 	char filename[MAX_PATH];
 	char fullfilepath[MAX_PATH];
-	TCHAR modifiers[11];
+	char modifiers[11];
 	DIRECTORY * parent;
 };
 
@@ -117,6 +117,7 @@ public:
 	bool downloadFile(HANDLE localFile, const char * serverFileName);
 	bool uploadFile(HANDLE localFile,const char * serverFileName);
 	bool disconnect();
+	void setInitialDirectory(const char * dir);
 
 	void setFindRootParent(bool find);
 
@@ -146,6 +147,7 @@ public:
 	HANDLE getConnectionEvent() { return connectionEvent; };
 	void callTimeout(TIMERTHREADINFO * tti);
 	const int getCurrentTimerID() { return timerID; };
+
 private:
 	Connection_Mode mode;		//Used to keep track of what mode to use (passive/active)
 	Socket * controlConnection;	//Used to keep track of control connection
@@ -158,6 +160,8 @@ private:
 	HANDLE controlLostEvent;
 
 	HANDLE controlThread;
+
+	char * initialRoot;			//Start at specified location in dirtree
 
 	int timeLeft;				//keep track how many milliseconds left
 	int timeoutMSec;			//time to elapse before timeout event occurs (milliseconds)

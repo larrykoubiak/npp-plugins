@@ -32,6 +32,8 @@
 #define IDB_SETTINGS_APPLY              1010
 #define IDC_SETTINGS_TIMEOUT            1011
 #define IDC_BUTTON_CLEAR                1012
+#define IDC_SETTINGS_PASSWORD3          1013
+#define IDC_SETTINGS_INITDIR            1013
 #define IDC_EDIT_NEWNAME                1014
 #define IDB_BUTTON_OK                   1015
 #define IDB_BUTTON_CANCEL               1016

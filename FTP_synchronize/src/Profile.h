@@ -36,6 +36,7 @@ public:
 	void setAddress(LPCTSTR newaddress);
 	void setUsername(LPCTSTR newusername);
 	void setPassword(LPCTSTR newpassword);
+	void setInitDir(LPCTSTR dir);
 	void setPort(int newport);
 	void setTimeout(int newtimeout);
 	void setMode(Connection_Mode newmode);
@@ -44,6 +45,7 @@ public:
 	LPCTSTR getAddress();
 	LPCTSTR getUsername();
 	LPCTSTR getPassword();
+	LPCTSTR getInitDir();
 	int getPort();
 	int getTimeout();
 	Connection_Mode getMode();
@@ -52,6 +54,7 @@ public:
 	LPCSTR getAddressA();
 	LPCSTR getUsernameA();
 	LPCSTR getPasswordA();
+	LPCSTR getInitDirA();
 #endif
 private:
 	void allocatebuffers();
@@ -59,8 +62,9 @@ private:
 	TCHAR * address;
 	TCHAR * username;
 	TCHAR * password;
+	TCHAR * initialDir;
 #ifdef UNICODE
-	char * addressA, * usernameA, * passwordA;
+	char * addressA, * usernameA, * passwordA, * initialDirA;
 #endif
 	int port;
 	int timeout;

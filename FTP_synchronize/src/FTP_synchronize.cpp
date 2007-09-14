@@ -1022,6 +1022,7 @@ DWORD WINAPI doConnect(LPVOID param) {
 	mainService->setTimeoutEventCallback(&onTimeout, currentProfile->getTimeout());
 	mainService->setMode(currentProfile->getMode());
 	mainService->setFindRootParent(currentProfile->getFindRoot());
+	mainService->setInitialDirectory(currentProfile->TVAR(getInitDir)());
 	setStatusMessage(TEXT("Connecting"));
 	bool result = mainService->connectToServer(currentProfile->TVAR(getAddress)(), currentProfile->getPort());
 	if (!result) {
@@ -1582,6 +1583,7 @@ void fillProfileData() {
 	SendMessage(hAddress, WM_SETTEXT, 0, (LPARAM)currentProfile->getAddress());
 	SendMessage(hUsername, WM_SETTEXT, 0, (LPARAM)currentProfile->getUsername());
 	SendMessage(hPassword, WM_SETTEXT, 0, (LPARAM)currentProfile->getPassword());
+	SendMessage(hInitDir, WM_SETTEXT, 0, (LPARAM)currentProfile->getInitDir());
 	SendMessage(hProfileName, WM_SETTEXT, 0, (LPARAM)currentProfile->getName());
 	
 	TCHAR * buf = new TCHAR[INIBUFSIZE];
@@ -1624,7 +1626,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					break; }
 				case IDM_POPUP_PROPSFILE: {
 					FILEOBJECT * file = (FILEOBJECT*)lastFileItemParam;
-					err(file->modifiers);
+					MessageBoxA(hWnd, file->modifiers, "Properties", MB_OK);
 					return TRUE;
 					break; }
 				case IDM_POPUP_DOWNLOADFILE: {
@@ -1878,6 +1880,7 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			hRadioActive = GetDlgItem(hWnd,IDC_RADIO_ACTIVE);
 			hRadioPassive = GetDlgItem(hWnd,IDC_RADIO_PASSIVE);
 			hCheckFindRoot = GetDlgItem(hWnd, IDC_CHECK_FINDROOT);
+			hInitDir = GetDlgItem(hWnd, IDC_SETTINGS_INITDIR);
 
 			hCacheDirect = GetDlgItem(hWnd,IDC_CHECK_CACHE);
 			hOpenCache = GetDlgItem(hWnd,IDC_CHECK_CACHEOPEN);
@@ -1929,6 +1932,10 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 						currentProfile->setUsername(buf);
 						SendMessage(hPassword, WM_GETTEXT, (WPARAM)INIBUFSIZE, (LPARAM)buf);
 						currentProfile->setPassword(buf);
+						delete [] buf;
+						buf = new TCHAR[MAX_PATH];	//do this to make sure always MAX_PATH available (in case buffer too small)
+						SendMessage(hInitDir, WM_GETTEXT, (WPARAM)MAX_PATH, (LPARAM)buf);
+						currentProfile->setInitDir(buf);
 						currentProfile->save();
 						delete [] buf;
 					}
