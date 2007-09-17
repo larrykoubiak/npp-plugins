@@ -178,7 +178,7 @@ private:
 
 	bool busy;						//true when performing action
 	int connectionStatus;			//current status of server connection (ie connected and logged in)
-	int eventSet;					//true when events properly set (such as timeout and events)
+	int callbackSet;					//true when events properly set (such as timeout and events)
 
 	//response parsing
 	int lastResponseValue, responseCodeToSet;

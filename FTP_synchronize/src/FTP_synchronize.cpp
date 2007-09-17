@@ -154,6 +154,9 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			DestroyMenu(contextMessages);
 			DestroyMenu(popupProfiles);
 
+			mainService->setEventCallback(NULL);	//Disable the event callback, the host application is invalid
+			mainService->setProgressCallback(NULL);
+			mainService->setTimeoutEventCallback(NULL, 0);
 			delete mainService;
 
 			//reset output
