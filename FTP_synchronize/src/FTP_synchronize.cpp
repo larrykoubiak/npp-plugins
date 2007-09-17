@@ -124,6 +124,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			break;
 		}
 		case DLL_PROCESS_DETACH:{
+			saveGlobalSettings();
 			//restore NPP main function
 			SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
 			nppData._nppHandle = NULL;
@@ -418,24 +419,25 @@ void showFolders() {
 			tbd.hClient = hFolderWindow;									//HWND Handle of window this dock belongs to
 			tbd.iPrevCont = -1;
 			SendMessage(nppData._nppHandle,NPPM_DMMREGASDCKDLG,0,(LPARAM)&tbd);	//Register it
-
-			//If the messageswindow was previously opened, open it again
-			if (outputWindowVisible) {	//if flagged as visible it must be opened, because it can only be in this state if it was flagged as previously opened
-                outputWindowVisible = false;	//reset flag to restore proper state
-				showOutput();					//open window
-			}
 		}
 		
 		SendMessage(nppData._nppHandle,NPPM_DMMSHOW,0,(LPARAM)hFolderWindow);		//Show my window as requested
 		SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,(WPARAM)funcItem[0]._cmdID,(LPARAM)TRUE);	//Check the menu item
-		//ShowWindow(hTreeview, SW_SHOW);
+
+		//If the messageswindow was previously opened, open it again
+		if (outputWindowVisible) {	//if flagged as visible it must be opened, because it can only be in this state if it was flagged as previously opened
+            outputWindowVisible = false;	//reset flag to restore proper state
+			showOutput();					//open window
+		}
 	} else {
 		folderWindowVisible = false;
 		SendMessage(nppData._nppHandle,NPPM_DMMHIDE,0,(LPARAM)hFolderWindow);
 		SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,(WPARAM)funcItem[0]._cmdID,(LPARAM)FALSE);
 		//Also close the messagewindow if open
-		if (outputWindowVisible)
+		if (outputWindowVisible) {
 			showOutput();
+			outputWindowVisible = true;
+		}
 	}
 }
 
@@ -1071,7 +1073,26 @@ DWORD WINAPI doConnect(LPVOID param) {
 		setStatusMessage(TEXT("Could not connect to server"));
 	} else {
 		setStatusMessage(TEXT("Logging in"));
-		if (!mainService->login(currentProfile->TVAR(getUsername)(), currentProfile->TVAR(getPassword)())) {
+		bool result;
+		if (currentProfile->getAskPassword()) {
+			TCHAR * passWord = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_PASSWORD), nppData._nppHandle,RenameDlgProc, (LPARAM) NULL);
+			if (passWord) {
+#ifdef UNICODE
+				int len = lstrlen(passWord);
+				char * passWordA = new char[len + 1];
+				WideCharToMultiByte(CP_ACP, 0, passWord, -1, passWordA, len, NULL, NULL);
+				result = mainService->login(currentProfile->TVAR(getUsername)(), passWordA);
+				delete [] passWordA;
+#else
+				result = mainService->login(currentProfile->TVAR(getUsername)(), passWord);
+#endif
+			} else {
+				result = false;
+			}
+		} else {
+			result = mainService->login(currentProfile->TVAR(getUsername)(), currentProfile->TVAR(getPassword)());
+		}
+		if (!result) {
 			setStatusMessage(TEXT("Could not login to server"));
 			expectedDisconnect = true;
 			mainService->disconnect();
@@ -1628,6 +1649,9 @@ void fillProfileData() {
 	SendMessage(hRadioPassive, BM_SETCHECK, (WPARAM) !activeState, 0);
 
 	SendMessage(hCheckFindRoot, BM_SETCHECK, (WPARAM) currentProfile->getFindRoot(), 0);
+	SendMessage(hCheckAskPassword, BM_SETCHECK, (WPARAM) currentProfile->getAskPassword(), 0);
+
+	EnableWindow(hPassword, (!currentProfile->getAskPassword()));
 }
 
 //Window procedures
@@ -1883,8 +1907,9 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					default:
 						break;
 				}
-			} else {
-				//SendMessage(hFolderToolbar, WM_SIZE, 0, 0);
+			} else if (nmh.code == DMN_CLOSE) {
+				//close dock;
+				showFolders();
 			}
 			break; }
 		default: {
@@ -1912,6 +1937,7 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 			hRadioActive = GetDlgItem(hWnd,IDC_RADIO_ACTIVE);
 			hRadioPassive = GetDlgItem(hWnd,IDC_RADIO_PASSIVE);
 			hCheckFindRoot = GetDlgItem(hWnd, IDC_CHECK_FINDROOT);
+			hCheckAskPassword = GetDlgItem(hWnd, IDC_CHECK_ASKPASS);
 			hInitDir = GetDlgItem(hWnd, IDC_SETTINGS_INITDIR);
 
 			hCacheDirect = GetDlgItem(hWnd,IDC_CHECK_CACHE);
@@ -1939,6 +1965,10 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 					UINT state = (UINT)SendMessage(hCacheDirect, BM_GETCHECK, 0, 0);
 					EnableWindow(hOpenCache, (state == BST_CHECKED));
 					break; }
+				case IDC_CHECK_ASKPASS: {
+					UINT state = (UINT)SendMessage(hCheckAskPassword, BM_GETCHECK, 0, 0);
+					EnableWindow(hPassword, (state == BST_UNCHECKED));
+					break; }
 				case IDB_SETTINGS_OK: {
 					/*break;*/ }
 				case IDB_SETTINGS_APPLY:{
@@ -1955,6 +1985,8 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 						currentProfile->setMode( (IsDlgButtonChecked(hWnd, IDC_RADIO_ACTIVE) == BST_CHECKED)?Mode_Active:Mode_Passive );
 						int state = (int)SendMessage(hCheckFindRoot, BM_GETCHECK, 0, 0);
 						currentProfile->setFindRoot( state != 0 );
+							state = (int)SendMessage(hCheckAskPassword, BM_GETCHECK, 0, 0);
+						currentProfile->setAskPassword( state != 0 );
 
 						//SendMessage(hProfileName, WM_GETTEXT, (WPARAM)INIBUFSIZE, (LPARAM)buf);
 						//currentProfile->setName(buf);
@@ -1994,6 +2026,13 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 						err(TEXT("This is a reserved keyword, please choose a different name for your profile"));
 						delete [] newprofile;
 						return TRUE;
+					}
+					for (unsigned int i = 0; i < vProfiles->size(); i++) {
+						if (!lstrcmpi( (*vProfiles)[i]->getName(), newprofile) ) {
+							err(TEXT("This name is already in use, please choose a different name for your profile"));
+							delete [] newprofile;
+							return TRUE;
+						}
 					}
 					currentProfile->setName(newprofile);
 					refreshProfileList();
@@ -2103,7 +2142,8 @@ BOOL CALLBACK RenameDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			SetWindowPos(hWnd, NULL, ((GetSystemMetrics(SM_CXSCREEN)-(rc.right-rc.left))/2), ((GetSystemMetrics(SM_CYSCREEN)-(rc.bottom-rc.top))/2), 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);
 			TCHAR * text = (TCHAR *) lParam;
 			HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_NEWNAME);
-			SendMessage(hEdit, WM_SETTEXT, 0, (LPARAM) text);
+			if (text)
+				SendMessage(hEdit, WM_SETTEXT, 0, (LPARAM) text);
 			return TRUE;
 			break; }
 		case WM_COMMAND: {
@@ -2211,25 +2251,33 @@ DWORD WINAPI outputProc(LPVOID param) {
 	HANDLE readHandle = (HANDLE) param;
 	DWORD bytesread;
 	char * buffer = new char[512];
-	TCHAR * newlinebuffer = new TCHAR[1024];
+	TCHAR * newlinebuffer = new TCHAR[1025];
+#ifdef UNICODE
+	char * newlinebufferA = new char[1025];
+#endif
 
-	buffer[511] = 0; newlinebuffer[1023] = 0;
-	int i, j;
+	unsigned int i, j;
+	char prev, current;
 	while(true) {
-		if (ReadFile(readHandle,buffer,511,&bytesread,NULL)) {
-			buffer[bytesread] = 0;
+		if (ReadFile(readHandle, buffer, 512, &bytesread, NULL)) {
 			i = 0; j = 0;
-			while(buffer[i] != 0) {
-				if (buffer[i] == '\n') {
-					newlinebuffer[j] = _T('\r');
+			prev = current = buffer[0];
+			while(i < bytesread) {
+				prev = current;
+				current = buffer[i];
+				if (prev != '\r' && current == '\n') {
+					TVAR(newlinebuffer)[j] = '\r';
 					j++;
-					newlinebuffer[j] = _T('\n');
+					TVAR(newlinebuffer)[j] = '\n';
 				} else {
-					newlinebuffer[j] = buffer[i];	//ANSI -> Unicode this way isn very nice, fixme?
+					TVAR(newlinebuffer)[j] = current;
 				}
 				i++; j++;
 			}
-			newlinebuffer[j] = 0;
+			TVAR(newlinebuffer)[j] = 0;
+#ifdef UNICODE
+			MultiByteToWideChar(CP_ACP, 0, newlinebufferA, -1, newlinebuffer, 1023);
+#endif
 			int textlen = (int)SendMessage(hOutputEdit,WM_GETTEXTLENGTH,0,0);
 			SendMessage(hOutputEdit,EM_SETSEL,(WPARAM)textlen,(LPARAM)textlen);
 			SendMessage(hOutputEdit,EM_REPLACESEL,(WPARAM)FALSE,(LPARAM)newlinebuffer);
@@ -2239,7 +2287,9 @@ DWORD WINAPI outputProc(LPVOID param) {
 	}
 	CloseHandle(readHandle);
 	delete [] buffer; delete [] newlinebuffer;
-	ExitThread(0);
+#ifdef UNICODE
+	delete [] newlinebufferA;
+#endif
 	return 0;
 }
 

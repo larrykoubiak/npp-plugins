@@ -45,8 +45,26 @@ void Profile::allocatebuffers() {
 void Profile::reload() {
 	GetPrivateProfileString(this->name, TEXT("Address"), TEXT(""), this->address, BUFFERSIZE, this->iniFile);
 	GetPrivateProfileString(this->name, TEXT("Username"), TEXT(""), this->username, BUFFERSIZE, this->iniFile);
-	GetPrivateProfileString(this->name, TEXT("Password"), TEXT(""), this->password, BUFFERSIZE, this->iniFile);
 	GetPrivateProfileString(this->name, TEXT("InitialDirectory"), TEXT(""), this->initialDir, MAX_PATH, this->iniFile);
+
+	//Decrypt the password using algorithm
+	TCHAR * encryptedPwd = new TCHAR[BUFFERSIZE];
+	DWORD res = GetPrivateProfileString(this->name, TEXT("Password"), TEXT(""), encryptedPwd, BUFFERSIZE*2, this->iniFile);
+
+	if (res >= 2) {
+		unsigned int i = 1, j = 0;
+		while (i < res) {
+			this->password[j+1] = encryptedPwd[i-1];
+			this->password[j] = encryptedPwd[i];
+			i+=2;
+			j+=2;
+		}
+		this->password[j] = 0;
+	} else {
+		lstrcpy(this->password, encryptedPwd);
+	}
+	delete [] encryptedPwd;
+
 #ifdef UNICODE
 	WideCharToMultiByte(CP_ACP, 0, this->address, -1, this->addressA, BUFFERSIZE, NULL, NULL);
 	WideCharToMultiByte(CP_ACP, 0, this->username, -1, this->usernameA, BUFFERSIZE, NULL, NULL);
@@ -57,6 +75,7 @@ void Profile::reload() {
 	this->setTimeout( GetPrivateProfileInt(this->name, TEXT("Timeout"), 30, this->iniFile) );
 	this->setMode( (Connection_Mode) GetPrivateProfileInt(this->name, TEXT("TransferMode"), 0, this->iniFile) );
 	this->setFindRoot( GetPrivateProfileInt(this->name, TEXT("FindRoot"), 0, this->iniFile) == 1 );
+	this->setAskPassword( GetPrivateProfileInt(this->name, TEXT("AskForPassword"), 0, this->iniFile) == 1 );
 }
 
 void Profile::save() {
@@ -69,9 +88,27 @@ void Profile::save() {
 	WritePrivateProfileString(this->name, TEXT("Address"), this->address, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("TransferMode"), (this->transfermode == Mode_Active)?TEXT("1"):TEXT("0"), iniFile);
 	WritePrivateProfileString(this->name, TEXT("Username"), this->username, this->iniFile);
-	WritePrivateProfileString(this->name, TEXT("Password"), this->password, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("InitialDirectory"), this->initialDir, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("FindRoot"), (this->findRoot == true)?TEXT("1"):TEXT("0"), iniFile);
+	WritePrivateProfileString(this->name, TEXT("AskForPassword"), (this->askPassword == true)?TEXT("1"):TEXT("0"), iniFile);
+
+	//Encrypt the password using some algorithm
+	TCHAR * encryptedPwd = new TCHAR[BUFFERSIZE];
+	int res = lstrlen(this->password);
+	if (res >= 2) {
+		int i = 1, j = 0;
+		while (i < res) {
+			encryptedPwd[j+1] = this->password[i-1];
+			encryptedPwd[j] = this->password[i];
+			i+=2;
+			j+=2;
+		}
+		encryptedPwd[j] = 0;
+	} else {
+		lstrcpy(encryptedPwd, this->password);
+	}
+	WritePrivateProfileString(this->name, TEXT("Password"), encryptedPwd, this->iniFile);
+	delete [] encryptedPwd;
 }
 
 void Profile::remove() {
@@ -137,6 +174,10 @@ void Profile::setFindRoot(bool find) {
 	findRoot = find;
 }
 
+void Profile::setAskPassword(bool ask) {
+	askPassword = ask;
+}
+
 LPCTSTR Profile::getName() {
 	return this->name;
 }
@@ -171,6 +212,10 @@ Connection_Mode Profile::getMode() {
 
 bool Profile::getFindRoot() {
 	return findRoot;
+}
+
+bool  Profile::getAskPassword() {
+	return askPassword;
 }
 
 #ifdef UNICODE

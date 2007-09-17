@@ -120,7 +120,7 @@ FTP_Service * mainService;
 HWND hFolderWindow, hTreeview, hStatusbar, hProgressbar, hFolderToolbar, hOutputWindow, hOutputEdit, hButtonClear;
 bool folderWindowInitialized, folderWindowVisible, outputWindowInitialized, outputWindowVisible;
 HMENU contextDirectory, contextFile, contextMessages, popupProfiles;
-HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hInitDir,
+HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hCheckAskPassword, hInitDir,
 	hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hProfileList, hProfileName;
 
 //for docking dlg

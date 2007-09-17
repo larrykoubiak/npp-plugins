@@ -41,6 +41,7 @@ public:
 	void setTimeout(int newtimeout);
 	void setMode(Connection_Mode newmode);
 	void setFindRoot(bool find);
+	void setAskPassword(bool ask);
 	LPCTSTR getName();
 	LPCTSTR getAddress();
 	LPCTSTR getUsername();
@@ -50,6 +51,7 @@ public:
 	int getTimeout();
 	Connection_Mode getMode();
 	bool getFindRoot();
+	bool getAskPassword();
 #ifdef UNICODE
 	LPCSTR getAddressA();
 	LPCSTR getUsernameA();
@@ -70,5 +72,6 @@ private:
 	int timeout;
 	Connection_Mode transfermode;
 	bool findRoot;
+	bool askPassword;
 	TCHAR * iniFile;
 };

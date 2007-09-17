@@ -18,6 +18,8 @@
 #define IDI_ICON_MESSAGES               114
 #define IDB_BITMAP_ABORT                115
 #define IDD_DIALOG_ABOUT                116
+#define IDD_DIALOG_RENAME1              117
+#define IDD_DIALOG_PASSWORD             117
 #define IDC_SETTINGS_ADDRESS            1001
 #define IDC_SETTINGS_PORT               1002
 #define IDC_SETTINGS_USERNAME           1003
@@ -32,7 +34,6 @@
 #define IDB_SETTINGS_APPLY              1010
 #define IDC_SETTINGS_TIMEOUT            1011
 #define IDC_BUTTON_CLEAR                1012
-#define IDC_SETTINGS_PASSWORD3          1013
 #define IDC_SETTINGS_INITDIR            1013
 #define IDC_EDIT_NEWNAME                1014
 #define IDB_BUTTON_OK                   1015
@@ -48,6 +49,7 @@
 #define IDC_EDIT_ABOUT                  1025
 #define IDC_CHECK1                      1025
 #define IDC_CHECK_FINDROOT              1025
+#define IDC_CHECK_ASKPASS               1026
 
 // Next default values for new objects
 // 
