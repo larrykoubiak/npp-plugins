@@ -110,7 +110,6 @@ FILEOBJECT * lastFileItemParam;
 HTREEITEM lastFileItem;
 DIRECTORY * lastDirectoryItemParam;
 HTREEITEM lastDirectoryItem;
-DIRECTORY * rootdirectory;
 
 HINSTANCE hDLL = 0;
 NppData nppData;
@@ -188,7 +187,7 @@ void uploadSpecified();
 void abort();
 void createDir();
 void deleteDir();
-void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree);
+void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, bool ignoreBusy = false);
 
 void progress(FTP_Service * service, int current, int total);
 void onEvent(FTP_Service * service, unsigned int type, int code);
@@ -226,8 +225,8 @@ LRESULT CALLBACK NotepadPPWindowProc(HWND, UINT, WPARAM, LPARAM);
 
 DWORD WINAPI outputProc(LPVOID param);
 
-void strcatAtoW(LPTSTR target, const char * ansi, int buflenchar);
-void strcpyAtoW(LPTSTR target, const char * ansi, int buflenchar);
+void strcatAtoT(LPTSTR target, const char * ansi, int buflenchar);
+void strcpyAtoT(LPTSTR target, const char * ansi, int buflenchar);
 
 void threadError(const char * threadName);
 

@@ -153,15 +153,11 @@ private:
 	Socket * controlConnection;	//Used to keep track of control connection
 
 	HANDLE responseEvent;		//Used to notify of new response from server
-	HANDLE connectionEvent;		//Used to notify of new connection from server (data)
-	HANDLE directoryEvent;
-	HANDLE transferEvent;
-	HANDLE waitEvent;
-	HANDLE controlLostEvent;
-
-	HANDLE controlThread;
-
-	char * initialRoot;			//Start at specified location in dirtree
+	HANDLE waitEvent;			//Used to notify response has been parsed
+	HANDLE connectionEvent;		//Used to notify of new connection from server (active connection)
+	HANDLE directoryEvent;		//Used to notify directory list socket closed
+	HANDLE transferEvent;		//Used to notify download socket closed
+	HANDLE controlLostEvent;	//Used to notify control socket closed
 
 	int timeLeft;				//keep track how many milliseconds left
 	int timeoutMSec;			//time to elapse before timeout event occurs (milliseconds)
@@ -171,24 +167,26 @@ private:
 
 	CRITICAL_SECTION responseBufferMutex;	//warning: do not use when performing response operation. Only use this when working with the buffer
 
-	SOCKET lastDataConnection;	//last socket created as dataconnection (for active mode)
-	SOCKET lastConnectionForAbort;	//socket to close when calling abort operations;
-	DIRECTORY * emptyDir;
-	DIRECTORY * root;
-	bool findRootParent;	//true if parent directories of root should be parsed
-	static int amount;
-	bool busy;			//true when doing something
-	int connectionStatus;
-	int eventSet;		//true when events properly set
+	SOCKET lastDataConnection;		//last socket created for active mode as result of listen (equals more or less lastConnectionForAbort)
+	SOCKET lastConnectionForAbort;	//last socket created as dataconnection = socket to close when calling abort operations;
+	DIRECTORY * emptyDir;			//empty directory to use as parent of root
+	DIRECTORY * root;				//directory that identifies the root of the FTP connection
+	char * initialRoot;				//Start at specified location in dirtree
+	bool findRootParent;			//true if parent directories of root should be parsed, if root is directory thats not top level. This wil lreset the root to absolute root
+
+	static int amount;				//current amount of living FTP_Service instances, used to initialize WinSock
+
+	bool busy;						//true when performing action
+	int connectionStatus;			//current status of server connection (ie connected and logged in)
+	int eventSet;					//true when events properly set (such as timeout and events)
 
 	//response parsing
 	int lastResponseValue, responseCodeToSet;
-	char * lastResponse;
-	char * lastResponseBuffer;	//copy response here first, then lastResponse later to ensure no corruption occurs during reading
+	char * lastResponse;			//last response message recieved, use mutex to aquire lock
+	char * lastResponseBuffer;		//copy response here first, then lastResponse later to ensure no corruption occurs during reading
 
-	bool mustWait;			//if true, the responsehandler must wait before the response-event may be set again
-	bool responseAvailable;	//responseevent has been set and not yet used if true
-	bool lastResponseCompleted;
+	bool mustWait;					//if true, response queueing has been enabled (ie one message parsed at a time)
+	bool lastResponseCompleted;		
 	bool needCode;
 	bool multiline;
 	bool checkmultiline;

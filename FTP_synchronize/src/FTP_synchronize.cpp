@@ -127,15 +127,25 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			//restore NPP main function
 			SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
 			nppData._nppHandle = NULL;
-			delete funcItem[0]._pShKey;
 
+			if (vProfiles->size() > 0) {	//clear
+				for(unsigned int i = 0; i < vProfiles->size(); i++) {
+					delete (*vProfiles)[i];
+				}
+				vProfiles->clear();
+			}
 			delete vProfiles;
 
-			delete [] dllName; delete [] dllPath; delete [] iniFile; delete [] storage;
-			delete [] pluginName; delete [] folderDockName; delete [] outputDockName; delete [] folderDockInfo; delete [] outputDockInfo;
+			delete [] dllName; delete [] dllPath; delete [] iniFile; delete [] storage;delete [] pluginName;
+
+			delete [] folderDockName; delete [] outputDockName; delete [] folderDockInfo; delete [] outputDockInfo;
+
 #ifdef UNICODE
-			delete [] pluginNameA; delete [] dllNameA; delete [] folderDockNameA; delete [] outputDockNameA; delete [] folderDockInfoA; delete [] outputDockInfoA;
+			delete [] pluginNameA; delete [] dllNameA;
+			delete [] folderDockNameA; delete [] outputDockNameA; delete [] folderDockInfoA; delete [] outputDockInfoA;
 #endif
+			
+			delete funcItem[0]._pShKey;
 
 			DeleteObject(toolBitmapFolders);
 			
@@ -427,7 +437,6 @@ void showFolders() {
 }
 
 void showOutput() {
-
 	if (!outputWindowVisible) {
 		outputWindowVisible = true;
 		if (!outputWindowInitialized) {
@@ -581,35 +590,41 @@ void enableToolbar() {
 
 void setToolbarState(int id, BOOL bEnabled) {
 	SendMessage(hFolderToolbar, TB_SETSTATE, (WPARAM) id, (LPARAM) MAKELONG( (bEnabled?TBSTATE_ENABLED:0), 0));
-	//err(TEXT("setstate"));
 }
 
 //FTP functions
 void connect() {
 	if (connected) {
-		disconnect();
+		//disconnect();
 		return;
 	}
 	if (busy)
 		return;
 	busy = true;
 	DWORD id;
-	if (CreateThread(NULL, 0, doConnect, NULL, 0, &id) == NULL) {
+	HANDLE hThread = CreateThread(NULL, 0, doConnect, NULL, 0, &id);
+	if (hThread == NULL) {
 		threadError("doConnect");
 		busy = false;
+	} else {
+		CloseHandle(hThread);
 	}
 }
 
 void disconnect() {
-	if (!connected)
-		return;
+	if (!connected) {
+		return; 
+	}
 	if (busy)
 		return;
 	busy = true;
 	DWORD id;
-	if (CreateThread(NULL, 0, doDisconnect, NULL, 0, &id) == NULL) {
+	HANDLE hThread = CreateThread(NULL, 0, doDisconnect, NULL, 0, &id);
+	if (hThread == NULL) {
 		threadError("doDisconnect");
 		busy = false;
+	} else {
+		CloseHandle(hThread);
 	}
 }
 
@@ -622,13 +637,13 @@ void download() {
 	FILEOBJECT * file = (FILEOBJECT*)lastFileItemParam;
 	TCHAR * path = new TCHAR[MAX_PATH], * serverpath = new TCHAR[MAX_PATH];
 	lstrcpy(path, storage);
-	strcatAtoW(path, file->fullfilepath, MAX_PATH - lstrlen(path));
+	strcatAtoT(path, file->fullfilepath, MAX_PATH - lstrlen(path));
 	if (!createDirectory(path)) {
 		delete [] path; delete [] serverpath;
 		busy = false;
 		return;
 	}
-	strcpyAtoW(serverpath, file->fullfilepath, MAX_PATH);
+	strcpyAtoT(serverpath, file->fullfilepath, MAX_PATH);
 	LOADTHREAD * lt = new LOADTHREAD;
 	lt->openFile = TRUE;
 	if ((lt->local = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL)) == NULL) {
@@ -642,14 +657,16 @@ void download() {
 	lt->server = serverpath;
 	lt->localname = path;
 	DWORD id;
-	if (CreateThread(NULL, 0, doDownload, lt, NULL, &id) == NULL) {
+	HANDLE hThread = CreateThread(NULL, 0, doDownload, lt, 0, &id);
+	if (hThread == NULL) {
 		threadError("doDownload");
 		delete [] lt->server;
 		delete [] lt->localname;
 		delete lt;
 		busy = false;
+	} else {
+		CloseHandle(hThread);
 	}
-	//delete [] path;
 }
 
 void downloadSpecified() {
@@ -661,7 +678,7 @@ void downloadSpecified() {
 	busy = true;
 	FILEOBJECT * file = lastFileItemParam;
 	TCHAR * path = new TCHAR[MAX_PATH];
-	strcpyAtoW(path, file->filename, MAX_PATH);
+	strcpyAtoT(path, file->filename, MAX_PATH);
 	
 	if (!browseFile(path, MAX_PATH, FALSE, FALSE, TRUE)) {
 		delete [] path;
@@ -676,7 +693,7 @@ void downloadSpecified() {
 	}
 
 	TCHAR * serverpath = new TCHAR[MAX_PATH];
-	strcpyAtoW(serverpath, file->fullfilepath, MAX_PATH);
+	strcpyAtoT(serverpath, file->fullfilepath, MAX_PATH);
 	LOADTHREAD * lt = new LOADTHREAD;
 	lt->openFile = (BOOL)2;
 	if ((lt->local = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL)) == NULL) {
@@ -690,12 +707,15 @@ void downloadSpecified() {
 	lt->server = serverpath;
 	lt->localname = path;
 	DWORD id;
-	if (CreateThread(NULL, 0, doDownload, lt, NULL, &id) == NULL) {
+	HANDLE hThread = CreateThread(NULL, 0, doDownload, lt, 0, &id);
+	if (hThread == NULL) {
 		threadError("doDownload");
 		delete [] lt->server;
 		delete [] lt->localname;
 		delete lt;
 		busy = false;
+	} else {
+		CloseHandle(hThread);
 	}
 }
 
@@ -714,7 +734,6 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, curFileA, -1, curFile, MAX_PATH);
 	delete [] curFileA;
 #else
-	//lstrcpy(curFile, curFileA);
 	curFile = curFileA;
 #endif
 	LOADTHREAD * lt = new LOADTHREAD;
@@ -743,14 +762,17 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		}
 		lt->server = servername;
 		DWORD id;
-		if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
+		if (CreateThread(NULL, 0, doUpload, lt, 0, &id) == NULL) {
 			threadError("doUpload");
+			delete [] curFile;
+			delete [] servername;
+			delete lt;
 			busy = false;
+			return;
 		} else {
 			return;
 		}
 	} else if (uploadCurrentOnUncached && uploadUncached) {	//The file is not in cache, upload to the selected directory
-
 		DIRECTORY * dir = lastDirectoryItemParam;
 		lt->targetTreeDir = lastDirectoryItem;
 		TCHAR  * filename = new TCHAR[MAX_PATH], * filestoragepath, * serverfilepath = new TCHAR[MAX_PATH];
@@ -762,7 +784,7 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 
 			if ( !isCached ) {	//copy the current file over to the cache if not the same file
 				lstrcpy(filestoragepath, storage);
-				strcatAtoW(filestoragepath, dir->fullpath, MAX_PATH - lstrlen(filestoragepath));
+				strcatAtoT(filestoragepath, dir->fullpath, MAX_PATH - lstrlen(filestoragepath));
 				lstrcat(filestoragepath, TEXT("\\"));
 				validatePath(filestoragepath);
 				if (createDirectory(filestoragepath)) {
@@ -786,15 +808,19 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 				}
 			}
 		}
-		strcpyAtoW(serverfilepath, dir->fullpath, MAX_PATH);
+		strcpyAtoT(serverfilepath, dir->fullpath, MAX_PATH);
 		lstrcat(serverfilepath, TEXT("/"));
 		lstrcat(serverfilepath, filename);
 		delete [] filename;
 		lt->server = serverfilepath;
 		DWORD id;
-		if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
+		if (CreateThread(NULL, 0, doUpload, lt, 0, &id) == NULL) {
 			threadError("doUpload");
+			delete [] curFile;
+			delete [] serverfilepath;
+			delete lt;
 			busy = false;
+			return;
 		} else {
 			return;
 		}
@@ -831,7 +857,7 @@ void uploadSpecified() {
 	lt->localname = localFileName;
 	lt->targetTreeDir = lastDirectoryItem;
 	TCHAR * servername = new TCHAR[MAX_PATH];
-	strcpyAtoW(servername, lastDirectoryItemParam->fullpath, MAX_PATH);
+	strcpyAtoT(servername, lastDirectoryItemParam->fullpath, MAX_PATH);
 	char lastChar = lastDirectoryItemParam->fullpath[strlen(lastDirectoryItemParam->fullpath)-1];
 	if (lastChar != '\\' && lastChar != '/')
 		lstrcat(servername, _T("/"));
@@ -844,12 +870,15 @@ void uploadSpecified() {
 	}
 	lt->server = servername;
 	DWORD id;
-	if (CreateThread(NULL, 0, doUpload, lt, NULL, &id) == NULL) {
+	HANDLE hThread = CreateThread(NULL, 0, doUpload, lt, 0, &id);
+	if (hThread == NULL) {
 		threadError("doUpload");
+		delete [] lt->server;
+		delete [] lt->localname;
+		delete lt;
 		busy = false;
 	} else {
-		busy = false;
-		return;
+		CloseHandle(hThread);
 	}
 }
 
@@ -864,9 +893,12 @@ void createDir() {
 		return;
 	busy = true;
 	DWORD id;
-	if (CreateThread(NULL, 0, doCreateDirectory, NULL, 0, &id) == NULL) {
+	HANDLE hThread = CreateThread(NULL, 0, doCreateDirectory, NULL, 0, &id);
+	if (hThread == NULL) {
 		threadError("doCreateDirectory");
 		busy = false;
+	} else {
+		CloseHandle(hThread);
 	}
 }
 
@@ -877,25 +909,32 @@ void deleteDir() {
 		return;
 	busy = true;
 	DWORD id;
-	if (CreateThread(NULL, 0, doDeleteDirectory, NULL, 0, &id) == NULL) {
+	HANDLE hThread = CreateThread(NULL, 0, doDeleteDirectory, NULL, 0, &id);
+	if (hThread == NULL) {
 		threadError("doDeleteDirectory");
 		busy = false;
+	} else {
+		CloseHandle(hThread);
 	}
 }
 
-void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree) {
+void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, bool ignoreBusy) {
 	if (!connected)
 		return;
-	if (busy)
+	if (busy && !ignoreBusy)
 		return;
 	DIRTHREAD * dt = new DIRTHREAD;
 	dt->treeItem = directory;
 	dt->refresh = doRefresh;
 	dt->expand = expandTree;
 	DWORD id;
-	if (CreateThread(NULL, 0, doGetDirectory, dt, NULL, &id) == NULL) {
+	HANDLE hThread = CreateThread(NULL, 0, doGetDirectory, dt, 0, &id);
+	if (hThread == NULL) {
 		threadError("doGetDirectory");
+		//delete dt;
 		busy = false;
+	} else {
+		CloseHandle(hThread);
 	}
 }
 
@@ -1027,19 +1066,18 @@ DWORD WINAPI doConnect(LPVOID param) {
 	bool result = mainService->connectToServer(currentProfile->TVAR(getAddress)(), currentProfile->getPort());
 	if (!result) {
 		setStatusMessage(TEXT("Could not connect to server"));
-		busy = false;
-		return 0;
 	} else {
 		setStatusMessage(TEXT("Logging in"));
 		if (!mainService->login(currentProfile->TVAR(getUsername)(), currentProfile->TVAR(getPassword)())) {
 			setStatusMessage(TEXT("Could not login to server"));
 			expectedDisconnect = true;
 			mainService->disconnect();
+		} else {
+			noConnection = false;
 		}
-		noConnection = false;
-		busy = false;
-		return 0;
 	}
+	busy = false;
+	return 0;
 }
 
 DWORD WINAPI doDisconnect(LPVOID param) {
@@ -1116,12 +1154,11 @@ DWORD WINAPI doUpload(LPVOID param) {
 	delete [] lt->server;
 	delete [] lt->localname;
 
-	busy = false;
-
 	if (result && lt->targetTreeDir)	//only refresh if a directory is given, and upload succeeded
-		reloadTreeDirectory(lt->targetTreeDir, true, true);
+		reloadTreeDirectory(lt->targetTreeDir, true, true, true);
 	acceptedEvents = events;
 	delete lt;
+	busy = false;
 	return 0;
 }
 
@@ -1169,10 +1206,7 @@ DWORD WINAPI doCreateDirectory(LPVOID param) {
 	lstrcpy(newDir->dirname, newname);
 #endif
 	if (mainService->createDirectory(root, newDir)) {
-		//HTREEITEM parent = TreeView_GetParent(hTreeview, lastItem);
-		//if (parent != NULL) {
-			reloadTreeDirectory(lastDirectoryItem, true, true);
-		//}
+		reloadTreeDirectory(lastDirectoryItem, true, true, true);
 	}
 	delete [] newname;
 	busy = false;
@@ -1184,15 +1218,15 @@ DWORD WINAPI doDeleteDirectory(LPVOID param) {
 	DIRECTORY * root = dir->parent;
 	if (dir == mainService->getRoot()) {
 		printf("Not allowed to delete root!\n");
+		busy = false;
 		return 0;
 	}
 
 	bool isCached = false;
-	TCHAR * path = new TCHAR[MAX_PATH], * newpath = new TCHAR[MAX_PATH];
+	TCHAR * path = new TCHAR[MAX_PATH];
 	lstrcpy(path, storage);
-	strcatAtoW(path, dir->fullpath, MAX_PATH - lstrlen(path));
-	lstrcpy(newpath, storage);
-	validatePath(path);  //INVALID_HANDLE_VALUE
+	strcatAtoT(path, dir->fullpath, MAX_PATH - lstrlen(path));
+	validatePath(path);
 	WIN32_FIND_DATA wfd;
 	HANDLE filehandle = FindFirstFile(path, &wfd);
 	if (filehandle != INVALID_HANDLE_VALUE) {
@@ -1203,38 +1237,44 @@ DWORD WINAPI doDeleteDirectory(LPVOID param) {
 	if (mainService->deleteDirectory(dir)) {
 		HTREEITEM parent = TreeView_GetParent(hTreeview, lastDirectoryItem);
 		if (parent != NULL) {
-			reloadTreeDirectory(parent, false, true);
+			reloadTreeDirectory(parent, true, true, true);
 		}
 		if (isCached) {
-			strcatAtoW(newpath, dir->fullpath, MAX_PATH - lstrlen(newpath));
-			validatePath(newpath);
 			if (!RemoveDirectory(path)) {
 				printf("Unable to delete the directory in cache: %d\n", GetLastError());
 			}
 		}
 		
 	}
+	delete [] path;
+	busy = false;
 	return 0;
 }
 
 DWORD WINAPI doRenameDirectory(LPVOID param) {
 	DIRECTORY * dir = lastDirectoryItemParam;
 	DIRECTORY * root = dir->parent;
+	if (dir == mainService->getRoot()) {
+		printf("Not allowed to rename root!\n");
+		busy = false;
+		return 0;
+	}
 #ifdef UNICODE
 	TCHAR * dirname = new TCHAR[MAX_PATH];
-	strcpyAtoW(dirname, dir->dirname, MAX_PATH);
+	strcpyAtoT(dirname, dir->dirname, MAX_PATH);
 	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)dirname);
 	delete [] dirname;
 #else
 	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)dir->dirname);
 #endif
-	if (newname == 0) {
+	if (newname == NULL) {
+		busy = false;
 		return 0;
 	}
 	bool isCached = false;
 	TCHAR * path = new TCHAR[MAX_PATH], * newpath = new TCHAR[MAX_PATH];
 	lstrcpy(path, storage);
-	strcatAtoW(path, dir->fullpath, MAX_PATH - lstrlen(path));
+	strcatAtoT(path, dir->fullpath, MAX_PATH - lstrlen(path));
 	lstrcpy(newpath, storage);
 	validatePath(path);
 	WIN32_FIND_DATA wfd;
@@ -1246,17 +1286,15 @@ DWORD WINAPI doRenameDirectory(LPVOID param) {
 #ifdef UNICODE
 	char * newnameA = new char[INIBUFSIZE];
 	WideCharToMultiByte(CP_ACP, 0, newname, -1, newnameA, INIBUFSIZE, NULL, NULL);
-	if (mainService->renameDirectory(dir, newnameA)) {
-#else
-	if (mainService->renameDirectory(dir, newname)) {
 #endif
+	if (mainService->renameDirectory(dir, TVAR(newname))) {
 		sortDirectory(dir, true, false);
 		HTREEITEM parent = TreeView_GetParent(hTreeview, lastDirectoryItem);
 		if (parent != NULL) {
-			reloadTreeDirectory(parent, false, true);
+			reloadTreeDirectory(parent, false, true, true);
 		}
 		if (isCached) {
-			strcatAtoW(newpath, dir->fullpath, MAX_PATH - lstrlen(newpath));
+			strcatAtoT(newpath, dir->fullpath, MAX_PATH - lstrlen(newpath));
 			validatePath(newpath);
 			if (!MoveFile(path, newpath)) {
 				printf("Unable to rename the directory in cache: %d\n", GetLastError());
@@ -1267,6 +1305,9 @@ DWORD WINAPI doRenameDirectory(LPVOID param) {
 	delete [] newnameA;
 #endif
 	delete [] newname;
+	delete [] path;
+	delete [] newpath;
+	busy = false;
 	return 0;
 }
 
@@ -1275,19 +1316,20 @@ DWORD WINAPI doRenameFile(LPVOID param) {
 	DIRECTORY * root = file->parent;
 #ifdef UNICODE
 	TCHAR * filename = new TCHAR[MAX_PATH];
-	strcpyAtoW(filename, file->filename, MAX_PATH);
+	strcpyAtoT(filename, file->filename, MAX_PATH);
 	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)filename);
 	delete [] filename;
 #else
 	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)file->filename);
 #endif
-	if (newname == 0) {
+	if (newname == NULL) {
+		busy = false;
 		return 0;
 	}
 	bool isCached = false;
 	TCHAR * path = new TCHAR[MAX_PATH], * newpath = new TCHAR[MAX_PATH];
 	lstrcpy(path, storage);
-	strcatAtoW(path, file->fullfilepath, MAX_PATH - lstrlen(path));
+	strcatAtoT(path, file->fullfilepath, MAX_PATH - lstrlen(path));
 	lstrcpy(newpath, storage);
 	validatePath(path);
 	WIN32_FIND_DATA wfd;
@@ -1299,21 +1341,19 @@ DWORD WINAPI doRenameFile(LPVOID param) {
 #ifdef UNICODE
 	char * newnameA = new char[INIBUFSIZE];
 	WideCharToMultiByte(CP_ACP, 0, newname, -1, newnameA, INIBUFSIZE, NULL, NULL);
-	if (mainService->renameFile(file, newnameA)) {
-#else
-	if (mainService->renameFile(file, newname)) {
 #endif
+	if (mainService->renameFile(file, TVAR(newname))) {
 		sortDirectory(file->parent, false, true);
 		HTREEITEM parent = TreeView_GetParent(hTreeview, lastFileItem);
 		if (parent != NULL) {
-			reloadTreeDirectory(parent, false, true);
+			reloadTreeDirectory(parent, false, true, true);
 		}
 		if (isCached) {
-			strcatAtoW(newpath, file->fullfilepath, MAX_PATH - lstrlen(newpath));
+			strcatAtoT(newpath, file->fullfilepath, MAX_PATH - lstrlen(newpath));
 			validatePath(newpath);
 			if (!MoveFile(path, newpath)) {
 				printf("Unable to rename the directory in cache: %d\n", GetLastError());
-			} else {
+			} else {	//this reopens all moved files that are opened in N++
 				int nrFiles = (int)SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, (LPARAM) ALL_OPEN_FILES);
 				TCHAR ** filesTainer = new TCHAR*[nrFiles];
 				for(int i = 0; i < nrFiles; i++) {
@@ -1338,6 +1378,10 @@ DWORD WINAPI doRenameFile(LPVOID param) {
 #ifdef UNICODE
 	delete [] newnameA;
 #endif
+	delete [] newname;
+	delete [] path;
+	delete [] newpath;
+	busy = false;
 	return 0;
 }
 
@@ -1348,7 +1392,7 @@ DWORD WINAPI doDeleteFile(LPVOID param) {
 	bool isCached = false;
 	TCHAR * path = new TCHAR[MAX_PATH];
 	lstrcpy(path, storage);
-	strcatAtoW(path, file->fullfilepath, MAX_PATH - lstrlen(path));
+	strcatAtoT(path, file->fullfilepath, MAX_PATH - lstrlen(path));
 	validatePath(path);
 	WIN32_FIND_DATA wfd;
 	HANDLE filehandle = FindFirstFile(path, &wfd);
@@ -1360,39 +1404,22 @@ DWORD WINAPI doDeleteFile(LPVOID param) {
 	if (mainService->deleteFile(file)) {
 		HTREEITEM parent = TreeView_GetParent(hTreeview, lastFileItem);
 		if (parent != NULL) {
-			reloadTreeDirectory(parent, false, true);
+			reloadTreeDirectory(parent, false, true, true);
 		}
 		if (isCached) {
 			if (!DeleteFile(path)) {
 				printf("Unable to delete the file in cache: %d\n", GetLastError());
-			}/* else {	//whenever notepad++ supports closing files, this may be usefull
-				int nrFiles = (int)SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, (LPARAM) ALL_OPEN_FILES);
-				char ** filesTainer = new char*[nrFiles];
-				for(int i = 0; i < nrFiles; i++) {
-					filesTainer[i] = new char[MAX_PATH];
-				}
-				SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMES, (WPARAM) filesTainer, (LPARAM) nrFiles);
-				bool found = false;
-				for(int i = 0; i < nrFiles; i++) {
-					if (!found && !stricmp(path, filesTainer[i]))
-						found = true;
-					delete [] filesTainer[i];
-				}
-				delete [] filesTainer;
-				if (found) {
-					SendMessage(nppData._nppHandle,WM_DOCLOSE,0,(LPARAM)newpath);
-					//SendMessage(nppData._nppHandle,NPPM_RELOADFILE,(WPARAM)FALSE,(LPARAM)newpath);
-				}
-			}*/
+			}
 		}
 	}
+	delete [] path;
+	busy = false;
 	return 0;
 }
 
 //Treeview functions
 HTREEITEM addRoot(DIRECTORY * rootDir) {
 	LPTSTR namestring;
-	rootdirectory = rootDir;
 	TV_INSERTSTRUCT tvinsert;
 	tvinsert.hParent = NULL;
 	tvinsert.hInsertAfter = TVI_ROOT;
@@ -1511,10 +1538,9 @@ BOOL createDirectory(LPCTSTR path) {
 }
 
 void validatePath(LPTSTR path) {
-	TCHAR * newpath = new TCHAR[lstrlen(path)];
+	TCHAR * newpath = new TCHAR[MAX_PATH];//lstrlen(path)];
 	newpath[0] = 0;
-	bool isSlash = false;
-	int i = 0, j = 0;
+	int j = 0;
 	LPCTSTR curStringOffset = path;
 	while(*curStringOffset != 0) {
 		if (*curStringOffset == _T('\\') || *curStringOffset == _T('/')) {
@@ -1523,14 +1549,15 @@ void validatePath(LPTSTR path) {
 			}
 			newpath[j] = _T('\\');
 			j++;
-		}
-		newpath[j] = *curStringOffset;
-		if (IsDBCSLeadByte(*curStringOffset)) {
-			newpath[j] = *(curStringOffset + 1);
+		} else {
+			newpath[j] = *curStringOffset;
 			j++;
+			if (IsDBCSLeadByte(*curStringOffset)) {
+				newpath[j] = *(curStringOffset + 1);
+				j++;
+			}
+			curStringOffset = CharNext(curStringOffset);
 		}
-		curStringOffset = CharNext(curStringOffset);
-		j++;
 	}
 	newpath[j] = 0;
 	lstrcpy(path, newpath);
@@ -1679,6 +1706,8 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						disconnect();
 						return TRUE;
 					}
+					if (busy)	//no popup when busy, might already be connecting
+						return TRUE;
 					popupProfiles;
 					DestroyMenu(popupProfiles);
 					popupProfiles = CreatePopupMenu();
@@ -2212,7 +2241,7 @@ DWORD WINAPI outputProc(LPVOID param) {
 }
 
 //String processing
-void strcatAtoW(LPTSTR target, const char * ansi, int buflenchar) {
+void strcatAtoT(LPTSTR target, const char * ansi, int buflenchar) {
 #ifdef UNICODE
 	int taken = (int)_tcslen(target) + 1;
 	int len = (int)strlen(ansi);
@@ -2228,7 +2257,7 @@ void strcatAtoW(LPTSTR target, const char * ansi, int buflenchar) {
 #endif
 }
 
-void strcpyAtoW(LPTSTR target, const char * ansi, int buflenchar) {
+void strcpyAtoT(LPTSTR target, const char * ansi, int buflenchar) {
 #ifdef UNICODE
 	MultiByteToWideChar(CP_ACP, 0, ansi, -1, target, buflenchar);
 #else
