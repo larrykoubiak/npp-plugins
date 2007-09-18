@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved) {
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:{
+			outputThreadStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 			_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF );	//Debug build only: check the memory sanity more often
 
 			hDLL = (HINSTANCE)hModule;
@@ -124,48 +125,55 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			break;
 		}
 		case DLL_PROCESS_DETACH:{
-			saveGlobalSettings();
-			//restore NPP main function
-			SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
-			nppData._nppHandle = NULL;
+			//If lpReserved == NULL, the DLL is unloaded by freelibrary, so do the cleanup ourselves. If this isnt the case, let windows do the cleanup
+			//For more info, read this blog: http://blogs.msdn.com/oldnewthing/archive/2007/05/03/2383346.aspx
+			if (lpReserved == NULL) {
+				saveGlobalSettings();
+				//restore NPP main function
+				SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
+				nppData._nppHandle = NULL;
 
-			if (vProfiles->size() > 0) {	//clear
-				for(unsigned int i = 0; i < vProfiles->size(); i++) {
-					delete (*vProfiles)[i];
+				if (vProfiles->size() > 0) {	//clear
+					for(unsigned int i = 0; i < vProfiles->size(); i++) {
+						delete (*vProfiles)[i];
+					}
+					vProfiles->clear();
 				}
-				vProfiles->clear();
-			}
-			delete vProfiles;
+				delete vProfiles;
 
-			delete [] dllName; delete [] dllPath; delete [] iniFile; delete [] storage;delete [] pluginName;
+				delete [] dllName; delete [] dllPath; delete [] iniFile; delete [] storage;delete [] pluginName;
 
-			delete [] folderDockName; delete [] outputDockName; delete [] folderDockInfo; delete [] outputDockInfo;
+				delete [] folderDockName; delete [] outputDockName; delete [] folderDockInfo; delete [] outputDockInfo;
 
 #ifdef UNICODE
-			delete [] pluginNameA; delete [] dllNameA;
-			delete [] folderDockNameA; delete [] outputDockNameA; delete [] folderDockInfoA; delete [] outputDockInfoA;
+				delete [] pluginNameA; delete [] dllNameA;
+				delete [] folderDockNameA; delete [] outputDockNameA; delete [] folderDockInfoA; delete [] outputDockInfoA;
 #endif
-			
-			delete funcItem[0]._pShKey;
+				
+				delete funcItem[0]._pShKey;
 
-			DeleteObject(toolBitmapFolders);
-			
-			DestroyMenu(contextFile);
-			DestroyMenu(contextDirectory);
-			DestroyMenu(contextMessages);
-			DestroyMenu(popupProfiles);
+				DeleteObject(toolBitmapFolders);
+				
+				DestroyMenu(contextFile);
+				DestroyMenu(contextDirectory);
+				DestroyMenu(contextMessages);
+				DestroyMenu(popupProfiles);
 
-			mainService->setEventCallback(NULL);	//Disable the event callback, the host application is invalid
-			mainService->setProgressCallback(NULL);
-			mainService->setTimeoutEventCallback(NULL, 0);
-			delete mainService;
+				//When deleting service disables events
+				//mainService->setEventCallback(NULL);	//Disable the event callback, the host application is invalid
+				delete mainService;
 
-			//reset output
-			*stdout = stdoutOrig;
-			CloseHandle(writeHandle);
+				//reset output
+				*stdout = stdoutOrig;
+				CloseHandle(writeHandle);
 
-			DeleteObject(iconFolderDock); DeleteObject(iconOuputDock);	//when custom icons are used
+				if (WaitForSingleObject(outputThreadStopEvent, 5000) == WAIT_TIMEOUT)
+					MessageBox(NULL, TEXT("Stopping out thread failed"), 0, 0);
 
+				CloseHandle(outputThreadStopEvent);
+
+				DeleteObject(iconFolderDock); DeleteObject(iconOuputDock);
+			}
 			break;}
 	}
 	return TRUE;
@@ -2118,6 +2126,9 @@ BOOL CALLBACK OutDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			if ((hReadThread = CreateThread(NULL, 0, outputProc, (LPVOID)lParam, 0, &id)) == NULL) {
 				err(TEXT("Error: could not create outputProc thread!"));
 				*stdout = stdoutOrig;
+			} else {
+				ResetEvent(outputThreadStopEvent);
+				CloseHandle(hReadThread);
 			}
 			return TRUE;	//let windows set focus
 			break; }
@@ -2290,6 +2301,8 @@ DWORD WINAPI outputProc(LPVOID param) {
 #ifdef UNICODE
 	delete [] newlinebufferA;
 #endif
+	//MessageBoxA(NULL, "Stopping out thread", 0, 0);
+	SetEvent(outputThreadStopEvent);
 	return 0;
 }
 

@@ -104,6 +104,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 int connectBitmapIndex, disconnectBitmapIndex;
 FILE stdoutOrig;
 HANDLE hReadThread;
+HANDLE outputThreadStopEvent;
 
 //storage for treeview commands
 FILEOBJECT * lastFileItemParam;
