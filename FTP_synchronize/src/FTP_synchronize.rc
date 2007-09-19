@@ -121,12 +121,12 @@ END
 IDD_DIALOG_RENAME DIALOGEX 0, 0, 214, 41
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
     WS_SYSMENU
-CAPTION "Please enter the password"
+CAPTION "Please enter the new name"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDB_BUTTON_OK,162,6,50,14
     PUSHBUTTON      "Cancel",IDB_BUTTON_CANCEL,162,24,50,14
-    EDITTEXT        IDC_EDIT_NEWNAME,6,6,144,14,ES_PASSWORD | ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT_NEWNAME,6,6,144,14,ES_AUTOHSCROLL
 END
 
 IDD_DIALOG_ABOUT DIALOGEX 0, 0, 256, 178
@@ -140,7 +140,7 @@ END
 IDD_DIALOG_PASSWORD DIALOGEX 0, 0, 214, 41
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
     WS_SYSMENU
-CAPTION "Please enter the new name for the specified object"
+CAPTION "Please enter the password"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDB_BUTTON_OK,162,6,50,14
@@ -155,8 +155,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,1,2
- PRODUCTVERSION 0,9,1,2
+ FILEVERSION 0,9,2,0
+ PRODUCTVERSION 0,9,2,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -172,12 +172,12 @@ BEGIN
         BLOCK "000004b0"
         BEGIN
             VALUE "FileDescription", "FTP Plugin for Notepad++, a free (GNU) source code editor"
-            VALUE "FileVersion", "0.9.1.2"
+            VALUE "FileVersion", "0.9.2.0"
             VALUE "InternalName", "FTP_sync"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "FTP_synchronize.dll"
             VALUE "ProductName", " FTP_synchronize"
-            VALUE "ProductVersion", "0.9.1.2"
+            VALUE "ProductVersion", "0.9.2.0"
         END
     END
     BLOCK "VarFileInfo"

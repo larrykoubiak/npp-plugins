@@ -159,7 +159,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 				DestroyMenu(contextMessages);
 				DestroyMenu(popupProfiles);
 
-				//When deleting service disables events
+				//When deleting, service disables events
 				//mainService->setEventCallback(NULL);	//Disable the event callback, the host application is invalid
 				delete mainService;
 
@@ -1088,11 +1088,12 @@ DWORD WINAPI doConnect(LPVOID param) {
 #ifdef UNICODE
 				int len = lstrlen(passWord);
 				char * passWordA = new char[len + 1];
-				WideCharToMultiByte(CP_ACP, 0, passWord, -1, passWordA, len, NULL, NULL);
+				WideCharToMultiByte(CP_ACP, 0, passWord, -1, passWordA, len+1, NULL, NULL);
 				result = mainService->login(currentProfile->TVAR(getUsername)(), passWordA);
 				delete [] passWordA;
 #else
 				result = mainService->login(currentProfile->TVAR(getUsername)(), passWord);
+				delete [] passWord;
 #endif
 			} else {
 				result = false;
@@ -2153,9 +2154,13 @@ BOOL CALLBACK RenameDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			SetWindowPos(hWnd, NULL, ((GetSystemMetrics(SM_CXSCREEN)-(rc.right-rc.left))/2), ((GetSystemMetrics(SM_CYSCREEN)-(rc.bottom-rc.top))/2), 0, 0, SWP_NOSIZE|SWP_NOACTIVATE);
 			TCHAR * text = (TCHAR *) lParam;
 			HWND hEdit = GetDlgItem(hWnd, IDC_EDIT_NEWNAME);
-			if (text)
+			if (text) {
 				SendMessage(hEdit, WM_SETTEXT, 0, (LPARAM) text);
-			return TRUE;
+				int textlen = (int)lstrlen(text);
+				SendMessage(hEdit,EM_SETSEL,(WPARAM)textlen,(LPARAM)textlen);
+			}
+			SetFocus(hEdit);
+			return FALSE;//TRUE;	//return FALSE to set our own focus. No worries about conflicting default buttons etc as its an edit control
 			break; }
 		case WM_COMMAND: {
 			switch(LOWORD(wParam)) {
@@ -2296,12 +2301,13 @@ DWORD WINAPI outputProc(LPVOID param) {
 			break;
 		}
 	}
+
 	CloseHandle(readHandle);
+	
 	delete [] buffer; delete [] newlinebuffer;
 #ifdef UNICODE
 	delete [] newlinebufferA;
 #endif
-	//MessageBoxA(NULL, "Stopping out thread", 0, 0);
 	SetEvent(outputThreadStopEvent);
 	return 0;
 }
