@@ -64,7 +64,7 @@ public:
 	};
 
 	virtual void updateDockingDlg(void) {
-		::SendMessage(_hParent, NPPM_DMM_UPDATEDISPINFO, 0, (LPARAM)_hSelf);
+		::SendMessage(_hParent, NPPM_DMMUPDATEDISPINFO, 0, (LPARAM)_hSelf);
 	}
 
     virtual void destroy() {
@@ -72,9 +72,9 @@ public:
 
 	virtual void display(bool toShow = true) const {
 		extern FuncItem funcItem[];
-		::SendMessage(_hParent, toShow?NPPM_DMM_SHOW:NPPM_DMM_HIDE, 0, (LPARAM)_hSelf);
+		::SendMessage(_hParent, toShow?NPPM_DMMSHOW:NPPM_DMMHIDE, 0, (LPARAM)_hSelf);
 		if (_data != NULL)
-			::SendMessage(_hParent, NPPM_PIMENU_CHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)toShow);
+			::SendMessage(_hParent, NPPM_SETMENUITEMCHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)toShow);
 	};
 
 	const char * getPluginFileName() const {
@@ -86,7 +86,6 @@ protected :
 	{
 		switch (message) 
 		{
-
 			case WM_NOTIFY: 
 			{
 				LPNMHDR	pnmh	= (LPNMHDR)lParam;
@@ -99,7 +98,7 @@ protected :
 						{
 							extern FuncItem funcItem[];
 							if (_data != NULL)
-								::SendMessage(_hParent, NPPM_PIMENU_CHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)FALSE);
+								::SendMessage(_hParent, NPPM_SETMENUITEMCHECK, funcItem[_data->dlgID]._cmdID, (LPARAM)FALSE);
 							break;
 						}
 						case DMN_FLOAT:
