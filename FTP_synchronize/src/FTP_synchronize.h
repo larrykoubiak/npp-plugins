@@ -43,9 +43,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "Profile.h"
 //
 #ifdef UNICODE	//disable DBCS functions
+#undef CharNext
+#undef CharPrev
 #define CharNext(pc)    ((*pc) ? pc + 1 : pc) 
 #define CharPrev(pcStart, pc) ((pc > pcStart) ? pc - 1 : pcStart)
-#ifndef WIN32 
+#ifdef WIN32
 #define IsDBCSLeadByte(bByte) (false)
 #endif	//WIN32
 #define TVAR(variable)	variable##A
