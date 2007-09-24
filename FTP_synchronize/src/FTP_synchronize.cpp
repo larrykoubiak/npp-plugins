@@ -651,7 +651,9 @@ void download() {
 	TCHAR * path = new TCHAR[MAX_PATH], * serverpath = new TCHAR[MAX_PATH];
 	lstrcpy(path, storage);
 	strcatAtoT(path, file->fullfilepath, MAX_PATH - lstrlen(path));
+	validatePath(path);
 	if (!createDirectory(path)) {
+		err(path);
 		delete [] path; delete [] serverpath;
 		busy = false;
 		return;
@@ -699,11 +701,6 @@ void downloadSpecified() {
 		return;
 	}
 
-	if (!createDirectory(path)) {
-		delete [] path;
-		busy = false;
-		return;
-	}
 
 	TCHAR * serverpath = new TCHAR[MAX_PATH];
 	strcpyAtoT(serverpath, file->fullfilepath, MAX_PATH);
@@ -987,8 +984,9 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					lstrcat(storage, TEXT("@"));
 					lstrcat(storage, currentProfile->getAddress());
 					lstrcat(storage, TEXT("\\"));
-					if (!createDirectory(storage))
-						printf("Could not create storage cache '%s',\n\terror %d\n", storage, GetLastError());
+					if (!createDirectory(storage)) {
+						printf("Could not create storage cache '%s', error %d\n", storage, GetLastError());
+					}
 					//SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,(WPARAM)funcItem[0]._cmdID,(LPARAM)TRUE);	//Check the menu item
 					connected = true;
 					SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(connectBitmapIndex, 0));
@@ -1070,6 +1068,7 @@ void onTimeout(FTP_Service * service, int timeleft) {
 
 //FTP threads
 DWORD WINAPI doConnect(LPVOID param) {
+
 	expectedDisconnect = false;
 	mainService->setTimeoutEventCallback(&onTimeout, currentProfile->getTimeout());
 	mainService->setMode(currentProfile->getMode());
@@ -1110,10 +1109,12 @@ DWORD WINAPI doConnect(LPVOID param) {
 		}
 	}
 	busy = false;
+
 	return 0;
 }
 
 DWORD WINAPI doDisconnect(LPVOID param) {
+
 	setStatusMessage(TEXT("Disconnecting"));
 	expectedDisconnect = true;
 	if (mainService->disconnect()) {
@@ -1123,10 +1124,12 @@ DWORD WINAPI doDisconnect(LPVOID param) {
 		expectedDisconnect = false;
 	}
 	busy = false;
+
 	return 0;
 }
 
 DWORD WINAPI doDownload(LPVOID param) {
+
 	LOADTHREAD * lt = (LOADTHREAD *) param;
 	unsigned int events = acceptedEvents;
 	acceptedEvents = Event_Download;
@@ -1167,10 +1170,12 @@ DWORD WINAPI doDownload(LPVOID param) {
 	delete lt;
 
 	busy = false;
+
 	return 0;
 }
 
 DWORD WINAPI doUpload(LPVOID param) {
+
 	LOADTHREAD * lt = (LOADTHREAD *) param;
 	unsigned int events = acceptedEvents;
 	acceptedEvents = Event_Upload;
@@ -1192,10 +1197,12 @@ DWORD WINAPI doUpload(LPVOID param) {
 	acceptedEvents = events;
 	delete lt;
 	busy = false;
+
 	return 0;
 }
 
 DWORD WINAPI doGetDirectory(LPVOID param) {
+
 	DIRTHREAD * dt = (DIRTHREAD *) param;
 	TV_ITEM tvi;
 	tvi.hItem = dt->treeItem;
@@ -1223,9 +1230,11 @@ DWORD WINAPI doGetDirectory(LPVOID param) {
 	acceptedEvents = events;
 	delete dt;
 	busy = false;
+
 	return 0;
 }
 DWORD WINAPI doCreateDirectory(LPVOID param) {
+
 	DIRECTORY * root = lastDirectoryItemParam;
 	DIRECTORY * newDir = new DIRECTORY;
 	ZeroMemory(newDir, sizeof(DIRECTORY));
@@ -1243,10 +1252,12 @@ DWORD WINAPI doCreateDirectory(LPVOID param) {
 	}
 	delete [] newname;
 	busy = false;
+
 	return 0;
 }
 
 DWORD WINAPI doDeleteDirectory(LPVOID param) {
+
 	DIRECTORY * dir = lastDirectoryItemParam;
 	DIRECTORY * root = dir->parent;
 	if (dir == mainService->getRoot()) {
@@ -1281,10 +1292,12 @@ DWORD WINAPI doDeleteDirectory(LPVOID param) {
 	}
 	delete [] path;
 	busy = false;
+
 	return 0;
 }
 
 DWORD WINAPI doRenameDirectory(LPVOID param) {
+
 	DIRECTORY * dir = lastDirectoryItemParam;
 	DIRECTORY * root = dir->parent;
 	if (dir == mainService->getRoot()) {
@@ -1341,10 +1354,12 @@ DWORD WINAPI doRenameDirectory(LPVOID param) {
 	delete [] path;
 	delete [] newpath;
 	busy = false;
+
 	return 0;
 }
 
 DWORD WINAPI doRenameFile(LPVOID param) {
+
 	FILEOBJECT * file = lastFileItemParam;
 	DIRECTORY * root = file->parent;
 #ifdef UNICODE
@@ -1415,10 +1430,12 @@ DWORD WINAPI doRenameFile(LPVOID param) {
 	delete [] path;
 	delete [] newpath;
 	busy = false;
+
 	return 0;
 }
 
 DWORD WINAPI doDeleteFile(LPVOID param) {
+
 	FILEOBJECT * file = lastFileItemParam;
 	DIRECTORY * root = file->parent;
 
@@ -1447,6 +1464,7 @@ DWORD WINAPI doDeleteFile(LPVOID param) {
 	}
 	delete [] path;
 	busy = false;
+
 	return 0;
 }
 
@@ -1543,6 +1561,7 @@ void deleteAllChildItems(HTREEITEM parent) {
 BOOL createDirectory(LPCTSTR path) {
 	TCHAR * parsedPath = new TCHAR[MAX_PATH];
 	BOOL last = FALSE;
+	DWORD res;
 	parsedPath[0] = 0;
 	int i = 0, lastoffset = 0;
 	LPCTSTR curStringOffset = path;
@@ -1551,6 +1570,7 @@ BOOL createDirectory(LPCTSTR path) {
 		if ((*curStringOffset == _T('\\')) || (*curStringOffset == _T('/'))) {
 			if (prevStringOffset != curStringOffset && *prevStringOffset != _T(':') && *prevStringOffset != _T('\\') && *prevStringOffset != _T('/')) {	//ignore drivename and doubled separators
 				last = CreateDirectory(parsedPath, NULL);
+				res = GetLastError();
 			}
 		}
 		parsedPath[i] = *curStringOffset;
@@ -1565,7 +1585,7 @@ BOOL createDirectory(LPCTSTR path) {
 	}
 
 	delete [] parsedPath;
-	if (!last && GetLastError() == 183)	//dir already exists, so success
+	if (!last && res == ERROR_ALREADY_EXISTS)	//dir already exists, so success
 		return true;
 	return last;
 }
@@ -2264,6 +2284,7 @@ LRESULT CALLBACK NotepadPPWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
 //printf output redirect thread
 DWORD WINAPI outputProc(LPVOID param) {
+
 	HANDLE readHandle = (HANDLE) param;
 	DWORD bytesread;
 	char * buffer = new char[512];
@@ -2308,6 +2329,7 @@ DWORD WINAPI outputProc(LPVOID param) {
 #ifdef UNICODE
 	delete [] newlinebufferA;
 #endif
+
 	SetEvent(outputThreadStopEvent);
 	return 0;
 }

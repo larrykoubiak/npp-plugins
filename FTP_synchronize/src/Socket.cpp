@@ -24,7 +24,7 @@ int Socket::amount = 0;
 
 Socket::Socket(const char * pszAddress, int iPort) {
 	m_iPort = iPort;
-	m_pszAddress = new char[strlen(pszAddress)+100];
+	m_pszAddress = new char[strlen(pszAddress)+1];
 	strcpy(m_pszAddress, pszAddress);
 	m_iError = 0;
 	Socket::amount++;
@@ -74,7 +74,8 @@ bool Socket::connectClient() {
 Socket::~Socket() {
 	delete [] m_pszAddress;
 	Socket::amount--;
-	closesocket(m_hSocket);
+	//This seems to crash Win98 at times, considering all implementations have closed sockets before calling this, I reckon its safe to comment closesocket out
+	//closesocket(m_hSocket);
 	return;
 }
 
