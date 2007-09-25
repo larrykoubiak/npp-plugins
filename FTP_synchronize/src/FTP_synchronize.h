@@ -41,6 +41,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "FTP_service.h"
 #include "Profile.h"
+#include "DragDropSupport.h"
+
 //
 #ifdef UNICODE	//disable DBCS functions
 #undef CharNext

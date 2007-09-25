@@ -203,11 +203,8 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 	}
 	lstrcat(iniFile, pluginName);
 	lstrcat(iniFile, TEXT(".ini"));
-	HANDLE ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,NULL);
-	if (ini == INVALID_HANDLE_VALUE) {	//opening file failed, attempt to create it at designated location
-		ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,NULL);
-	}
-	if (ini == INVALID_HANDLE_VALUE) {	//everything failed, disable plugin
+	HANDLE ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
+	if (ini == INVALID_HANDLE_VALUE) {	//opening file failed, creating too, disable plugin
 		err(TEXT("No settings were available and unable to create new settingsfile. The plugin will not work!"));
 	} else {	//we got our config, lets get profiles
 		CloseHandle(ini);
@@ -468,7 +465,7 @@ void showOutput() {
 		}
 		SendMessage(nppData._nppHandle,NPPM_DMMSHOW,0,(LPARAM)hOutputWindow)	;		//Show my window as requested
 		//SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,(WPARAM)funcItem[0]._cmdID,(LPARAM)TRUE);	//Check the menu item
-		ShowWindow(hTreeview, SW_SHOW);
+
 	} else {
 		outputWindowVisible = false;
 		SendMessage(nppData._nppHandle,NPPM_DMMHIDE,0,(LPARAM)hOutputWindow);
