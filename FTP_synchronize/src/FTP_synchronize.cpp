@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved) {
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:{
+			initializedPlugin = false;
 			outputThreadStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 			_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF );	//Debug build only: check the memory sanity more often
 
@@ -31,8 +32,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			nppData._nppHandle = NULL;
 
 			InitCommonControls();	//for treeview etc
-
-			vProfiles = new std::vector< Profile * >();
 
 			dllName = new TCHAR[MAX_PATH];
 			dllPath = new TCHAR[MAX_PATH];
@@ -73,21 +72,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			funcItem[1]._init2Check = false;
 			funcItem[1]._pShKey = NULL;
 
-			//output redirection, makes printf still work in win32 app
-			CreatePipe(&readHandle, &writeHandle, NULL, 0);		//pipe the output to the message log
-			//AllocConsole();									//Allocate console (used when STD_OUT_HANDLE is used for output handle, bad idea(TM))
-			HANDLE hStdout = writeHandle;						//get win32 handle for stdout
-			int hCrt = _open_osfhandle((long)hStdout,0);		//get a C-runtime library handle based of win32 stdout handle
-			FILE * hf = _fdopen( hCrt, "w" );					//use the one above to create a FILE * to use for stdout
-			stdoutOrig = *stdout;								//Save original stdout
-			*stdout = *hf;										//set c-stdout to win32 version
-			setvbuf( stdout, NULL, _IONBF, 0 );					//disable buffering
-
-			//Initialize the GUI
-			createWindows();
-			createToolbar();
-			createContextMenus();
-
 			folderDockName = new TCHAR[INIBUFSIZE];
 			outputDockName = new TCHAR[INIBUFSIZE];
 			folderDockInfo = new TCHAR[INIBUFSIZE];
@@ -102,11 +86,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			strcpy(folderDockNameA, "FTP Folders");
 			strcpy(outputDockNameA, "FTP Messages");
 #endif
-			setTitleBarAddon(TEXT("Disconnected"));
-			setOutputTitleAddon(TEXT("No connection"));
 
-			iconFolderDock = LoadIcon(hDLL, MAKEINTRESOURCE(IDI_ICON_FOLDERS));
-			iconOuputDock = LoadIcon(hDLL, MAKEINTRESOURCE(IDI_ICON_MESSAGES));
+			toolBitmapFolders = CreateMappedBitmap(hDLL,IDB_BITMAP_FOLDERS,0,0,0);
 
 			busy = false;
 			connected = false;
@@ -114,14 +95,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			noConnection = true;
 
 			acceptedEvents = -1;	//-1 = 0xFFFF... = everything
-			mainService = new FTP_Service();
-			mainService->setEventCallback(&onEvent);
-			mainService->setProgressCallback(&progress);
-			mainService->setTimeoutEventCallback(&onTimeout, 1);
-			mainService->setMode(Mode_Passive);
-			mainService->setFindRootParent(false);
-
-			currentProfile = NULL;
 			break;
 		}
 		case DLL_PROCESS_DETACH:{
@@ -129,20 +102,9 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			//For more info, read this blog: http://blogs.msdn.com/oldnewthing/archive/2007/05/03/2383346.aspx
 			if (lpReserved == NULL) {
 				saveGlobalSettings();
-				//restore NPP main function
-				SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
-				nppData._nppHandle = NULL;
-
-				if (vProfiles->size() > 0) {	//clear
-					for(unsigned int i = 0; i < vProfiles->size(); i++) {
-						delete (*vProfiles)[i];
-					}
-					vProfiles->clear();
-				}
-				delete vProfiles;
+				deinitializePlugin();
 
 				delete [] dllName; delete [] dllPath; delete [] iniFile; delete [] storage;delete [] pluginName;
-
 				delete [] folderDockName; delete [] outputDockName; delete [] folderDockInfo; delete [] outputDockInfo;
 
 #ifdef UNICODE
@@ -153,26 +115,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 				delete funcItem[0]._pShKey;
 
 				DeleteObject(toolBitmapFolders);
-				
-				DestroyMenu(contextFile);
-				DestroyMenu(contextDirectory);
-				DestroyMenu(contextMessages);
-				DestroyMenu(popupProfiles);
-
-				//When deleting, service disables events
-				//mainService->setEventCallback(NULL);	//Disable the event callback, the host application is invalid
-				delete mainService;
-
-				//reset output
-				*stdout = stdoutOrig;
-				CloseHandle(writeHandle);
-
-				if (WaitForSingleObject(outputThreadStopEvent, 5000) == WAIT_TIMEOUT)
-					MessageBox(NULL, TEXT("Stopping out thread failed"), 0, 0);
-
-				CloseHandle(outputThreadStopEvent);
-
-				DeleteObject(iconFolderDock); DeleteObject(iconOuputDock);
 			}
 			break;}
 	}
@@ -182,8 +124,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 //Notepad plugin callbacks
 extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 	nppData = notepadPlusData;
-	//Subclass notepad++ to intercept messages (autosave)
-	DefaultNotepadPPWindowProc = (WNDPROC) SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&NotepadPPWindowProc);
 
 	//Load the ini file
 	iniFile[0] = 0;
@@ -196,6 +136,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 #else
 	BOOL result = (BOOL) SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM) iniFile);
 #endif
+
 	if (!result) {	//npp doesnt support config dir or something else went wrong (ie too small buffer)
 		lstrcpy(iniFile, dllPath);
 	} else {
@@ -205,12 +146,10 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 	lstrcat(iniFile, TEXT(".ini"));
 	HANDLE ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
 	if (ini == INVALID_HANDLE_VALUE) {	//opening file failed, creating too, disable plugin
-		err(TEXT("No settings were available and unable to create new settingsfile. The plugin will not work!"));
+		MessageBox(nppData._nppHandle, TEXT("FTP_synchronize\r\n\r\nNo settings were available and unable to create new settingsfile.\r\nThe plugin will not work!"), iniFile, MB_OK|MB_ICONEXCLAMATION);
 	} else {	//we got our config, lets get profiles
 		CloseHandle(ini);
-		readProfiles();
-		readGlobalSettings();
-		enableToolbar();
+		initializePlugin();
 	}
 }
 
@@ -230,26 +169,12 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 	if (notifyCode->nmhdr.code == NPPN_TBMODIFICATION) {
+		if (!initializedPlugin)
+			return;
 		toolbarIcons tbiFolder;
-		toolBitmapFolders = CreateMappedBitmap(hDLL,IDB_BITMAP_FOLDERS,0,0,0);
 		tbiFolder.hToolbarBmp = toolBitmapFolders;
 		tbiFolder.hToolbarIcon = NULL;
-		if (toolbarcode&TOOLBAR_FOLDER)	SendMessage((HWND)notifyCode->nmhdr.hwndFrom,NPPM_ADDTOOLBARICON,(WPARAM)funcItem[0]._cmdID,(LPARAM)&tbiFolder);
-/*
-		toolbarIcons tbiConn, tbiDld, tbiUld, tbiOutput;	//Various structs for toolbaricons
-		toolBitmapConnect = CreateMappedBitmap(hDLL,IDB_BITMAP_CONNECT,0,0,0);		//Create the bitmaps for icons
-		toolBitmapUpload = CreateMappedBitmap(hDLL,IDB_BITMAP_UPLOAD,0,0,0);
-		toolBitmapOutput = CreateMappedBitmap(hDLL,IDB_BITMAP_MESSAGES,0,0,0);
-		tbiConn.hToolbarBmp = toolBitmapConnect;								//Fill the structs with info (a bitmap and no icon (not used afaik)
-		tbiDld.hToolbarIcon = NULL;
-		tbiUld.hToolbarBmp = toolBitmapUpload;
-		tbiUld.hToolbarIcon = NULL;
-		tbiOutput.hToolbarBmp = toolBitmapOutput;
-		tbiOutput.hToolbarIcon = NULL;
-		if (toolbarcode&TOOLBAR_CONNECT)	SendMessage((HWND)notifyCode->nmhdr.hwndFrom,NPPM_ADDTOOLBARICON,(WPARAM)funcItem[0]._cmdID,(LPARAM)&tbiConn);		//Tell Npp to add the icons and what functionid to assign
-		if (toolbarcode&TOOLBAR_UPLOAD)	SendMessage((HWND)notifyCode->nmhdr.hwndFrom,NPPM_ADDTOOLBARICON,(WPARAM)funcItem[2]._cmdID,(LPARAM)&tbiUld);		//(npp sets this internally, dont touch _cmdID)
-		if (toolbarcode&TOOLBAR_MESSAGES)	SendMessage((HWND)notifyCode->nmhdr.hwndFrom,NPPM_ADDTOOLBARICON,(WPARAM)funcItem[5]._cmdID,(LPARAM)&tbiOutput);
-*/
+		SendMessage((HWND)notifyCode->nmhdr.hwndFrom,NPPM_ADDTOOLBARICON,(WPARAM)funcItem[0]._cmdID,(LPARAM)&tbiFolder);
 	}
 	return;
 }
@@ -263,6 +188,87 @@ HWND getCurrentHScintilla(int which) {
 	return (which == 0)?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
 };
 
+void initializePlugin() {
+	initializedPlugin = true;
+
+	//output redirection, makes printf still work in win32 app
+	CreatePipe(&readHandle, &writeHandle, NULL, 512);		//pipe the output to the message log
+	HANDLE hStdout = writeHandle;						//get win32 handle for stdout
+	int hCrt = _open_osfhandle((long)hStdout,0);		//get a C-runtime library handle based of win32 stdout handle
+	FILE * hf = _fdopen( hCrt, "w" );					//use the one above to create a FILE * to use for stdout
+	stdoutOrig = *stdout;								//Save original stdout
+	*stdout = *hf;										//set c-stdout to win32 version
+	setvbuf( stdout, NULL, _IONBF, 0 );					//disable buffering
+	//The pipe will block untill its read, so between here and the creation of the thread should not be any printf's
+
+	//Subclass notepad++ to intercept messages (autosave)
+	DefaultNotepadPPWindowProc = (WNDPROC) SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&NotepadPPWindowProc);
+
+	//Create FTP service
+	mainService = new FTP_Service();
+	mainService->setEventCallback(&onEvent);
+	mainService->setProgressCallback(&progress);
+	mainService->setTimeoutEventCallback(&onTimeout, 1);
+	mainService->setMode(Mode_Passive);
+	mainService->setFindRootParent(false);
+
+	//Initialize the GUI
+	createWindows();
+	createToolbar();
+	createContextMenus();
+
+	vProfiles = new std::vector< Profile * >();
+	currentProfile = NULL;
+
+	readProfiles();
+	readGlobalSettings();
+	enableToolbar();
+	setToolbarState(IDB_BUTTON_TOOLBAR_SETTINGS, TRUE);
+}
+
+void deinitializePlugin() {
+	if (!initializedPlugin)
+		return;
+
+	//reset output
+	*stdout = stdoutOrig;
+	CloseHandle(writeHandle);
+	if (WaitForSingleObject(outputThreadStopEvent, 5000) == WAIT_TIMEOUT)
+		err(TEXT("Stopping out thread failed"));
+	CloseHandle(outputThreadStopEvent);
+
+	//restore NPP main function
+	SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
+
+	setToolbarState(IDB_BUTTON_TOOLBAR_SETTINGS, FALSE);
+
+	if (folderWindowInitialized) {
+		//SendMessage(nppData._nppHandle,NPPM_DMMUNREGASDCKDLG,0,(LPARAM)hFolderWindow);	//Unregister it
+		DeleteObject(iconFolderDock);
+	}
+	if (outputWindowInitialized) {
+		//SendMessage(nppData._nppHandle,NPPM_DMMUNREGASDCKDLG,0,(LPARAM)hOutputWindow);	//Unregister it
+		DeleteObject(iconOuputDock);
+	}
+
+	if (vProfiles->size() > 0) {	//clear
+		for(unsigned int i = 0; i < vProfiles->size(); i++) {
+			delete (*vProfiles)[i];
+		}
+		vProfiles->clear();
+	}
+	delete vProfiles;
+
+	currentProfile = NULL;
+
+	destroyWindows();
+	destroyContextMenus();
+
+	delete mainService;
+	ZeroMemory(&nppData, sizeof(NppData));
+
+	initializedPlugin = false;
+}
 //Profile functions
 void readProfiles() {
 	if (vProfiles->size() > 0) {	//clear
@@ -276,21 +282,19 @@ void readProfiles() {
 	LPCTSTR curStringOffset = buffer, beginStringOffset = buffer;
 	GetPrivateProfileSectionNames(buffer, INIBUFSIZE, iniFile);
 	while(*curStringOffset != 0) {
-		if (*(CharNext(curStringOffset)) == 0) {	//end of string
-			if (lstrcmpi(beginStringOffset, TEXT("FTP_Settings"))) {	//profile section
-				//err(beginStringOffset);
-				GetPrivateProfileString(beginStringOffset, TEXT("Port"), TEXT(""), test, INIBUFSIZE, iniFile);
-				if (test[0]) {	//the section is considered valid if a port is given, ie not an empty string
-					vProfiles->push_back( new Profile(beginStringOffset, iniFile) );
-				}
-			}
-			curStringOffset = curStringOffset + 2;//CharNext(CharNext(curStringOffset));//charnext fails because it loops on zero terminators
-			beginStringOffset = curStringOffset;
+		while (*curStringOffset != 0) {
+			curStringOffset++;
 		}
-		curStringOffset = CharNext(curStringOffset);
+		if (lstrcmpi(beginStringOffset, TEXT("FTP_Settings"))) {	//profile section
+			//err(beginStringOffset);
+			vProfiles->push_back( new Profile(beginStringOffset, iniFile) );
+		}
+		curStringOffset++;
+		beginStringOffset = curStringOffset;
 	}
 	if (vProfiles->size() > 0)
 		currentProfile = (*vProfiles)[0];
+	sortProfiles();
 	delete [] buffer;
 	delete [] test;
 }
@@ -306,6 +310,18 @@ void selectProfile(LPCTSTR name) {
 	return;
 }
 
+void sortProfiles() {
+	int i, j, size;
+	Profile * key;
+	size = vProfiles->size();
+	for(j = 1; j < size; j++) {    //Notice starting with 1 (not 0)
+		key = (*vProfiles)[j];
+		for(i = j - 1; (i >= 0) && (  lstrcmpi((*vProfiles)[i]->getName(), key->getName() ) > 0  ); i--) {  //Move smaller values up one position
+			(*vProfiles)[i+1] = (*vProfiles)[i];
+		}
+		(*vProfiles)[i+1] = key;    //Insert key into proper position
+	}
+}
 //Settings functions
 void readGlobalSettings() {
 	cacheOnDirect = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("CacheOnDirect"), 0, iniFile);
@@ -347,8 +363,9 @@ void createWindows() {
 	RegisterClassEx(&DockWindowClass);
 
 	//Create folder window
-	hFolderWindow = CreateWindowEx(WS_EX_ACCEPTFILES|WS_EX_CLIENTEDGE, FolderWindowClassName, TEXT("Folderview"), 0, CW_USEDEFAULT, CW_USEDEFAULT, 250, 400, nppData._nppHandle, NULL, hDLL, NULL);
-	if (!hFolderWindow)		err(TEXT("Unable to create window!"));
+	hFolderWindow = CreateWindowEx(WS_EX_CLIENTEDGE, FolderWindowClassName, TEXT("Folderview"), 0, CW_USEDEFAULT, CW_USEDEFAULT, 250, 400, nppData._nppHandle, NULL, hDLL, NULL);
+	if (!hFolderWindow)		err(TEXT("Unable to create folder window!"));
+
 	//Add child windows to folderwindow
 	hTreeview = CreateWindowEx(WS_EX_CLIENTEDGE	, WC_TREEVIEW, TEXT("TreeViewFTP"), TVS_HASLINES|TVS_HASBUTTONS|TVS_LINESATROOT|WS_CHILD|WS_BORDER|WS_VISIBLE, 0, 0, 240, 375, hFolderWindow, NULL, hDLL, NULL);
 	hStatusbar = CreateStatusWindow(WS_CHILD|WS_VISIBLE, TEXT(""), hFolderWindow, IDW_STATUSBAR);
@@ -370,9 +387,33 @@ void createWindows() {
 	SendMessage(hFolderToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM) sizeof(TBBUTTON), 0);
 	SendMessage(hFolderToolbar, TB_SETBITMAPSIZE, 0, (LPARAM) MAKELONG(16,16));
 
+	//Prepare DnD
+	mainDropTarget = new CDropTarget();
+	mainDropTarget->setDropCallback(uploadByName);
+	mainDropTarget->setDragCallback(highlightAndSelectByPoint);
+	mainDropTarget->setDragCancelCallback(cancelDragging);
+	RegisterDragDrop(hTreeview, mainDropTarget);
+	//DragAcceptFiles(nppData._nppHandle, FALSE);	//this disabled DnD in Notepad++ for files
+
+	mainDropSource = new CDropSource();
+	mainDataObject = new CDataObject();
+
 	//Dockable windows currently uninitialized (ie invisible)
 	folderWindowInitialized = false;
 	folderWindowVisible = false;
+}
+
+void destroyWindows() {
+
+	//Disable DnD
+	mainDropTarget->Release();
+	mainDropSource->Release();
+	mainDataObject->Release();
+	RevokeDragDrop(hTreeview);
+
+	DestroyWindow(hOutputWindow);
+	DestroyWindow(hFolderWindow);
+	UnregisterClass(FolderWindowClassName, hDLL);
 }
 
 void createContextMenus() {
@@ -408,11 +449,23 @@ void createContextMenus() {
 	//Create empty profile menu, current implementation requires this
 	popupProfiles = CreatePopupMenu();
 }
+void destroyContextMenus() {
+	DestroyMenu(contextFile);
+	DestroyMenu(contextDirectory);
+	DestroyMenu(contextMessages);
+	DestroyMenu(popupProfiles);
+}
+
 void showFolders() {
+	if (!initializedPlugin)
+		return;
 	if (!folderWindowVisible) {
 		folderWindowVisible = true;
 		if (!folderWindowInitialized) {
 			folderWindowInitialized = true;
+			setTitleBarAddon(TEXT("Disconnected"));
+			iconFolderDock = LoadIcon(hDLL, MAKEINTRESOURCE(IDI_ICON_FOLDERS));
+
 			tTbData tbd;
 			ZeroMemory(&tbd, sizeof(tTbData));
 			tbd.dlgID = 0;													//Nr of menu item to assign (!= _cmdID, beware)
@@ -451,6 +504,8 @@ void showOutput() {
 		outputWindowVisible = true;
 		if (!outputWindowInitialized) {
 			outputWindowInitialized = true;
+			setOutputTitleAddon(TEXT("No connection"));
+			iconOuputDock = LoadIcon(hDLL, MAKEINTRESOURCE(IDI_ICON_MESSAGES));
 			tTbData tbd;
 			ZeroMemory(&tbd, sizeof(tTbData));
 			RECT rct = {0, 0, 0, 0};
@@ -574,7 +629,7 @@ void createToolbar() {
 
 	ab.nID = IDB_BITMAP_SETTINGS;
 	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
-	tb[7].fsState = TBSTATE_ENABLED;
+	//tb[7].fsState = TBSTATE_ENABLED;
 	tb[7].fsStyle = BTNS_BUTTON;
 	tb[7].iBitmap = imgnr;
 	tb[7].idCommand = IDB_BUTTON_TOOLBAR_SETTINGS;
@@ -591,11 +646,10 @@ void createToolbar() {
 }
 
 void enableToolbar() {
-	if (vProfiles->size() > 0) {
-		SendMessage(hFolderToolbar, TB_SETSTATE, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELONG(TBSTATE_ENABLED, 0));
-	} else {
-		SendMessage(hFolderToolbar, TB_SETSTATE, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELONG(0, 0));
-	}
+	if (vProfiles->size() > 0)
+		setToolbarState(IDB_BUTTON_TOOLBAR_CONNECT, TRUE);
+	else
+		setToolbarState(IDB_BUTTON_TOOLBAR_CONNECT, FALSE);
 }
 
 void setToolbarState(int id, BOOL bEnabled) {
@@ -889,6 +943,49 @@ void uploadSpecified() {
 	}
 }
 
+void uploadByName(TCHAR * fileName) {
+	TreeView_Select(hTreeview, NULL, TVGN_DROPHILITE);
+	if (!connected)
+		return;
+	if (busy)
+		return;
+	busy = true;
+
+	LOADTHREAD * lt = new LOADTHREAD;
+	lt->local = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (lt->local == NULL) {
+		err(TEXT("Bad file"));
+		delete lt;
+		return;
+	}
+	lt->localname = new TCHAR[MAX_PATH];
+	lstrcpy(lt->localname, fileName);
+	lt->targetTreeDir = lastDnDDirectoryItem;
+	TCHAR * servername = new TCHAR[MAX_PATH];
+	strcpyAtoT(servername, lastDnDDirectoryItemParam->fullpath, MAX_PATH);
+	char lastChar = lastDirectoryItemParam->fullpath[strlen(lastDnDDirectoryItemParam->fullpath)-1];
+	if (lastChar != '\\' && lastChar != '/')
+		lstrcat(servername, _T("/"));
+	lstrcat(servername, PathFindFileName(fileName));
+	int i = 0;
+	while (servername[i] != 0) {
+		if (servername[i] == _T('\\'))
+			servername[i] = _T('/');		//convert to slashes
+		i++;
+	}
+	lt->server = servername;
+	DWORD id;
+	HANDLE hThread = CreateThread(NULL, 0, doUpload, lt, 0, &id);
+	if (hThread == NULL) {
+		threadError("doUpload");
+		delete [] lt->server;
+		delete lt;
+		busy = false;
+	} else {
+		CloseHandle(hThread);
+	}
+}
+
 void abort() {
 	mainService->abortOperation();
 }
@@ -966,6 +1063,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					setOutputTitleAddon(currentProfile->getAddress());
 					DIRECTORY * rootDir = mainService->getRoot();
 					HTREEITEM rootTree = addRoot(rootDir);
+					TreeView_Select(hTreeview, rootTree, TVGN_CARET);
 					lastDirectoryItem = rootTree;
 					lastDirectoryItemParam = rootDir;
 
@@ -1537,6 +1635,7 @@ HTREEITEM addFile(HTREEITEM root, FILEOBJECT * file) {
 	return hti;
 }
 
+//Treeview DnD functions
 int fillTreeDirectory(HTREEITEM root, DIRECTORY * contents) {
 	for(int i = 0; i < contents->nrDirs; i++) {
 		addDirectory(root, contents->subdirs[i]);
@@ -1552,6 +1651,36 @@ void deleteAllChildItems(HTREEITEM parent) {
 	while( (child = TreeView_GetChild(hTreeview, parent)) != NULL) {
 		TreeView_DeleteItem(hTreeview, child);
 	}
+}
+
+bool highlightAndSelectByPoint(POINTL pt) {
+	TV_HITTESTINFO ht;
+	POINT ppt = {pt.x, pt.y};
+	ScreenToClient(hTreeview, &ppt);
+	ht.pt = ppt;
+	HTREEITEM result = TreeView_HitTest(hTreeview, &ht);
+	if (result && (ht.flags & TVHT_ONITEM)) {
+		TV_ITEM tvi;
+		tvi.hItem = result;
+		tvi.mask = TVIF_PARAM|TVIF_IMAGE;
+		if (TreeView_GetItem(hTreeview, &tvi)) {
+			if (tvi.iImage == 0) {	//we got directory
+				lastDnDDirectoryItemParam = (DIRECTORY*)tvi.lParam;
+				lastDnDDirectoryItem = result;
+				TreeView_Select(hTreeview, result, TVGN_DROPHILITE);
+				return true;
+			}
+		}
+	}
+
+	TreeView_Select(hTreeview, NULL, TVGN_DROPHILITE);
+	//TreeView_Select(hTreeview, lastSelected, TVGN_CARET);		 
+	return false;
+}
+
+void cancelDragging() {
+	TreeView_Select(hTreeview, NULL, TVGN_DROPHILITE);
+	//TreeView_Select(hTreeview, lastSelected, TVGN_CARET);
 }
 
 //Path processing/file functions
@@ -1684,6 +1813,7 @@ void fillProfileData() {
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch(message) {
 		case WM_DESTROY: {
+			RevokeDragDrop(hTreeview);
 			PostQuitMessage(NULL);
 			break; }
 		case WM_SIZE:{
@@ -1845,6 +1975,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						HTREEITEM selected = TreeView_HitTest(hTreeview, &ht);
 						if (selected != NULL && (ht.flags & TVHT_ONITEM)) {
 							TreeView_Select(hTreeview, selected, TVGN_CARET);
+							lastSelected = selected;
 							GetCursorPos(&pos);
 							TV_ITEM tvi;
 							tvi.hItem = selected;
@@ -1872,6 +2003,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						HTREEITEM selected = TreeView_HitTest(hTreeview, &ht);
 						if (selected != NULL && (ht.flags & TVHT_ONITEM)) {
 							TreeView_Select(hTreeview, selected, TVGN_CARET);
+							lastSelected = selected;
 							TV_ITEM tvi;
 							tvi.hItem = selected;
 							tvi.mask = TVIF_IMAGE|TVIF_PARAM;
@@ -1896,11 +2028,24 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						HTREEITEM selected = TreeView_HitTest(hTreeview, &ht);
 						if (selected != NULL && (ht.flags & TVHT_ONITEM)) {
 							TreeView_Select(hTreeview, selected, TVGN_CARET);
+							lastSelected = selected;
 							TV_ITEM tvi;
 							tvi.hItem = selected;
 							tvi.mask = TVIF_IMAGE|TVIF_PARAM;
 							SendMessage(hTreeview,TVM_GETITEM,0,(LPARAM)&tvi);
 							selectItem(selected, tvi.lParam, tvi.iImage);
+						}
+						break; }
+					case TVN_BEGINDRAG: {
+						break;
+						NM_TREEVIEW * pnmtv = (NM_TREEVIEW*) lParam;
+						pnmtv->itemNew.mask = TVIF_IMAGE;
+						TreeView_GetItem(hTreeview, &(pnmtv->itemNew));
+						if (pnmtv->itemNew.iImage == 2) {	//file
+							TreeView_SelectDropTarget(hTreeview, pnmtv->itemNew.hItem);
+							DWORD resEffect;
+							HRESULT res = DoDragDrop(mainDataObject, mainDropSource, DROPEFFECT_COPY, &resEffect);
+							TreeView_SelectDropTarget(hTreeview, NULL);
 						}
 						break; }
 				}
@@ -2008,11 +2153,14 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 						test = _ttoi(buf);
 						currentProfile->setTimeout(test);
 
-						currentProfile->setMode( (IsDlgButtonChecked(hWnd, IDC_RADIO_ACTIVE) == BST_CHECKED)?Mode_Active:Mode_Passive );
+						
 						int state = (int)SendMessage(hCheckFindRoot, BM_GETCHECK, 0, 0);
 						currentProfile->setFindRoot( state != 0 );
-							state = (int)SendMessage(hCheckAskPassword, BM_GETCHECK, 0, 0);
+						state = (int)SendMessage(hCheckAskPassword, BM_GETCHECK, 0, 0);
 						currentProfile->setAskPassword( state != 0 );
+
+						state = (int)SendMessage(hRadioActive, BM_GETCHECK, 0, 0);
+						currentProfile->setMode( (state != 0)?Mode_Active:Mode_Passive );
 
 						//SendMessage(hProfileName, WM_GETTEXT, (WPARAM)INIBUFSIZE, (LPARAM)buf);
 						//currentProfile->setName(buf);
@@ -2048,6 +2196,15 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 						return TRUE;
 					TCHAR * newprofile = new TCHAR[INIBUFSIZE];
 					SendMessage(hProfileName, WM_GETTEXT, (WPARAM)INIBUFSIZE, (LPARAM)newprofile);
+					if (lstrlen(newprofile) == 0) {
+						err(TEXT("You must enter a name before renaming the profile!"));
+						delete [] newprofile;
+						return TRUE;
+					}
+					if (!lstrcmpi(currentProfile->getName(), newprofile)) {
+						delete [] newprofile;
+						return TRUE;
+					}
 					if (!lstrcmpi(TEXT("FTP_Settings"), newprofile)) {
 						err(TEXT("This is a reserved keyword, please choose a different name for your profile"));
 						delete [] newprofile;
@@ -2061,6 +2218,7 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 						}
 					}
 					currentProfile->setName(newprofile);
+					sortProfiles();
 					refreshProfileList();
 					SendMessage(hProfileList, LB_SELECTSTRING, (WPARAM)-1, (LPARAM)newprofile);
 					selectProfile(newprofile);
@@ -2083,6 +2241,7 @@ BOOL CALLBACK SettingsDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 					}
 					Profile * newProfile = new Profile(profile, iniFile);
 					vProfiles->push_back(newProfile);
+					sortProfiles();
 					newProfile->save();
 					//readProfiles();
 					refreshProfileList();
@@ -2258,6 +2417,9 @@ LRESULT CALLBACK MessageEditWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
 
 LRESULT CALLBACK NotepadPPWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
+		case WM_DROPFILES: {	//override notepad++ dragdrop so it doesnt work on our window
+			printf("WM_DROPFILES called\n");
+			break; }
 		case NPPM_SAVECURRENTFILE: {
 			//Document being saved
 			if (uploadOnSave) {

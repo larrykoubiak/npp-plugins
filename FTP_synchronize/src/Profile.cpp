@@ -73,7 +73,8 @@ void Profile::reload() {
 #endif
 	this->setPort( GetPrivateProfileInt(this->name, TEXT("Port"), 21, this->iniFile));
 	this->setTimeout( GetPrivateProfileInt(this->name, TEXT("Timeout"), 30, this->iniFile) );
-	this->setMode( (Connection_Mode) GetPrivateProfileInt(this->name, TEXT("TransferMode"), 0, this->iniFile) );
+	bool isActive = GetPrivateProfileInt(this->name, TEXT("TransferMode") , 1, this->iniFile) == 1;
+	this->setMode( (isActive?Mode_Active:Mode_Passive) );
 	this->setFindRoot( GetPrivateProfileInt(this->name, TEXT("FindRoot"), 0, this->iniFile) == 1 );
 	this->setAskPassword( GetPrivateProfileInt(this->name, TEXT("AskForPassword"), 0, this->iniFile) == 1 );
 }
@@ -164,7 +165,7 @@ void Profile::setTimeout(int newtimeout) {
 }
 
 void Profile::setMode(Connection_Mode newmode) {
-	if (this->transfermode == Mode_Passive || this->transfermode == Mode_Active)
+	if (newmode == Mode_Passive || newmode == Mode_Active)
 		this->transfermode = newmode;
 	else
 		this->transfermode = Mode_Passive;

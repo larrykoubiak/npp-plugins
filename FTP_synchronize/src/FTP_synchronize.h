@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "commctrl.h"
 #include "commdlg.h"
 #include "shlobj.h"
+#include "shellapi.h"
 
 #include <io.h>
 #include <stdio.h>
@@ -59,10 +60,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define nbFunc	2
 #define nrTbButtons 9
-
-//Used to hide the icon from the main N++ toolbar
-#define TOOLBAR_FOLDER		1
-#define toolbarcode			15
 
 #define INIBUFSIZE			1024
 
@@ -109,12 +106,21 @@ int connectBitmapIndex, disconnectBitmapIndex;
 FILE stdoutOrig;
 HANDLE hReadThread;
 HANDLE outputThreadStopEvent;
+bool initializedPlugin;
 
 //storage for treeview commands
 FILEOBJECT * lastFileItemParam;
 HTREEITEM lastFileItem;
 DIRECTORY * lastDirectoryItemParam;
 HTREEITEM lastDirectoryItem;
+DIRECTORY * lastDnDDirectoryItemParam;
+HTREEITEM lastDnDDirectoryItem;
+HTREEITEM lastSelected;
+
+//Drag and Drop support vars
+CDropTarget * mainDropTarget;
+CDataObject * mainDataObject;
+CDropSource * mainDropSource;
 
 HINSTANCE hDLL = 0;
 NppData nppData;
@@ -163,14 +169,28 @@ std::vector< Profile * > * vProfiles;
 Profile * currentProfile;
 
 //Function declarations
+BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved);
+extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData);
+extern "C" __declspec(dllexport) const char * getName();
+extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF);
+extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode);
+extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam);
+
+HWND getCurrentHScintilla(int which);
+void initializePlugin();
+void deinitializePlugin();
+
 void readProfiles();
 void selectProfile(LPCTSTR name);
+void sortProfiles();
 
 void readGlobalSettings();
 void saveGlobalSettings();
 
 void createWindows();
+void destroyWindows();
 void createContextMenus();
+void destroyContextMenus();
 void showFolders();
 void showOutput();
 void settings();
@@ -189,6 +209,7 @@ void disconnect();
 void download();
 void upload(BOOL uploadCached, BOOL uploadUncached);
 void uploadSpecified();
+void uploadByName(TCHAR * fileName);
 void abort();
 void createDir();
 void deleteDir();
@@ -210,7 +231,10 @@ HTREEITEM addRoot(DIRECTORY * rootDir);
 HTREEITEM addDirectory(HTREEITEM root, DIRECTORY * dir);
 HTREEITEM addFile(HTREEITEM root, FILEOBJECT * file);
 int fillTreeDirectory(HTREEITEM root, DIRECTORY * contents);
+//Treeview DnD
 void deleteAllChildItems(HTREEITEM parent);
+bool highlightAndSelectByPoint(POINTL pt);
+void cancelDragging();
 
 BOOL createDirectory(LPCTSTR path);
 void validatePath(TCHAR * path);
