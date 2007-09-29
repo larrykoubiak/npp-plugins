@@ -19,11 +19,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 //The socket class is ANSI
 
-#ifndef SOCKET_H
-#define SOCKET_H
+#pragma once
 
 #include "winsock2.h"
 #include "ws2tcpip.h"
+
+#include <windows.h>
 
 #define WM_SOCKET WM_USER+512
 
@@ -32,14 +33,22 @@ private:
 	SOCKET m_hSocket;
 	int m_iError;
 	int m_iPort;
-	char * m_pszAddress;
 public:
 	Socket(const char * pszAddress, int iPort);
 	SOCKET & getSocket();
 	int getLastError();
-	bool connectClient();
+	bool connectClient(unsigned int timeout);
 	~Socket();
+
+	//Made public for threads, dont abuse
+	HANDLE m_hTimeoutWaitEvent;
+	HANDLE m_hTimeoutHostnameWaitEvent;
+	unsigned int m_iTimeoutVal;
+	char * m_pszAddress;
+	hostent * m_pHostent;
+
 	static int amount;
 };
 
-#endif
+DWORD WINAPI socketTimeoutCheck(LPVOID param);
+DWORD WINAPI hostnameTimeoutCheck(LPVOID param);

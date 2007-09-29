@@ -33,6 +33,9 @@ ServerSocket::ServerSocket(int iPort) {
 	selectedInterface = INADDR_ANY;
 	m_iPort = iPort;
 	m_iError = 0;
+
+	m_hTimeoutWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
 	Socket::amount++;
 }
 
@@ -71,10 +74,23 @@ bool ServerSocket::initiate() {
 	return true;
 }
 
-SOCKET ServerSocket::listenForClient() {
+SOCKET ServerSocket::listenForClient(unsigned int timeout) {
 	SOCKADDR_IN sa;
 	int size = sizeof(SOCKADDR_IN);
+
+	this->m_iTimeoutVal = timeout;
+	DWORD id;
+	HANDLE hThread = CreateThread(NULL, 0, serverSocketTimeoutCheck, (LPVOID) this, 0, &id);
+	if (hThread == NULL) {
+		closesocket(this->m_hSocket);
+		return false;
+	} else {
+		CloseHandle(hThread);
+	}
+
 	SOCKET incoming = accept(m_hSocket,(sockaddr*)&sa,&size);
+	SetEvent(this->m_hTimeoutWaitEvent);
+
 	if (incoming == INVALID_SOCKET) {
 		this->m_iError = WSAGetLastError();
 		return NULL;
@@ -92,6 +108,7 @@ SOCKET ServerSocket::listenForClient() {
 ServerSocket::~ServerSocket() {
 	Socket::amount--;
 	closesocket(m_hSocket);
+	CloseHandle(m_hTimeoutWaitEvent);
 	return;/*
    //very risky
 	if (Socket::amount == 0) {	//last socket, cleanup WSA
@@ -111,4 +128,13 @@ int ServerSocket::getLastError() {
 
 int ServerSocket::getPort() {
 	return m_iPort;
+}
+
+DWORD WINAPI serverSocketTimeoutCheck(LPVOID param) {
+	ServerSocket * client = (ServerSocket*)param;
+	DWORD res = WaitForSingleObject(client->m_hTimeoutWaitEvent, client->m_iTimeoutVal);
+	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
+		closesocket(client->getSocket());
+	}
+	return 0;
 }

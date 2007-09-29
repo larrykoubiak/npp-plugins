@@ -17,8 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef SERVERSOCKET_H
-#define SERVERSOCKET_H
+#pragma once
 
 #include "winsock2.h"
 #include "ws2tcpip.h"
@@ -39,9 +38,11 @@ public:
 	SOCKET & getSocket();
 	int getLastError();
 	bool initiate();
-	SOCKET listenForClient();
+	SOCKET listenForClient(unsigned int timeout);
 	int getPort();
 	~ServerSocket();
+	HANDLE m_hTimeoutWaitEvent;
+	unsigned int m_iTimeoutVal;
 };
 
-#endif
+DWORD WINAPI serverSocketTimeoutCheck(LPVOID param);

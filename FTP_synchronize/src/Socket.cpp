@@ -27,34 +27,50 @@ Socket::Socket(const char * pszAddress, int iPort) {
 	m_pszAddress = new char[strlen(pszAddress)+1];
 	strcpy(m_pszAddress, pszAddress);
 	m_iError = 0;
-	Socket::amount++;
-}
 
-bool Socket::connectClient() {
-	SOCKADDR_IN sin;
-	in_addr iaHost;
-	hostent * host;
+	m_hTimeoutWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_hTimeoutHostnameWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 	m_hSocket = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if (m_hSocket == INVALID_SOCKET) {
 		this->m_iError = WSAGetLastError();
+		//return false;
+	}
+
+	Socket::amount++;
+}
+
+bool Socket::connectClient(unsigned int timeout) {
+	SOCKADDR_IN sin;
+
+	this->m_iTimeoutVal = timeout;
+	DWORD id;
+
+	ResetEvent(m_hTimeoutHostnameWaitEvent);
+	void * param = (void*)this;
+	HANDLE hThread = CreateThread(NULL, 0, hostnameTimeoutCheck, (LPVOID) param, 0, &id);
+	if (hThread == NULL) {
+		closesocket(this->m_hSocket);
+		this->m_iError = GetLastError();
+		return false;
+	} else {
+		CloseHandle(hThread);
+	}
+
+	DWORD res = WaitForSingleObject(m_hTimeoutHostnameWaitEvent, this->m_iTimeoutVal);
+	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
+		//hostname retrieval timed out. Although the thread will continue, the socket will return, the thread will close later on
+		closesocket(this->m_hSocket);
 		return false;
 	}
 
-	iaHost.s_addr = inet_addr(m_pszAddress);
-	if (iaHost.s_addr != INADDR_NONE) {	//invalid ip, go for hostname
-		host = gethostbyaddr((const char*)&iaHost,sizeof(in_addr),PF_INET);
-	} else {
-		host = gethostbyname(m_pszAddress);
-	}
-
-	if (!host) {
+	if (!this->m_pHostent) {
 		this->m_iError = WSAGetLastError();
 		return false;
 	}
 
 	ZeroMemory(&sin,sizeof(sin));
-	sin.sin_family = host->h_addrtype;
+	sin.sin_family = this->m_pHostent->h_addrtype;
 	sin.sin_addr.s_addr = INADDR_ANY;
 	sin.sin_port = htons(0);
 	if (bind(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin))) {					//bind the socket to some interface.
@@ -62,9 +78,23 @@ bool Socket::connectClient() {
 		return false;
 	}
 
-	sin.sin_addr = *((in_addr*)host->h_addr_list[0]);
-	sin.sin_port = htons(this->m_iPort);								//get this from the port field
-	if (connect(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin))) {				//connect to server
+	sin.sin_addr = *((in_addr*)(this->m_pHostent)->h_addr_list[0]);
+	sin.sin_port = htons(this->m_iPort);
+
+	ResetEvent(m_hTimeoutWaitEvent);
+	hThread = CreateThread(NULL, 0, socketTimeoutCheck, (LPVOID) this, 0, &id);
+	if (hThread == NULL) {
+		closesocket(this->m_hSocket);
+		this->m_iError = GetLastError();
+		return false;
+	} else {
+		CloseHandle(hThread);
+	}
+
+	int connectres = connect(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin));
+	SetEvent(this->m_hTimeoutWaitEvent);
+
+	if (connectres) {				//connect to server
 		this->m_iError = WSAGetLastError();
 		return false;
 	}
@@ -73,6 +103,7 @@ bool Socket::connectClient() {
 
 Socket::~Socket() {
 	delete [] m_pszAddress;
+	CloseHandle(m_hTimeoutWaitEvent);
 	Socket::amount--;
 	//This seems to crash Win98 at times, considering all implementations have closed sockets before calling this, I reckon its safe to comment closesocket out
 	//closesocket(m_hSocket);
@@ -85,4 +116,35 @@ SOCKET & Socket::getSocket() {
 
 int Socket::getLastError() {
 	return m_iError;
+}
+
+DWORD WINAPI socketTimeoutCheck(LPVOID param) {
+	Socket * client = (Socket*)param;
+	DWORD res = WaitForSingleObject(client->m_hTimeoutWaitEvent, client->m_iTimeoutVal);
+	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
+		closesocket(client->getSocket());
+	}
+	return 0;
+}
+
+DWORD WINAPI hostnameTimeoutCheck(LPVOID param) {
+	Socket * client = (Socket*) param;
+	char * hostname = client->m_pszAddress;
+
+	in_addr iaHost;
+	hostent * host;
+
+	iaHost.s_addr = inet_addr(hostname);
+	if (iaHost.s_addr != INADDR_NONE) {	//ip is not invalid, ie valid
+		host = gethostbyaddr((const char*)&iaHost,sizeof(in_addr),PF_INET);
+	} else {	//invalid ip, go for hostname
+		host = gethostbyname(hostname);
+	}
+
+	
+	client->m_pHostent = host;
+
+	SetEvent(client->m_hTimeoutHostnameWaitEvent);
+
+	return 0;
 }

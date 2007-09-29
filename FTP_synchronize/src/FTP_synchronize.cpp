@@ -679,8 +679,8 @@ void disconnect() {
 	if (!connected) {
 		return; 
 	}
-	if (busy)
-		return;
+	//if (busy)
+	//	return;
 	busy = true;
 	DWORD id;
 	HANDLE hThread = CreateThread(NULL, 0, doDisconnect, NULL, 0, &id);
@@ -1027,6 +1027,7 @@ void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, b
 		return;
 	if (busy && !ignoreBusy)
 		return;
+	busy = true;
 	DIRTHREAD * dt = new DIRTHREAD;
 	dt->treeItem = directory;
 	dt->refresh = doRefresh;

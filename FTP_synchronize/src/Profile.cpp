@@ -50,19 +50,15 @@ void Profile::reload() {
 	//Decrypt the password using algorithm
 	TCHAR * encryptedPwd = new TCHAR[BUFFERSIZE];
 	DWORD res = GetPrivateProfileString(this->name, TEXT("Password"), TEXT(""), encryptedPwd, BUFFERSIZE*2, this->iniFile);
-
-	if (res >= 2) {
-		unsigned int i = 1, j = 0;
-		while (i < res) {
-			this->password[j+1] = encryptedPwd[i-1];
-			this->password[j] = encryptedPwd[i];
-			i+=2;
-			j+=2;
-		}
-		this->password[j] = 0;
-	} else {
-		lstrcpy(this->password, encryptedPwd);
+	unsigned int i = 0, j = 0;
+	int mul = 1;
+	while(i < res) {
+		this->password[i] = encryptedPwd[j];
+		j += ((res-i-1) * mul);
+		mul *= -1;
+		i++;
 	}
+	this->password[res] = 0;
 	delete [] encryptedPwd;
 
 #ifdef UNICODE
@@ -96,18 +92,16 @@ void Profile::save() {
 	//Encrypt the password using some algorithm
 	TCHAR * encryptedPwd = new TCHAR[BUFFERSIZE];
 	int res = lstrlen(this->password);
-	if (res >= 2) {
-		int i = 1, j = 0;
-		while (i < res) {
-			encryptedPwd[j+1] = this->password[i-1];
-			encryptedPwd[j] = this->password[i];
-			i+=2;
-			j+=2;
-		}
-		encryptedPwd[j] = 0;
-	} else {
-		lstrcpy(encryptedPwd, this->password);
+	int i = 0, j = 0, mul = 1;
+	while(i < res) {
+		encryptedPwd[j] = this->password[i];
+		j += ((res-i-1) * mul);
+		mul *= -1;
+		i++;
 	}
+	encryptedPwd[res] = 0;
+
+
 	WritePrivateProfileString(this->name, TEXT("Password"), encryptedPwd, this->iniFile);
 	delete [] encryptedPwd;
 }

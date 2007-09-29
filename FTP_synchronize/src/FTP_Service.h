@@ -129,6 +129,7 @@ public:
 
 	bool abortOperation();
 
+	int getTimeout() { return timeoutMSec; }
 	bool hasTimedOut();		//this will only be valid as long as no following functioncalls are made after the call that may or may not have timed out
 
 	bool downloadFileByObject(HANDLE localFile, FILEOBJECT *);
