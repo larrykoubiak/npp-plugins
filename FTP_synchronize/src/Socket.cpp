@@ -52,6 +52,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	if (hThread == NULL) {
 		closesocket(this->m_hSocket);
 		this->m_iError = GetLastError();
+		printf("failed to create thread for socket\n");
 		return false;
 	} else {
 		CloseHandle(hThread);
@@ -61,11 +62,13 @@ bool Socket::connectClient(unsigned int timeout) {
 	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
 		//hostname retrieval timed out. Although the thread will continue, the socket will return, the thread will close later on
 		closesocket(this->m_hSocket);
+		printf("timeout when waiting for hostent\n");
 		return false;
 	}
 
 	if (!this->m_pHostent) {
 		this->m_iError = WSAGetLastError();
+		printf("invalid hostent\n");
 		return false;
 	}
 
@@ -75,6 +78,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	sin.sin_port = htons(0);
 	if (bind(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin))) {					//bind the socket to some interface.
 		this->m_iError = WSAGetLastError();
+		printf("could not bind socket\n");
 		return false;
 	}
 
@@ -86,6 +90,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	if (hThread == NULL) {
 		closesocket(this->m_hSocket);
 		this->m_iError = GetLastError();
+		printf("timeout on connect\n");
 		return false;
 	} else {
 		CloseHandle(hThread);
@@ -96,6 +101,7 @@ bool Socket::connectClient(unsigned int timeout) {
 
 	if (connectres) {				//connect to server
 		this->m_iError = WSAGetLastError();
+		printf("error when connecting %d\n", connectres);
 		return false;
 	}
 	return true;

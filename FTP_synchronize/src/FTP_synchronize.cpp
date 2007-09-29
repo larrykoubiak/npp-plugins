@@ -313,7 +313,7 @@ void selectProfile(LPCTSTR name) {
 void sortProfiles() {
 	int i, j, size;
 	Profile * key;
-	size = vProfiles->size();
+	size = (int)vProfiles->size();
 	for(j = 1; j < size; j++) {    //Notice starting with 1 (not 0)
 		key = (*vProfiles)[j];
 		for(i = j - 1; (i >= 0) && (  lstrcmpi((*vProfiles)[i]->getName(), key->getName() ) > 0  ); i--) {  //Move smaller values up one position
