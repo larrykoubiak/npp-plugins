@@ -47,12 +47,23 @@ bool Socket::connectClient(unsigned int timeout) {
 	DWORD id;
 
 	ResetEvent(m_hTimeoutHostnameWaitEvent);
+
+	this->m_pHostent = new hostent;
+	char * hostBuffer = new char[4];	//IPv4
+
+	this->m_pHostent->h_addrtype = AF_INET;
+	this->m_pHostent->h_length = 4;	//IPv4
+	this->m_pHostent->h_aliases = NULL;
+	this->m_pHostent->h_name = NULL;
+
+	this->m_pHostent->h_addr_list = &hostBuffer;
+
 	void * param = (void*)this;
 	HANDLE hThread = CreateThread(NULL, 0, hostnameTimeoutCheck, (LPVOID) param, 0, &id);
 	if (hThread == NULL) {
 		closesocket(this->m_hSocket);
 		this->m_iError = GetLastError();
-		printf("failed to create thread for socket\n");
+		printf("Failed to create thread for socket\n");
 		return false;
 	} else {
 		CloseHandle(hThread);
@@ -62,13 +73,13 @@ bool Socket::connectClient(unsigned int timeout) {
 	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
 		//hostname retrieval timed out. Although the thread will continue, the socket will return, the thread will close later on
 		closesocket(this->m_hSocket);
-		printf("timeout when waiting for hostent\n");
+		printf("Timeout when waiting for hostent\n");
 		return false;
 	}
 
-	if (!this->m_pHostent) {
+	char badIP[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+	if (!memcmp(this->m_pHostent->h_addr_list[0], badIP, 4)) {
 		this->m_iError = WSAGetLastError();
-		printf("invalid hostent\n");
 		return false;
 	}
 
@@ -78,19 +89,20 @@ bool Socket::connectClient(unsigned int timeout) {
 	sin.sin_port = htons(0);
 	if (bind(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin))) {					//bind the socket to some interface.
 		this->m_iError = WSAGetLastError();
-		printf("could not bind socket\n");
+		printf("Could not bind socket\n");
 		return false;
 	}
 
-	sin.sin_addr = *((in_addr*)(this->m_pHostent)->h_addr_list[0]);
+	sin.sin_addr = *((in_addr*)this->m_pHostent->h_addr_list[0]);
 	sin.sin_port = htons(this->m_iPort);
 
 	ResetEvent(m_hTimeoutWaitEvent);
 	hThread = CreateThread(NULL, 0, socketTimeoutCheck, (LPVOID) this, 0, &id);
 	if (hThread == NULL) {
 		closesocket(this->m_hSocket);
+		delete this->m_pHostent;
 		this->m_iError = GetLastError();
-		printf("timeout on connect\n");
+		printf("Timeout on connect\n");
 		return false;
 	} else {
 		CloseHandle(hThread);
@@ -99,9 +111,12 @@ bool Socket::connectClient(unsigned int timeout) {
 	int connectres = connect(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin));
 	SetEvent(this->m_hTimeoutWaitEvent);
 
+	delete [] this->m_pHostent->h_addr_list[0];
+	delete this->m_pHostent;
+
 	if (connectres) {				//connect to server
 		this->m_iError = WSAGetLastError();
-		printf("error when connecting %d\n", connectres);
+		printf("Error when connecting: %d\n", this->m_iError);
 		return false;
 	}
 	return true;
@@ -137,20 +152,28 @@ DWORD WINAPI hostnameTimeoutCheck(LPVOID param) {
 	Socket * client = (Socket*) param;
 	char * hostname = client->m_pszAddress;
 
-	in_addr iaHost;
-	hostent * host;
+	unsigned long ipInN;
+	hostent * host, * newhost = client->m_pHostent;
 
-	iaHost.s_addr = inet_addr(hostname);
-	if (iaHost.s_addr != INADDR_NONE) {	//ip is not invalid, ie valid
-		host = gethostbyaddr((const char*)&iaHost,sizeof(in_addr),PF_INET);
-	} else {	//invalid ip, go for hostname
+	//newhost is used to fill in everything when an IP-address is given.
+	//The possibility exists an ip address cannot be resolved, although its valid
+
+	ipInN = inet_addr(hostname);
+
+	if (ipInN != INADDR_NONE) {	//ip is not invalid, ie valid
+		//just copy the ip to the hostent structure, no need for a lookup on ip addresses
+		memcpy(newhost->h_addr_list[0], &ipInN, newhost->h_length);					//copy the address from the ip in network format buffer
+		//host = gethostbyaddr((const char*)&iaHost,sizeof(in_addr),PF_INET);
+	} else {							//invalid ip, go for hostname
 		host = gethostbyname(hostname);
+		if (!host) {
+			printf("Error getting host of %s: %d\n", hostname, WSAGetLastError());
+			memset(newhost->h_addr_list[0], 0xFF, newhost->h_length);		//IP-address of -1 means error
+		} else {
+			memcpy(newhost->h_addr_list[0], host->h_addr_list[0], newhost->h_length);		//copy the address from the WinSock buffer
+		}
 	}
 
-	
-	client->m_pHostent = host;
-
 	SetEvent(client->m_hTimeoutHostnameWaitEvent);
-
 	return 0;
 }

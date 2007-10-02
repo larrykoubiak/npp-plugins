@@ -269,6 +269,7 @@ void deinitializePlugin() {
 
 	initializedPlugin = false;
 }
+
 //Profile functions
 void readProfiles() {
 	if (vProfiles->size() > 0) {	//clear
@@ -393,7 +394,6 @@ void createWindows() {
 	mainDropTarget->setDragCallback(highlightAndSelectByPoint);
 	mainDropTarget->setDragCancelCallback(cancelDragging);
 	RegisterDragDrop(hTreeview, mainDropTarget);
-	//DragAcceptFiles(nppData._nppHandle, FALSE);	//this disabled DnD in Notepad++ for files
 
 	mainDropSource = new CDropSource();
 	mainDataObject = new CDataObject();
@@ -2038,7 +2038,6 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						}
 						break; }
 					case TVN_BEGINDRAG: {
-						break;
 						NM_TREEVIEW * pnmtv = (NM_TREEVIEW*) lParam;
 						pnmtv->itemNew.mask = TVIF_IMAGE;
 						TreeView_GetItem(hTreeview, &(pnmtv->itemNew));
