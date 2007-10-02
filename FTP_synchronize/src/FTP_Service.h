@@ -144,8 +144,11 @@ public:
 	~FTP_Service();
 
 	//public due to implementation, do not call
-	void setLastDataConnection(SOCKET&);	
+	void setLastDataConnection(SOCKET&);
+	SOCKET & getLastDataConnection() { return lastConnectionForAbort; };
 	HANDLE getConnectionEvent() { return connectionEvent; };
+	HANDLE getTransferProgressEvent();
+	CRITICAL_SECTION & getTransferProgressMutex() { return transferProgressMutex; };
 	void callTimeout(TIMERTHREADINFO * tti);
 	const int getCurrentTimerID() { return timerID; };
 
@@ -160,6 +163,7 @@ private:
 	HANDLE transferEvent;		//Used to notify download socket closed
 	HANDLE controlLostEvent;	//Used to notify control socket closed
 	HANDLE dataConnLostEvent;	//Used to notify data socket closed
+	HANDLE transferProgressEvent;	//Used to detect transfer timeouts
 
 	int timeLeft;				//keep track how many milliseconds left
 	int timeoutMSec;			//time to elapse before timeout event occurs (milliseconds)
@@ -168,6 +172,7 @@ private:
 	bool wasTimedOut;			//true if a timeout has occured
 
 	CRITICAL_SECTION responseBufferMutex;	//warning: do not use when performing response operation. Only use this when working with the buffer
+	CRITICAL_SECTION transferProgressMutex;	//used when setting transferProgressEvent, avoid setting it while resetting it
 
 	SOCKET lastDataConnection;		//last socket created for active mode as result of listen (equals more or less lastConnectionForAbort)
 	SOCKET lastConnectionForAbort;	//last socket created as dataconnection = socket to close when calling abort operations;
@@ -239,13 +244,15 @@ private:
 	void doEventCallback(Event_Type event, int type);
 
 	void threadError(const char * threadName);
+
+	void startTransmissionTimeoutWatchDog();
 };
 
 //Threads
 DWORD WINAPI readSocket(LPVOID);
 DWORD WINAPI listenForClient(LPVOID);
 DWORD WINAPI timerThread(LPVOID param);
-
+DWORD WINAPI watchDogTimeoutThread(LPVOID param);
 
 int parseAsciiToDecimal(const char * string, int * result);		//read begin of string for number with separator dots
 void enableDirectoryContents(DIRECTORY * currentdir, int type);	//make sure enough memory allocated for directory
