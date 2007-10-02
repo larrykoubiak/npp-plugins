@@ -159,6 +159,7 @@ private:
 	HANDLE directoryEvent;		//Used to notify directory list socket closed
 	HANDLE transferEvent;		//Used to notify download socket closed
 	HANDLE controlLostEvent;	//Used to notify control socket closed
+	HANDLE dataConnLostEvent;	//Used to notify data socket closed
 
 	int timeLeft;				//keep track how many milliseconds left
 	int timeoutMSec;			//time to elapse before timeout event occurs (milliseconds)
@@ -234,6 +235,8 @@ private:
 	bool getCurrentDirectory(char * buffer);
 
 	void deleteObjectFromDirectory(DIRECTORY * currentDir, void * object, int type);
+
+	void doEventCallback(Event_Type event, int type);
 
 	void threadError(const char * threadName);
 };
