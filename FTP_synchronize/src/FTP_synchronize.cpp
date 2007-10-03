@@ -117,6 +117,12 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 				DeleteObject(toolBitmapFolders);
 			}
 			break;}
+		case DLL_THREAD_ATTACH: {
+			//nrThreads++;
+			break; }
+		case DLL_THREAD_DETACH: {
+			//nrThreads--;
+			break; }
 	}
 	return TRUE;
 }
@@ -189,8 +195,6 @@ HWND getCurrentHScintilla(int which) {
 };
 
 void initializePlugin() {
-	initializedPlugin = true;
-
 	//output redirection, makes printf still work in win32 app
 	CreatePipe(&readHandle, &writeHandle, NULL, 512);		//pipe the output to the message log
 	HANDLE hStdout = writeHandle;						//get win32 handle for stdout
@@ -224,6 +228,8 @@ void initializePlugin() {
 	readGlobalSettings();
 	enableToolbar();
 	setToolbarState(IDB_BUTTON_TOOLBAR_SETTINGS, TRUE);
+
+	initializedPlugin = true;
 }
 
 void deinitializePlugin() {
@@ -823,7 +829,7 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		}
 		lt->server = servername;
 		DWORD id;
-		if (CreateThread(NULL, 0, doUpload, lt, 0, &id) == NULL) {
+		if ((NULL, 0, doUpload, lt, 0, &id) == NULL) {
 			threadError("doUpload");
 			delete [] curFile;
 			delete [] servername;
@@ -875,7 +881,7 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		delete [] filename;
 		lt->server = serverfilepath;
 		DWORD id;
-		if (CreateThread(NULL, 0, doUpload, lt, 0, &id) == NULL) {
+		if ((NULL, 0, doUpload, lt, 0, &id) == NULL) {
 			threadError("doUpload");
 			delete [] curFile;
 			delete [] serverfilepath;
@@ -1866,21 +1872,21 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					break; }
 				case IDM_POPUP_RENAMEDIR: {
 					DWORD id;
-					if (CreateThread(NULL, 0, doRenameDirectory, NULL, 0, &id) == NULL) {
+					if ((NULL, 0, doRenameDirectory, NULL, 0, &id) == NULL) {
 						threadError("doRenameDirectory");
 					}
 					return TRUE;
 					break; }
 				case IDM_POPUP_RENAMEFILE: {
 					DWORD id;
-					if (CreateThread(NULL, 0, doRenameFile, NULL, 0, &id) == NULL) {
+					if ((NULL, 0, doRenameFile, NULL, 0, &id) == NULL) {
 						threadError("doRenameFile");
 					}
 					return TRUE;
 					break; }
 				case IDM_POPUP_DELETEFILE: {
 					DWORD id;
-					if (CreateThread(NULL, 0, doDeleteFile, NULL, 0, &id) == NULL) {
+					if ((NULL, 0, doDeleteFile, NULL, 0, &id) == NULL) {
 						threadError("doDeleteFile");
 					}
 					return TRUE;
@@ -2300,7 +2306,8 @@ BOOL CALLBACK OutDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 			hOutputEdit = GetDlgItem(hWnd, IDC_EDIT_OUTPUT);
 			DefaultMessageEditWindowProc = (WNDPROC) SetWindowLongPtr(hOutputEdit,GWLP_WNDPROC,(LONG)&MessageEditWindowProc);
 			DWORD id;
-			if ((hReadThread = CreateThread(NULL, 0, outputProc, (LPVOID)lParam, 0, &id)) == NULL) {
+			hReadThread = CreateThread(NULL, 0, outputProc, (LPVOID)lParam, 0, &id);
+			if (hReadThread == NULL) {
 				err(TEXT("Error: could not create outputProc thread!"));
 				*stdout = stdoutOrig;
 			} else {
@@ -2417,9 +2424,6 @@ LRESULT CALLBACK MessageEditWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
 
 LRESULT CALLBACK NotepadPPWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
-		case WM_DROPFILES: {	//override notepad++ dragdrop so it doesnt work on our window
-			printf("WM_DROPFILES called\n");
-			break; }
 		case NPPM_SAVECURRENTFILE: {
 			//Document being saved
 			if (uploadOnSave) {

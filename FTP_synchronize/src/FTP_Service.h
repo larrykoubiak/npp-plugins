@@ -48,6 +48,7 @@ struct SOCKCALLBACK {
 	void (FTP_Service::*callback) (char *, int, SOCKET&, void *);
 	void (FTP_Service::*cleanup) (void *);
 	FTP_Service * service;
+	HANDLE sockEndEvent;
 };
 
 struct LISTENDATA {
@@ -61,6 +62,7 @@ struct SOCKCALLBACKFORMAT {
 	void * param;
 	FTP_Service * service;
 	SOCKET result;
+	HANDLE sockEndEvent;
 };
 
 struct FILEOBJECT;
@@ -125,7 +127,7 @@ public:
 	void setEventCallback(void (FTP_Service *, unsigned int, int));
 	void setTimeoutEventCallback(void (FTP_Service *, int), int);	//although a zero timeleft value may be passed, the timeout may or may not already have occured, depending on which thread is faster (time thread or FTP_Service's calling thread). Recommended to check for timeouts using the function and waiting for functions to finish (at least do not use both methods).
 
-	bool getDirectoryContents(DIRECTORY * dir);
+	bool getDirectoryContents(DIRECTORY * dir, bool overrideBusy = false);	//please do not use override busy, is here due to implementation
 
 	bool abortOperation();
 
@@ -144,38 +146,37 @@ public:
 	~FTP_Service();
 
 	//public due to implementation, do not call
-	void setLastDataConnection(SOCKET&);
-	SOCKET & getLastDataConnection() { return lastConnectionForAbort; };
-	HANDLE getConnectionEvent() { return connectionEvent; };
-	HANDLE getTransferProgressEvent();
-	CRITICAL_SECTION & getTransferProgressMutex() { return transferProgressMutex; };
+	void watchDogProcedure();
+	void listForClientProcedure(LISTENDATA * listendat);
+
 	void callTimeout(TIMERTHREADINFO * tti);
 	const int getCurrentTimerID() { return timerID; };
 
 private:
-	Connection_Mode mode;		//Used to keep track of what mode to use (passive/active)
-	Socket * controlConnection;	//Used to keep track of control connection
+	Connection_Mode mode;			//Used to keep track of what mode to use (passive/active)
+	Socket * controlConnection;		//Used to keep track of control connection
 
-	HANDLE responseEvent;		//Used to notify of new response from server
-	HANDLE waitEvent;			//Used to notify response has been parsed
-	HANDLE connectionEvent;		//Used to notify of new connection from server (active connection)
-	HANDLE directoryEvent;		//Used to notify directory list socket closed
-	HANDLE transferEvent;		//Used to notify download socket closed
-	HANDLE controlLostEvent;	//Used to notify control socket closed
-	HANDLE dataConnLostEvent;	//Used to notify data socket closed
+	HANDLE responseEvent;			//Used to notify of new response from server
+	HANDLE waitEvent;				//Used to notify response has been parsed
+	HANDLE connectionEvent;			//Used to notify of new connection from server (active connection)
+	HANDLE directoryEvent;			//Used to notify directory list socket closed
+	HANDLE transferEvent;			//Used to notify download socket closed
+	HANDLE controlConnLostEvent;	//Used to notify control socket closed
+	HANDLE dataConnLostEvent;		//Used to notify data socket closed
 	HANDLE transferProgressEvent;	//Used to detect transfer timeouts
+	HANDLE noMoreBusyEvent;			//Used to determine any pending operations are done
 
-	int timeLeft;				//keep track how many milliseconds left
-	int timeoutMSec;			//time to elapse before timeout event occurs (milliseconds)
-	int timeoutInterval;		//interval to update/notify the client (milliseconds)
-	int timerID;				//Integer to identify current timerthread
-	bool wasTimedOut;			//true if a timeout has occured
+	int timeLeft;					//keep track how many milliseconds left
+	int timeoutMSec;				//time to elapse before timeout event occurs (milliseconds)
+	int timeoutInterval;			//interval to update/notify the client (milliseconds)
+	int timerID;					//Integer to identify current timerthread
+	bool wasTimedOut;				//true if a timeout has occured
 
 	CRITICAL_SECTION responseBufferMutex;	//warning: do not use when performing response operation. Only use this when working with the buffer
 	CRITICAL_SECTION transferProgressMutex;	//used when setting transferProgressEvent, avoid setting it while resetting it
 
-	SOCKET lastDataConnection;		//last socket created for active mode as result of listen (equals more or less lastConnectionForAbort)
-	SOCKET lastConnectionForAbort;	//last socket created as dataconnection = socket to close when calling abort operations;
+	SOCKET lastIncomingDataConnection;		//last socket created for active mode as result of listen (equals more or less lastDataConnection)
+	SOCKET lastDataConnection;	//last socket created as dataconnection = socket to close when calling abort operations;
 	DIRECTORY * emptyDir;			//empty directory to use as parent of root
 	DIRECTORY * root;				//directory that identifies the root of the FTP connection
 	char * initialRoot;				//Start at specified location in dirtree
@@ -185,7 +186,7 @@ private:
 
 	bool busy;						//true when performing action
 	int connectionStatus;			//current status of server connection (ie connected and logged in)
-	int callbackSet;					//true when events properly set (such as timeout and events)
+	int callbackSet;				//true when events properly set (such as timeout and events)
 
 	//response parsing
 	int lastResponseValue, responseCodeToSet;
@@ -246,6 +247,9 @@ private:
 	void threadError(const char * threadName);
 
 	void startTransmissionTimeoutWatchDog();
+	void killWatchDog();
+
+	void setBusy(bool isBusy);
 };
 
 //Threads

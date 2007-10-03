@@ -83,7 +83,7 @@ SOCKET ServerSocket::listenForClient(unsigned int timeout) {
 	HANDLE hThread = CreateThread(NULL, 0, serverSocketTimeoutCheck, (LPVOID) this, 0, &id);
 	if (hThread == NULL) {
 		closesocket(this->m_hSocket);
-		return false;
+		return NULL;
 	} else {
 		CloseHandle(hThread);
 	}

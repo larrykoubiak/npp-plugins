@@ -77,7 +77,8 @@ bool Socket::connectClient(unsigned int timeout) {
 		return false;
 	}
 
-	char badIP[4] = {0xFF, 0xFF, 0xFF, 0xFF};
+	char badIP[4];
+	memset(badIP, 0xFF, 4);
 	if (!memcmp(this->m_pHostent->h_addr_list[0], badIP, 4)) {
 		this->m_iError = WSAGetLastError();
 		return false;
