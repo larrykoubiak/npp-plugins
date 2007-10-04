@@ -49,6 +49,7 @@ struct SOCKCALLBACK {
 	void (FTP_Service::*cleanup) (void *);
 	FTP_Service * service;
 	HANDLE sockEndEvent;
+	char * id;
 };
 
 struct LISTENDATA {
