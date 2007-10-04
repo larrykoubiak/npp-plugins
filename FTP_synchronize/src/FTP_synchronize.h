@@ -214,6 +214,9 @@ void uploadByName(TCHAR * fileName);
 void abort();
 void createDir();
 void deleteDir();
+void renameDir();
+void deleteFile();
+void renameFile();
 void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, bool ignoreBusy = false);
 
 void progress(FTP_Service * service, int current, int total);
@@ -227,6 +230,9 @@ DWORD WINAPI doUpload(LPVOID param);
 DWORD WINAPI doGetDirectory(LPVOID param);
 DWORD WINAPI doCreateDirectory(LPVOID param);
 DWORD WINAPI doDeleteDirectory(LPVOID param);
+DWORD WINAPI doRenameDirectory(LPVOID param);
+DWORD WINAPI doRenameFile(LPVOID param);
+DWORD WINAPI doDeleteFile(LPVOID param);
 
 HTREEITEM addRoot(DIRECTORY * rootDir);
 HTREEITEM addDirectory(HTREEITEM root, DIRECTORY * dir);

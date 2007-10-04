@@ -1029,6 +1029,54 @@ void deleteDir() {
 	}
 }
 
+void renameDir() {
+	if (!connected)
+		return;
+	if (busy)
+		return;
+	busy = true;
+	DWORD id;
+	HANDLE hThread = CreateThread(NULL, 0, doRenameDirectory, NULL, 0, &id);
+	if (hThread == NULL) {
+		threadError("doRenameDirectory");
+		busy = false;
+	} else {
+		CloseHandle(hThread);
+	}
+}
+
+void deleteFile() {
+	if (!connected)
+		return;
+	if (busy)
+		return;
+	busy = true;
+	DWORD id;
+	HANDLE hThread = CreateThread(NULL, 0, doDeleteFile, NULL, 0, &id);
+	if (hThread == NULL) {
+		threadError("doDeleteFile");
+		busy = false;
+	} else {
+		CloseHandle(hThread);
+	}
+}
+
+void renameFile() {
+	if (!connected)
+		return;
+	if (busy)
+		return;
+	busy = true;
+	DWORD id;
+	HANDLE hThread = CreateThread(NULL, 0, doRenameFile, NULL, 0, &id);
+	if (hThread == NULL) {
+		threadError("doRenameFile");
+		busy = false;
+	} else {
+		CloseHandle(hThread);
+	}
+}
+
 void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, bool ignoreBusy) {
 	if (!connected)
 		return;
@@ -1895,24 +1943,15 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					return TRUE;
 					break; }
 				case IDM_POPUP_RENAMEDIR: {
-					DWORD id;
-					if ((NULL, 0, doRenameDirectory, NULL, 0, &id) == NULL) {
-						threadError("doRenameDirectory");
-					}
+					renameDir();
 					return TRUE;
 					break; }
 				case IDM_POPUP_RENAMEFILE: {
-					DWORD id;
-					if ((NULL, 0, doRenameFile, NULL, 0, &id) == NULL) {
-						threadError("doRenameFile");
-					}
+					renameFile();
 					return TRUE;
 					break; }
 				case IDM_POPUP_DELETEFILE: {
-					DWORD id;
-					if ((NULL, 0, doDeleteFile, NULL, 0, &id) == NULL) {
-						threadError("doDeleteFile");
-					}
+					deleteFile();
 					return TRUE;
 					break; }
 				case IDB_BUTTON_TOOLBAR_CONNECT: {
