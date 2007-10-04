@@ -223,6 +223,7 @@ void initializePlugin() {
 
 	vProfiles = new std::vector< Profile * >();
 	currentProfile = NULL;
+	currentFTPProfile = NULL;
 
 	readProfiles();
 	readGlobalSettings();
@@ -1071,12 +1072,34 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					DIRECTORY * rootDir = mainService->getRoot();
 					HTREEITEM rootTree = addRoot(rootDir);
 					TreeView_Select(hTreeview, rootTree, TVGN_CARET);
+					if (currentFTPProfile->getFindRoot()) {	//expand the root
+						HTREEITEM currentItem = rootTree;
+						DIRECTORY * curDir;
+						TV_ITEM tvi;
+						tvi.mask = TVIF_PARAM;
+
+						while(true) {	//find all children and expand them when existant
+							tvi.hItem = currentItem;
+							if (TreeView_GetItem(hTreeview, &tvi) == FALSE) {
+								break;
+							}
+							curDir = (DIRECTORY*)tvi.lParam;
+							if (!curDir->updated) {
+								break;
+							}
+
+							fillTreeDirectory(currentItem, curDir);
+							TreeView_Expand(hTreeview, currentItem, TVE_EXPAND);
+
+							currentItem = TreeView_GetChild(hTreeview, currentItem);
+							if (currentItem == NULL) {
+								break;
+							}
+						}
+					}
+
 					lastDirectoryItem = rootTree;
 					lastDirectoryItemParam = rootDir;
-
-					//mainService->getDirectoryContents(rootDir);
-					//fillTreeDirectory(rootTree, rootDir);
-					//TreeView_Expand(hTreeview, rootTree, TVE_EXPAND);
 
 					lstrcpy(storage, dllPath);
 					lstrcat(storage, dllName);
@@ -1105,6 +1128,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					}
 					noConnection = true;
 					connected = false;
+					currentFTPProfile = NULL;
 					setToolbarState(IDB_BUTTON_TOOLBAR_UPLOAD, FALSE);
 					setToolbarState(IDB_BUTTON_TOOLBAR_DOWNLOAD, FALSE);
 					SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(disconnectBitmapIndex, 0));
@@ -1172,35 +1196,35 @@ void onTimeout(FTP_Service * service, int timeleft) {
 DWORD WINAPI doConnect(LPVOID param) {
 
 	expectedDisconnect = false;
-	mainService->setTimeoutEventCallback(&onTimeout, currentProfile->getTimeout());
-	mainService->setMode(currentProfile->getMode());
-	mainService->setFindRootParent(currentProfile->getFindRoot());
-	mainService->setInitialDirectory(currentProfile->TVAR(getInitDir)());
+	mainService->setTimeoutEventCallback(&onTimeout, currentFTPProfile->getTimeout());
+	mainService->setMode(currentFTPProfile->getMode());
+	mainService->setFindRootParent(currentFTPProfile->getFindRoot());
+	mainService->setInitialDirectory(currentFTPProfile->TVAR(getInitDir)());
 	setStatusMessage(TEXT("Connecting"));
-	bool result = mainService->connectToServer(currentProfile->TVAR(getAddress)(), currentProfile->getPort());
+	bool result = mainService->connectToServer(currentFTPProfile->TVAR(getAddress)(), currentFTPProfile->getPort());
 	if (!result) {
 		setStatusMessage(TEXT("Could not connect to server"));
 	} else {
 		setStatusMessage(TEXT("Logging in"));
 		bool result;
-		if (currentProfile->getAskPassword()) {
+		if (currentFTPProfile->getAskPassword()) {
 			TCHAR * passWord = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_PASSWORD), nppData._nppHandle,RenameDlgProc, (LPARAM) NULL);
 			if (passWord) {
 #ifdef UNICODE
 				int len = lstrlen(passWord);
 				char * passWordA = new char[len + 1];
 				WideCharToMultiByte(CP_ACP, 0, passWord, -1, passWordA, len+1, NULL, NULL);
-				result = mainService->login(currentProfile->TVAR(getUsername)(), passWordA);
+				result = mainService->login(currentFTPProfile->TVAR(getUsername)(), passWordA);
 				delete [] passWordA;
 #else
-				result = mainService->login(currentProfile->TVAR(getUsername)(), passWord);
+				result = mainService->login(currentFTPProfile->TVAR(getUsername)(), passWord);
 				delete [] passWord;
 #endif
 			} else {
 				result = false;
 			}
 		} else {
-			result = mainService->login(currentProfile->TVAR(getUsername)(), currentProfile->TVAR(getPassword)());
+			result = mainService->login(currentFTPProfile->TVAR(getUsername)(), currentFTPProfile->TVAR(getPassword)());
 		}
 		if (!result) {
 			setStatusMessage(TEXT("Could not login to server"));
@@ -1932,7 +1956,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 				default: {
 					unsigned int value = LOWORD(wParam);
 					if (value >= IDM_POPUP_PROFILE_FIRST && value <= IDM_POPUP_PROFILE_MAX) {
-						currentProfile = (*vProfiles)[value - IDM_POPUP_PROFILE_FIRST];
+						currentFTPProfile = (*vProfiles)[value - IDM_POPUP_PROFILE_FIRST];
 						connect();
 					}
 					return TRUE;
@@ -2044,6 +2068,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						}
 						break; }
 					case TVN_BEGINDRAG: {
+						break;
 						NM_TREEVIEW * pnmtv = (NM_TREEVIEW*) lParam;
 						pnmtv->itemNew.mask = TVIF_IMAGE;
 						TreeView_GetItem(hTreeview, &(pnmtv->itemNew));

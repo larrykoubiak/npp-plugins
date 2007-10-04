@@ -167,6 +167,7 @@ WNDPROC DefaultNotepadPPWindowProc;
 //Profile vars
 std::vector< Profile * > * vProfiles;
 Profile * currentProfile;
+Profile * currentFTPProfile;
 
 //Function declarations
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved);
