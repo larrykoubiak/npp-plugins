@@ -7,3 +7,4 @@
 -Fix redraw issues
 -Transfer multiple files at once after eachother
 -Close pane on download/upload
+-Warn user on deleting stuff
