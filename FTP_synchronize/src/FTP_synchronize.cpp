@@ -794,57 +794,63 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		return;
 	busy = true;
 
+//UNICODE WARNING
+//notepad only supports ANSI chars at the time of writing (v4.3), so CreateFileA is used
+//as soon as unicode support is added change this
+
 	TCHAR * curFile;
-	char * curFileA = new char[MAX_PATH];
-	SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)curFileA);
-#ifdef UNICODE
-	curFile = new TCHAR[MAX_PATH];
-	MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, curFileA, -1, curFile, MAX_PATH);
-	delete [] curFileA;
-#else
-	curFile = curFileA;
-#endif
-	LOADTHREAD * lt = new LOADTHREAD;
-	lt->openFile = FALSE;
-	lt->local = CreateFile(curFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (lt->local == INVALID_HANDLE_VALUE) {
+	char * openFile = new char[MAX_PATH];
+	SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)openFile);
+	HANDLE hOpenFile = CreateFileA(openFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (openFile == INVALID_HANDLE_VALUE) {
 		err(TEXT("Unable to open the file"));
-		delete [] curFile;
-		delete lt;
+		delete [] openFile;
 		busy = false;
 		return;
 	}
+
+	LOADTHREAD * lt = new LOADTHREAD;
+	lt->openFile = FALSE;
+	lt->targetTreeDir = NULL;
+	lt->local = hOpenFile;
+
+#ifdef UNICODE	//Convert curFile to unicode
+	TCHAR * curFileUnicode = new TCHAR[MAX_PATH];
+	MultiByteToWideChar(CP_ACP, 0, openFile, -1, curFileUnicode, MAX_PATH);
+	delete [] openFile;
+	curFile = curFileUnicode;
+	lt->localname = curFileUnicode;
+#else
+	curFile = openFile;
 	lt->localname = curFile;
+#endif
+	
 	//check if FTP valid file;
 	int len = (int)lstrlen(storage);
 	bool isCached = (!_tcsnicmp(curFile, storage, len));
+
+	TCHAR * serverName = new TCHAR[MAX_PATH];
+	lt->server = serverName;
+
 	if (isCached && uploadCached) {	//The file resides in cache, find matching FTP directory and upload
-		lt->targetTreeDir = NULL;
-		TCHAR * servername = new TCHAR[MAX_PATH];
-		lstrcpy(servername, curFile+len-1);
+		lstrcpy(serverName, curFile+len-1);
 		int i = 0;
-		while (servername[i] != 0) {
-			if (servername[i] == _T('\\'))
-				servername[i] = _T('/');		//convert to slashes
+		while (serverName[i] != 0) {
+			if (serverName[i] == _T('\\'))
+				serverName[i] = _T('/');		//convert to slashes
 			i++;
-		}
-		lt->server = servername;
-		DWORD id;
-		if ((NULL, 0, doUpload, lt, 0, &id) == NULL) {
-			threadError("doUpload");
-			delete [] curFile;
-			delete [] servername;
-			delete lt;
-			busy = false;
-			return;
-		} else {
-			return;
 		}
 	} else if (uploadCurrentOnUncached && uploadUncached) {	//The file is not in cache, upload to the selected directory
 		DIRECTORY * dir = lastDirectoryItemParam;
 		lt->targetTreeDir = lastDirectoryItem;
-		TCHAR  * filename = new TCHAR[MAX_PATH], * filestoragepath, * serverfilepath = new TCHAR[MAX_PATH];
+
+		TCHAR  * filename = new TCHAR[MAX_PATH], * filestoragepath;
+
 		lstrcpy(filename, PathFindFileName(curFile));
+		strcpyAtoT(serverName, dir->fullpath, MAX_PATH);
+		lstrcat(serverName, TEXT("/"));
+		lstrcat(serverName, filename);
 
 		if (cacheOnDirect) {	//The file should be cached now
 			filestoragepath = new TCHAR[MAX_PATH];
@@ -861,7 +867,7 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 						printf("Error copying file over to the cache: %d\n", GetLastError());
 					} else if (openOnDirect) {		//open cached file in N++ if option enabled
 #ifdef UNICODE
-						char * TVAR(filestoragepath) = new char[MAX_PATH];
+						char * filestoragepathA = new char[MAX_PATH];
 						WideCharToMultiByte(CP_ACP, 0, filestoragepath, -1, TVAR(filestoragepath), MAX_PATH, NULL, NULL);
 #endif
 						SendMessage(nppData._nppHandle,WM_DOOPEN,0,(LPARAM) TVAR(filestoragepath));
@@ -871,34 +877,32 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 #endif
 					}
 				} else {
-					err(TEXT("Unable to create directory to cache file in.\r\nSee messagelog for details"));
 					printf("Unable to create cache directory %s for file %s.\n", filestoragepath, curFile);
 				}
 			}
+
+			delete [] filestoragepath;
 		}
-		strcpyAtoT(serverfilepath, dir->fullpath, MAX_PATH);
-		lstrcat(serverfilepath, TEXT("/"));
-		lstrcat(serverfilepath, filename);
+
 		delete [] filename;
-		lt->server = serverfilepath;
-		DWORD id;
-		if ((NULL, 0, doUpload, lt, 0, &id) == NULL) {
-			threadError("doUpload");
-			delete [] curFile;
-			delete [] serverfilepath;
-			delete lt;
-			busy = false;
-			return;
-		} else {
-			return;
-		}
 	} else {
 		//err(TEXT("Unable to determine location to upload to"));
 	}
-	busy = false;
-	CloseHandle(lt->local);
-	delete [] lt->localname;
-	delete lt;
+
+	DWORD id;
+	HANDLE hThread = CreateThread(NULL, 0, doUpload, lt, 0, &id);
+	if (hThread == NULL) {
+		threadError("doUpload");
+		CloseHandle(lt->local);
+		delete [] curFile;
+		delete [] serverName;
+		delete lt;
+		busy = false;
+		return;
+	} else {
+		CloseHandle(hThread);
+	}
+
 	return;
 }
 
@@ -912,19 +916,27 @@ void uploadSpecified() {
 	TCHAR * localFileName = new TCHAR[MAX_PATH];
 	if (!browseFile(localFileName, MAX_PATH, FALSE, TRUE, FALSE)) {
 		delete [] localFileName;
+		busy = false;
 		return;
 	}
-	LOADTHREAD * lt = new LOADTHREAD;
-	lt->local = CreateFile(localFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (lt->local == NULL) {
-		err(TEXT("Bad file"));
+
+	HANDLE hOpenFile = CreateFile(localFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (hOpenFile == INVALID_HANDLE_VALUE) {
+		err(TEXT("Unable to open the file"));
 		delete [] localFileName;
-		delete lt;
+		busy = false;
 		return;
 	}
+
+	LOADTHREAD * lt = new LOADTHREAD;
+	lt->local = hOpenFile;
 	lt->localname = localFileName;
 	lt->targetTreeDir = lastDirectoryItem;
+
 	TCHAR * servername = new TCHAR[MAX_PATH];
+	lt->server = servername;
+
 	strcpyAtoT(servername, lastDirectoryItemParam->fullpath, MAX_PATH);
 	char lastChar = lastDirectoryItemParam->fullpath[strlen(lastDirectoryItemParam->fullpath)-1];
 	if (lastChar != '\\' && lastChar != '/')
@@ -936,11 +948,12 @@ void uploadSpecified() {
 			servername[i] = _T('/');		//convert to slashes
 		i++;
 	}
-	lt->server = servername;
+	
 	DWORD id;
 	HANDLE hThread = CreateThread(NULL, 0, doUpload, lt, 0, &id);
 	if (hThread == NULL) {
 		threadError("doUpload");
+		CloseHandle(hOpenFile);
 		delete [] lt->server;
 		delete [] lt->localname;
 		delete lt;
@@ -950,7 +963,7 @@ void uploadSpecified() {
 	}
 }
 
-void uploadByName(TCHAR * fileName) {
+void uploadByName(TCHAR * fileName) {	//Called by DnD
 	TreeView_Select(hTreeview, NULL, TVGN_DROPHILITE);
 	if (!connected)
 		return;
@@ -958,34 +971,45 @@ void uploadByName(TCHAR * fileName) {
 		return;
 	busy = true;
 
-	LOADTHREAD * lt = new LOADTHREAD;
-	lt->local = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (lt->local == NULL) {
-		err(TEXT("Bad file"));
-		delete lt;
+	TCHAR * localFileName = new TCHAR[MAX_PATH];
+	lstrcpyn(localFileName, fileName, MAX_PATH);
+
+	HANDLE hOpenFile = CreateFile(localFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (hOpenFile == INVALID_HANDLE_VALUE) {
+		err(TEXT("Unable to open the file"));
+		delete [] localFileName;
+		busy = false;
 		return;
 	}
-	lt->localname = new TCHAR[MAX_PATH];
-	lstrcpy(lt->localname, fileName);
-	lt->targetTreeDir = lastDnDDirectoryItem;
+
+	LOADTHREAD * lt = new LOADTHREAD;
+	lt->local = hOpenFile;
+	lt->localname = localFileName;
+	lt->targetTreeDir = lastDirectoryItem;
+
 	TCHAR * servername = new TCHAR[MAX_PATH];
-	strcpyAtoT(servername, lastDnDDirectoryItemParam->fullpath, MAX_PATH);
-	char lastChar = lastDirectoryItemParam->fullpath[strlen(lastDnDDirectoryItemParam->fullpath)-1];
+	lt->server = servername;
+
+	strcpyAtoT(servername, lastDirectoryItemParam->fullpath, MAX_PATH);
+	char lastChar = lastDirectoryItemParam->fullpath[strlen(lastDirectoryItemParam->fullpath)-1];
 	if (lastChar != '\\' && lastChar != '/')
 		lstrcat(servername, _T("/"));
-	lstrcat(servername, PathFindFileName(fileName));
+	lstrcat(servername, PathFindFileName(localFileName));
 	int i = 0;
 	while (servername[i] != 0) {
 		if (servername[i] == _T('\\'))
 			servername[i] = _T('/');		//convert to slashes
 		i++;
 	}
-	lt->server = servername;
+	
 	DWORD id;
 	HANDLE hThread = CreateThread(NULL, 0, doUpload, lt, 0, &id);
 	if (hThread == NULL) {
 		threadError("doUpload");
+		CloseHandle(hOpenFile);
 		delete [] lt->server;
+		delete [] lt->localname;
 		delete lt;
 		busy = false;
 	} else {
@@ -1834,7 +1858,7 @@ BOOL browseFile(TCHAR * filebuffer, int buffersize, BOOL multiselect, BOOL muste
 	ofi.nFilterIndex = 1;
 	ofi.lpstrFile = filebuffer;
 	ofi.nMaxFile = buffersize;
-	ofi.Flags = OFN_CREATEPROMPT|OFN_EXPLORER|(multiselect?OFN_ALLOWMULTISELECT:0)|(mustexist?(OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST):0)|(isSave?OFN_OVERWRITEPROMPT:0);
+	ofi.Flags = OFN_CREATEPROMPT|OFN_EXPLORER|(multiselect?OFN_ALLOWMULTISELECT:0)|(mustexist?(OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST):0)|(isSave?OFN_OVERWRITEPROMPT:OFN_HIDEREADONLY);
 	if (isSave)
 		return GetSaveFileName(&ofi);
 	else
