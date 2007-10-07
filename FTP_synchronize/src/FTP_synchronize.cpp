@@ -363,7 +363,7 @@ void createWindows() {
 	DockWindowClass.hInstance = hDLL;
 	DockWindowClass.hIcon = LoadIcon(NULL,IDI_APPLICATION);
 	DockWindowClass.hCursor = LoadCursor(NULL,IDC_ARROW);
-	DockWindowClass.hbrBackground = (HBRUSH)COLOR_WINDOW+1;
+	DockWindowClass.hbrBackground = (HBRUSH)COLOR_BACKGROUND+1;
 	DockWindowClass.lpszMenuName = NULL;
 	DockWindowClass.lpszClassName = FolderWindowClassName;
 	DockWindowClass.hIconSm = NULL;
@@ -391,7 +391,7 @@ void createWindows() {
 	SendMessage(hTreeview,TVM_SETIMAGELIST,0,(LPARAM)hImageList);
 	
 	//Create and prepare toolbar
-	hFolderToolbar = CreateWindowEx(WS_EX_PALETTEWINDOW, TOOLBARCLASSNAME, TEXT(""), WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS|CCS_TOP/*|TBSTYLE_FLAT*/, 0, 0, 100, 16, hFolderWindow, NULL, hDLL, NULL);
+	hFolderToolbar = CreateWindowEx(WS_EX_PALETTEWINDOW, TOOLBARCLASSNAME, TEXT(""), WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS|CCS_TOP|TBSTYLE_FLAT, 0, 0, 100, 16, hFolderWindow, NULL, hDLL, NULL);
 	SendMessage(hFolderToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM) sizeof(TBBUTTON), 0);
 	SendMessage(hFolderToolbar, TB_SETBITMAPSIZE, 0, (LPARAM) MAKELONG(16,16));
 
