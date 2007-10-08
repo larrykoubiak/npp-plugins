@@ -3,6 +3,7 @@
 // Used by FTP_synchronize.rc
 //
 #define IDD_DIALOG_SETTINGS             101
+#define IDD_DIALOG_SETTINGS_PROFILES    101
 #define IDD_DLGOUTPUT                   102
 #define IDD_DIALOG_RENAME               103
 #define IDD_DIALOG_OUTPUT               104
@@ -20,6 +21,7 @@
 #define IDD_DIALOG_ABOUT                116
 #define IDD_DIALOG_RENAME1              117
 #define IDD_DIALOG_PASSWORD             117
+#define IDD_DIALOG_SETTINGS_GLOBAL      118
 #define IDC_SETTINGS_ADDRESS            1001
 #define IDC_SETTINGS_PORT               1002
 #define IDC_SETTINGS_USERNAME           1003
@@ -49,7 +51,17 @@
 #define IDC_EDIT_ABOUT                  1025
 #define IDC_CHECK1                      1025
 #define IDC_CHECK_FINDROOT              1025
+#define IDC_CHECK_OTHERCACHE            1025
 #define IDC_CHECK_ASKPASS               1026
+#define IDC_EDIT_CACHEPATH              1028
+#define IDC_BUTTON_BROWSECACHE          1029
+#define IDC_CHECK_WARNDELETE            1030
+#define IDC_CHECK_CLOSEONTRANSFER       1031
+#define IDC_CHECK_TIMESTAMP             1032
+#define IDC_STATIC_RECONNECT            1033
+#define IDC_CHECK_SHOWDIR               1034
+#define IDC_CHECK_SHOWDIR2              1035
+#define IDC_CHECK_PRETTYICON            1035
 
 // Next default values for new objects
 // 
@@ -58,7 +70,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        117
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1026
+#define _APS_NEXT_CONTROL_VALUE         1034
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

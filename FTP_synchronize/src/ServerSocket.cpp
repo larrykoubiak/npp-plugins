@@ -22,11 +22,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 ServerSocket::ServerSocket(int iPort) {
 	/*if (Socket::amount == 0) {	//first socket
-		printf("ServerSocket is starting WSA\n");
+		printf("%sServerSocket is starting WSA\n", getCurrentTimeStamp());
 		WSADATA * pwsadata = new WSADATA;
 		WORD version = MAKEWORD(2,0);
 		if (WSAStartup(version, pwsadata)) {
-			printf("Warning! Could not initialise WinSock API\n");
+			printf("%sWarning! Could not initialise WinSock API\n", getCurrentTimeStamp());
 		}
 		delete pwsadata;
 	}*/
@@ -97,11 +97,11 @@ SOCKET ServerSocket::listenForClient(unsigned int timeout) {
 	}
 /*	u_short port = ntohs(sa.sin_port);
 	char * ip = inet_ntoa(sa.sin_addr);
-	printf("address: %s\r\nport: %d\r\nName: ", ip, port);
+	printf("%saddress: %s\r\nport: %d\r\nName: ", getCurrentTimeStamp(), ip, port);
 	char * name = new char[NI_MAXHOST];
 	ZeroMemory(name, NI_MAXHOST);
 	getnameinfo((const sockaddr*)&sa,sizeof(sockaddr),name,NI_MAXHOST,NULL,0,0);
-	printf("%s\n", name);*/
+	printf("%s\n", getCurrentTimeStamp(), name);*/
 	return incoming;
 }
 
@@ -112,9 +112,9 @@ ServerSocket::~ServerSocket() {
 	return;/*
    //very risky
 	if (Socket::amount == 0) {	//last socket, cleanup WSA
-		printf("ServerSocket is closing WSA\n");
+		printf("%sServerSocket is closing WSA\n", getCurrentTimeStamp());
 		if (WSACleanup())
-			printf("Warning! Could not properly uninitialize WinSock API.\n");
+			printf("%sWarning! Could not properly uninitialize WinSock API.\n", getCurrentTimeStamp());
 	}*/
 }
 

@@ -1,14 +1,14 @@
 -Better documentation
--Improve settings dialog for more options and better layout
+
 -Keep alive
--SFTP
 -ASCII/Binairy file detection
--Improve look
+-SFTP
+
 -Fix redraw issues
+
 -Transfer multiple files at once after eachother
--Close pane on download/upload
--Warn user on deleting stuff
+
 -Issue raw command
 -CHMOD
--Timestamp log events
+
 -Save all support

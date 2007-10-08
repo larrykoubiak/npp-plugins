@@ -52,14 +52,11 @@ END
 // Dialog
 //
 
-IDD_DIALOG_SETTINGS DIALOGEX 0, 0, 388, 311
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
-    WS_SYSMENU
-CAPTION "Settings"
+IDD_DIALOG_SETTINGS_PROFILES DIALOGEX 0, 0, 388, 311
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
+CAPTION "Profiles"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDB_SETTINGS_OK,330,6,50,14
-    PUSHBUTTON      "Cancel",IDB_SETTINGS_CANCEL,330,24,50,14
     LTEXT           "Profile",IDC_STATIC,162,6,21,8
     EDITTEXT        IDC_SETTINGS_NAME,204,6,84,14,ES_AUTOHSCROLL
     PUSHBUTTON      "Rename",IDB_BUTTON_RENAME,294,6,30,14
@@ -87,25 +84,14 @@ BEGIN
                     318,84,36,10
     CONTROL         "Passive",IDC_RADIO_PASSIVE,"Button",BS_AUTORADIOBUTTON,
                     318,96,40,10
-    DEFPUSHBUTTON   "Apply",IDB_SETTINGS_APPLY,330,162,50,14
     RTEXT           "You need to reconnect for changes to have effect",
-                    IDC_STATIC,216,204,162,8
-    GROUPBOX        "Global settings",IDC_STATIC,150,217,228,84
-    CONTROL         "Cache file on direct upload",IDC_CHECK_CACHE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,156,230,102,10
-    CONTROL         "Open the cached file automatically",IDC_CHECK_CACHEOPEN,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,162,241,126,10
-    CONTROL         "If a file to be uploaded is not a cached file, upload to the last selected directory",
-                    IDC_CHECK_UPLOADDIRECT,"Button",BS_AUTOCHECKBOX | BS_TOP | 
-                    BS_MULTILINE | WS_TABSTOP,156,258,216,18
-    CONTROL         "Upload cached file on save",IDC_CHECK_UPLOADONSAVE,
-                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | 
-                    WS_TABSTOP,156,282,102,12
+                    IDC_STATIC,210,204,162,8
     LTEXT           "Profiles:",IDC_STATIC,18,6,27,8
     LISTBOX         IDC_LIST_PROFILES,18,18,114,240,LBS_SORT | 
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "New",IDC_BUTTON_NEW,18,264,30,14
     PUSHBUTTON      "Delete",IDC_BUTTON_DELETE,96,264,38,14
+    PUSHBUTTON      "Apply",IDB_SETTINGS_APPLY,318,258,50,14
 END
 
 IDD_DIALOG_OUTPUT DIALOGEX 0, 0, 190, 90
@@ -119,8 +105,8 @@ BEGIN
 END
 
 IDD_DIALOG_RENAME DIALOGEX 0, 0, 214, 41
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
-    WS_SYSMENU
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | 
+    WS_CAPTION | WS_SYSMENU
 CAPTION "Please enter the new name"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
@@ -130,7 +116,8 @@ BEGIN
 END
 
 IDD_DIALOG_ABOUT DIALOGEX 0, 0, 256, 178
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_BORDER | WS_SYSMENU
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CENTER | WS_POPUP | WS_BORDER | 
+    WS_SYSMENU
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "Close",IDOK,96,157,50,14,BS_FLAT
@@ -138,14 +125,51 @@ BEGIN
 END
 
 IDD_DIALOG_PASSWORD DIALOGEX 0, 0, 214, 41
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
-    WS_SYSMENU
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | 
+    WS_CAPTION | WS_SYSMENU
 CAPTION "Please enter the password"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDB_BUTTON_OK,162,6,50,14
     PUSHBUTTON      "Cancel",IDB_BUTTON_CANCEL,162,24,50,14
     EDITTEXT        IDC_EDIT_NEWNAME,6,6,144,14,ES_PASSWORD | ES_AUTOHSCROLL
+END
+
+IDD_DIALOG_SETTINGS_GLOBAL DIALOGEX 0, 0, 388, 311
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
+CAPTION "Global"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "Cache file on direct upload",IDC_CHECK_CACHE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,24,24,102,10
+    CONTROL         "Open the cached file automatically",IDC_CHECK_CACHEOPEN,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,30,35,126,10
+    CONTROL         "If a file to be uploaded is not a cached file, upload to the last selected directory",
+                    IDC_CHECK_UPLOADDIRECT,"Button",BS_AUTOCHECKBOX | BS_TOP | 
+                    BS_MULTILINE | WS_TABSTOP,24,52,216,18
+    CONTROL         "Upload cached file on save",IDC_CHECK_UPLOADONSAVE,
+                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | 
+                    WS_TABSTOP,24,76,102,12
+    GROUPBOX        "Caching",-1,12,6,366,126
+    EDITTEXT        IDC_EDIT_CACHEPATH,42,107,150,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    PUSHBUTTON      "...",IDC_BUTTON_BROWSECACHE,198,107,18,14,WS_DISABLED
+    CONTROL         "Specify other cache location",IDC_CHECK_OTHERCACHE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,24,95,108,10
+    CONTROL         "Warn on deleting files/folders",IDC_CHECK_WARNDELETE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,150,110,10
+    CONTROL         "When a transfer has succeeded, close the folder window",
+                    IDC_CHECK_CLOSEONTRANSFER,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,18,174,198,10
+    CONTROL         "Prepend timestamp on log entries",IDC_CHECK_TIMESTAMP,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,198,123,10
+    LTEXT           "Requires reconnect",IDC_STATIC_RECONNECT,222,108,63,8,
+                    WS_DISABLED
+    CONTROL         "Show initial directory contents",IDC_CHECK_SHOWDIR,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,222,112,10
+    CONTROL         "Use explorer icons for files and folders",
+                    IDC_CHECK_PRETTYICON,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,18,246,138,10
 END
 
 
@@ -175,7 +199,7 @@ BEGIN
             VALUE "FileVersion", "0.9.3.1"
             VALUE "InternalName", "FTP_sync"
             VALUE "LegalCopyright", "Copyright (C) 2007"
-            VALUE "OriginalFilename", "FTP_synchronize.dll"
+            VALUE "Originalfso.name", "FTP_synchronize.dll"
             VALUE "ProductName", " FTP_synchronize"
             VALUE "ProductVersion", "0.9.3.1"
         END
@@ -220,7 +244,7 @@ IDI_ICON_MESSAGES       ICON                    "bitmaps\\icon_messages.ico"
 #ifdef APSTUDIO_INVOKED
 GUIDELINES DESIGNINFO 
 BEGIN
-    IDD_DIALOG_SETTINGS, DIALOG
+    IDD_DIALOG_SETTINGS_PROFILES, DIALOG
     BEGIN
         RIGHTMARGIN, 384
         BOTTOMMARGIN, 305
@@ -232,6 +256,12 @@ BEGIN
         RIGHTMARGIN, 249
         TOPMARGIN, 7
         BOTTOMMARGIN, 171
+    END
+
+    IDD_DIALOG_SETTINGS_GLOBAL, DIALOG
+    BEGIN
+        RIGHTMARGIN, 384
+        BOTTOMMARGIN, 305
     END
 END
 #endif    // APSTUDIO_INVOKED

@@ -67,26 +67,38 @@ struct SOCKCALLBACKFORMAT {
 };
 
 struct FILEOBJECT;
+struct DIRECTORY;
+
+struct FILESYSTEMOBJECT {
+	bool isDirectory;				//Boolean to indicate if the object is a directory or a file
+	char name[MAX_PATH];			//name of object
+	char fullpath[MAX_PATH];		//full path to the object on server
+	DIRECTORY * parent;				//parent directory of object
+};
 
 struct DIRECTORY {
-	char dirname[MAX_PATH];	//name of directory
-	char fullpath[MAX_PATH];	//name of directory
-	FILEOBJECT ** files;		//array of files
-	DIRECTORY ** subdirs;	//array of subdirectories
-	int nrFiles;			//amount of files
-	int maxNrFiles;
-	int nrDirs;				//amount of subdirectories
-	int maxNrDirs;
-	DIRECTORY * parent;
-	bool updated;
+	FILESYSTEMOBJECT fso;			//every object should have this in the beginning for compatibility
+	FILEOBJECT ** files;			//array of files
+	DIRECTORY ** subdirs;			//array of subdirectories
+	int nrFiles;					//amount of files
+	int maxNrFiles;					//allocated file pointers
+	int nrDirs;						//amount of subdirectories
+	int maxNrDirs;					//allocated directory pointers
+	bool updated;					//true when the contents of the directory have been retrieved
+	DIRECTORY () {
+		ZeroMemory(this, sizeof(DIRECTORY));
+		fso.isDirectory = true;
+	};
 };
 
 struct FILEOBJECT {
-	int filesize;
-	char filename[MAX_PATH];
-	char fullfilepath[MAX_PATH];
-	char modifiers[11];
-	DIRECTORY * parent;
+	FILESYSTEMOBJECT fso;			//every object should have this in the beginning for compatibility
+	int filesize;					//size in bytes of file
+	char modifiers[11];				//access modifiers of file (UNIX only)
+	FILEOBJECT () {
+		ZeroMemory(this, sizeof(FILEOBJECT));
+		fso.isDirectory = false;
+	};
 };
 
 struct PROGRESSMONITOR {
@@ -117,8 +129,8 @@ public:
 	bool connectToServer(const char * address, int port);
 	bool login(const char * username, const char * password);
 	void setMode(Connection_Mode);
-	bool downloadFile(HANDLE localFile, const char * serverFileName);
-	bool uploadFile(HANDLE localFile,const char * serverFileName);
+	bool downloadFile(HANDLE localFile, const char * serverfilename);
+	bool uploadFile(HANDLE localFile,const char * serverfilename);
 	bool disconnect();
 	void setInitialDirectory(const char * dir);
 

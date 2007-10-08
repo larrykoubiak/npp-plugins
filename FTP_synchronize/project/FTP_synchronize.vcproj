@@ -253,6 +253,9 @@
 				RelativePath=".\..\src\FTP_synchronize.cpp">
 			</File>
 			<File
+				RelativePath="..\src\Logging.cpp">
+			</File>
+			<File
 				RelativePath=".\..\src\Profile.cpp">
 			</File>
 			<File
@@ -304,6 +307,9 @@
 			</File>
 			<File
 				RelativePath=".\..\src\keys.h">
+			</File>
+			<File
+				RelativePath="..\src\Logging.h">
 			</File>
 			<File
 				RelativePath=".\..\src\Profile.h">

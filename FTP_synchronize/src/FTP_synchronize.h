@@ -131,13 +131,18 @@ FTP_Service * mainService;
 HWND hFolderWindow, hTreeview, hStatusbar, hProgressbar, hFolderToolbar, hOutputWindow, hOutputEdit, hButtonClear;
 bool folderWindowInitialized, folderWindowVisible, outputWindowInitialized, outputWindowVisible;
 HMENU contextDirectory, contextFile, contextMessages, popupProfiles;
-HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hCheckAskPassword, hInitDir,
-	hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hProfileList, hProfileName;
+HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hCheckAskPassword, hInitDir, hProfileList, hProfilename;
+HWND hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hTimestampLog, hWarnDelete, hCloseOnTransfer, 
+	 hOtherCache, hOtherCachePath, hBrowseCache, hOtherCacheStatic, hShowInitialDir, hUsePrettyIcons;
 
 //for docking dlg
 HICON iconFolderDock, iconOuputDock;
 //for main toolbar
 HBITMAP toolBitmapFolders;
+//For treeview
+int folderOpenIconIndex, folderClosedIconIndex;	//cache the folder icon indices, they dont change
+HIMAGELIST hImageListTreeview;
+bool destroyImageList;	//true when imagelsit should be destroyed on cleanup. Do not destroy the system imagelist, fatal on Win9x
 
 //Global strings
 TCHAR * dllName, * dllPath, * iniFile, * storage, * pluginName, * folderDockName, * outputDockName, * folderDockInfo, * outputDockInfo;
@@ -146,12 +151,13 @@ TCHAR * dllName, * dllPath, * iniFile, * storage, * pluginName, * folderDockName
 #endif
 
 //Global settings
-BOOL cacheOnDirect, openOnDirect, uploadCurrentOnUncached, uploadOnSave;
+BOOL cacheOnDirect, openOnDirect, uploadCurrentOnUncached, uploadOnSave, otherCache;
+BOOL warnDelete, closeOnTransfer, timestampLog, showInitialDir, usePrettyIcons;
+TCHAR * cacheLocation;
 
 //Bitflags for events
 unsigned int acceptedEvents;
 
-bool basePlugin;	//false if renamed plugin
 bool busy;	//single connection allows for one action
 bool expectedDisconnect;
 bool noConnection;
@@ -192,6 +198,9 @@ void createWindows();
 void destroyWindows();
 void createContextMenus();
 void destroyContextMenus();
+void resetTreeviewImageList();
+void cacheFolderIndices();
+
 void showFolders();
 void showOutput();
 void settings();
@@ -199,7 +208,7 @@ void about();
 void setStatusMessage(LPCTSTR message);
 void setTitleBarAddon(LPCTSTR info);
 void setOutputTitleAddon(LPCTSTR info);
-void selectItem(HTREEITEM lastitem, LPARAM lastparam, int type);
+void selectItem(HTREEITEM lastitem, LPARAM lastparam);
 
 void createToolbar();
 void enableToolbar();
@@ -210,7 +219,7 @@ void disconnect();
 void download();
 void upload(BOOL uploadCached, BOOL uploadUncached);
 void uploadSpecified();
-void uploadByName(TCHAR * fileName);
+void uploadByName(TCHAR * filename);
 void abort();
 void createDir();
 void deleteDir();
@@ -246,13 +255,15 @@ void cancelDragging();
 BOOL createDirectory(LPCTSTR path);
 void validatePath(TCHAR * path);
 BOOL browseFile(TCHAR * filebuffer, int buffersize, BOOL multiselect, BOOL mustexist, BOOL isSave);
+BOOL browseFolder(TCHAR * buffer);
 
 void refreshProfileList();
 void selectProfileByListIndex(int index);
 void fillProfileData();
 
 LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
-BOOL CALLBACK SettingsDlgProcedure(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK ProfileDlgProcedure(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK GlobalDlgProcedure(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK OutDlgProc(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK RenameDlgProc(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK AboutDlgProcedure(HWND, UINT, WPARAM, LPARAM);
@@ -283,7 +294,6 @@ struct LOADTHREAD {	//upload/download threads
 
 struct DIRTHREAD {	//directory thread
     HTREEITEM treeItem;
-	bool refresh;
 	bool expand;
 };
 

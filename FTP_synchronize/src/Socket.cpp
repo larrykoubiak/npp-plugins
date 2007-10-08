@@ -19,6 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "stdafx.h"
 #include "Socket.h"
+#include "Logging.h"
 
 int Socket::amount = 0;
 
@@ -63,7 +64,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	if (hThread == NULL) {
 		closesocket(this->m_hSocket);
 		this->m_iError = GetLastError();
-		printf("Failed to create thread for socket\n");
+		printf("%sFailed to create thread for socket\n", getCurrentTimeStamp());
 		return false;
 	} else {
 		CloseHandle(hThread);
@@ -73,7 +74,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
 		//hostname retrieval timed out. Although the thread will continue, the socket will return, the thread will close later on
 		closesocket(this->m_hSocket);
-		printf("Timeout when waiting for hostent\n");
+		printf("%sTimeout when waiting for hostent\n", getCurrentTimeStamp());
 		return false;
 	}
 
@@ -90,7 +91,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	sin.sin_port = htons(0);
 	if (bind(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin))) {					//bind the socket to some interface.
 		this->m_iError = WSAGetLastError();
-		printf("Could not bind socket\n");
+		printf("%sCould not bind socket\n", getCurrentTimeStamp());
 		return false;
 	}
 
@@ -103,7 +104,7 @@ bool Socket::connectClient(unsigned int timeout) {
 		closesocket(this->m_hSocket);
 		delete this->m_pHostent;
 		this->m_iError = GetLastError();
-		printf("Timeout on connect\n");
+		printf("%sTimeout on connect\n", getCurrentTimeStamp());
 		return false;
 	} else {
 		CloseHandle(hThread);
@@ -117,7 +118,7 @@ bool Socket::connectClient(unsigned int timeout) {
 
 	if (connectres) {				//connect to server
 		this->m_iError = WSAGetLastError();
-		printf("Error when connecting: %d\n", this->m_iError);
+		printf("%sError when connecting: %d\n", getCurrentTimeStamp(), this->m_iError);
 		return false;
 	}
 	return true;
@@ -168,7 +169,7 @@ DWORD WINAPI hostnameTimeoutCheck(LPVOID param) {
 	} else {							//invalid ip, go for hostname
 		host = gethostbyname(hostname);
 		if (!host) {
-			printf("Error getting host of %s: %d\n", hostname, WSAGetLastError());
+			printf("%sError getting host of %s: %d\n", getCurrentTimeStamp(), hostname, WSAGetLastError());
 			memset(newhost->h_addr_list[0], 0xFF, newhost->h_length);		//IP-address of -1 means error
 		} else {
 			memcpy(newhost->h_addr_list[0], host->h_addr_list[0], newhost->h_length);		//copy the address from the WinSock buffer
