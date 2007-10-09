@@ -246,14 +246,13 @@ private:
 	void cleanDirectory(void * additionalInfo);
 
 	void recursiveDeleteDirectory(DIRECTORY * root, bool self = true);
+	void deleteObjectFromDirectory(DIRECTORY * currentDir, FILESYSTEMOBJECT * object);
 
 	void enableWait();
 	void disableWait();
 	void clearResponseQueue();
 
 	bool getCurrentDirectory(char * buffer);
-
-	void deleteObjectFromDirectory(DIRECTORY * currentDir, void * object, int type);
 
 	void doEventCallback(Event_Type event, int type);
 

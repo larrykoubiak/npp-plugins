@@ -1220,9 +1220,13 @@ void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, b
 	busy = true;
 
 	TreeView_Expand(hTreeview, directory, TVE_COLLAPSE | TVE_COLLAPSERESET);
+	//The collapsereset seems to bug the childrencallback, turn it back on
+	TV_ITEM tvi;
+	tvi.hItem = directory;
+	tvi.mask = TVIF_CHILDREN;
+	tvi.cChildren = I_CHILDRENCALLBACK;
+	TreeView_SetItem(hTreeview, &tvi);
 	if (!doRefresh) {	//no refresh, just call fillTreeDirectory
-		TV_ITEM tvi;
-		tvi.hItem = directory;
 		tvi.mask = TVIF_PARAM;
 		if (TreeView_GetItem(hTreeview, &tvi)) {
 			DIRECTORY * dir = (DIRECTORY *) tvi.lParam;
@@ -1533,15 +1537,19 @@ DWORD WINAPI doUpload(LPVOID param) {
 	bool result = mainService->uploadFile(lt->local, lt->server);
 #endif
 	SendMessage(hProgressbar, PBM_SETPOS, (WPARAM)0, 0);
+
+	acceptedEvents = events;
+
+	HTREEITEM refreshItem = lt->targetTreeDir;
+
 	CloseHandle(lt->local);
 	delete [] lt->server;
 	delete [] lt->localname;
-
-	if (result && lt->targetTreeDir)	//only refresh if a directory is given, and upload succeeded
-		reloadTreeDirectory(lt->targetTreeDir, true, true, true);
-	acceptedEvents = events;
 	delete lt;
 	busy = false;
+
+	if (result && lt->targetTreeDir)	//only refresh if a directory is given, and upload succeeded
+		reloadTreeDirectory(refreshItem, true, true);
 
 	return 0;
 }
@@ -1558,10 +1566,15 @@ DWORD WINAPI doGetDirectory(LPVOID param) {
 		DIRECTORY * dir = (DIRECTORY *) tvi.lParam;
 		bool result = mainService->getDirectoryContents(dir);
 
+		if (!result || (dir->nrDirs + dir->nrFiles) == 0) {	//when the directory is considered empty, redraw the treeview so the button gets removed
+			RECT rc;
+			if (TreeView_GetItemRect(hTreeview, tvi.hItem, &rc, FALSE) == TRUE)
+				RedrawWindow(hTreeview, &rc, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_UPDATENOW);
+		}
+
 		if (result) {
+			dir->updated = true;
 			if (dt->expand) {
-				dir->updated = true;	//safety check, force updated to true to prevent an infinite loop if FTP_Service fails
-				//fillTreeDirectory(dt->treeItem, dir);
 				//when expanding the tree, it gets filled automatically when the dir is updated
 				TreeView_Expand(hTreeview, dt->treeItem, TVE_EXPAND);
 			}
@@ -1601,6 +1614,8 @@ DWORD WINAPI doCreateDirectory(LPVOID param) {
 DWORD WINAPI doDeleteDirectory(LPVOID param) {
 
 	DIRECTORY * dir = lastDirectoryItemParam;
+	HTREEITEM treeItemToRemove = lastDirectoryItem;
+
 	DIRECTORY * root = dir->fso.parent;
 	if (dir == mainService->getRoot()) {
 		printf("%sNot allowed to delete root!\n", getCurrentTimeStamp());
@@ -1623,8 +1638,17 @@ DWORD WINAPI doDeleteDirectory(LPVOID param) {
 	if (mainService->deleteDirectory(dir)) {
 		HTREEITEM parent = TreeView_GetParent(hTreeview, lastDirectoryItem);
 		if (parent != NULL) {
-			reloadTreeDirectory(parent, true, true, true);
-		}
+			TreeView_DeleteItem(hTreeview, treeItemToRemove);
+			//Children callback seems to be reset, turn it back on again
+			TV_ITEM tvi;
+			tvi.hItem = parent;
+			tvi.mask = TVIF_CHILDREN;
+			tvi.cChildren = I_CHILDRENCALLBACK;
+			TreeView_SetItem(hTreeview, &tvi);
+			RECT rc;
+			if ((root->nrDirs + root->nrFiles == 0) && TreeView_GetItemRect(hTreeview, parent, &rc, FALSE) == TRUE)
+				RedrawWindow(hTreeview, &rc, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_UPDATENOW);
+		}	//parent == NULL may never happen, this means we deleted the root
 		if (isCached) {
 			if (!RemoveDirectory(path)) {
 				printf("%sUnable to delete the directory in cache: %d\n", getCurrentTimeStamp(), GetLastError());
@@ -1780,6 +1804,7 @@ DWORD WINAPI doDeleteFile(LPVOID param) {
 
 	FILEOBJECT * file = lastFileItemParam;
 	DIRECTORY * root = file->fso.parent;
+	HTREEITEM treeItemToRemove = lastFileItem;
 
 	bool isCached = false;
 	TCHAR * path = new TCHAR[MAX_PATH];
@@ -1796,8 +1821,17 @@ DWORD WINAPI doDeleteFile(LPVOID param) {
 	if (mainService->deleteFile(file)) {
 		HTREEITEM parent = TreeView_GetParent(hTreeview, lastFileItem);
 		if (parent != NULL) {
-			reloadTreeDirectory(parent, false, true, true);
+			TreeView_DeleteItem(hTreeview, treeItemToRemove);
+			TV_ITEM tvi;
+			tvi.hItem = parent;
+			tvi.mask = TVIF_CHILDREN;
+			tvi.cChildren = I_CHILDRENCALLBACK;
+			TreeView_SetItem(hTreeview, &tvi);
+			RECT rc;
+			if ((root->nrDirs + root->nrFiles == 0) && TreeView_GetItemRect(hTreeview, parent, &rc, FALSE) == TRUE)
+				RedrawWindow(hTreeview, &rc, NULL, RDW_ERASE|RDW_INVALIDATE|RDW_UPDATENOW);
 		}
+
 		if (isCached) {
 			if (!DeleteFile(path)) {
 				printf("%sUnable to delete the file in cache: %d\n", getCurrentTimeStamp(), GetLastError());
@@ -2207,7 +2241,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 								DIRECTORY * dir = (DIRECTORY*) tvi.lParam;
 								if (dir->updated) {
 									//reloadTreeDirectory(tvi.hItem, false, true);
-									fillTreeDirectory(tvi.hItem, dir);
+									int amount = fillTreeDirectory(tvi.hItem, dir);
 									return FALSE;		//let the tree expand, it is immediatly filled so no redrawing
 								} else {
 									reloadTreeDirectory(tvi.hItem, true, true);
@@ -2226,14 +2260,16 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 							DIRECTORY * dir = (DIRECTORY*) (ptvdi->item.lParam);
 							if (!dir->updated) {
 								ptvdi->item.cChildren = 1;
-							} else if ((dir->nrDirs+dir->nrFiles) > 0 ) {
-								ptvdi->item.cChildren = 1;
 							} else {
-								ptvdi->item.cChildren = 0;
+								if ((dir->nrDirs+dir->nrFiles) > 0 ) {
+									ptvdi->item.cChildren = 1;
+								} else {
+									ptvdi->item.cChildren = 0;
+								}
 							}
 							//return 0;
 						}
-						if (ptvdi->item.mask & (TVIF_IMAGE)) {	//manually give icon
+						if (ptvdi->item.mask & TVIF_IMAGE) {	//manually give icon
 							FILESYSTEMOBJECT * fsobject = (FILESYSTEMOBJECT*) (ptvdi->item.lParam);
 							TCHAR * path = new TCHAR[MAX_PATH];
 						#ifdef UNICODE
@@ -2261,7 +2297,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 							delete [] path;
 							//return 0;
 						}
-						if (ptvdi->item.mask & (TVIF_SELECTEDIMAGE)) {	//manually give icon
+						if (ptvdi->item.mask & TVIF_SELECTEDIMAGE) {	//manually give icon
 							FILESYSTEMOBJECT * fsobject = (FILESYSTEMOBJECT*) (ptvdi->item.lParam);
 							TCHAR * path = new TCHAR[MAX_PATH];
 						#ifdef UNICODE
