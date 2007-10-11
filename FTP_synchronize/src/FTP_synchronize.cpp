@@ -218,7 +218,6 @@ void initializePlugin() {
 	mainService = new FTP_Service();
 	mainService->setEventCallback(&onEvent);
 	mainService->setProgressCallback(&progress);
-	mainService->setTimeoutEventCallback(&onTimeout, 1);
 	mainService->setMode(Mode_Passive);
 	mainService->setFindRootParent(false);
 
@@ -355,7 +354,11 @@ void readGlobalSettings() {
 	otherCache = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("UseOtherCache"), 0, iniFile);
 
 	GetPrivateProfileString(TEXT("FTP_Settings"), TEXT("OtherCacheLocation"), dllPath, cacheLocation, MAX_PATH, iniFile);
-	
+
+	deletePartialFiles = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("DeletePartialFiles"), 0, iniFile);
+	enableQueue = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("EnableQueue"), 0, iniFile);
+
+
 	enableTimeStamp(timestampLog == TRUE);
 	cacheFolderIndices();
 }
@@ -375,6 +378,9 @@ void saveGlobalSettings() {
 	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("UseOtherCache"), otherCache?TEXT("1"):TEXT("0"), iniFile);
 
 	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("OtherCacheLocation"), cacheLocation, iniFile);
+
+	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("DeletePartialFiles"), deletePartialFiles?TEXT("1"):TEXT("0"), iniFile);
+	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("EnableQueue"), enableQueue?TEXT("1"):TEXT("0"), iniFile);
 }
 
 //Window functions
@@ -610,7 +616,7 @@ void showOutput() {
 void settings() {
 	
 	//Create Property sheets
-	int nrPages = 2;
+	int nrPages = 3;
 
 	PROPSHEETHEADER psh;
 	PROPSHEETPAGE * psp = new PROPSHEETPAGE[nrPages];
@@ -629,7 +635,10 @@ void settings() {
 	psp[0].pfnDlgProc = &ProfileDlgProcedure;
 
 	psp[1].pszTemplate = (LPCTSTR) IDD_DIALOG_SETTINGS_GLOBAL;
-	psp[1].pfnDlgProc = &GlobalDlgProcedure;
+	psp[1].pfnDlgProc = &GeneralDlgProcedure;
+
+	psp[2].pszTemplate = (LPCTSTR) IDD_DIALOG_SETTINGS_TRANSFERS;
+	psp[2].pfnDlgProc = &TransferDlgProcedure;
 
 	psh.dwSize = sizeof(PROPSHEETHEADER);
 	psh.dwFlags = PSH_DEFAULT | PSH_PROPSHEETPAGE | PSH_NOAPPLYNOW;
@@ -1408,15 +1417,10 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 	}
 }
 
-void onTimeout(FTP_Service * service, int timeleft) {
-	//printf("%sTimeout event, timeleft (msecs): %d\n"), getCurrentTimeStamp(), timeleft);
-}
-
 //FTP threads
 DWORD WINAPI doConnect(LPVOID param) {
 
 	expectedDisconnect = false;
-	mainService->setTimeoutEventCallback(&onTimeout, currentFTPProfile->getTimeout());
 	mainService->setMode(currentFTPProfile->getMode());
 	mainService->setFindRootParent(currentFTPProfile->getFindRoot());
 	mainService->setInitialDirectory(currentFTPProfile->TVAR(getInitDir)());
@@ -1491,6 +1495,11 @@ DWORD WINAPI doDownload(LPVOID param) {
 	bool result = mainService->downloadFile(lt->local, lt->server);
 #endif
 	CloseHandle(lt->local);
+	if (!result && deletePartialFiles) {	//the download has failed, delete the file
+		if (DeleteFile(lt->localname) == FALSE) {
+			printf("%sUnable to delete file: %d\n", getCurrentTimeStamp(), GetLastError());
+		}
+	}
 	acceptedEvents = events;
 	SendMessage(hProgressbar, PBM_SETPOS, (WPARAM)0, 0);
 
@@ -2590,6 +2599,7 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					currentProfile = newProfile;
 					fillProfileData();
 					delete [] profile;
+					enableToolbar();
 					return TRUE;
 					break; }
 				case IDC_BUTTON_DELETE: {
@@ -2611,6 +2621,7 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						selectProfileByListIndex(curIndex);
 						fillProfileData();
 					}
+					enableToolbar();
 					return TRUE;
 					break; }
 				case IDC_LIST_PROFILES: {
@@ -2654,7 +2665,7 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 	return FALSE;
 }
 
-BOOL CALLBACK GlobalDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+BOOL CALLBACK GeneralDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch(message) {
 		case WM_INITDIALOG: {
 			hCacheDirect = GetDlgItem(hWnd,IDC_CHECK_CACHE);
@@ -2671,7 +2682,6 @@ BOOL CALLBACK GlobalDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			hOtherCache = GetDlgItem(hWnd, IDC_CHECK_OTHERCACHE);
 			hOtherCachePath = GetDlgItem(hWnd, IDC_EDIT_CACHEPATH);
 			hBrowseCache = GetDlgItem(hWnd, IDC_BUTTON_BROWSECACHE);
-			hOtherCacheStatic = GetDlgItem(hWnd, IDC_STATIC_RECONNECT);
 
 			SendMessage(hCacheDirect, BM_SETCHECK, (WPARAM) (cacheOnDirect?BST_CHECKED:BST_UNCHECKED), 0);
 			SendMessage(hOpenCache, BM_SETCHECK, (WPARAM) (openOnDirect?BST_CHECKED:BST_UNCHECKED), 0);
@@ -2689,7 +2699,6 @@ BOOL CALLBACK GlobalDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 
 			EnableWindow(hOtherCachePath, otherCache);
 			EnableWindow(hBrowseCache, otherCache);
-			EnableWindow(hOtherCacheStatic, otherCache);
 			SendMessage(hOtherCachePath, WM_SETTEXT, 0, (LPARAM) cacheLocation);
 
 			return TRUE;
@@ -2704,7 +2713,6 @@ BOOL CALLBACK GlobalDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					UINT state = (UINT)SendMessage(hOtherCache, BM_GETCHECK, 0, 0);
 					EnableWindow(hOtherCachePath, (state == BST_CHECKED));
 					EnableWindow(hBrowseCache, (state == BST_CHECKED));
-					EnableWindow(hOtherCacheStatic, (state == BST_CHECKED));
 					break; }
 				case IDC_BUTTON_BROWSECACHE: {
 					if (browseFolder(cacheLocation) == TRUE) {
@@ -2746,6 +2754,50 @@ BOOL CALLBACK GlobalDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						resetTreeviewImageList();
 					}
 					usePrettyIcons = oldusePrettyIcons;
+					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, FALSE);
+					return TRUE;
+					break; }
+				case PSN_SETACTIVE: {
+					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, FALSE);
+					return TRUE;
+					break; }
+				case PSN_APPLY: {	//Ok clicked, killactive already called
+					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, PSNRET_NOERROR);
+					return TRUE;
+					break; }
+				case PSN_RESET: {	//cancel or closed
+					return TRUE;
+					break; }
+			}
+			break; }
+	}
+	return FALSE;
+}
+
+BOOL CALLBACK TransferDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	switch(message) {
+		case WM_INITDIALOG: {
+			hDeletePartialFiles = GetDlgItem(hWnd, IDC_CHECK_DELPARTDLD);
+			hEnableQueueing = GetDlgItem(hWnd, IDC_CHECK_ENABLEQUEUE);
+
+			SendMessage(hDeletePartialFiles, BM_SETCHECK, (WPARAM) (deletePartialFiles?BST_CHECKED:BST_UNCHECKED), 0);
+			SendMessage(hEnableQueueing, BM_SETCHECK, (WPARAM) (enableQueue?BST_CHECKED:BST_UNCHECKED), 0);
+			return TRUE;
+			break; }
+		case WM_COMMAND: {
+			break; }
+		case WM_NOTIFY: {
+			//When changing tab: apply changes
+			//When recieving tab: display current settings, this is saved
+			//When choosing ok: apply changes
+			//When choosing cancel: discard changes
+			NMHDR * pnmh = (NMHDR*)lParam;
+			switch(pnmh->code) {
+				case PSN_KILLACTIVE: {
+					deletePartialFiles = (BOOL)(SendMessage(hDeletePartialFiles, BM_GETCHECK, 0, 0) == BST_CHECKED);
+					enableQueue = (BOOL)(SendMessage(hEnableQueueing, BM_GETCHECK, 0, 0) == BST_CHECKED);
+					
+					saveGlobalSettings();
 					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, FALSE);
 					return TRUE;
 					break; }

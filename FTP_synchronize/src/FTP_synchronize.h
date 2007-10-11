@@ -43,6 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "FTP_service.h"
 #include "Profile.h"
 #include "DragDropSupport.h"
+#include "FileQueue.h"
 
 //
 #ifdef UNICODE	//disable DBCS functions
@@ -131,9 +132,11 @@ FTP_Service * mainService;
 HWND hFolderWindow, hTreeview, hStatusbar, hProgressbar, hFolderToolbar, hOutputWindow, hOutputEdit, hButtonClear;
 bool folderWindowInitialized, folderWindowVisible, outputWindowInitialized, outputWindowVisible;
 HMENU contextDirectory, contextFile, contextMessages, popupProfiles;
-HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hCheckAskPassword, hInitDir, hProfileList, hProfilename;
+HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hCheckAskPassword, 
+	 hInitDir, hProfileList, hProfilename;
 HWND hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hTimestampLog, hWarnDelete, hCloseOnTransfer, 
-	 hOtherCache, hOtherCachePath, hBrowseCache, hOtherCacheStatic, hShowInitialDir, hUsePrettyIcons;
+	 hOtherCache, hOtherCachePath, hBrowseCache, hShowInitialDir, hUsePrettyIcons;
+HWND hDeletePartialFiles, hEnableQueueing;
 
 //for docking dlg
 HICON iconFolderDock, iconOuputDock;
@@ -153,6 +156,7 @@ TCHAR * dllName, * dllPath, * iniFile, * storage, * pluginName, * folderDockName
 //Global settings
 BOOL cacheOnDirect, openOnDirect, uploadCurrentOnUncached, uploadOnSave, otherCache;
 BOOL warnDelete, closeOnTransfer, timestampLog, showInitialDir, usePrettyIcons;
+BOOL deletePartialFiles, enableQueue;
 TCHAR * cacheLocation;
 
 //Bitflags for events
@@ -230,7 +234,6 @@ void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, b
 
 void progress(FTP_Service * service, int current, int total);
 void onEvent(FTP_Service * service, unsigned int type, int code);
-void onTimeout(FTP_Service * service, int timeleft);
 
 DWORD WINAPI doConnect(LPVOID param);
 DWORD WINAPI doDisconnect(LPVOID param);
@@ -263,7 +266,8 @@ void fillProfileData();
 
 LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK ProfileDlgProcedure(HWND, UINT, WPARAM, LPARAM);
-BOOL CALLBACK GlobalDlgProcedure(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK GeneralDlgProcedure(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK TransferDlgProcedure(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK OutDlgProc(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK RenameDlgProc(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK AboutDlgProcedure(HWND, UINT, WPARAM, LPARAM);

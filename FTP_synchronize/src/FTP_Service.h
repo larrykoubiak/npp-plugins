@@ -111,49 +111,31 @@ struct EVENTCALLBACK {
 	void (*callback) (FTP_Service * service, unsigned int type, int code);
 };
 
-struct TIMEOUTCALLBACK {
-	void (*callback) (FTP_Service * service, int timeleft);
-};
-
-struct TIMERTHREADINFO {
-	int timeoutInterval;
-	int timeLeft;
-	int timeoutID;
-	FTP_Service * ftp;
-};
-
 //Main class
 class FTP_Service {
 public:
 	FTP_Service();
 	bool connectToServer(const char * address, int port);
 	bool login(const char * username, const char * password);
-	void setMode(Connection_Mode);
+	bool disconnect();
+
 	bool downloadFile(HANDLE localFile, const char * serverfilename);
 	bool uploadFile(HANDLE localFile,const char * serverfilename);
-	bool disconnect();
-	void setInitialDirectory(const char * dir);
+	bool getDirectoryContents(DIRECTORY * dir, bool overrideBusy = false);	//please do not use override busy, is here due to implementation
+	bool renameFile(FILEOBJECT * file, const char * newName);
+	bool deleteFile(FILEOBJECT * file);
+	bool createDirectory(DIRECTORY * root, DIRECTORY * newDir);
+	bool renameDirectory(DIRECTORY * dir, const char * newName);
+	bool deleteDirectory(DIRECTORY * dir);
 
+	bool abortOperation();
+
+	void setMode(Connection_Mode);
+	void setInitialDirectory(const char * dir);
 	void setFindRootParent(bool find);
 
 	void setProgressCallback(void (FTP_Service *, int, int));
 	void setEventCallback(void (FTP_Service *, unsigned int, int));
-	void setTimeoutEventCallback(void (FTP_Service *, int), int);	//although a zero timeleft value may be passed, the timeout may or may not already have occured, depending on which thread is faster (time thread or FTP_Service's calling thread). Recommended to check for timeouts using the function and waiting for functions to finish (at least do not use both methods).
-
-	bool getDirectoryContents(DIRECTORY * dir, bool overrideBusy = false);	//please do not use override busy, is here due to implementation
-
-	bool abortOperation();
-
-	int getTimeout() { return timeoutMSec; }
-	bool hasTimedOut();		//this will only be valid as long as no following functioncalls are made after the call that may or may not have timed out
-
-	bool downloadFileByObject(HANDLE localFile, FILEOBJECT *);
-	bool uploadFileByObject(HANDLE localFile, FILEOBJECT *);
-	bool createDirectory(DIRECTORY * root, DIRECTORY * newDir);
-	bool deleteDirectory(DIRECTORY * dir);
-	bool deleteFile(FILEOBJECT * file);
-	bool renameDirectory(DIRECTORY * dir, const char * newName);
-	bool renameFile(FILEOBJECT * file, const char * newName);
 
 	DIRECTORY * getRoot();
 	~FTP_Service();
@@ -161,9 +143,6 @@ public:
 	//public due to implementation, do not call
 	void watchDogProcedure();
 	void listForClientProcedure(LISTENDATA * listendat);
-
-	void callTimeout(TIMERTHREADINFO * tti);
-	const int getCurrentTimerID() { return timerID; };
 
 private:
 	Connection_Mode mode;			//Used to keep track of what mode to use (passive/active)
@@ -181,9 +160,6 @@ private:
 
 	int timeLeft;					//keep track how many milliseconds left
 	int timeoutMSec;				//time to elapse before timeout event occurs (milliseconds)
-	int timeoutInterval;			//interval to update/notify the client (milliseconds)
-	int timerID;					//Integer to identify current timerthread
-	bool wasTimedOut;				//true if a timeout has occured
 
 	CRITICAL_SECTION responseBufferMutex;	//warning: do not use when performing response operation. Only use this when working with the buffer
 	CRITICAL_SECTION transferProgressMutex;	//used when setting transferProgressEvent, avoid setting it while resetting it
@@ -222,7 +198,6 @@ private:
 	//callbacks
 	PROGRESSMONITOR * progress;
 	EVENTCALLBACK * events;
-	TIMEOUTCALLBACK * timeoutEvent;
 
 	int getFilesize(const char * filename);
 
@@ -267,7 +242,6 @@ private:
 //Threads
 DWORD WINAPI readSocket(LPVOID);
 DWORD WINAPI listenForClient(LPVOID);
-DWORD WINAPI timerThread(LPVOID param);
 DWORD WINAPI watchDogTimeoutThread(LPVOID param);
 
 int parseAsciiToDecimal(const char * string, int * result);		//read begin of string for number with separator dots

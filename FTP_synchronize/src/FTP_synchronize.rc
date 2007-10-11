@@ -135,9 +135,22 @@ BEGIN
     EDITTEXT        IDC_EDIT_NEWNAME,6,6,144,14,ES_PASSWORD | ES_AUTOHSCROLL
 END
 
+IDD_DIALOG_SETTINGS_TRANSFERS DIALOGEX 0, 0, 388, 311
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
+CAPTION "Transfers"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "Delete partially downloaded files",IDC_CHECK_DELPARTDLD,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,119,10
+    GROUPBOX        "Queueing",IDC_STATIC,12,30,366,144
+    CONTROL         "Enable transfer queueing (experimental)",
+                    IDC_CHECK_ENABLEQUEUE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,48,145,10
+END
+
 IDD_DIALOG_SETTINGS_GLOBAL DIALOGEX 0, 0, 388, 311
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
-CAPTION "Global"
+CAPTION "General"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CONTROL         "Cache file on direct upload",IDC_CHECK_CACHE,"Button",
@@ -150,7 +163,7 @@ BEGIN
     CONTROL         "Upload cached file on save",IDC_CHECK_UPLOADONSAVE,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | 
                     WS_TABSTOP,24,76,102,12
-    GROUPBOX        "Caching",-1,12,6,366,126
+    GROUPBOX        "Caching",IDC_STATIC,12,6,366,126
     EDITTEXT        IDC_EDIT_CACHEPATH,42,107,150,14,ES_AUTOHSCROLL | 
                     WS_DISABLED
     PUSHBUTTON      "...",IDC_BUTTON_BROWSECACHE,198,107,18,14,WS_DISABLED
@@ -163,8 +176,7 @@ BEGIN
                     WS_TABSTOP,18,174,198,10
     CONTROL         "Prepend timestamp on log entries",IDC_CHECK_TIMESTAMP,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,198,123,10
-    LTEXT           "Requires reconnect",IDC_STATIC_RECONNECT,222,108,63,8,
-                    WS_DISABLED
+    LTEXT           "Requires reconnect",IDC_STATIC,228,108,63,8
     CONTROL         "Show initial directory contents",IDC_CHECK_SHOWDIR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,222,112,10
     CONTROL         "Use explorer icons for files and folders",
@@ -246,22 +258,10 @@ GUIDELINES DESIGNINFO
 BEGIN
     IDD_DIALOG_SETTINGS_PROFILES, DIALOG
     BEGIN
-        RIGHTMARGIN, 384
-        BOTTOMMARGIN, 305
     END
 
     IDD_DIALOG_ABOUT, DIALOG
     BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 249
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 171
-    END
-
-    IDD_DIALOG_SETTINGS_GLOBAL, DIALOG
-    BEGIN
-        RIGHTMARGIN, 384
-        BOTTOMMARGIN, 305
     END
 END
 #endif    // APSTUDIO_INVOKED
