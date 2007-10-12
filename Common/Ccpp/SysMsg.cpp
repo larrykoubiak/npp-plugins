@@ -143,11 +143,11 @@ DWORD ShortToLongPathName(LPCTSTR lpszShortPath, LPTSTR lpszLongPath, DWORD cchB
 
     // If buffer is too small then return the required size.
     if (cchBuffer <= path.length())
-        return path.length() + 1;
+        return (DWORD)path.length() + 1;
 
     // Copy the buffer and return the number of characters copied.
     traits::copy(lpszLongPath, path.c_str(), path.length() + 1);
-    return path.length();
+    return (DWORD)path.length();
 }
 
 void systemMessage(const char *title)
