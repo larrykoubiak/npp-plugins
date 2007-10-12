@@ -42,6 +42,27 @@ enum toolBarStatusType {TB_HIDE, TB_SMALL, TB_LARGE, TB_STANDARD};
 
 #include "ImageListSet.h"
 
+
+/**************************************************************************
+ *	Windows helper functions
+ */
+static void ScreenToClient(HWND hWnd, RECT* rect)
+{
+	POINT		pt;
+
+	pt.x		 = rect->left;
+	pt.y		 = rect->top;
+	::ScreenToClient( hWnd, &pt );
+	rect->left   = pt.x;
+	rect->top    = pt.y;
+
+	pt.x		 = rect->right;
+	pt.y		 = rect->bottom;
+	::ScreenToClient( hWnd, &pt );
+	rect->right  = pt.x;
+	rect->bottom = pt.y;
+}
+
 class ToolBar : public Window
 {
 public :
@@ -60,6 +81,20 @@ public :
 		_hSelf = NULL;
 		_toolBarIcons.destroy();
 	};
+	virtual void reSizeTo(RECT & rcWin) {
+		::SendMessage(_hSelf, TB_SETROWS, MAKEWPARAM(1,FALSE), NULL);
+		Window::reSizeTo(rcWin);
+
+		UINT size = rcWin.right - rcWin.left;
+
+		RECT	rc;
+		::SendMessage(_hSelf, TB_GETRECT, _pTBB[_toolBarIcons.getNbCommand()-1].idCommand, (LPARAM)&rc);
+		_row = 1 + rc.left / size;
+
+		::SendMessage(_hSelf, TB_SETROWS, MAKEWPARAM(_row,TRUE), (LPARAM)&rc);
+		::SendMessage(_hSelf, TB_AUTOSIZE, 0, 0);
+	}
+
 	void enable(int cmdID, bool doEnable) const {
 		::SendMessage(_hSelf, TB_ENABLEBUTTON, cmdID, (LPARAM)doEnable);
 	};
@@ -115,12 +150,21 @@ public :
 		return _toolBarIcons.replaceIcon(whichLst, iconIndex, iconLocation);
 	};
 
+	int getCountOfTBIcons(void) {
+		return _toolBarIcons.getNbCommand();
+	};
+	int getTBLines(void) {
+		return _row;
+	};
+
+
 private :
 	TBBUTTON *_pTBB;
 	ToolBarIcons _toolBarIcons;
 	toolBarStatusType _state;
 	int *_bmpArray;
 	int _bmpArraySize;
+	int _row;
 
 
 	void setDefaultImageList() {
@@ -156,7 +200,7 @@ public :
 						RBBIM_STYLE | RBBIM_CHILD  | RBBIM_CHILDSIZE | \
 						RBBIM_SIZE;
 
-		_rbBand.fStyle  = RBBS_FIXEDSIZE | RBBS_CHILDEDGE;
+		_rbBand.fStyle  = RBBS_CHILDEDGE;
 		_rbBand.hbmBack = NULL;
 		_rbBand.lpText     = "Toolbar";
 	};
@@ -165,11 +209,29 @@ public :
 		::DestroyWindow(_hSelf);
 		_hSelf = NULL;
 	};
+	virtual void reSizeTo(RECT & rc) {
+		Window::reSizeTo(rc);
+
+		int dwBtnSize	= (int)::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
+		int iSize		= rc.right - rc.left;
+
+		if (LOWORD(dwBtnSize) < iSize) {
+			_rbBand.cxMinChild = LOWORD(dwBtnSize) * _pToolBar->getCountOfTBIcons();
+			_rbBand.cyMinChild = HIWORD(dwBtnSize) * _pToolBar->getTBLines();
+			_rbBand.cx         = iSize;
+		} else {
+			_rbBand.cxMinChild = LOWORD(dwBtnSize);
+			_rbBand.cyMinChild = (rc.bottom - rc.top) - 4;
+			_rbBand.cx         = LOWORD(dwBtnSize);
+		}
+
+		::SendMessage(_hSelf, RB_SETBANDINFO, (WPARAM)0, (LPARAM)&_rbBand);
+	}
 
 	void init(HINSTANCE hInst, HWND hPere, ToolBar *pToolBar);
 	void reNew() {
 		_rbBand.hwndChild  = _pToolBar->getHSelf();
-		int dwBtnSize = SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
+		int dwBtnSize = (int)::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
 		_rbBand.cyMinChild = HIWORD(dwBtnSize);
 		::SendMessage(_hSelf, RB_INSERTBAND, (WPARAM)0, (LPARAM)&_rbBand);
 	};

@@ -21,7 +21,7 @@
 
 const bool ToolBar::REDUCED = true;
 const bool ToolBar::ENLARGED = false;
-const int WS_TOOLBARSTYLE = WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS |TBSTYLE_FLAT | CCS_TOP | TBSTYLE_AUTOSIZE;
+const int WS_TOOLBARSTYLE = WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS | TBSTYLE_FLAT | CCS_TOP;
 
 bool ToolBar::init(HINSTANCE hInst, HWND hPere, int iconSize, 
 				   ToolBarButtonUnit *buttonUnitArray, int arraySize,
@@ -64,7 +64,7 @@ bool ToolBar::init(HINSTANCE hInst, HWND hPere, int iconSize,
 	::SendMessage(_hSelf, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 	
 	/* set ext size to show button down */
-	LONG	exStyle = ::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
+	LONG	exStyle = (LONG)::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
 	::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, exStyle | TBSTYLE_EX_DRAWDDARROWS);
 
 	if (!doUglyStandardIcon)
@@ -125,7 +125,6 @@ bool ToolBar::init(HINSTANCE hInst, HWND hPere, int iconSize,
 	}
 
 	setButtonSize(iconSize, iconSize);
-
 	::SendMessage(_hSelf, TB_ADDBUTTONS, (WPARAM)nbElement, (LPARAM)_pTBB); 
 	::SendMessage(_hSelf, TB_AUTOSIZE, 0, 0);
 
@@ -139,7 +138,7 @@ void ToolBar::reset()
 	setDisableImageList();
 
 	/* set ext size to show button down */
-	LONG	exStyle = ::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
+	LONG	exStyle = (LONG)::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
 	::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, exStyle | TBSTYLE_EX_DRAWDDARROWS);
 
 	if (_state == TB_STANDARD)
@@ -192,7 +191,7 @@ void ToolBar::setToUglyIcons()
 	               WS_EX_PALETTEWINDOW ,
 	               TOOLBARCLASSNAME,
 	               "",
-	               WS_TOOLBARSTYLE,
+	               WS_TOOLBARSTYLE|TBSTYLE_WRAPABLE,
 	               0, 0,
 	               0, 0,
 	               _hParent,
@@ -213,7 +212,7 @@ void ToolBar::setToUglyIcons()
 	::SendMessage(_hSelf, TB_LOADIMAGES, IDB_STD_SMALL_COLOR, reinterpret_cast<LPARAM>(HINST_COMMCTRL));
 
 	/* set ext size to show button down */
-	LONG	exStyle = ::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
+	LONG	exStyle = (LONG)::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
 	::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, exStyle | TBSTYLE_EX_DRAWDDARROWS);
 
 	TBADDBITMAP addbmp = {_hInst, 0};
@@ -269,21 +268,30 @@ void ReBar::init(HINSTANCE hInst, HWND hPere, ToolBar *pToolBar)
 							REBARCLASSNAME,
 							NULL,
 							WS_CHILD|WS_VISIBLE|WS_CLIPSIBLINGS|
-							WS_CLIPCHILDREN|RBS_VARHEIGHT|
-							CCS_NODIVIDER,
+							WS_CLIPCHILDREN|CCS_NODIVIDER,
 							0,0,0,0, _hParent, NULL, _hInst, NULL);
 
 
 	::SendMessage(_hSelf, RB_SETBARINFO, 0, (LPARAM)&_rbi);
 
+	RECT rc;
+	::GetWindowRect(hPere, &rc);
+
+	int dwBtnSize	= (int)::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
+	int iSize		= rc.right - rc.left;
 
 	_rbBand.hwndChild  = _pToolBar->getHSelf();
 
-	int dwBtnSize = SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
+	if (LOWORD(dwBtnSize) < iSize) {
+		_rbBand.cxMinChild = LOWORD(dwBtnSize) * _pToolBar->getCountOfTBIcons();
+		_rbBand.cyMinChild = HIWORD(dwBtnSize) * _pToolBar->getTBLines();
+		_rbBand.cx         = iSize;
+	} else {
+		_rbBand.cxMinChild = LOWORD(dwBtnSize);
+		_rbBand.cyMinChild = (rc.bottom - rc.top) - 4;
+		_rbBand.cx         = LOWORD(dwBtnSize);
+	}
 
-	_rbBand.cxMinChild = 34;//nbElement;
-	_rbBand.cyMinChild = HIWORD(dwBtnSize);
-	_rbBand.cx         = 250;
 	::SendMessage(_hSelf, RB_INSERTBAND, (WPARAM)0, (LPARAM)&_rbBand);
 }
 
