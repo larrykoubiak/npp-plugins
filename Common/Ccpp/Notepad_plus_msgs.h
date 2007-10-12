@@ -39,7 +39,7 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 	#define NPPM_SETCURRENTLANGTYPE				(NPPMSG + 6)
 
 	#define NPPM_GETNBOPENFILES					(NPPMSG + 7)
-			#define ALL_OPEN_FILES				0
+		#define ALL_OPEN_FILES					0
 		#define PRIMARY_VIEW					1
 		#define SECOND_VIEW						2
 
@@ -199,6 +199,36 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 	// To notify plugins that the current file is about to be closed
 	#define NPPN_FILEBEFORECLOSE		(NPPN_FIRST + 3)
 	//scnNotification->nmhdr.code = NPPN_FILEBEFORECLOSE;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
+	// To notify plugins that the current file is just opened
+	#define NPPN_FILEOPENED				(NPPN_FIRST + 4)
+	//scnNotification->nmhdr.code = NPPN_FILEOPENED;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
+	// To notify plugins that the current file is about to be closed
+	#define NPPN_FILECLOSED				(NPPN_FIRST + 5)
+	//scnNotification->nmhdr.code = NPPN_FILECLOSED;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
+	// To notify plugins that the current file is about to be opened
+	#define NPPN_FILEBEFOREOPEN			(NPPN_FIRST + 6)
+	//scnNotification->nmhdr.code = NPPN_FILEBEFOREOPEN;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
+	// To notify plugins that the current file is just saved
+	#define NPPN_FILEBEFORESAVE			(NPPN_FIRST + 7)
+	//scnNotification->nmhdr.code = NPPN_FILEBEFORESAVE;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
+	// To notify plugins that the current file is about to be saved
+	#define NPPN_FILESAVED				(NPPN_FIRST + 8)
+	//scnNotification->nmhdr.code = NPPN_FILESAVED;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = 0;
 
