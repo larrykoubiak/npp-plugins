@@ -232,6 +232,13 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = 0;
 
+	// To notify plugins that Notepad++ is about to be shutdowned.
+	#define NPPN_SHOUTDOWN (NPPN_FIRST + 9)
+	#define NPPN_SHUTDOWN (NPPN_FIRST + 9)
+	//scnNotification->nmhdr.code = NPPN_SHOUTDOWN;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = 0;
+
 #define NPPM_DOOPEN						(SCINTILLA_USER   + 8)
 
 
