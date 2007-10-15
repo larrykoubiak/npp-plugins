@@ -79,13 +79,10 @@ SOCKET ServerSocket::listenForClient(unsigned int timeout) {
 	int size = sizeof(SOCKADDR_IN);
 
 	this->m_iTimeoutVal = timeout;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, serverSocketTimeoutCheck, (LPVOID) this, 0, &id);
-	if (hThread == NULL) {
+
+	bool threadSuccess = StartThread(serverSocketTimeoutCheck, this, "serverSocketTimeoutCheck");
+	if (!threadSuccess) {
 		closesocket(this->m_hSocket);
-		return NULL;
-	} else {
-		CloseHandle(hThread);
 	}
 
 	SOCKET incoming = accept(m_hSocket,(sockaddr*)&sa,&size);

@@ -30,3 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <windows.h>
 
 // TODO: reference additional headers your program requires here
+#include <stdio.h>
+#include <crtdbg.h>
+#include "Logging.h"
+#include "ThreadManager.h"

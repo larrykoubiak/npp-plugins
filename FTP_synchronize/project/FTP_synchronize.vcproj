@@ -247,6 +247,12 @@
 				RelativePath="..\src\DragDropSupport.cpp">
 			</File>
 			<File
+				RelativePath="..\src\FileQueue.cpp">
+			</File>
+			<File
+				RelativePath="..\src\Filesystem.cpp">
+			</File>
+			<File
 				RelativePath=".\..\src\FTP_Service.cpp">
 			</File>
 			<File
@@ -291,6 +297,9 @@
 						UsePrecompiledHeader="1"/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath="..\src\ThreadManager.cpp">
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -298,6 +307,12 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
 				RelativePath="..\src\DragDropSupport.h">
+			</File>
+			<File
+				RelativePath="..\src\FileQueue.h">
+			</File>
+			<File
+				RelativePath="..\src\Filesystem.h">
 			</File>
 			<File
 				RelativePath=".\..\src\FTP_Service.h">
@@ -325,6 +340,9 @@
 			</File>
 			<File
 				RelativePath=".\..\src\stdafx.h">
+			</File>
+			<File
+				RelativePath="..\src\ThreadManager.h">
 			</File>
 			<Filter
 				Name="Notepad++"
@@ -385,6 +403,12 @@
 			</File>
 			<File
 				RelativePath=".\..\src\bitmaps\toolbar_messages.bmp">
+			</File>
+			<File
+				RelativePath="..\src\bitmaps\toolbar_rawcommand.bmp">
+			</File>
+			<File
+				RelativePath="..\src\bitmaps\toolbar_refresh.bmp">
 			</File>
 			<File
 				RelativePath=".\..\src\bitmaps\toolbar_settings.bmp">

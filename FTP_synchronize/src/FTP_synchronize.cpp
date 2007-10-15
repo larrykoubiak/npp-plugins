@@ -17,18 +17,16 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+
 #include "stdafx.h"
 #include "FTP_synchronize.h"
-#include <crtdbg.h>
-#include "Logging.h"
 
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved) {
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:{
 			initializedPlugin = false;
-			initializeLogging();
 			outputThreadStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-			_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF );	//Debug build only: check the memory sanity more often
+			_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF | _CRTDBG_LEAK_CHECK_DF );	//Debug build only: check the memory sanity more often
 
 			hDLL = (HINSTANCE)hModule;
 			nppData._nppHandle = NULL;
@@ -102,11 +100,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			//If lpReserved == NULL, the DLL is unloaded by freelibrary, so do the cleanup ourselves. If this isnt the case, let windows do the cleanup
 			//For more info, read this blog: http://blogs.msdn.com/oldnewthing/archive/2007/05/03/2383346.aspx
 			if (lpReserved == NULL) {
-				deinitializeLogging();
-				saveGlobalSettings();
-				deinitializePlugin();
-
-				delete [] dllName; delete [] dllPath; delete [] iniFile; delete [] storage;delete [] pluginName;
+				delete [] dllName; delete [] dllPath; delete [] iniFile; delete [] storage; delete [] pluginName;
 				delete [] folderDockName; delete [] outputDockName; delete [] folderDockInfo; delete [] outputDockInfo;
 
 #ifdef UNICODE
@@ -117,6 +111,11 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 				delete funcItem[0]._pShKey;
 
 				DeleteObject(toolBitmapFolders);
+
+				int nrThreads = getNrRunningThreads();
+				if (nrThreads > 0) {
+					MessageBox(NULL, TEXT("Warning, not all threads have been stopped"), NULL, MB_OK);
+				}
 			}
 			break;}
 		case DLL_THREAD_ATTACH: {
@@ -176,13 +175,25 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
 }
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
-	if (notifyCode->nmhdr.code == NPPN_TBMODIFICATION) {
-		if (!initializedPlugin)
-			return;
-		toolbarIcons tbiFolder;
-		tbiFolder.hToolbarBmp = toolBitmapFolders;
-		tbiFolder.hToolbarIcon = NULL;
-		SendMessage((HWND)notifyCode->nmhdr.hwndFrom,NPPM_ADDTOOLBARICON,(WPARAM)funcItem[0]._cmdID,(LPARAM)&tbiFolder);
+	switch(notifyCode->nmhdr.code) {
+		case NPPN_TBMODIFICATION: {
+			if (!initializedPlugin)
+				return;
+			toolbarIcons tbiFolder;
+			tbiFolder.hToolbarBmp = toolBitmapFolders;
+			tbiFolder.hToolbarIcon = NULL;
+			SendMessage((HWND)notifyCode->nmhdr.hwndFrom,NPPM_ADDTOOLBARICON,(WPARAM)funcItem[0]._cmdID,(LPARAM)&tbiFolder);
+			break; }
+		case NPPN_FILESAVED: {
+			//a file has just been saved
+			if (uploadOnSave) {			//autosave enabled, uplaod file
+				upload(TRUE, FALSE);	//do not allow uncached uploads
+			}
+			break; }
+		case NPPN_SHUTDOWN: {	//Notepad++ is shutting down, cleanup everything
+			saveGlobalSettings();
+			deinitializePlugin();
+			break; }
 	}
 	return;
 }
@@ -198,7 +209,6 @@ HWND getCurrentHScintilla(int which) {
 
 void initializePlugin() {
 
-	cacheLocation = new TCHAR[MAX_PATH];
 	//output redirection, makes printf still work in win32 app
 	CreatePipe(&readHandle, &writeHandle, NULL, 512);		//pipe the output to the message log
 	HANDLE hStdout = writeHandle;						//get win32 handle for stdout
@@ -206,13 +216,14 @@ void initializePlugin() {
 	FILE * hf = _fdopen( hCrt, "w" );					//use the one above to create a FILE * to use for stdout
 	stdoutOrig = *stdout;								//Save original stdout
 	*stdout = *hf;										//set c-stdout to win32 version
-	setvbuf( stdout, NULL, _IONBF, 0 );					//disable buffering
+	setvbuf(stdout, NULL, _IONBF, 0);					//disable buffering
+
+	initializeLogging();
+	cacheLocation = new TCHAR[MAX_PATH];
+	*cacheLocation = 0;
 
 	//Read the global settings
 	readGlobalSettings();
-
-	//Subclass notepad++ to intercept messages (autosave)
-	DefaultNotepadPPWindowProc = (WNDPROC) SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&NotepadPPWindowProc);
 
 	//Create FTP service
 	mainService = new FTP_Service();
@@ -231,6 +242,10 @@ void initializePlugin() {
 	currentFTPProfile = NULL;
 
 	readProfiles();
+
+	asciiVec = new std::vector< TCHAR * >();
+	binaryVec = new std::vector< TCHAR * >();
+	readTypeLists();
 	
 	enableToolbar();
 	setToolbarState(IDB_BUTTON_TOOLBAR_SETTINGS, TRUE);
@@ -242,8 +257,6 @@ void deinitializePlugin() {
 	if (!initializedPlugin)
 		return;
 
-	delete [] cacheLocation;
-
 	//reset output
 	*stdout = stdoutOrig;
 	CloseHandle(writeHandle);
@@ -251,8 +264,10 @@ void deinitializePlugin() {
 		err(TEXT("Stopping out thread failed"));
 	CloseHandle(outputThreadStopEvent);
 
+	delete [] cacheLocation;
+
 	//restore NPP main function
-	SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
+	//SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
 
 	setToolbarState(IDB_BUTTON_TOOLBAR_SETTINGS, FALSE);
 
@@ -273,14 +288,20 @@ void deinitializePlugin() {
 	}
 	delete vProfiles;
 
+	saveTypeLists();
+	clearTypeVectors();
+	delete asciiVec;
+	delete binaryVec;
+
 	currentProfile = NULL;
 
 	destroyWindows();
 	destroyContextMenus();
 
 	delete mainService;
-	ZeroMemory(&nppData, sizeof(NppData));
 
+	ZeroMemory(&nppData, sizeof(NppData));
+	deinitializeLogging();
 	initializedPlugin = false;
 }
 
@@ -349,7 +370,7 @@ void readGlobalSettings() {
 	warnDelete = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("WarnOnDelete"), 1, iniFile);
 	closeOnTransfer = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("CloseAfterTransfer"), 0, iniFile);
 	timestampLog = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("TimestampLog"), 1, iniFile);
-	showInitialDir = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("ShowInitialDirectory"), 0, iniFile);
+	showInitialDir = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("ShowInitialDirectory"), 1, iniFile);
 	usePrettyIcons = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("UsePrettyIcons"), 1, iniFile);
 	otherCache = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("UseOtherCache"), 0, iniFile);
 
@@ -358,6 +379,7 @@ void readGlobalSettings() {
 	deletePartialFiles = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("DeletePartialFiles"), 0, iniFile);
 	enableQueue = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("EnableQueue"), 0, iniFile);
 
+	fallbackMode = (Transfer_Mode)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("FallbackTransfermode"), 0, iniFile);
 
 	enableTimeStamp(timestampLog == TRUE);
 	cacheFolderIndices();
@@ -381,12 +403,17 @@ void saveGlobalSettings() {
 
 	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("DeletePartialFiles"), deletePartialFiles?TEXT("1"):TEXT("0"), iniFile);
 	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("EnableQueue"), enableQueue?TEXT("1"):TEXT("0"), iniFile);
+
+	TCHAR * buf = new TCHAR[3];
+	_itot((int)fallbackMode, buf, 10);
+	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("FallbackTransfermode"), buf, iniFile);
+	delete [] buf;
 }
 
 //Window functions
 void createWindows() {
 	//Create output window
-	hOutputWindow = CreateDialogParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_OUTPUT), nppData._nppHandle, OutDlgProc, (LPARAM)readHandle);	//immeditaly create window, we do not want to hang too much on printf because of full pipe
+	hOutputWindow = CreateDialogParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_OUTPUT), nppData._nppHandle, OutDlgProcedure, (LPARAM)readHandle);	//immeditaly create window, we do not want to hang too much on printf because of full pipe
 
 	//Create class for folder window
 	WNDCLASSEX DockWindowClass;
@@ -467,7 +494,8 @@ void createContextMenus() {
 	AppendMenu(contextFile,MF_STRING,IDM_POPUP_RENAMEFILE,TEXT("&Rename File"));
 	AppendMenu(contextFile,MF_STRING,IDM_POPUP_DELETEFILE,TEXT("D&elete File"));
 	AppendMenu(contextFile,MF_SEPARATOR,0,0);
-	AppendMenu(contextFile,MF_STRING,IDM_POPUP_PROPSFILE,TEXT("&Properties"));  ;
+	AppendMenu(contextFile,MF_STRING,IDM_POPUP_PERMISSIONFILE,TEXT("Permissions"));
+	AppendMenu(contextFile,MF_STRING,IDM_POPUP_PROPSFILE,TEXT("&Properties"));
 
 	//Create context menu for directories in folder window
 	contextDirectory = CreatePopupMenu();
@@ -477,9 +505,12 @@ void createContextMenus() {
 	AppendMenu(contextDirectory,MF_STRING,IDM_POPUP_DELETEDIR,TEXT("&Delete directory"));
 	AppendMenu(contextDirectory,MF_SEPARATOR,0,0);
     AppendMenu(contextDirectory,MF_STRING,IDM_POPUP_UPLOADFILE,TEXT("&Upload current file here"));
-	AppendMenu(contextDirectory,MF_STRING,IDM_POPUP_UPLOADOTHERFILE,TEXT("&Upload other file here..."));
+	AppendMenu(contextDirectory,MF_STRING,IDM_POPUP_UPLOADOTHERFILE,TEXT("Upload other file here..."));
 	AppendMenu(contextDirectory,MF_SEPARATOR,0,0);
-	AppendMenu(contextDirectory,MF_STRING,IDM_POPUP_REFRESHDIR,TEXT("&Refresh"));
+	AppendMenu(contextDirectory,MF_STRING,IDM_POPUP_REFRESHDIR,TEXT("Re&fresh"));
+	AppendMenu(contextDirectory,MF_SEPARATOR,0,0);
+	AppendMenu(contextDirectory,MF_STRING,IDM_POPUP_PERMISSIONDIR,TEXT("Permissions"));
+	AppendMenu(contextDirectory,MF_STRING,IDM_POPUP_PROPSDIR,TEXT("&Properties"));
 
 	//Create context menu for messages window
 	contextMessages = CreatePopupMenu();
@@ -686,11 +717,13 @@ void selectItem(HTREEITEM lastitem, LPARAM lastparam) {
 			lastDirectoryItemParam = (DIRECTORY *) lastparam;
 			lastDirectoryItem = lastitem;
 			setToolbarState(IDB_BUTTON_TOOLBAR_UPLOAD, TRUE);
+			setToolbarState(IDB_BUTTON_TOOLBAR_REFRESH, TRUE);
 			setToolbarState(IDB_BUTTON_TOOLBAR_DOWNLOAD, FALSE);		
 	} else {	//files will be downloaded
 			lastFileItemParam = (FILEOBJECT *) lastparam;
 			lastFileItem = lastitem;
 			setToolbarState(IDB_BUTTON_TOOLBAR_UPLOAD, FALSE);
+			setToolbarState(IDB_BUTTON_TOOLBAR_REFRESH, FALSE);
 			setToolbarState(IDB_BUTTON_TOOLBAR_DOWNLOAD, TRUE);
 	}
 }
@@ -700,6 +733,7 @@ void createToolbar() {
 	TBADDBITMAP ab;
 	TBBUTTON tb[nrTbButtons];
 	ZeroMemory(tb, sizeof(TBBUTTON)*nrTbButtons);
+	int currentIndex = 0;
 
 	ab.hInst = hDLL;
 
@@ -709,59 +743,90 @@ void createToolbar() {
 	/*imgnr = */connectBitmapIndex = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
 	
 	//tb[0].fsState = TBSTATE_ENABLED;
-	tb[0].fsStyle = BTNS_BUTTON;
-	tb[0].iBitmap = imgnr;
-	tb[0].idCommand = IDB_BUTTON_TOOLBAR_CONNECT;
+	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_CONNECT;
+	currentIndex++;
 
-	tb[1].fsState = TBSTATE_ENABLED;
-	tb[1].fsStyle = TBSTYLE_SEP;
-	tb[1].iBitmap = imgnr;
-	tb[1].idCommand = 0;
-
-	ab.nID = IDB_BITMAP_UPLOAD;
-	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
-	//tb[1].fsState = TBSTATE_ENABLED;
-	tb[2].fsStyle = BTNS_BUTTON;
-	tb[2].iBitmap = imgnr;
-	tb[2].idCommand = IDB_BUTTON_TOOLBAR_UPLOAD;
+	tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = TBSTYLE_SEP;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = 0;
+	currentIndex++;
 
 	ab.nID = IDB_BITMAP_DOWNLOAD;
 	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
-	//tb[2].fsState = TBSTATE_ENABLED;
-	tb[3].fsStyle = BTNS_BUTTON;
-	tb[3].iBitmap = imgnr;
-	tb[3].idCommand = IDB_BUTTON_TOOLBAR_DOWNLOAD;
+	//tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_DOWNLOAD;
+	currentIndex++;
 
-	tb[4].fsState = TBSTATE_ENABLED;
-	tb[4].fsStyle = TBSTYLE_SEP;
-	tb[4].iBitmap = imgnr;
-	tb[4].idCommand = 0;
+	ab.nID = IDB_BITMAP_UPLOAD;
+	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
+	//tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_UPLOAD;
+	currentIndex++;
+
+	ab.nID = IDB_BITMAP_REFRESH;
+	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
+	//tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_REFRESH;
+	currentIndex++;
+
+	tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = TBSTYLE_SEP;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = 0;
+	currentIndex++;
 
 	ab.nID = IDB_BITMAP_ABORT;
 	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
-	//tb[5].fsState = TBSTATE_ENABLED;
-	tb[5].fsStyle = BTNS_BUTTON;
-	tb[5].iBitmap = imgnr;
-	tb[5].idCommand = IDB_BUTTON_TOOLBAR_ABORT;
+	//tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_ABORT;
+	currentIndex++;
 
-	tb[6].fsState = TBSTATE_ENABLED;
-	tb[6].fsStyle = TBSTYLE_SEP;
-	tb[6].iBitmap = imgnr;
-	tb[6].idCommand = 0;
+	tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = TBSTYLE_SEP;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = 0;
+	currentIndex++;
+
+	ab.nID = IDB_BITMAP_RAWCOMMAND;
+	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
+	//tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_RAWCMD;
+	currentIndex++;
+
+	tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = TBSTYLE_SEP;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = 0;
+	currentIndex++;
 
 	ab.nID = IDB_BITMAP_SETTINGS;
 	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
-	//tb[7].fsState = TBSTATE_ENABLED;
-	tb[7].fsStyle = BTNS_BUTTON;
-	tb[7].iBitmap = imgnr;
-	tb[7].idCommand = IDB_BUTTON_TOOLBAR_SETTINGS;
+	//tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_SETTINGS;
+	currentIndex++;
 
 	ab.nID = IDB_BITMAP_MESSAGES;
 	imgnr = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
-	tb[8].fsState = TBSTATE_ENABLED;
-	tb[8].fsStyle = BTNS_BUTTON;
-	tb[8].iBitmap = imgnr;
-	tb[8].idCommand = IDB_BUTTON_TOOLBAR_MESSAGES;
+	tb[currentIndex].fsState = TBSTATE_ENABLED;
+	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].iBitmap = imgnr;
+	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_MESSAGES;
+	currentIndex++;
 
 	SendMessage(hFolderToolbar, TB_ADDBUTTONS, (WPARAM) nrTbButtons, (LPARAM)tb);
 	SendMessage(hFolderToolbar, TB_AUTOSIZE, 0, 0);
@@ -787,13 +852,10 @@ void connect() {
 	if (busy)
 		return;
 	busy = true;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doConnect, NULL, 0, &id);
-	if (hThread == NULL) {
-		threadError("doConnect");
+
+	bool threadSuccess = StartThread(doConnect, NULL, "doConnect");
+	if (!threadSuccess) {
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
@@ -804,13 +866,10 @@ void disconnect() {
 	//if (busy)
 	//	return;
 	busy = true;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doDisconnect, NULL, 0, &id);
-	if (hThread == NULL) {
-		threadError("doDisconnect");
+
+	bool threadSuccess = StartThread(doDisconnect, NULL, "doDisconnect");
+	if (!threadSuccess) {
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
@@ -820,40 +879,38 @@ void download() {
 	if (busy)
 		return;
 	busy = true;
-	FILEOBJECT * file = (FILEOBJECT*)lastFileItemParam;
-	TCHAR * path = new TCHAR[MAX_PATH], * serverpath = new TCHAR[MAX_PATH];
+
+	FILEOBJECT * file = (FILEOBJECT*) lastFileItemParam;
+	TCHAR * path = new TCHAR[MAX_PATH];
 	lstrcpy(path, storage);
 	strcatAtoT(path, file->fso.fullpath, MAX_PATH - lstrlen(path));
 	validatePath(path);
 	if (!createDirectory(path)) {
-		err(path);
-		delete [] path; delete [] serverpath;
+		printf("%sUnable to create directory for file %s\n", getCurrentTimeStamp(), path);
+		delete [] path;
 		busy = false;
 		return;
 	}
-	strcpyAtoT(serverpath, file->fso.fullpath, MAX_PATH);
-	LOADTHREAD * lt = new LOADTHREAD;
-	lt->openFile = TRUE;
-	if ((lt->local = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL)) == NULL) {
+
+	HANDLE hOpenFile = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	if (hOpenFile == NULL) {
 		err(TEXT("Bad file"));
-		delete [] lt->server;
-		delete [] lt->localname;
-		delete lt;
+		delete [] path;
 		busy = false;
 		return;
 	}
-	lt->server = serverpath;
+
+	DOWNLOADTHREAD * lt = new DOWNLOADTHREAD;
+	lt->openFile = TRUE;
+	lt->local = hOpenFile;
 	lt->localname = path;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doDownload, lt, 0, &id);
-	if (hThread == NULL) {
-		threadError("doDownload");
-		delete [] lt->server;
+	lt->fileToDownload = file;
+
+	bool threadSuccess = StartThread(doDownload, lt, "doDownload");
+	if (!threadSuccess) {
 		delete [] lt->localname;
 		delete lt;
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
@@ -874,31 +931,25 @@ void downloadSpecified() {
 		return;
 	}
 
-
-	TCHAR * serverpath = new TCHAR[MAX_PATH];
-	strcpyAtoT(serverpath, file->fso.fullpath, MAX_PATH);
-	LOADTHREAD * lt = new LOADTHREAD;
-	lt->openFile = (BOOL)2;
-	if ((lt->local = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL)) == NULL) {
-		err(TEXT("Unable to write to specified file"));
-		delete [] lt->server;
-		delete [] lt->localname;
-		delete lt;
+	HANDLE hOpenFile = CreateFile(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	if (hOpenFile == NULL) {
+		err(TEXT("Bad file"));
+		delete [] path;
 		busy = false;
 		return;
 	}
-	lt->server = serverpath;
+
+	DOWNLOADTHREAD * lt = new DOWNLOADTHREAD;
+	lt->openFile = (BOOL)2;
+	lt->local = hOpenFile;
 	lt->localname = path;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doDownload, lt, 0, &id);
-	if (hThread == NULL) {
-		threadError("doDownload");
-		delete [] lt->server;
+	lt->fileToDownload = file;
+
+	bool threadSuccess = StartThread(doDownload, lt, "doDownload");
+	if (!threadSuccess) {
 		delete [] lt->localname;
 		delete lt;
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
@@ -925,8 +976,7 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		return;
 	}
 
-	LOADTHREAD * lt = new LOADTHREAD;
-	lt->openFile = FALSE;
+	UPLOADTHREAD * lt = new UPLOADTHREAD;
 	lt->targetTreeDir = NULL;
 	lt->local = hOpenFile;
 
@@ -946,7 +996,7 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 	bool isCached = (!_tcsnicmp(curFile, storage, len));
 
 	TCHAR * serverName = new TCHAR[MAX_PATH];
-	lt->server = serverName;
+	lt->servername = serverName;
 
 	if (isCached && uploadCached) {	//The file resides in cache, find matching FTP directory and upload
 		lstrcpy(serverName, curFile+len-1);
@@ -1009,18 +1059,14 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 		return;
 	}
 
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doUpload, lt, 0, &id);
-	if (hThread == NULL) {
-		threadError("doUpload");
+	bool threadSuccess = StartThread(doUpload, lt, "doUpload");
+	if (!threadSuccess) {
 		CloseHandle(lt->local);
 		delete [] curFile;
 		delete [] serverName;
 		delete lt;
 		busy = false;
 		return;
-	} else {
-		CloseHandle(hThread);
 	}
 
 	return;
@@ -1049,13 +1095,13 @@ void uploadSpecified() {
 		return;
 	}
 
-	LOADTHREAD * lt = new LOADTHREAD;
+	UPLOADTHREAD * lt = new UPLOADTHREAD;
 	lt->local = hOpenFile;
 	lt->localname = localfilename;
 	lt->targetTreeDir = lastDirectoryItem;
 
 	TCHAR * servername = new TCHAR[MAX_PATH];
-	lt->server = servername;
+	lt->servername = servername;
 
 	strcpyAtoT(servername, lastDirectoryItemParam->fso.fullpath, MAX_PATH);
 	char lastChar = lastDirectoryItemParam->fso.fullpath[strlen(lastDirectoryItemParam->fso.fullpath)-1];
@@ -1069,17 +1115,14 @@ void uploadSpecified() {
 		i++;
 	}
 	
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doUpload, lt, 0, &id);
-	if (hThread == NULL) {
-		threadError("doUpload");
-		CloseHandle(hOpenFile);
-		delete [] lt->server;
-		delete [] lt->localname;
+	bool threadSuccess = StartThread(doUpload, lt, "doUpload");
+	if (!threadSuccess) {
+		CloseHandle(lt->local);
+		delete [] localfilename;
+		delete [] servername;
 		delete lt;
 		busy = false;
-	} else {
-		CloseHandle(hThread);
+		return;
 	}
 }
 
@@ -1103,13 +1146,13 @@ void uploadByName(TCHAR * filename) {	//Called by DnD
 		return;
 	}
 
-	LOADTHREAD * lt = new LOADTHREAD;
+	UPLOADTHREAD * lt = new UPLOADTHREAD;
 	lt->local = hOpenFile;
 	lt->localname = localfilename;
 	lt->targetTreeDir = lastDirectoryItem;
 
 	TCHAR * servername = new TCHAR[MAX_PATH];
-	lt->server = servername;
+	lt->servername = servername;
 
 	strcpyAtoT(servername, lastDirectoryItemParam->fso.fullpath, MAX_PATH);
 	char lastChar = lastDirectoryItemParam->fso.fullpath[strlen(lastDirectoryItemParam->fso.fullpath)-1];
@@ -1123,17 +1166,14 @@ void uploadByName(TCHAR * filename) {	//Called by DnD
 		i++;
 	}
 	
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doUpload, lt, 0, &id);
-	if (hThread == NULL) {
-		threadError("doUpload");
-		CloseHandle(hOpenFile);
-		delete [] lt->server;
-		delete [] lt->localname;
+	bool threadSuccess = StartThread(doUpload, lt, "doUpload");
+	if (!threadSuccess) {
+		CloseHandle(lt->local);
+		delete [] localfilename;
+		delete [] servername;
 		delete lt;
 		busy = false;
-	} else {
-		CloseHandle(hThread);
+		return;
 	}
 }
 
@@ -1147,13 +1187,10 @@ void createDir() {
 	if (busy)
 		return;
 	busy = true;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doCreateDirectory, NULL, 0, &id);
-	if (hThread == NULL) {
-		threadError("doCreateDirectory");
+
+	bool threadSuccess = StartThread(doCreateDirectory, NULL, "doCreateDirectory");
+	if (!threadSuccess) {
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
@@ -1163,13 +1200,10 @@ void deleteDir() {
 	if (busy)
 		return;
 	busy = true;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doDeleteDirectory, NULL, 0, &id);
-	if (hThread == NULL) {
-		threadError("doDeleteDirectory");
+
+	bool threadSuccess = StartThread(doDeleteDirectory, NULL, "doDeleteDirectory");
+	if (!threadSuccess) {
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
@@ -1179,13 +1213,16 @@ void renameDir() {
 	if (busy)
 		return;
 	busy = true;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doRenameDirectory, NULL, 0, &id);
-	if (hThread == NULL) {
-		threadError("doRenameDirectory");
+
+	if (lastDirectoryItemParam->isLink) {
+		printf("Renaming links is currently unsupported\n");
 		busy = false;
-	} else {
-		CloseHandle(hThread);
+		return;
+	}
+
+	bool threadSuccess = StartThread(doRenameDirectory, NULL, "doRenameDirectory");
+	if (!threadSuccess) {
+		busy = false;
 	}
 }
 
@@ -1195,13 +1232,10 @@ void deleteFile() {
 	if (busy)
 		return;
 	busy = true;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doDeleteFile, NULL, 0, &id);
-	if (hThread == NULL) {
-		threadError("doDeleteFile");
+
+	bool threadSuccess = StartThread(doDeleteFile, NULL, "doDeleteFile");
+	if (!threadSuccess) {
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
@@ -1211,17 +1245,30 @@ void renameFile() {
 	if (busy)
 		return;
 	busy = true;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doRenameFile, NULL, 0, &id);
-	if (hThread == NULL) {
-		threadError("doRenameFile");
+
+	bool threadSuccess = StartThread(doRenameFile, NULL, "doRenameFile");
+	if (!threadSuccess) {
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
-void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, bool ignoreBusy) {
+void rawCommand() {
+	if (!connected)
+		return;
+	if (busy)
+		return;
+	busy = true;
+
+	bool threadSuccess = StartThread(doRawCommand, NULL, "doRawCommand");
+	if (!threadSuccess) {
+		busy = false;
+	}
+}
+
+void permissions(FILESYSTEMOBJECT * fso) {
+	DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_PERMISSION), nppData._nppHandle, PermissionDlgProcedure, (LPARAM) fso);
+}
+void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool ignoreBusy) {
 	if (!connected)
 		return;
 	if (busy && !ignoreBusy)
@@ -1235,28 +1282,23 @@ void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, b
 	tvi.mask = TVIF_CHILDREN;
 	tvi.cChildren = I_CHILDRENCALLBACK;
 	TreeView_SetItem(hTreeview, &tvi);
+
 	if (!doRefresh) {	//no refresh, just call fillTreeDirectory
 		tvi.mask = TVIF_PARAM;
 		if (TreeView_GetItem(hTreeview, &tvi)) {
 			DIRECTORY * dir = (DIRECTORY *) tvi.lParam;
-			fillTreeDirectory(directory, dir);
-			if (expandTree)
-				TreeView_Expand(hTreeview, directory, TVE_EXPAND);
+			TreeView_Expand(hTreeview, directory, TVE_EXPAND);
 		}
 		busy = false;
 		return;
 	}
 	DIRTHREAD * dt = new DIRTHREAD;
 	dt->treeItem = directory;
-	dt->expand = expandTree;
-	DWORD id;
-	HANDLE hThread = CreateThread(NULL, 0, doGetDirectory, dt, 0, &id);
-	if (hThread == NULL) {
-		threadError("doGetDirectory");
-		//delete dt;
+
+	bool threadSuccess = StartThread(doGetDirectory, dt, "doGetDirectory");
+	if (!threadSuccess) {
+		delete dt;
 		busy = false;
-	} else {
-		CloseHandle(hThread);
 	}
 }
 
@@ -1304,8 +1346,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 								break;
 							}
 
-							fillTreeDirectory(currentItem, curDir);
-							TreeView_Expand(hTreeview, currentItem, TVE_EXPAND);
+							TreeView_Expand(hTreeview, currentItem, TVE_EXPAND);	//dir should be updated, expand it
 
 							child = TreeView_GetChild(hTreeview, currentItem);
 							if (child == NULL) {
@@ -1335,8 +1376,9 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					if (!createDirectory(storage)) {
 						printf("%sCould not create storage cache '%s', getCurrentTimeStamp(), error %d\n", getCurrentTimeStamp(), storage, GetLastError());
 					}
-					//SendMessage(nppData._nppHandle,NPPM_SETMENUITEMCHECK,(WPARAM)funcItem[0]._cmdID,(LPARAM)TRUE);	//Check the menu item
+
 					connected = true;
+					setToolbarState(IDB_BUTTON_TOOLBAR_RAWCMD, TRUE);
 					SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(connectBitmapIndex, 0));
 					break; }
 				case 1: {	//disconnected
@@ -1354,6 +1396,8 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					currentFTPProfile = NULL;
 					setToolbarState(IDB_BUTTON_TOOLBAR_UPLOAD, FALSE);
 					setToolbarState(IDB_BUTTON_TOOLBAR_DOWNLOAD, FALSE);
+					setToolbarState(IDB_BUTTON_TOOLBAR_REFRESH, FALSE);
+					setToolbarState(IDB_BUTTON_TOOLBAR_RAWCMD, FALSE);
 					SendMessage(hFolderToolbar, TB_CHANGEBITMAP, (WPARAM) IDB_BUTTON_TOOLBAR_CONNECT, (LPARAM) MAKELPARAM(disconnectBitmapIndex, 0));
 					break; }
 				}
@@ -1421,9 +1465,14 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 DWORD WINAPI doConnect(LPVOID param) {
 
 	expectedDisconnect = false;
-	mainService->setMode(currentFTPProfile->getMode());
+	mainService->setMode(currentFTPProfile->getConnectionMode());
 	mainService->setFindRootParent(currentFTPProfile->getFindRoot());
 	mainService->setInitialDirectory(currentFTPProfile->TVAR(getInitDir)());
+	if (currentFTPProfile->getKeepAlive()) {
+		mainService->setKeepAlive(true, 5000);
+	} else {
+		mainService->setKeepAlive(false,0);
+	}
 	setStatusMessage(TEXT("Connecting"));
 	bool result = mainService->connectToServer(currentFTPProfile->TVAR(getAddress)(), currentFTPProfile->getPort());
 	if (!result) {
@@ -1431,7 +1480,7 @@ DWORD WINAPI doConnect(LPVOID param) {
 	} else {
 		setStatusMessage(TEXT("Logging in"));
 		if (currentFTPProfile->getAskPassword()) {
-			TCHAR * passWord = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_PASSWORD), nppData._nppHandle,RenameDlgProc, (LPARAM) NULL);
+			TCHAR * passWord = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_PASSWORD), nppData._nppHandle,RenameDlgProcedure, (LPARAM) NULL);
 			if (passWord) {
 #ifdef UNICODE
 				int len = lstrlen(passWord);
@@ -1483,17 +1532,16 @@ DWORD WINAPI doDisconnect(LPVOID param) {
 
 DWORD WINAPI doDownload(LPVOID param) {
 
-	LOADTHREAD * lt = (LOADTHREAD *) param;
+	DOWNLOADTHREAD * lt = (DOWNLOADTHREAD *) param;
 	unsigned int events = acceptedEvents;
 	acceptedEvents = Event_Download;
-#ifdef UNICODE
-	char * serverA = new char[INIBUFSIZE];
-	WideCharToMultiByte(CP_ACP, 0, lt->server, -1, serverA, INIBUFSIZE, NULL, NULL);
-	bool result = mainService->downloadFile(lt->local, serverA);
-	delete [] serverA;
-#else
-	bool result = mainService->downloadFile(lt->local, lt->server);
-#endif
+
+	Transfer_Mode tMode = currentFTPProfile->getTransferMode();
+	if (tMode == Mode_Auto) {	//find the corresponding transfermode based off filename
+		tMode = getType(lt->fileToDownload->fso.name);
+	}
+	bool result = mainService->downloadFile(lt->local, lt->fileToDownload, tMode);
+
 	CloseHandle(lt->local);
 	if (!result && deletePartialFiles) {	//the download has failed, delete the file
 		if (DeleteFile(lt->localname) == FALSE) {
@@ -1523,7 +1571,6 @@ DWORD WINAPI doDownload(LPVOID param) {
 #endif
 	}
 
-	delete [] lt->server;
 	delete [] lt->localname;
 	delete lt;
 
@@ -1534,16 +1581,34 @@ DWORD WINAPI doDownload(LPVOID param) {
 
 DWORD WINAPI doUpload(LPVOID param) {
 
-	LOADTHREAD * lt = (LOADTHREAD *) param;
+	UPLOADTHREAD * lt = (UPLOADTHREAD *) param;
 	unsigned int events = acceptedEvents;
 	acceptedEvents = Event_Upload;
+
+	Transfer_Mode tMode = currentFTPProfile->getTransferMode();
+	LPTSTR filenameT = PathFindFileName(lt->localname);
+	char * filenameA;
+#ifdef UNICODE
+	int len = lstrlen(filenameT)+1;
+	filenameA = new char[len];
+	WideCharToMultiByte(CP_ACP, 0, filenameT, -1, filenameA, len, NULL, NULL);
+#else
+	filenameA = filenameT;
+#endif
+	if (tMode == Mode_Auto) {	//find the corresponding transfermode based off filename
+		tMode = getType(filenameA);
+	}
+#ifdef UNICODE
+	delete [] filenameA;
+#endif
+
 #ifdef UNICODE
 	char * serverA = new char[INIBUFSIZE];
-	WideCharToMultiByte(CP_ACP, 0, lt->server, -1, serverA, INIBUFSIZE, NULL, NULL);
-	bool result = mainService->uploadFile(lt->local, serverA);
+	WideCharToMultiByte(CP_ACP, 0, lt->servername, -1, serverA, INIBUFSIZE, NULL, NULL);
+	bool result = mainService->uploadFile(lt->local, serverA, tMode);
 	delete [] serverA;
 #else
-	bool result = mainService->uploadFile(lt->local, lt->server);
+	bool result = mainService->uploadFile(lt->local, lt->servername, tMode);
 #endif
 	SendMessage(hProgressbar, PBM_SETPOS, (WPARAM)0, 0);
 
@@ -1552,12 +1617,12 @@ DWORD WINAPI doUpload(LPVOID param) {
 	HTREEITEM refreshItem = lt->targetTreeDir;
 
 	CloseHandle(lt->local);
-	delete [] lt->server;
+	delete [] lt->servername;
 	delete [] lt->localname;
 	delete lt;
 	busy = false;
 
-	if (result && lt->targetTreeDir)	//only refresh if a directory is given, and upload succeeded
+	if (result && refreshItem)	//only refresh if a directory is given, and upload succeeded
 		reloadTreeDirectory(refreshItem, true, true);
 
 	return 0;
@@ -1583,10 +1648,8 @@ DWORD WINAPI doGetDirectory(LPVOID param) {
 
 		if (result) {
 			dir->updated = true;
-			if (dt->expand) {
-				//when expanding the tree, it gets filled automatically when the dir is updated
-				TreeView_Expand(hTreeview, dt->treeItem, TVE_EXPAND);
-			}
+			//when expanding the tree, it gets filled automatically when the dir is updated
+			TreeView_Expand(hTreeview, dt->treeItem, TVE_EXPAND);
 		}
 	} else {
 		err(TEXT("Unable to retrieve treeItem data"));
@@ -1602,7 +1665,7 @@ DWORD WINAPI doCreateDirectory(LPVOID param) {
 	DIRECTORY * root = lastDirectoryItemParam;
 	DIRECTORY * newDir = new DIRECTORY();
 
-	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)TEXT("New Directory"));
+	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProcedure, (LPARAM)TEXT("New Directory"));
 	if (newname == 0) {
 		return 0;
 	}
@@ -1612,7 +1675,7 @@ DWORD WINAPI doCreateDirectory(LPVOID param) {
 	lstrcpy(newDir->fso.name, newname);
 #endif
 	if (mainService->createDirectory(root, newDir)) {
-		reloadTreeDirectory(lastDirectoryItem, true, true, true);
+		reloadTreeDirectory(lastDirectoryItem, true, true);
 	}
 	delete [] newname;
 	busy = false;
@@ -1683,10 +1746,10 @@ DWORD WINAPI doRenameDirectory(LPVOID param) {
 #ifdef UNICODE
 	TCHAR * dirname = new TCHAR[MAX_PATH];
 	strcpyAtoT(dirname, dir->fso.name, MAX_PATH);
-	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)dirname);
+	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProcedure, (LPARAM)dirname);
 	delete [] dirname;
 #else
-	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)dir->fso.name);
+	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProcedure, (LPARAM)dir->fso.name);
 #endif
 	if (newname == NULL) {
 		busy = false;
@@ -1712,7 +1775,7 @@ DWORD WINAPI doRenameDirectory(LPVOID param) {
 		sortDirectory(dir, true, false);
 		HTREEITEM parent = TreeView_GetParent(hTreeview, lastDirectoryItem);
 		if (parent != NULL) {
-			reloadTreeDirectory(parent, false, true, true);
+			reloadTreeDirectory(parent, false, true);
 		}
 		if (isCached) {
 			strcatAtoT(newpath, dir->fso.fullpath, MAX_PATH - lstrlen(newpath));
@@ -1740,10 +1803,10 @@ DWORD WINAPI doRenameFile(LPVOID param) {
 #ifdef UNICODE
 	TCHAR * filename = new TCHAR[MAX_PATH];
 	strcpyAtoT(filename, file->fso.name, MAX_PATH);
-	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)filename);
+	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProcedure, (LPARAM)filename);
 	delete [] filename;
 #else
-	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProc, (LPARAM)file->fso.name);
+	TCHAR * newname = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_RENAME), nppData._nppHandle, RenameDlgProcedure, (LPARAM)file->fso.name);
 #endif
 	if (newname == NULL) {
 		busy = false;
@@ -1769,7 +1832,7 @@ DWORD WINAPI doRenameFile(LPVOID param) {
 		sortDirectory(file->fso.parent, false, true);
 		HTREEITEM parent = TreeView_GetParent(hTreeview, lastFileItem);
 		if (parent != NULL) {
-			reloadTreeDirectory(parent, false, true, true);
+			reloadTreeDirectory(parent, false, true);
 		}
 		if (isCached) {
 			strcatAtoT(newpath, file->fso.fullpath, MAX_PATH - lstrlen(newpath));
@@ -1850,6 +1913,28 @@ DWORD WINAPI doDeleteFile(LPVOID param) {
 	delete [] path;
 	busy = false;
 
+	return 0;
+}
+
+DWORD WINAPI doRawCommand(LPVOID param) {	
+	TCHAR * command = (TCHAR *) DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_COMMAND), nppData._nppHandle, RenameDlgProcedure, (LPARAM)NULL);
+	if (command == NULL) {
+		busy = false;
+		return 0;
+	}
+#ifdef UNICODE
+	int len = lstrlen(command) + 1;
+	char * commandANSI = new char[len];
+	WideCharToMultiByte(CP_ACP, 0, command, -1, commandANSI, len, NULL, NULL);
+	delete [] command;
+	mainService->issueRawCommand(commandANSI);
+	delete [] commandANSI;
+#else
+	mainService->issueRawCommand(command);
+	delete [] command;
+#endif
+
+	busy = false;
 	return 0;
 }
 
@@ -2105,12 +2190,18 @@ void fillProfileData() {
 	SendMessage(hTimeout, WM_SETTEXT, 0, (LPARAM)buf);
 	delete [] buf;
 
-	bool activeState = (currentProfile->getMode() == Mode_Active);
-	SendMessage(hRadioActive, BM_SETCHECK, (WPARAM) activeState, 0);
-	SendMessage(hRadioPassive, BM_SETCHECK, (WPARAM) !activeState, 0);
+	Connection_Mode cMode = currentProfile->getConnectionMode();
+	SendMessage(hRadioActive, BM_SETCHECK, (WPARAM) (cMode==Mode_Active?BST_CHECKED:BST_UNCHECKED), 0);
+	SendMessage(hRadioPassive, BM_SETCHECK, (WPARAM) (cMode==Mode_Passive?BST_CHECKED:BST_UNCHECKED), 0);
+
+	Transfer_Mode tMode = currentProfile->getTransferMode();
+	SendMessage(hRadioAuto, BM_SETCHECK, (WPARAM) (tMode==Mode_Auto?BST_CHECKED:BST_UNCHECKED), 0);
+	SendMessage(hRadioASCII, BM_SETCHECK, (WPARAM) (tMode==Mode_ASCII?BST_CHECKED:BST_UNCHECKED), 0);
+	SendMessage(hRadioBinary, BM_SETCHECK, (WPARAM) (tMode==Mode_Binary?BST_CHECKED:BST_UNCHECKED), 0);
 
 	SendMessage(hCheckFindRoot, BM_SETCHECK, (WPARAM) currentProfile->getFindRoot(), 0);
 	SendMessage(hCheckAskPassword, BM_SETCHECK, (WPARAM) currentProfile->getAskPassword(), 0);
+	SendMessage(hCheckKeepAlive, BM_SETCHECK, (WPARAM) currentProfile->getKeepAlive(), 0);
 
 	EnableWindow(hPassword, (!currentProfile->getAskPassword()));
 }
@@ -2137,12 +2228,23 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		case WM_COMMAND: {
 			switch(LOWORD(wParam)) {
 				case IDM_POPUP_REFRESHDIR: {
-					reloadTreeDirectory(lastDirectoryItem, true, true);
+					reloadTreeDirectory(lastDirectoryItem, true);
 					return TRUE;
 					break; }
 				case IDM_POPUP_PROPSFILE: {
 					FILEOBJECT * file = (FILEOBJECT*)lastFileItemParam;
-					MessageBoxA(hWnd, file->modifiers, "Properties", MB_OK);
+					char * buffer = new char[2048];
+					sprintf(buffer, "File: %s\nPath: %s\nAccess modifiers: %s\nTimestamp: %02d/%02d/%02d %02d:%02d\nFilesize: %d", file->fso.name, file->fso.fullpath, file->fso.modifiers, file->fso.time.day, file->fso.time.month, file->fso.time.year, file->fso.time.hour, file->fso.time.minute, file->filesize);
+					MessageBoxA(hWnd, buffer, "Properties", MB_OK);
+					delete [] buffer;
+					return TRUE;
+					break; }
+				case IDM_POPUP_PROPSDIR: {
+					DIRECTORY * file = (DIRECTORY*)lastDirectoryItemParam;
+					char * buffer = new char[2048];
+					sprintf(buffer, "Directory: %s\nPath: %s\nAccess modifiers: %s\nTimestamp: %02d/%02d/%02d %02d:%02d\nIs symbolic link: %d", file->fso.name, file->fso.fullpath, file->fso.modifiers, file->fso.time.day, file->fso.time.month, file->fso.time.year, file->fso.time.hour, file->fso.time.minute, file->isLink);
+					MessageBoxA(hWnd, buffer, "Properties", MB_OK);
+					delete [] buffer;
 					return TRUE;
 					break; }
 				case IDM_POPUP_DOWNLOADFILE: {
@@ -2189,6 +2291,14 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					deleteFile();
 					return TRUE;
 					break; }
+				case IDM_POPUP_PERMISSIONFILE: {
+					permissions((FILESYSTEMOBJECT *) lastFileItemParam);
+					return TRUE;
+					break; }
+				case IDM_POPUP_PERMISSIONDIR: {
+					permissions((FILESYSTEMOBJECT *) lastDirectoryItemParam);
+					return TRUE;
+					break; }
 				case IDB_BUTTON_TOOLBAR_CONNECT: {
 					if (connected) {	//only call disconnect routine to disconnect, else pick profile
 						disconnect();
@@ -2227,6 +2337,13 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					abort();
 					return TRUE;
 					break; }
+				case IDB_BUTTON_TOOLBAR_RAWCMD: {
+					rawCommand();
+					return TRUE;
+					break; }
+				case IDB_BUTTON_TOOLBAR_REFRESH: {
+					reloadTreeDirectory(lastDirectoryItem, true);
+					break; }
 				default: {
 					unsigned int value = LOWORD(wParam);
 					if (value >= IDM_POPUP_PROFILE_FIRST && value <= IDM_POPUP_PROFILE_MAX) {
@@ -2249,12 +2366,11 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 							case TVE_EXPAND: {
 								DIRECTORY * dir = (DIRECTORY*) tvi.lParam;
 								if (dir->updated) {
-									//reloadTreeDirectory(tvi.hItem, false, true);
-									int amount = fillTreeDirectory(tvi.hItem, dir);
-									return FALSE;		//let the tree expand, it is immediatly filled so no redrawing
+									fillTreeDirectory(tvi.hItem, dir);
+									return FALSE;		//let the tree expand, it has been filled
 								} else {
-									reloadTreeDirectory(tvi.hItem, true, true);
-									return TRUE;		//stop the tree from expanding. Expanding is done by the thread filling the tree
+									reloadTreeDirectory(tvi.hItem, true);
+									return TRUE;		//stop the tree from expanding. Expanding is done by the thread refreshing the tree
 								}
 								return FALSE;
 								break; }
@@ -2380,7 +2496,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 							FILESYSTEMOBJECT * fso = (FILESYSTEMOBJECT *) tvi.lParam;
 							if (fso->isDirectory) {	//directories will be opened
 								//SendMessage(hFolderWindow, WM_COMMAND, IDM_POPUP_OPENDIR, 0);
-								//reloadTreeDirectory(tvi.hItem, true, true);
+								//reloadTreeDirectory(tvi.hItem, true);
 								//return 0;
 							} else {				//files will be downloaded
 								SendMessage(hFolderWindow, WM_COMMAND, IDM_POPUP_DOWNLOADFILE, 0);
@@ -2444,6 +2560,12 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					case IDB_BUTTON_TOOLBAR_MESSAGES: {
 						lpttt->lpszText = TEXT("Show messages");
 						break; }
+					case IDB_BUTTON_TOOLBAR_RAWCMD: {
+						lpttt->lpszText = TEXT("Issue raw command");
+						break; }
+					case IDB_BUTTON_TOOLBAR_REFRESH: {
+						lpttt->lpszText = TEXT("Refresh current folder");
+						break; }
 					default:
 						break;
 				}
@@ -2479,18 +2601,26 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			GetWindowRect(hPropsheet, &rc);
 			SetWindowPos(hPropsheet, NULL, ((GetSystemMetrics(SM_CXSCREEN) - (rc.right - rc.left)) / 2), ((GetSystemMetrics(SM_CYSCREEN) - (rc.bottom - rc.top)) / 2), 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
 
+			hProfileList = GetDlgItem(hWnd,IDC_LIST_PROFILES);
+			hProfilename = GetDlgItem(hWnd,IDC_SETTINGS_NAME);
+
 			hAddress = GetDlgItem(hWnd,IDC_SETTINGS_ADDRESS);
 			hPort = GetDlgItem(hWnd,IDC_SETTINGS_PORT);
 			hUsername = GetDlgItem(hWnd,IDC_SETTINGS_USERNAME);
 			hPassword = GetDlgItem(hWnd,IDC_SETTINGS_PASSWORD);
 			hTimeout = GetDlgItem(hWnd,IDC_SETTINGS_TIMEOUT);
-			hProfileList = GetDlgItem(hWnd,IDC_LIST_PROFILES);
-			hProfilename = GetDlgItem(hWnd,IDC_SETTINGS_NAME);
+
 			hRadioActive = GetDlgItem(hWnd,IDC_RADIO_ACTIVE);
 			hRadioPassive = GetDlgItem(hWnd,IDC_RADIO_PASSIVE);
+
+			hRadioAuto = GetDlgItem(hWnd, IDC_RADIO_AUTOMATIC);
+			hRadioASCII = GetDlgItem(hWnd, IDC_RADIO_ASCII);
+			hRadioBinary = GetDlgItem(hWnd, IDC_RADIO_BINARY);
+
 			hCheckFindRoot = GetDlgItem(hWnd, IDC_CHECK_FINDROOT);
 			hCheckAskPassword = GetDlgItem(hWnd, IDC_CHECK_ASKPASS);
 			hInitDir = GetDlgItem(hWnd, IDC_SETTINGS_INITDIR);
+			hCheckKeepAlive = GetDlgItem(hWnd, IDC_CHECK_KEEPALIVE);
 
 			refreshProfileList();
 			//select the default profile?
@@ -2521,9 +2651,33 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						currentProfile->setFindRoot( state != 0 );
 						state = (int)SendMessage(hCheckAskPassword, BM_GETCHECK, 0, 0);
 						currentProfile->setAskPassword( state != 0 );
+						state = (int)SendMessage(hCheckKeepAlive, BM_GETCHECK, 0, 0);
+						currentProfile->setKeepAlive( state != 0 );
 
+						Connection_Mode cMode = Mode_Passive;
 						state = (int)SendMessage(hRadioActive, BM_GETCHECK, 0, 0);
-						currentProfile->setMode( (state != 0)?Mode_Active:Mode_Passive );
+						if (state == BST_CHECKED) {
+							cMode = Mode_Active;
+						} else {
+							cMode = Mode_Passive;
+						}
+
+						currentProfile->setConnectionMode(cMode);
+
+						Transfer_Mode tMode = Mode_Binary;
+						state = (int)SendMessage(hRadioBinary, BM_GETCHECK, 0, 0);
+						if (state == BST_CHECKED) {
+							tMode = Mode_Binary;
+						} else {
+							state = (int)SendMessage(hRadioASCII, BM_GETCHECK, 0, 0);
+							if (state == BST_CHECKED) {
+								tMode = Mode_ASCII;
+							} else {
+								tMode = Mode_Auto;
+							}
+						}
+
+						currentProfile->setTransferMode(tMode);
 
 						SendMessage(hAddress, WM_GETTEXT, (WPARAM)INIBUFSIZE, (LPARAM)buf);
 						currentProfile->setAddress(buf);
@@ -2778,13 +2932,71 @@ BOOL CALLBACK TransferDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 	switch(message) {
 		case WM_INITDIALOG: {
 			hDeletePartialFiles = GetDlgItem(hWnd, IDC_CHECK_DELPARTDLD);
+
 			hEnableQueueing = GetDlgItem(hWnd, IDC_CHECK_ENABLEQUEUE);
+
+			hAddASCII = GetDlgItem(hWnd, IDC_EDIT_ADDASCII);
+			hAddBinary = GetDlgItem(hWnd, IDC_EDIT_ADDBINARY);
+			hListASCII = GetDlgItem(hWnd, IDC_LIST_ASCII);
+			hListBinary = GetDlgItem(hWnd, IDC_LIST_BINARY);
+			hRadioDefaultASCII = GetDlgItem(hWnd, IDC_RADIO_ASCII);
+			hRadioDefaultBinary = GetDlgItem(hWnd, IDC_RADIO_BINARY);
 
 			SendMessage(hDeletePartialFiles, BM_SETCHECK, (WPARAM) (deletePartialFiles?BST_CHECKED:BST_UNCHECKED), 0);
 			SendMessage(hEnableQueueing, BM_SETCHECK, (WPARAM) (enableQueue?BST_CHECKED:BST_UNCHECKED), 0);
+
+			//Subclass the edit controls to recieve enter key notification
+			DefaultEditWindowProc = (WNDPROC) SetWindowLongPtr(hAddASCII,GWLP_WNDPROC,(LONG)&SubclassedEditWindowProc);
+			SetWindowLongPtr(hAddBinary,GWLP_WNDPROC,(LONG)&SubclassedEditWindowProc);
 			return TRUE;
 			break; }
 		case WM_COMMAND: {
+			switch(LOWORD(wParam)) {
+				case IDC_EDIT_ADDASCII: {
+					if (HIWORD(wParam) == EN_RETURN) {
+						int length = (int)SendMessage(hAddASCII, WM_GETTEXTLENGTH, 0, 0) + 1;
+						if (length > 1) {
+							TCHAR * buffer = new TCHAR[length];
+							SendMessage(hAddASCII, WM_GETTEXT, (WPARAM) length, (LPARAM) buffer);
+							SendMessage(hAddASCII, WM_SETTEXT, 0, (LPARAM) "");
+							addASCII(buffer);
+							fillTypeLists();
+						}
+					}
+					break; }
+				case IDC_EDIT_ADDBINARY: {
+					if (HIWORD(wParam) == EN_RETURN) {
+						int length = (int)SendMessage(hAddBinary, WM_GETTEXTLENGTH, 0, 0) + 1;
+						if (length > 1) {
+							TCHAR * buffer = new TCHAR[length];
+							SendMessage(hAddBinary, WM_GETTEXT, (WPARAM) length, (LPARAM) buffer);
+							SendMessage(hAddBinary, WM_SETTEXT, 0, (LPARAM) "");
+							addBinary(buffer);
+							fillTypeLists();
+						}
+					}
+					break; }
+				case IDC_LIST_ASCII: {
+					if (HIWORD(wParam) == LBN_DBLCLK) {
+						int selection = (int)SendMessage(hListASCII, LB_GETCURSEL, 0, 0);
+						int textlen = (int)SendMessage(hListASCII, LB_GETTEXTLEN, (WPARAM)selection, 0)+1;
+						TCHAR * extBuffer = new TCHAR[textlen];
+						SendMessage(hListASCII, LB_GETTEXT, (WPARAM)selection, (LPARAM)extBuffer);
+						removeExtFromASCII(extBuffer);
+						fillTypeLists();
+					}
+					break; }
+				 case IDC_LIST_BINARY: {
+					if (HIWORD(wParam) == LBN_DBLCLK) {
+						int selection = (int)SendMessage(hListBinary, LB_GETCURSEL, 0, 0);
+						int textlen = (int)SendMessage(hListBinary, LB_GETTEXTLEN, (WPARAM)selection, 0)+1;
+						TCHAR * extBuffer = new TCHAR[textlen];
+						SendMessage(hListBinary, LB_GETTEXT, (WPARAM)selection, (LPARAM)extBuffer);
+						removeExtFromBinary(extBuffer);
+						fillTypeLists();
+					}
+					break; }
+			}
 			break; }
 		case WM_NOTIFY: {
 			//When changing tab: apply changes
@@ -2796,12 +3008,25 @@ BOOL CALLBACK TransferDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				case PSN_KILLACTIVE: {
 					deletePartialFiles = (BOOL)(SendMessage(hDeletePartialFiles, BM_GETCHECK, 0, 0) == BST_CHECKED);
 					enableQueue = (BOOL)(SendMessage(hEnableQueueing, BM_GETCHECK, 0, 0) == BST_CHECKED);
-					
+
+					Transfer_Mode tMode = Mode_Binary;
+					int state = (int)SendMessage(hRadioDefaultASCII, BM_GETCHECK, 0, 0);
+					if (state == BST_CHECKED) {
+						tMode = Mode_ASCII;
+					} else {
+						tMode = Mode_Binary;
+					}
+
+					fallbackMode = tMode;
+
 					saveGlobalSettings();
 					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, FALSE);
 					return TRUE;
 					break; }
 				case PSN_SETACTIVE: {
+					fillTypeLists();
+					SendMessage(hRadioDefaultASCII, BM_SETCHECK, (WPARAM) (fallbackMode == Mode_ASCII?BST_CHECKED:BST_UNCHECKED), 0);
+					SendMessage(hRadioDefaultBinary, BM_SETCHECK, (WPARAM) (fallbackMode == Mode_Binary?BST_CHECKED:BST_UNCHECKED), 0);
 					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, FALSE);
 					return TRUE;
 					break; }
@@ -2818,19 +3043,18 @@ BOOL CALLBACK TransferDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 	return FALSE;
 }
 
-BOOL CALLBACK OutDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+BOOL CALLBACK OutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch(message) {
 		case WM_INITDIALOG: {
 			hOutputEdit = GetDlgItem(hWnd, IDC_EDIT_OUTPUT);
 			DefaultMessageEditWindowProc = (WNDPROC) SetWindowLongPtr(hOutputEdit,GWLP_WNDPROC,(LONG)&MessageEditWindowProc);
-			DWORD id;
-			hReadThread = CreateThread(NULL, 0, outputProc, (LPVOID)lParam, 0, &id);
-			if (hReadThread == NULL) {
+
+			bool threadSuccess = StartThread(outputProc, (LPVOID)lParam, "outputProc");
+			if (!threadSuccess) {
 				err(TEXT("Error: could not create outputProc thread!"));
 				*stdout = stdoutOrig;
 			} else {
 				ResetEvent(outputThreadStopEvent);
-				CloseHandle(hReadThread);
 			}
 			return TRUE;	//let windows set focus
 			break; }
@@ -2846,7 +3070,7 @@ BOOL CALLBACK OutDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 	return FALSE;
 }
 
-BOOL CALLBACK RenameDlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+BOOL CALLBACK RenameDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	switch(message) {
 		case WM_INITDIALOG: {
 			TCHAR * text = (TCHAR *) lParam;
@@ -2904,6 +3128,163 @@ BOOL CALLBACK AboutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 	return FALSE;
 }
 
+BOOL CALLBACK PermissionDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	switch(message) {
+		case WM_INITDIALOG: {
+			fsoEdit = (FILESYSTEMOBJECT*) lParam;
+			hCheckOwnerRead = GetDlgItem(hWnd,IDC_CHECK_OWNERREAD);
+			hCheckOwnerWrite = GetDlgItem(hWnd,IDC_CHECK_OWNERWRITE);
+			hCheckOwnerExecute = GetDlgItem(hWnd,IDC_CHECK_OWNEREXEC);
+
+			hCheckGroupRead = GetDlgItem(hWnd,IDC_CHECK_GROUPREAD);
+			hCheckGroupWrite = GetDlgItem(hWnd,IDC_CHECK_GROUPWRITE);
+			hCheckGroupExecute = GetDlgItem(hWnd,IDC_CHECK_GROUPEXEC);
+
+			hCheckPublicRead = GetDlgItem(hWnd,IDC_CHECK_PUBREAD);
+			hCheckPublicWrite = GetDlgItem(hWnd,IDC_CHECK_PUBWRITE);
+			hCheckPublicExecute = GetDlgItem(hWnd,IDC_CHECK_PUBEXEC);
+
+			hEditOwner = GetDlgItem(hWnd,IDC_EDIT_OWNERVAL);
+			hEditGroup = GetDlgItem(hWnd,IDC_EDIT_GROUPVAL);
+			hEditPublic = GetDlgItem(hWnd,IDC_EDIT_PUBVAL);
+			hEditResult = GetDlgItem(hWnd,IDC_EDIT_RESVAL);
+			hStaticName = GetDlgItem(hWnd,IDC_STATIC_OBJECTNAME);
+
+			fsoEdit->proposedValues = fsoEdit->modifierValues;
+			int ownerValue = fsoEdit->modifierValues / 100;
+			int groupValue = (fsoEdit->modifierValues%100) / 10;
+			int pubValue = fsoEdit->modifierValues%10;
+
+			SendMessage(hCheckOwnerRead, BM_SETCHECK, (WPARAM) (ownerValue&4?BST_CHECKED:BST_UNCHECKED), 0);
+			SendMessage(hCheckOwnerWrite, BM_SETCHECK, (WPARAM) (ownerValue&2?BST_CHECKED:BST_UNCHECKED), 0);
+			SendMessage(hCheckOwnerExecute, BM_SETCHECK, (WPARAM) (ownerValue&1?BST_CHECKED:BST_UNCHECKED), 0);
+
+			SendMessage(hCheckGroupRead, BM_SETCHECK, (WPARAM) (groupValue&4?BST_CHECKED:BST_UNCHECKED), 0);
+			SendMessage(hCheckGroupWrite, BM_SETCHECK, (WPARAM) (groupValue&2?BST_CHECKED:BST_UNCHECKED), 0);
+			SendMessage(hCheckGroupExecute, BM_SETCHECK, (WPARAM) (groupValue&1?BST_CHECKED:BST_UNCHECKED), 0);
+
+			SendMessage(hCheckPublicRead, BM_SETCHECK, (WPARAM) (pubValue&4?BST_CHECKED:BST_UNCHECKED), 0);
+			SendMessage(hCheckPublicWrite, BM_SETCHECK, (WPARAM) (pubValue&2?BST_CHECKED:BST_UNCHECKED), 0);
+			SendMessage(hCheckPublicExecute, BM_SETCHECK, (WPARAM) (pubValue&1?BST_CHECKED:BST_UNCHECKED), 0);
+
+#ifdef UNICODE
+			TCHAR * namebuffer = new TCHAR[MAX_PATH];
+			MultiByteToWideChar(CP_ACP, 0, fsoEdit->name, -1, namebuffer, MAX_PATH);
+			SendMessage(hStaticName, WM_SETTEXT, 0, (LPARAM) namebuffer);
+			delete [] namebuffer;
+#else
+			SendMessage(hStaticName, WM_SETTEXT, 0, (LPARAM) fsoEdit->name);
+#endif
+
+			TCHAR * valueBuffer = new TCHAR[4];
+			_itot(ownerValue, valueBuffer, 10);
+			SendMessage(hEditOwner, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+			_itot(groupValue, valueBuffer, 10);
+			SendMessage(hEditGroup, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+			_itot(pubValue, valueBuffer, 10);
+			SendMessage(hEditPublic, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+			printValueToBuffer(valueBuffer, fsoEdit->modifierValues, 3);
+			SendMessage(hEditResult, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+			delete [] valueBuffer;
+			return TRUE;	//let windows set focus
+			break; }
+		case WM_COMMAND: {
+			switch(LOWORD(wParam)) {
+				case IDOK: {
+					//do save permission stuff
+					char * commandBuffer = new char[16 + MAX_PATH];	//SITE CHMOD filename ###
+					strcpy(commandBuffer, "SITE CHMOD ");
+					strcat(commandBuffer, fsoEdit->fullpath);
+					strcat(commandBuffer, " ");
+					TCHAR * valueBuffer = new TCHAR[4];
+					printValueToBuffer(valueBuffer, fsoEdit->proposedValues, 3);
+#ifdef UNICODE
+					char * value = new char[4];
+					WideCharToMultiByte(CP_ACP, 0, valueBuffer, -1, value, 4, NULL, NULL);
+					strcat(commandBuffer, value);
+					delete [] value;
+#else
+					strcat(commandBuffer, valueBuffer);
+#endif
+					mainService->issueRawCommand(commandBuffer);
+					delete [] valueBuffer;
+					delete [] commandBuffer;
+					EndDialog(hWnd, 0);
+					return TRUE;
+					break; }
+				case IDCANCEL: {
+					EndDialog(hWnd, 0);
+					return TRUE;
+					break; }
+				case IDC_CHECK_OWNERWRITE:
+				case IDC_CHECK_OWNEREXEC:
+				case IDC_CHECK_OWNERREAD: {
+					bool state1 = SendMessage(hCheckOwnerRead, BM_GETCHECK, 0, 0) == BST_CHECKED;
+					bool state2 = SendMessage(hCheckOwnerWrite, BM_GETCHECK, 0, 0) == BST_CHECKED;
+					bool state3 = SendMessage(hCheckOwnerExecute, BM_GETCHECK, 0, 0) == BST_CHECKED;
+
+					int ownerValue = (state1?4:0) + (state2?2:0) + (state3?1:0);
+					fsoEdit->proposedValues = fsoEdit->proposedValues%100 + ownerValue*100;
+
+					TCHAR * valueBuffer = new TCHAR[4];
+
+					printValueToBuffer(valueBuffer, ownerValue, 1);
+					SendMessage(hEditOwner, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+
+					printValueToBuffer(valueBuffer, fsoEdit->proposedValues, 3);
+					SendMessage(hEditResult, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+					delete [] valueBuffer;
+					break; }
+
+				case IDC_CHECK_GROUPREAD:
+				case IDC_CHECK_GROUPWRITE:
+				case IDC_CHECK_GROUPEXEC: {
+					bool state1 = SendMessage(hCheckGroupRead, BM_GETCHECK, 0, 0) == BST_CHECKED;
+					bool state2 = SendMessage(hCheckGroupWrite, BM_GETCHECK, 0, 0) == BST_CHECKED;
+					bool state3 = SendMessage(hCheckGroupExecute, BM_GETCHECK, 0, 0) == BST_CHECKED;
+
+					int ownerValue = (state1?4:0) + (state2?2:0) + (state3?1:0);
+					fsoEdit->proposedValues -= ((fsoEdit->proposedValues/10)%10)*10;
+					fsoEdit->proposedValues += ownerValue*10;
+
+					TCHAR * valueBuffer = new TCHAR[4];
+
+					printValueToBuffer(valueBuffer, ownerValue, 1);
+					SendMessage(hEditGroup, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+
+					printValueToBuffer(valueBuffer, fsoEdit->proposedValues, 3);
+					SendMessage(hEditResult, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+					delete [] valueBuffer;
+					break; }
+
+				case IDC_CHECK_PUBREAD:
+				case IDC_CHECK_PUBWRITE:
+				case IDC_CHECK_PUBEXEC: {
+					bool state1 = SendMessage(hCheckPublicRead, BM_GETCHECK, 0, 0) == BST_CHECKED;
+					bool state2 = SendMessage(hCheckPublicWrite, BM_GETCHECK, 0, 0) == BST_CHECKED;
+					bool state3 = SendMessage(hCheckPublicExecute, BM_GETCHECK, 0, 0) == BST_CHECKED;
+
+					int ownerValue = (state1?4:0) + (state2?2:0) + (state3?1:0);
+					fsoEdit->proposedValues -= fsoEdit->proposedValues%10;
+					fsoEdit->proposedValues += ownerValue;
+
+					TCHAR * valueBuffer = new TCHAR[4];
+
+					printValueToBuffer(valueBuffer, ownerValue, 1);
+					SendMessage(hEditPublic, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+
+					printValueToBuffer(valueBuffer, fsoEdit->proposedValues, 3);
+					SendMessage(hEditResult, WM_SETTEXT, 0, (LPARAM) valueBuffer);
+					delete [] valueBuffer;
+					break; }
+					break;
+			}
+			return FALSE;
+			break; }
+	}
+	return FALSE;
+}
+
 LRESULT CALLBACK MessageEditWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	//DefaultMessageEditWindowProc(hwnd, msg, wParam, lParam);
 	switch(msg) {
@@ -2932,26 +3313,41 @@ LRESULT CALLBACK MessageEditWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARA
 }
 
 LRESULT CALLBACK NotepadPPWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+	return CallWindowProc(DefaultNotepadPPWindowProc, hwnd, msg, wParam, lParam);
+}
+
+LRESULT CALLBACK SubclassedEditWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	switch(msg) {
-		case NPPM_SAVECURRENTFILE: {
-			//Document being saved
-			if (uploadOnSave) {
-				LRESULT result = CallWindowProc(DefaultNotepadPPWindowProc, hwnd, msg, wParam, lParam);	//call the N++ loop first, so the file gets saved
-				if (result)	//only allow uploading if the save was successfull
-					upload(TRUE, FALSE);	//do not allow uncached uploads
-				return result;
-			}
-			break; }
-		case WM_COMMAND: {
-			if (LOWORD(wParam) == IDM_FILE_SAVE) {
-				LRESULT result = CallWindowProc(DefaultNotepadPPWindowProc, hwnd, msg, wParam, lParam); //call the N++ loop first, so the file gets saved
-				if (result) //only allow uploading if the save was successfull
-					upload(TRUE, FALSE); //do not allow uncached uploads
-				return result;
+		case WM_GETDLGCODE: {
+			return DLGC_WANTALLKEYS;
+		}
+		case WM_KEYDOWN: {
+			switch(LOWORD(wParam)) {
+				case VK_RETURN: {
+					HWND hParent = GetParent(hwnd);
+					if (hParent) {
+						int id = (int) GetWindowLong(hwnd, GWL_ID);
+						SendMessage(hParent, WM_COMMAND, MAKEWPARAM(id, EN_RETURN), (LPARAM) hwnd);
+					}
+					break; }
+				case VK_TAB: {
+					SHORT state = GetKeyState(VK_SHIFT);
+					HWND hwndToFocus;
+					if (state == 0) {
+						hwndToFocus = GetWindow(hwnd, GW_HWNDNEXT);
+						if (hwndToFocus == NULL)
+							hwndToFocus = GetWindow(hwnd, GW_HWNDFIRST);
+					} else {
+						hwndToFocus = GetWindow(hwnd, GW_HWNDPREV);
+						if (hwndToFocus == NULL)
+							hwndToFocus = GetWindow(hwnd, GW_HWNDLAST);
+					}
+					SetFocus(hwndToFocus); 
+					break; }
 			}
 			break; }
 	}
-	return CallWindowProc(DefaultNotepadPPWindowProc, hwnd, msg, wParam, lParam);
+	return CallWindowProc(DefaultEditWindowProc, hwnd, msg, wParam, lParam);
 }
 
 //printf output redirect thread
@@ -3031,7 +3427,215 @@ void strcpyAtoT(LPTSTR target, const char * ansi, int buflenchar) {
 #endif
 }
 
-//other
-void threadError(const char * threadName) {
-	printf("%sError: Unable to create thread %s: %d\n", getCurrentTimeStamp(), threadName, GetLastError());
+void printValueToBuffer(TCHAR * buffer, int value, int resLen) {	//base 10, value always considered positive
+	TCHAR * invBuffer = new TCHAR[resLen];
+
+	int pass = 0;
+	int curDigit = 0;
+	int strleng = 0;
+	while(pass < resLen) {
+		if (value == 0)
+			break;
+		curDigit = value%10;
+		invBuffer[pass] = '0' + curDigit;
+		value /= 10;
+		pass++;
+		strleng++;
+	}
+
+	//prepend zeros
+	int nrToAppend = resLen - strleng;
+	if (nrToAppend > 0) {
+		while(nrToAppend > 0) {
+			invBuffer[strleng] = TEXT('0');
+			strleng++;
+			nrToAppend--;
+		}
+	}
+	//invert copy invBuffer to buffer
+	for(int i = 0; i < strleng; i++) {
+		buffer[i] = invBuffer[strleng - i - 1];
+	}
+
+	//terminate
+	buffer[strleng] = 0;
+}
+
+//Automatic transfertype processing
+void addBinary(TCHAR * newType) {
+	binaryVec->push_back(newType);
+}
+
+void addASCII(TCHAR * newType) {
+	asciiVec->push_back(newType);
+}
+
+Transfer_Mode getType(const char * filename) {
+	//search for an extension, if none if found revert to default type
+	while(*filename != '.') {
+		if (*filename == 0) {	//end of string, no extension, return default
+			return fallbackMode;
+		}
+		filename++;
+	}
+	filename++;	//skip past '.'
+
+	TCHAR * checkName;
+	Transfer_Mode result = Mode_Auto;
+#ifdef UNICODE
+	int len = lstrlenA(filename) + 1;
+	checkName = new TCHAR[len];
+	MultiByteToWideChar(CP_ACP, 0, filename, -1, checkName, len);
+#else
+	checkName = new char[lstrlenA(filename)+1];
+	lstrcpyA(checkName, filename);
+#endif
+
+	for(unsigned int i = 0; i < asciiVec->size(); i++) {
+		if (!lstrcmpi(checkName, (*asciiVec)[i])) {
+			result = Mode_ASCII;
+			break;
+		}
+	}
+
+	if (result == Mode_Auto) {	//no ascii match
+		for(unsigned int i = 0; i < binaryVec->size(); i++) {
+			if (!lstrcmpi(checkName, (*binaryVec)[i])) {
+				result = Mode_Binary;
+				break;
+			}
+		}
+	}
+
+	if (result == Mode_Auto) {	//no match at all, revert to default
+		result = fallbackMode;
+	}
+
+	delete [] checkName;
+	return result;
+}
+
+void fillTypeLists() {
+	SendMessage(hListASCII, LB_RESETCONTENT, 0, 0);
+	for(unsigned int i = 0; i < asciiVec->size(); i++) {
+		SendMessage(hListASCII, LB_ADDSTRING, 0, (LPARAM) (*asciiVec)[i]);
+	}
+
+	SendMessage(hListBinary, LB_RESETCONTENT, 0, 0);
+	for(unsigned int i = 0; i < binaryVec->size(); i++) {
+		SendMessage(hListBinary, LB_ADDSTRING, 0, (LPARAM) (*binaryVec)[i]);
+	}
+}
+
+void saveTypeLists() {
+	TCHAR * typeString = new TCHAR[INIBUFSIZE];
+	typeString[0] = 0;
+	for(unsigned int i = 0; i < asciiVec->size(); i++) {
+		lstrcat(typeString, (*asciiVec)[i]);
+		lstrcat(typeString, TEXT(";"));
+	}
+	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("ASCIIFileTypes"), typeString, iniFile);
+
+	typeString[0] = 0;
+	for(unsigned int i = 0; i < binaryVec->size(); i++) {
+		lstrcat(typeString, (*binaryVec)[i]);
+		lstrcat(typeString, TEXT(";"));
+	}
+	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("BinaryFileTypes"), typeString, iniFile);
+
+	delete [] typeString;
+}
+
+void readTypeLists() {
+	TCHAR * typeString = new TCHAR[INIBUFSIZE];
+	TCHAR * typeBuffer;
+	GetPrivateProfileString(TEXT("FTP_Settings"), TEXT("ASCIIFileTypes"), TEXT(""), typeString, INIBUFSIZE, iniFile);
+	int i = 0, j = 0;
+	while(typeString[i] != 0) {
+		if (typeString[i] == TEXT(';') && i > j) {
+			typeString[i] = 0;
+			typeBuffer = new TCHAR[i-j+1];
+			lstrcpy(typeBuffer, typeString+j);
+			asciiVec->push_back(typeBuffer);
+			j = i+1;
+		}
+		i++;
+	}
+
+	GetPrivateProfileString(TEXT("FTP_Settings"), TEXT("BinaryFileTypes"), TEXT(""), typeString, INIBUFSIZE, iniFile);
+	i = 0, j = 0;
+	while(typeString[i] != 0) {
+		if (typeString[i] == TEXT(';') && i > j) {
+			typeString[i] = 0;
+			typeBuffer = new TCHAR[i-j+1];
+			lstrcpy(typeBuffer, typeString+j);
+			binaryVec->push_back(typeBuffer);
+			j = i+1;
+		}
+		i++;
+	}
+
+	delete [] typeString;
+}
+
+void clearTypeVectors() {
+	unsigned int vecSize = (unsigned int) asciiVec->size();
+	if (asciiVec->size() > 0) {
+		for(unsigned int i = 0; i < vecSize; i++) {
+			delete [] (*asciiVec)[i];
+		}
+		asciiVec->clear();
+	}
+
+	vecSize = (int) binaryVec->size();
+	if (binaryVec->size() > 0) {
+		for(unsigned int i = 0; i < vecSize; i++) {
+			delete [] (*binaryVec)[i];
+		}
+		binaryVec->clear();
+	}
+}
+
+void removeExtFromASCII(TCHAR * extension) {
+	for(unsigned int i = 0; i < asciiVec->size(); i++) {
+		if (!lstrcmpi(extension, (*asciiVec)[i])) {
+			delete [] (*asciiVec)[i];
+			asciiVec->erase(asciiVec->begin()+i,asciiVec->begin()+i+1);
+			break;
+		}
+	}
+}
+
+void removeExtFromBinary(TCHAR * extension) {
+	for(unsigned int i = 0; i < binaryVec->size(); i++) {
+		if (!lstrcmpi(extension, (*binaryVec)[i])) {
+			delete [] (*binaryVec)[i];
+			binaryVec->erase(binaryVec->begin()+i,binaryVec->begin()+i+1);
+			break;
+		}
+	}
+}
+
+//helper functions
+void err(LPCTSTR str) {
+	MessageBox(nppData._nppHandle,str,TEXT("Error"),MB_OK);
+}
+
+void Error(LPTSTR lpszFunction) { 
+	LPVOID lpMsgBuf;
+	LPVOID lpDisplayBuf;
+	if (lpszFunction == NULL) {
+		lpszFunction = TEXT("Unknown function");
+	}
+	DWORD dw = GetLastError(); 
+
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,NULL,dw,MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),(LPTSTR) &lpMsgBuf,0, NULL );
+
+	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,(lstrlen((LPCTSTR)lpMsgBuf)+lstrlen((LPCTSTR)lpszFunction)+40)*sizeof(TCHAR)); 
+	wsprintf((LPTSTR)lpDisplayBuf,TEXT("%s failed with error %d: %s"),lpszFunction, dw, lpMsgBuf); 
+
+	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
+
+	LocalFree(lpMsgBuf);
+	LocalFree(lpDisplayBuf);
 }

@@ -21,9 +21,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 //FTP_service is ANSI, FTP is ANSI
 
+#include "Filesystem.h"
 #include "Socket.h"
 #include "ServerSocket.h"
-#include "stdio.h"
 
 #define response_buffer_size	2048
 #define recieve_buffer_size		response_buffer_size - 1
@@ -32,6 +32,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define WAITEVENTPARSETIME		5000		//time the socket reader waits before setting a new response. Effectively means the application cannot take longer than 5 seconds before things may get corrupted
 
 enum Connection_Mode {Mode_Passive = 0, Mode_Active};
+enum Transfer_Mode {Mode_Binary = 0, Mode_ASCII = 1, Mode_Auto = 2};	//Mode_Auto may not be used on transfers
 enum Event_Type {Event_Connection=1, Event_Download=2, Event_Upload=4, Event_Directory=8};
 //Event_Connection: 0 = connect, 1 = disconnect
 //Event_Download: 0 = success, 1 = failure
@@ -66,41 +67,6 @@ struct SOCKCALLBACKFORMAT {
 	HANDLE sockEndEvent;
 };
 
-struct FILEOBJECT;
-struct DIRECTORY;
-
-struct FILESYSTEMOBJECT {
-	bool isDirectory;				//Boolean to indicate if the object is a directory or a file
-	char name[MAX_PATH];			//name of object
-	char fullpath[MAX_PATH];		//full path to the object on server
-	DIRECTORY * parent;				//parent directory of object
-};
-
-struct DIRECTORY {
-	FILESYSTEMOBJECT fso;			//every object should have this in the beginning for compatibility
-	FILEOBJECT ** files;			//array of files
-	DIRECTORY ** subdirs;			//array of subdirectories
-	int nrFiles;					//amount of files
-	int maxNrFiles;					//allocated file pointers
-	int nrDirs;						//amount of subdirectories
-	int maxNrDirs;					//allocated directory pointers
-	bool updated;					//true when the contents of the directory have been retrieved
-	DIRECTORY () {
-		ZeroMemory(this, sizeof(DIRECTORY));
-		fso.isDirectory = true;
-	};
-};
-
-struct FILEOBJECT {
-	FILESYSTEMOBJECT fso;			//every object should have this in the beginning for compatibility
-	int filesize;					//size in bytes of file
-	char modifiers[11];				//access modifiers of file (UNIX only)
-	FILEOBJECT () {
-		ZeroMemory(this, sizeof(FILEOBJECT));
-		fso.isDirectory = false;
-	};
-};
-
 struct PROGRESSMONITOR {
 	void (*callback) (FTP_Service * service, int current, int total);
 	int total;
@@ -119,8 +85,8 @@ public:
 	bool login(const char * username, const char * password);
 	bool disconnect();
 
-	bool downloadFile(HANDLE localFile, const char * serverfilename);
-	bool uploadFile(HANDLE localFile,const char * serverfilename);
+	bool downloadFile(HANDLE localFile, FILEOBJECT * serverFile, Transfer_Mode mode);
+	bool uploadFile(HANDLE localFile, const char * serverFile, Transfer_Mode mode);
 	bool getDirectoryContents(DIRECTORY * dir, bool overrideBusy = false);	//please do not use override busy, is here due to implementation
 	bool renameFile(FILEOBJECT * file, const char * newName);
 	bool deleteFile(FILEOBJECT * file);
@@ -128,6 +94,7 @@ public:
 	bool renameDirectory(DIRECTORY * dir, const char * newName);
 	bool deleteDirectory(DIRECTORY * dir);
 
+	bool issueRawCommand(const char * command);
 	bool abortOperation();
 
 	void setMode(Connection_Mode);
@@ -137,15 +104,17 @@ public:
 	void setProgressCallback(void (FTP_Service *, int, int));
 	void setEventCallback(void (FTP_Service *, unsigned int, int));
 
+	void setKeepAlive(bool enabled, int interval);
 	DIRECTORY * getRoot();
 	~FTP_Service();
 
 	//public due to implementation, do not call
 	void watchDogProcedure();
-	void listForClientProcedure(LISTENDATA * listendat);
+	void listenForClientProcedure(LISTENDATA * listendat);
+	void keepAlive();
 
 private:
-	Connection_Mode mode;			//Used to keep track of what mode to use (passive/active)
+	Connection_Mode connectionMode;	//Used to keep track of what mode to use (passive/active)
 	Socket * controlConnection;		//Used to keep track of control connection
 
 	HANDLE responseEvent;			//Used to notify of new response from server
@@ -157,6 +126,8 @@ private:
 	HANDLE dataConnLostEvent;		//Used to notify data socket closed
 	HANDLE transferProgressEvent;	//Used to detect transfer timeouts
 	HANDLE noMoreBusyEvent;			//Used to determine any pending operations are done
+	HANDLE keepAliveEvent;			//Used to enable keep alive
+	HANDLE keepAliveDied;			//Used to flag if keep alive thread has died
 
 	int timeLeft;					//keep track how many milliseconds left
 	int timeoutMSec;				//time to elapse before timeout event occurs (milliseconds)
@@ -195,6 +166,10 @@ private:
 	char * lastFileDescriptor;
 	bool lastDirCompleted;
 
+	//keep alive
+	bool keepAliveEnabled;
+	int keepAliveInterval;	//interval to send keep alive message in mSec
+
 	//callbacks
 	PROGRESSMONITOR * progress;
 	EVENTCALLBACK * events;
@@ -204,7 +179,7 @@ private:
 	bool createActiveConnection(SOCKCALLBACKFORMAT * params);
 	bool createActiveConnection2(SOCKCALLBACKFORMAT * params);
 	bool createPassiveConnection(SOCKCALLBACKFORMAT * params);
-	bool createDataConnection(const char * type, const char * command, SOCKCALLBACKFORMAT * sbf);
+	bool createDataConnection(Transfer_Mode transferMode, const char * command, SOCKCALLBACKFORMAT * sbf);
 
 	bool waitForDataConnection();	//to be used in ACTIVE mode
 
@@ -237,12 +212,16 @@ private:
 	void killWatchDog();
 
 	void setBusy(bool isBusy);
+
+	void enableKeepAlive(int interval);
+	void disableKeepAlive();
 };
 
 //Threads
 DWORD WINAPI readSocket(LPVOID);
 DWORD WINAPI listenForClient(LPVOID);
 DWORD WINAPI watchDogTimeoutThread(LPVOID param);
+DWORD WINAPI keepAliveThread(LPVOID param);
 
 int parseAsciiToDecimal(const char * string, int * result);		//read begin of string for number with separator dots
 void enableDirectoryContents(DIRECTORY * currentdir, int type);	//make sure enough memory allocated for directory

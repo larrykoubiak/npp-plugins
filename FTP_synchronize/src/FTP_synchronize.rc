@@ -79,19 +79,28 @@ BEGIN
     EDITTEXT        IDC_SETTINGS_INITDIR,204,162,84,14,ES_AUTOHSCROLL
     CONTROL         "On connect, subtree root folder",IDC_CHECK_FINDROOT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,162,186,120,10
-    GROUPBOX        "Transfermode",IDC_STATIC,312,72,60,40
+    GROUPBOX        "Connection mode",IDC_STATIC,312,72,72,40
     CONTROL         "Active",IDC_RADIO_ACTIVE,"Button",BS_AUTORADIOBUTTON,
                     318,84,36,10
     CONTROL         "Passive",IDC_RADIO_PASSIVE,"Button",BS_AUTORADIOBUTTON,
                     318,96,40,10
     RTEXT           "You need to reconnect for changes to have effect",
-                    IDC_STATIC,210,204,162,8
+                    IDC_STATIC,210,228,162,8
     LTEXT           "Profiles:",IDC_STATIC,18,6,27,8
     LISTBOX         IDC_LIST_PROFILES,18,18,114,240,LBS_SORT | 
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "New",IDC_BUTTON_NEW,18,264,30,14
     PUSHBUTTON      "Delete",IDC_BUTTON_DELETE,96,264,38,14
     PUSHBUTTON      "Apply",IDB_SETTINGS_APPLY,318,258,50,14
+    CONTROL         "Enable keep alive",IDC_CHECK_KEEPALIVE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,162,204,72,10
+    GROUPBOX        "Transfer mode",IDC_STATIC,312,126,72,54
+    CONTROL         "Binary",IDC_RADIO_BINARY,"Button",BS_AUTORADIOBUTTON,
+                    318,138,36,10
+    CONTROL         "ASCII",IDC_RADIO_ASCII,"Button",BS_AUTORADIOBUTTON,318,
+                    150,35,10
+    CONTROL         "Automatic",IDC_RADIO_AUTOMATIC,"Button",
+                    BS_AUTORADIOBUTTON,318,162,48,10
 END
 
 IDD_DIALOG_OUTPUT DIALOGEX 0, 0, 190, 90
@@ -142,10 +151,35 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CONTROL         "Delete partially downloaded files",IDC_CHECK_DELPARTDLD,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,119,10
-    GROUPBOX        "Queueing",IDC_STATIC,12,30,366,144
-    CONTROL         "Enable transfer queueing (experimental)",
-                    IDC_CHECK_ENABLEQUEUE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,24,48,145,10
+    GROUPBOX        "Queueing",IDC_STATIC,12,30,366,90
+    GROUPBOX        "Automatic transfertype detection",IDC_STATIC,12,126,366,
+                    162
+    LISTBOX         IDC_LIST_ASCII,36,180,60,84,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_ADDASCII,36,162,60,14,ES_AUTOHSCROLL | 
+                    ES_WANTRETURN
+    LTEXT           "ASCII types",IDC_STATIC,24,150,40,8
+    LISTBOX         IDC_LIST_BINARY,126,180,60,84,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Binary types",IDC_STATIC,114,150,41,8
+    CONTROL         "ASCII",IDC_RADIO_ASCII,"Button",BS_AUTORADIOBUTTON,216,
+                    252,35,10
+    CONTROL         "Binary",IDC_RADIO_BINARY,"Button",BS_AUTORADIOBUTTON,
+                    264,252,36,10
+    LTEXT           "Doubleclick an item to remove it",IDC_STATIC,36,270,102,
+                    8
+    EDITTEXT        IDC_EDIT_ADDBINARY,126,162,60,14,ES_AUTOHSCROLL | 
+                    ES_WANTRETURN
+    GROUPBOX        "When a type is not registered, transfer as",IDC_STATIC,
+                    210,240,150,24
+    LTEXT           "Key in the extension and press Enter, for example 'txt'",
+                    IDC_STATIC,18,138,180,8
+    LTEXT           "Use this to specify what mode to use when transferring files with a known extension. Extensions in the ASCII list have predecence over the ones in the Binary list.",
+                    IDC_STATIC,216,138,138,42
+    LTEXT           "Queueing is currently unavailable",IDC_STATIC,18,42,107,
+                    8
+    LTEXT           "When an extension is not present or it is in neither of the lists, a default mode will be chosen which can be specified below.",
+                    IDC_STATIC,216,180,137,30
 END
 
 IDD_DIALOG_SETTINGS_GLOBAL DIALOGEX 0, 0, 388, 311
@@ -182,6 +216,63 @@ BEGIN
     CONTROL         "Use explorer icons for files and folders",
                     IDC_CHECK_PRETTYICON,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,18,246,138,10
+END
+
+IDD_DIALOG_COMMAND DIALOGEX 0, 0, 214, 41
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | 
+    WS_CAPTION | WS_SYSMENU
+CAPTION "Please enter the command"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDB_BUTTON_OK,162,6,50,14
+    PUSHBUTTON      "Cancel",IDB_BUTTON_CANCEL,162,24,50,14
+    EDITTEXT        IDC_EDIT_NEWNAME,6,6,144,14,ES_AUTOHSCROLL
+END
+
+IDD_DIALOG_PERMISSION DIALOGEX 0, 0, 292, 202
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Access permissions"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,228,6,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,228,24,50,14
+    GROUPBOX        "Owner",IDC_STATIC,6,24,210,42
+    GROUPBOX        "Group",IDC_STATIC,6,78,210,48
+    GROUPBOX        "Public",IDC_STATIC,6,132,210,54
+    CONTROL         "Read",IDC_CHECK_OWNERREAD,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,42,33,10
+    CONTROL         "Write",IDC_CHECK_OWNERWRITE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,66,42,33,10
+    CONTROL         "Execute",IDC_CHECK_OWNEREXEC,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,114,42,42,10
+    EDITTEXT        IDC_EDIT_OWNERVAL,174,42,18,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    EDITTEXT        IDC_EDIT_RESVAL,258,150,24,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    LTEXT           "Resulting value",IDC_STATIC,234,138,50,8
+    LTEXT           "Value",IDC_STATIC,168,30,18,8
+    CONTROL         "Read",IDC_CHECK_GROUPREAD,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,102,33,10
+    CONTROL         "Write",IDC_CHECK_GROUPWRITE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,66,102,33,10
+    CONTROL         "Execute",IDC_CHECK_GROUPEXEC,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,114,102,42,10
+    EDITTEXT        IDC_EDIT_GROUPVAL,174,102,18,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    LTEXT           "Value",IDC_STATIC,168,90,18,8
+    CONTROL         "Read",IDC_CHECK_PUBREAD,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,156,33,10
+    CONTROL         "Write",IDC_CHECK_PUBWRITE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,66,156,33,10
+    CONTROL         "Execute",IDC_CHECK_PUBEXEC,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,114,156,42,10
+    EDITTEXT        IDC_EDIT_PUBVAL,174,156,18,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    LTEXT           "Value",IDC_STATIC,168,144,18,8
+    LTEXT           "Notice: altering filepermissions is not possible on all FTP servers",
+                    IDC_STATIC,84,192,203,8
+    LTEXT           "Name",IDC_STATIC_OBJECTNAME,6,6,210,8
 END
 
 
@@ -237,6 +328,8 @@ IDB_BITMAP_DOWNLOAD     BITMAP                  "bitmaps\\toolbar_download.bmp"
 IDB_BITMAP_ABORT        BITMAP                  "bitmaps\\toolbar_abort.bmp"
 IDB_BITMAP_SETTINGS     BITMAP                  "bitmaps\\toolbar_settings.bmp"
 IDB_BITMAP_MESSAGES     BITMAP                  "bitmaps\\toolbar_messages.bmp"
+IDB_BITMAP_REFRESH      BITMAP                  "bitmaps\\toolbar_refresh.bmp"
+IDB_BITMAP_RAWCOMMAND   BITMAP                  "bitmaps\\toolbar_rawcommand.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -256,12 +349,12 @@ IDI_ICON_MESSAGES       ICON                    "bitmaps\\icon_messages.ico"
 #ifdef APSTUDIO_INVOKED
 GUIDELINES DESIGNINFO 
 BEGIN
-    IDD_DIALOG_SETTINGS_PROFILES, DIALOG
+    IDD_DIALOG_PERMISSION, DIALOG
     BEGIN
-    END
-
-    IDD_DIALOG_ABOUT, DIALOG
-    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 285
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 195
     END
 END
 #endif    // APSTUDIO_INVOKED

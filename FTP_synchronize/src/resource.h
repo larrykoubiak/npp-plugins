@@ -15,11 +15,16 @@
 #define IDI_ICON_MESSAGES               111
 #define IDD_DIALOG_RENAME               112
 #define IDD_DIALOG_PASSWORD             113
-#define IDD_DIALOG_OUTPUT               114
-#define IDD_DIALOG_ABOUT                115
-#define IDD_DIALOG_SETTINGS_PROFILES    116
-#define IDD_DIALOG_SETTINGS_GLOBAL      117
-#define IDD_DIALOG_SETTINGS_TRANSFERS   118
+#define IDD_DIALOG_COMMAND              114
+#define IDD_DIALOG_OUTPUT               115
+#define IDD_DIALOG_ABOUT                116
+#define IDD_DIALOG_SETTINGS_PROFILES    117
+#define IDD_DIALOG_SETTINGS_GLOBAL      118
+#define IDD_DIALOG_SETTINGS_TRANSFERS   119
+#define IDD_DIALOG_PERMISSION           120
+#define IDB_BITMAP_REFRESH              121
+#define IDB_BITMAP2                     122
+#define IDB_BITMAP_RAWCOMMAND           122
 #define IDC_EDIT_ABOUT                  1001
 #define IDC_EDIT_OUTPUT                 1002
 #define IDC_EDIT_NEWNAME                1003
@@ -42,6 +47,7 @@
 #define IDC_RADIO_PASSIVE               1020
 #define IDB_SETTINGS_APPLY              1021
 #define IDC_CHECK_CACHE                 1022
+#define IDC_CHECK_KEEPALIVE             1022
 #define IDC_CHECK_CACHEOPEN             1023
 #define IDC_CHECK_UPLOADDIRECT          1024
 #define IDC_CHECK_UPLOADONSAVE          1025
@@ -54,17 +60,37 @@
 #define IDC_CHECK_SHOWDIR               1032
 #define IDC_CHECK_PRETTYICON            1033
 #define IDC_CHECK_DELPARTDLD            1034
-#define IDC_CHECK1                      1035
 #define IDC_CHECK_ENABLEQUEUE           1035
+#define IDC_CHECK_OWNERREAD             1036
+#define IDC_CHECK_OWNERWRITE            1037
+#define IDC_CHECK_OWNEREXEC             1038
+#define IDC_EDIT_OWNERVAL               1039
+#define IDC_EDIT_RESVAL                 1040
+#define IDC_CHECK_GROUPREAD             1041
+#define IDC_CHECK_GROUPWRITE            1042
+#define IDC_CHECK_GROUPEXEC             1043
+#define IDC_EDIT_GROUPVAL               1044
+#define IDC_CHECK_PUBREAD               1045
+#define IDC_CHECK_PUBWRITE              1046
+#define IDC_CHECK_PUBEXEC               1047
+#define IDC_EDIT_PUBVAL                 1048
+#define IDC_STATIC_OBJECTNAME           1049
+#define IDC_RADIO_AUTOMATIC             1050
+#define IDC_RADIO_ASCII                 1051
+#define IDC_RADIO_BINARY                1052
+#define IDC_LIST_ASCII                  1053
+#define IDC_EDIT_ADDASCII               1054
+#define IDC_EDIT_ADDBINARY              1055
+#define IDC_LIST_BINARY                 1057
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        119
+#define _APS_NEXT_RESOURCE_VALUE        123
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1036
+#define _APS_NEXT_CONTROL_VALUE         1059
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

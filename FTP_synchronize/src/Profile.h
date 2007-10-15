@@ -39,9 +39,11 @@ public:
 	void setInitDir(LPCTSTR dir);
 	void setPort(int newport);
 	void setTimeout(int newtimeout);
-	void setMode(Connection_Mode newmode);
+	void setTransferMode(Transfer_Mode newmode);
+	void setConnectionMode(Connection_Mode newmode);
 	void setFindRoot(bool find);
 	void setAskPassword(bool ask);
+	void setKeepAlive(bool enabled);
 	LPCTSTR getName();
 	LPCTSTR getAddress();
 	LPCTSTR getUsername();
@@ -49,9 +51,11 @@ public:
 	LPCTSTR getInitDir();
 	int getPort();
 	int getTimeout();
-	Connection_Mode getMode();
+	Transfer_Mode getTransferMode();
+	Connection_Mode getConnectionMode();
 	bool getFindRoot();
 	bool getAskPassword();
+	bool getKeepAlive();
 #ifdef UNICODE
 	LPCSTR getAddressA();
 	LPCSTR getUsernameA();
@@ -70,8 +74,10 @@ private:
 #endif
 	int port;
 	int timeout;
-	Connection_Mode transfermode;
+	Transfer_Mode transferMode;
+	Connection_Mode connectionMode;
 	bool findRoot;
 	bool askPassword;
+	bool keepAlive;
 	TCHAR * iniFile;
 };

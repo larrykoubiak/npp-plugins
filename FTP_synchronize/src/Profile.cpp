@@ -69,10 +69,12 @@ void Profile::reload() {
 #endif
 	this->setPort( GetPrivateProfileInt(this->name, TEXT("Port"), 21, this->iniFile));
 	this->setTimeout( GetPrivateProfileInt(this->name, TEXT("Timeout"), 30, this->iniFile) );
-	bool isActive = GetPrivateProfileInt(this->name, TEXT("TransferMode") , 0, this->iniFile) == 1;
-	this->setMode( (isActive?Mode_Active:Mode_Passive) );
+	this->setConnectionMode( (Connection_Mode)GetPrivateProfileInt(this->name, TEXT("ConnectionMode") , 0, this->iniFile) );
+	this->setTransferMode( (Transfer_Mode)GetPrivateProfileInt(this->name, TEXT("TransferMode") , 0, this->iniFile) );
+
 	this->setFindRoot( GetPrivateProfileInt(this->name, TEXT("FindRoot"), 0, this->iniFile) == 1 );
 	this->setAskPassword( GetPrivateProfileInt(this->name, TEXT("AskForPassword"), 0, this->iniFile) == 1 );
+	this->setKeepAlive( GetPrivateProfileInt(this->name, TEXT("KeepAlive"), 0, this->iniFile) == 1 );
 }
 
 void Profile::save() {
@@ -81,14 +83,18 @@ void Profile::save() {
 	WritePrivateProfileString(this->name, TEXT("Port"), buf, this->iniFile);
 	_itot(this->timeout, buf, 10);
 	WritePrivateProfileString(this->name, TEXT("Timeout"), buf, this->iniFile);
+	_itot(this->connectionMode, buf, 10);
+	WritePrivateProfileString(this->name, TEXT("ConnectionMode"), buf, this->iniFile);
+	_itot(this->transferMode, buf, 10);
+	WritePrivateProfileString(this->name, TEXT("TransferMode"), buf, this->iniFile);
 	delete [] buf;
+
 	WritePrivateProfileString(this->name, TEXT("Address"), this->address, this->iniFile);
-	WritePrivateProfileString(this->name, TEXT("TransferMode"), (this->transfermode == Mode_Active)?TEXT("1"):TEXT("0"), iniFile);
 	WritePrivateProfileString(this->name, TEXT("Username"), this->username, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("InitialDirectory"), this->initialDir, this->iniFile);
-	WritePrivateProfileString(this->name, TEXT("FindRoot"), (this->findRoot == true)?TEXT("1"):TEXT("0"), iniFile);
-	WritePrivateProfileString(this->name, TEXT("AskForPassword"), (this->askPassword == true)?TEXT("1"):TEXT("0"), iniFile);
-
+	WritePrivateProfileString(this->name, TEXT("FindRoot"), (this->findRoot)?TEXT("1"):TEXT("0"), iniFile);
+	WritePrivateProfileString(this->name, TEXT("AskForPassword"), (this->askPassword)?TEXT("1"):TEXT("0"), iniFile);
+	WritePrivateProfileString(this->name, TEXT("KeepAlive"), (this->keepAlive)?TEXT("1"):TEXT("0"), iniFile);
 	//Encrypt the password using some algorithm
 	TCHAR * encryptedPwd = new TCHAR[BUFFERSIZE];
 	int res = lstrlen(this->password);
@@ -158,11 +164,18 @@ void Profile::setTimeout(int newtimeout) {
 		this->timeout = 30;
 }
 
-void Profile::setMode(Connection_Mode newmode) {
-	if (newmode == Mode_Passive || newmode == Mode_Active)
-		this->transfermode = newmode;
+void Profile::setTransferMode(Transfer_Mode newmode) {
+	if (newmode == Mode_Binary || newmode == Mode_ASCII || newmode == Mode_Auto)
+		this->transferMode = newmode;
 	else
-		this->transfermode = Mode_Passive;
+		this->transferMode = Mode_Binary;
+}
+
+void Profile::setConnectionMode(Connection_Mode newmode) {
+	if (newmode == Mode_Passive || newmode == Mode_Active)
+		this->connectionMode = newmode;
+	else
+		this->connectionMode = Mode_Passive;
 }
 
 void Profile::setFindRoot(bool find) {
@@ -171,6 +184,10 @@ void Profile::setFindRoot(bool find) {
 
 void Profile::setAskPassword(bool ask) {
 	askPassword = ask;
+}
+
+void Profile::setKeepAlive(bool enabled) {
+	keepAlive = enabled;
 }
 
 LPCTSTR Profile::getName() {
@@ -201,16 +218,24 @@ int Profile::getTimeout() {
 	return this->timeout;
 }
 
-Connection_Mode Profile::getMode() {
-	return this->transfermode;
+Transfer_Mode Profile::getTransferMode() {
+	return transferMode;
+}
+
+Connection_Mode Profile::getConnectionMode() {
+	return this->connectionMode;
 }
 
 bool Profile::getFindRoot() {
 	return findRoot;
 }
 
-bool  Profile::getAskPassword() {
+bool Profile::getAskPassword() {
 	return askPassword;
+}
+
+bool Profile::getKeepAlive() {
+	return keepAlive;
 }
 
 #ifdef UNICODE

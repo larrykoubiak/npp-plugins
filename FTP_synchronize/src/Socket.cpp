@@ -19,7 +19,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "stdafx.h"
 #include "Socket.h"
-#include "Logging.h"
 
 int Socket::amount = 0;
 
@@ -45,7 +44,6 @@ bool Socket::connectClient(unsigned int timeout) {
 	SOCKADDR_IN sin;
 
 	this->m_iTimeoutVal = timeout;
-	DWORD id;
 
 	ResetEvent(m_hTimeoutHostnameWaitEvent);
 
@@ -59,15 +57,11 @@ bool Socket::connectClient(unsigned int timeout) {
 
 	this->m_pHostent->h_addr_list = &hostBuffer;
 
-	void * param = (void*)this;
-	HANDLE hThread = CreateThread(NULL, 0, hostnameTimeoutCheck, (LPVOID) param, 0, &id);
-	if (hThread == NULL) {
+	bool threadSuccess = StartThread(hostnameTimeoutCheck, this, "hostnameTimeoutCheck");
+	if (!threadSuccess) {
 		closesocket(this->m_hSocket);
 		this->m_iError = GetLastError();
-		printf("%sFailed to create thread for socket\n", getCurrentTimeStamp());
 		return false;
-	} else {
-		CloseHandle(hThread);
 	}
 
 	DWORD res = WaitForSingleObject(m_hTimeoutHostnameWaitEvent, this->m_iTimeoutVal);
@@ -99,15 +93,12 @@ bool Socket::connectClient(unsigned int timeout) {
 	sin.sin_port = htons(this->m_iPort);
 
 	ResetEvent(m_hTimeoutWaitEvent);
-	hThread = CreateThread(NULL, 0, socketTimeoutCheck, (LPVOID) this, 0, &id);
-	if (hThread == NULL) {
+	threadSuccess = StartThread(socketTimeoutCheck, this, "socketTimeoutCheck");
+	if (!threadSuccess) {
 		closesocket(this->m_hSocket);
 		delete this->m_pHostent;
 		this->m_iError = GetLastError();
-		printf("%sTimeout on connect\n", getCurrentTimeStamp());
 		return false;
-	} else {
-		CloseHandle(hThread);
 	}
 
 	int connectres = connect(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin));

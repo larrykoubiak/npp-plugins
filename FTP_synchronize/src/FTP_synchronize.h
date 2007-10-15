@@ -19,6 +19,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #pragma once
 //
+#include <io.h>
+#include <conio.h>
+#include <vector>
+
 #include "PluginInterface.h"
 #include "Scintilla.h"
 #include "ScintillaEditView.h"
@@ -35,15 +39,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "shlobj.h"
 #include "shellapi.h"
 
-#include <io.h>
-#include <stdio.h>
-#include <conio.h>
-#include <vector>
-
 #include "FTP_service.h"
 #include "Profile.h"
 #include "DragDropSupport.h"
 #include "FileQueue.h"
+#include "Filesystem.h"
 
 //
 #ifdef UNICODE	//disable DBCS functions
@@ -60,36 +60,43 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif  //UNICODE
 
 #define nbFunc	2
-#define nrTbButtons 9
 
 #define INIBUFSIZE			1024
 
 //Custom window messages
 #define	WM_DLGEND			WM_USER + 500
+#define EN_RETURN			WM_USER + 501
 
 //control IDS
 #define IDW_STATUSBAR				 5001
 
-#define IDM_POPUP_DOWNLOADFILE		10001
-#define IDM_POPUP_UPLOADFILE		10002
-#define IDM_POPUP_RENAMEFILE		10003
-#define IDM_POPUP_DELETEFILE		10004
-#define IDM_POPUP_PROPSFILE			10005
+//output popup menu
+#define IDM_POPUP_COPY				10001
+#define IDM_POPUP_CLEAR				10002
+#define IDM_POPUP_SELECTALL			10003
+//file popup menu
+#define IDM_POPUP_DOWNLOADFILE		10004
+#define IDM_POPUP_DLDTOLOCATION		10005
+#define IDM_POPUP_RENAMEFILE		10006
+#define IDM_POPUP_DELETEFILE		10007
+#define IDM_POPUP_PERMISSIONFILE	10008
+#define IDM_POPUP_PROPSFILE			10009
+//directory popup menu
+#define IDM_POPUP_NEWDIR			10010
+#define IDM_POPUP_RENAMEDIR			10011
+#define IDM_POPUP_DELETEDIR			10012
+#define IDM_POPUP_UPLOADFILE		10013
 #define IDM_POPUP_UPLOADOTHERFILE	10014
-#define IDM_POPUP_DLDTOLOCATION		10015
+#define IDM_POPUP_REFRESHDIR		10015
+#define IDM_POPUP_PERMISSIONDIR		10016
+#define IDM_POPUP_PROPSDIR			10017
 
-#define IDM_POPUP_OPENDIR			10006
-#define IDM_POPUP_REFRESHDIR		10007
-#define IDM_POPUP_RENAMEDIR			10008
-#define IDM_POPUP_NEWDIR			10009
-#define IDM_POPUP_DELETEDIR			10010
-
-#define IDM_POPUP_COPY				10011
-#define IDM_POPUP_CLEAR				10012
-#define IDM_POPUP_SELECTALL			10013
-
+//Range for profile items in popupmenu. Go over 1000 profiles and the menu will not work anymore
 #define IDM_POPUP_PROFILE_FIRST		11000
-#define IDM_POPUP_PROFILE_MAX		12000	//go over 1000 profiles and the menu will not work anymore
+#define IDM_POPUP_PROFILE_MAX		12000	
+
+//this includes separators
+#define nrTbButtons 12
 
 #define IDB_BUTTON_TOOLBAR_CONNECT	501
 #define IDB_BUTTON_TOOLBAR_UPLOAD	502
@@ -97,6 +104,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define IDB_BUTTON_TOOLBAR_ABORT	504
 #define IDB_BUTTON_TOOLBAR_SETTINGS	505
 #define IDB_BUTTON_TOOLBAR_MESSAGES	506
+#define IDB_BUTTON_TOOLBAR_RAWCMD	507
+#define IDB_BUTTON_TOOLBAR_REFRESH	508
 
 #define FolderWindowClassName TEXT("N++FTPFOLDERDOCKDLG")
 //
@@ -117,6 +126,7 @@ HTREEITEM lastDirectoryItem;
 DIRECTORY * lastDnDDirectoryItemParam;
 HTREEITEM lastDnDDirectoryItem;
 HTREEITEM lastSelected;
+FILESYSTEMOBJECT * fsoEdit;		//object editing permissions
 
 //Drag and Drop support vars
 CDropTarget * mainDropTarget;
@@ -130,13 +140,15 @@ FuncItem funcItem[nbFunc];
 FTP_Service * mainService;
 
 HWND hFolderWindow, hTreeview, hStatusbar, hProgressbar, hFolderToolbar, hOutputWindow, hOutputEdit, hButtonClear;
+HWND hCheckOwnerRead, hCheckOwnerWrite, hCheckOwnerExecute, hCheckGroupRead, hCheckGroupWrite, hCheckGroupExecute, hCheckPublicRead, hCheckPublicWrite, hCheckPublicExecute,
+	 hEditOwner, hEditGroup, hEditPublic, hEditResult, hStaticName;
 bool folderWindowInitialized, folderWindowVisible, outputWindowInitialized, outputWindowVisible;
 HMENU contextDirectory, contextFile, contextMessages, popupProfiles;
 HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hCheckAskPassword, 
-	 hInitDir, hProfileList, hProfilename;
+	 hInitDir, hProfileList, hProfilename, hCheckKeepAlive, hRadioAuto, hRadioASCII, hRadioBinary;
 HWND hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hTimestampLog, hWarnDelete, hCloseOnTransfer, 
 	 hOtherCache, hOtherCachePath, hBrowseCache, hShowInitialDir, hUsePrettyIcons;
-HWND hDeletePartialFiles, hEnableQueueing;
+HWND hDeletePartialFiles, hEnableQueueing, hAddASCII, hAddBinary, hListASCII, hListBinary, hRadioDefaultASCII, hRadioDefaultBinary;
 
 //for docking dlg
 HICON iconFolderDock, iconOuputDock;
@@ -157,6 +169,7 @@ TCHAR * dllName, * dllPath, * iniFile, * storage, * pluginName, * folderDockName
 BOOL cacheOnDirect, openOnDirect, uploadCurrentOnUncached, uploadOnSave, otherCache;
 BOOL warnDelete, closeOnTransfer, timestampLog, showInitialDir, usePrettyIcons;
 BOOL deletePartialFiles, enableQueue;
+Transfer_Mode fallbackMode;
 TCHAR * cacheLocation;
 
 //Bitflags for events
@@ -173,11 +186,15 @@ HANDLE readHandle, writeHandle;
 //Default window procedures
 WNDPROC DefaultMessageEditWindowProc;
 WNDPROC DefaultNotepadPPWindowProc;
+WNDPROC DefaultEditWindowProc;
 
 //Profile vars
 std::vector< Profile * > * vProfiles;
 Profile * currentProfile;
 Profile * currentFTPProfile;
+
+//Filetype vars
+std::vector< TCHAR * > * asciiVec, * binaryVec;
 
 //Function declarations
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved);
@@ -230,7 +247,9 @@ void deleteDir();
 void renameDir();
 void deleteFile();
 void renameFile();
-void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool expandTree, bool ignoreBusy = false);
+void rawCommand();
+void permissions(FILESYSTEMOBJECT * fso);
+void reloadTreeDirectory(HTREEITEM directory, bool doRefresh, bool ignoreBusy = false);
 
 void progress(FTP_Service * service, int current, int total);
 void onEvent(FTP_Service * service, unsigned int type, int code);
@@ -245,6 +264,7 @@ DWORD WINAPI doDeleteDirectory(LPVOID param);
 DWORD WINAPI doRenameDirectory(LPVOID param);
 DWORD WINAPI doRenameFile(LPVOID param);
 DWORD WINAPI doDeleteFile(LPVOID param);
+DWORD WINAPI doRawCommand(LPVOID param);
 
 HTREEITEM addRoot(DIRECTORY * rootDir);
 HTREEITEM addDirectory(HTREEITEM root, DIRECTORY * dir);
@@ -268,18 +288,32 @@ LRESULT CALLBACK WindowProcedure(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK ProfileDlgProcedure(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK GeneralDlgProcedure(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK TransferDlgProcedure(HWND, UINT, WPARAM, LPARAM);
-BOOL CALLBACK OutDlgProc(HWND, UINT, WPARAM, LPARAM);
-BOOL CALLBACK RenameDlgProc(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK OutDlgProcedure(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK RenameDlgProcedure(HWND, UINT, WPARAM, LPARAM);
 BOOL CALLBACK AboutDlgProcedure(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK PermissionDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK MessageEditWindowProc(HWND, UINT, WPARAM, LPARAM);
 LRESULT CALLBACK NotepadPPWindowProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK SubclassedEditWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 DWORD WINAPI outputProc(LPVOID param);
 
 void strcatAtoT(LPTSTR target, const char * ansi, int buflenchar);
 void strcpyAtoT(LPTSTR target, const char * ansi, int buflenchar);
+void printValueToBuffer(TCHAR * buffer, int value, int resLen);
 
-void threadError(const char * threadName);
+void addBinary(TCHAR * newType);
+void addASCII(TCHAR * newType);
+Transfer_Mode getType(const char * filename);
+void fillTypeLists();
+void saveTypeLists();
+void readTypeLists();
+void clearTypeVectors();
+void removeExtFromASCII(TCHAR * extension);
+void removeExtFromBinary(TCHAR * extension);
+
+void err(LPCTSTR str);
+void Error(LPTSTR lpszFunction);
 
 struct CONNECTIONDATA {	//connection thread
 	LPTSTR address;
@@ -288,39 +322,20 @@ struct CONNECTIONDATA {	//connection thread
 	LPTSTR pass;
 };
 
-struct LOADTHREAD {	//upload/download threads
+struct UPLOADTHREAD {	//upload threads
 	HANDLE local;
 	LPTSTR localname;
-	LPTSTR server;
+	LPTSTR servername;
 	HTREEITEM targetTreeDir;
-	BOOL openFile;
+};
+
+struct DOWNLOADTHREAD {	//download threads
+	HANDLE local;
+	LPTSTR localname;
+	FILEOBJECT * fileToDownload;
+	BOOL openFile;		//FALSE: do not open file, TRUE: open the file, 2: Ask to open
 };
 
 struct DIRTHREAD {	//directory thread
     HTREEITEM treeItem;
-	bool expand;
 };
-
-//helper functions
-void err(LPCTSTR str) {
-	MessageBox(nppData._nppHandle,str,TEXT("Error"),MB_OK);
-}
-
-void Error(LPTSTR lpszFunction) { 
-	LPVOID lpMsgBuf;
-	LPVOID lpDisplayBuf;
-	if (lpszFunction == NULL) {
-		lpszFunction = TEXT("Unknown function");
-	}
-	DWORD dw = GetLastError(); 
-
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,NULL,dw,MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),(LPTSTR) &lpMsgBuf,0, NULL );
-
-	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,(lstrlen((LPCTSTR)lpMsgBuf)+lstrlen((LPCTSTR)lpszFunction)+40)*sizeof(TCHAR)); 
-	wsprintf((LPTSTR)lpDisplayBuf,TEXT("%s failed with error %d: %s"),lpszFunction, dw, lpMsgBuf); 
-
-	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
-
-	LocalFree(lpMsgBuf);
-	LocalFree(lpDisplayBuf);
-}

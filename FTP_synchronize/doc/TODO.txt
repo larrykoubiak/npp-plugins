@@ -1,14 +1,9 @@
 -Better documentation
 
--Keep alive
--ASCII/Binairy file detection
+-Finish keep alive
 -SFTP
 
--Fix redraw issues
+-Transfer multiple files at once after eachother:Queueing
+-Save all support:Queueing
 
--Transfer multiple files at once after eachother
-
--Issue raw command
--CHMOD
-
--Save all support
+-Fix tab order on dialogs
