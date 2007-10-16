@@ -191,7 +191,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 			}
 			break; }
 		case NPPN_SHUTDOWN: {	//Notepad++ is shutting down, cleanup everything
-			saveGlobalSettings();
 			deinitializePlugin();
 			break; }
 	}
@@ -492,8 +491,8 @@ void destroyWindows() {
 	//if (outputWindowInitialized)
 	//	SendMessage(nppData._nppHandle,NPPM_DMMUNREGASDCKDLG,0,(LPARAM)&tbd);	//Unregister it
 
-	DestroyWindow(hOutputWindow);
-	DestroyWindow(hFolderWindow);
+	//DestroyWindow(hOutputWindow);
+	//DestroyWindow(hFolderWindow);
 	UnregisterClass(FolderWindowClassName, hDLL);
 }
 
