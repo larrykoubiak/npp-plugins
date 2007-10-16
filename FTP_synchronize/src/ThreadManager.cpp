@@ -71,6 +71,10 @@ bool waitForAllThreadsToStop() {
 			}
 		}
 	}
+	if (i == 0) {
+		delete [] threadArray;
+		return true;	//no threads to wait for, everything has stopped
+	}
 	DWORD result = WaitForMultipleObjects(i, threadArray, TRUE, THREADWAITTIMEOUT);
 	delete [] threadArray;
 	if (result == WAIT_FAILED || result == WAIT_TIMEOUT)

@@ -114,6 +114,7 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 				int nrThreads = getNrRunningThreads();
 				if (nrThreads > 0) {
 					MessageBox(NULL, TEXT("Warning, not all threads have been stopped"), NULL, MB_OK);
+					printAllRunningThreads();
 				}
 			}
 			break;}
@@ -231,6 +232,10 @@ void initializePlugin() {
 	mainService->setMode(Mode_Passive);
 	mainService->setFindRootParent(false);
 
+	//Create Queue
+	mainQueue = new OperationQueue();
+	mainQueue->start();
+
 	//Initialize the GUI
 	createWindows();
 	createToolbar();
@@ -261,7 +266,7 @@ void deinitializePlugin() {
 	CloseHandle(writeHandle);
 
 	delete [] cacheLocation;
-
+	//delete mainQueue;
 	//restore NPP main function
 	//SetWindowLongPtr(nppData._nppHandle,GWLP_WNDPROC,(LONG)&DefaultNotepadPPWindowProc);
 
@@ -295,14 +300,17 @@ void deinitializePlugin() {
 	destroyContextMenus();
 
 	delete mainService;
+	delete mainQueue;
 
-	ZeroMemory(&nppData, sizeof(NppData));
 	deinitializeLogging();
 
 	bool res = waitForAllThreadsToStop();
 	if (!res) {
-		MessageBox(NULL, TEXT("Warning, not all threads have been stopped"), NULL, MB_OK);
+		err(TEXT("Warning, not all threads have been stopped"));
+		freopen("C:\\exitlog.txt", "w", stdout);
+		printAllRunningThreads();
 	}
+	ZeroMemory(&nppData, sizeof(NppData));
 	initializedPlugin = false;
 }
 

@@ -137,6 +137,7 @@ NppData nppData;
 FuncItem funcItem[nbFunc];
 
 FTP_Service * mainService;
+OperationQueue * mainQueue;
 
 HWND hFolderWindow, hTreeview, hStatusbar, hProgressbar, hFolderToolbar, hOutputWindow, hOutputEdit, hButtonClear;
 HWND hCheckOwnerRead, hCheckOwnerWrite, hCheckOwnerExecute, hCheckGroupRead, hCheckGroupWrite, hCheckGroupExecute, hCheckPublicRead, hCheckPublicWrite, hCheckPublicExecute,
