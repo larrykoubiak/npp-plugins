@@ -115,7 +115,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 int connectBitmapIndex, disconnectBitmapIndex;
 FILE stdoutOrig;
 HANDLE hReadThread;
-HANDLE outputThreadStopEvent;
 bool initializedPlugin;
 
 //storage for treeview commands
@@ -147,7 +146,7 @@ HMENU contextDirectory, contextFile, contextMessages, popupProfiles;
 HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hCheckAskPassword, 
 	 hInitDir, hProfileList, hProfilename, hCheckKeepAlive, hRadioAuto, hRadioASCII, hRadioBinary;
 HWND hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hTimestampLog, hWarnDelete, hCloseOnTransfer, 
-	 hOtherCache, hOtherCachePath, hBrowseCache, hShowInitialDir, hUsePrettyIcons;
+	 hOtherCache, hOtherCachePath, hBrowseCache, hShowInitialDir, hUsePrettyIcons, hKeepAliveInterval;
 HWND hDeletePartialFiles, hEnableQueueing, hAddASCII, hAddBinary, hListASCII, hListBinary, hRadioDefaultASCII, hRadioDefaultBinary;
 
 //for docking dlg
@@ -171,6 +170,7 @@ BOOL warnDelete, closeOnTransfer, timestampLog, showInitialDir, usePrettyIcons;
 BOOL deletePartialFiles, enableQueue;
 Transfer_Mode fallbackMode;
 TCHAR * cacheLocation;
+int keepAliveIntervalSec;
 
 //Bitflags for events
 unsigned int acceptedEvents;

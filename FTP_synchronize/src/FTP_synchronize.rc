@@ -79,21 +79,13 @@ BEGIN
     EDITTEXT        IDC_SETTINGS_INITDIR,204,162,84,14,ES_AUTOHSCROLL
     CONTROL         "On connect, subtree root folder",IDC_CHECK_FINDROOT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,162,186,120,10
+    CONTROL         "Enable keep alive",IDC_CHECK_KEEPALIVE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,162,204,72,10
     GROUPBOX        "Connection mode",IDC_STATIC,312,72,72,40
     CONTROL         "Active",IDC_RADIO_ACTIVE,"Button",BS_AUTORADIOBUTTON,
                     318,84,36,10
     CONTROL         "Passive",IDC_RADIO_PASSIVE,"Button",BS_AUTORADIOBUTTON,
                     318,96,40,10
-    RTEXT           "You need to reconnect for changes to have effect",
-                    IDC_STATIC,210,228,162,8
-    LTEXT           "Profiles:",IDC_STATIC,18,6,27,8
-    LISTBOX         IDC_LIST_PROFILES,18,18,114,240,LBS_SORT | 
-                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "New",IDC_BUTTON_NEW,18,264,30,14
-    PUSHBUTTON      "Delete",IDC_BUTTON_DELETE,96,264,38,14
-    PUSHBUTTON      "Apply",IDB_SETTINGS_APPLY,318,258,50,14
-    CONTROL         "Enable keep alive",IDC_CHECK_KEEPALIVE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,162,204,72,10
     GROUPBOX        "Transfer mode",IDC_STATIC,312,126,72,54
     CONTROL         "Binary",IDC_RADIO_BINARY,"Button",BS_AUTORADIOBUTTON,
                     318,138,36,10
@@ -101,6 +93,14 @@ BEGIN
                     150,35,10
     CONTROL         "Automatic",IDC_RADIO_AUTOMATIC,"Button",
                     BS_AUTORADIOBUTTON,318,162,48,10
+    RTEXT           "You need to reconnect for changes to have effect",
+                    IDC_STATIC,210,228,162,8
+    PUSHBUTTON      "Apply",IDB_SETTINGS_APPLY,318,258,50,14
+    LTEXT           "Profiles:",IDC_STATIC,18,6,27,8
+    LISTBOX         IDC_LIST_PROFILES,18,18,114,240,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "New",IDC_BUTTON_NEW,18,264,30,14
+    PUSHBUTTON      "Delete",IDC_BUTTON_DELETE,96,264,38,14
 END
 
 IDD_DIALOG_OUTPUT DIALOGEX 0, 0, 190, 90
@@ -152,34 +152,34 @@ BEGIN
     CONTROL         "Delete partially downloaded files",IDC_CHECK_DELPARTDLD,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,119,10
     GROUPBOX        "Queueing",IDC_STATIC,12,30,366,90
+    LTEXT           "Queueing is currently unavailable",IDC_STATIC,18,42,107,
+                    8
     GROUPBOX        "Automatic transfertype detection",IDC_STATIC,12,126,366,
                     162
-    LISTBOX         IDC_LIST_ASCII,36,180,60,84,LBS_SORT | 
-                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Key in the extension and press Enter, for example 'txt'",
+                    IDC_STATIC,18,138,180,8
+    LTEXT           "ASCII types",IDC_STATIC,24,150,40,8
     EDITTEXT        IDC_EDIT_ADDASCII,36,162,60,14,ES_AUTOHSCROLL | 
                     ES_WANTRETURN
-    LTEXT           "ASCII types",IDC_STATIC,24,150,40,8
-    LISTBOX         IDC_LIST_BINARY,126,180,60,84,LBS_SORT | 
+    LISTBOX         IDC_LIST_ASCII,36,180,60,84,LBS_SORT | 
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Binary types",IDC_STATIC,114,150,41,8
+    EDITTEXT        IDC_EDIT_ADDBINARY,126,162,60,14,ES_AUTOHSCROLL | 
+                    ES_WANTRETURN
+    LISTBOX         IDC_LIST_BINARY,126,180,60,84,LBS_SORT | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Doubleclick an item to remove it",IDC_STATIC,36,270,102,
+                    8
+    LTEXT           "Use this to specify what mode to use when transferring files with a known extension. Extensions in the ASCII list have predecence over the ones in the Binary list.",
+                    IDC_STATIC,216,138,138,42
+    LTEXT           "When an extension is not present or it is in neither of the lists, a default mode will be chosen which can be specified below.",
+                    IDC_STATIC,216,180,137,30
+    GROUPBOX        "When a type is not registered, transfer as",IDC_STATIC,
+                    210,240,150,24
     CONTROL         "ASCII",IDC_RADIO_ASCII,"Button",BS_AUTORADIOBUTTON,216,
                     252,35,10
     CONTROL         "Binary",IDC_RADIO_BINARY,"Button",BS_AUTORADIOBUTTON,
                     264,252,36,10
-    LTEXT           "Doubleclick an item to remove it",IDC_STATIC,36,270,102,
-                    8
-    EDITTEXT        IDC_EDIT_ADDBINARY,126,162,60,14,ES_AUTOHSCROLL | 
-                    ES_WANTRETURN
-    GROUPBOX        "When a type is not registered, transfer as",IDC_STATIC,
-                    210,240,150,24
-    LTEXT           "Key in the extension and press Enter, for example 'txt'",
-                    IDC_STATIC,18,138,180,8
-    LTEXT           "Use this to specify what mode to use when transferring files with a known extension. Extensions in the ASCII list have predecence over the ones in the Binary list.",
-                    IDC_STATIC,216,138,138,42
-    LTEXT           "Queueing is currently unavailable",IDC_STATIC,18,42,107,
-                    8
-    LTEXT           "When an extension is not present or it is in neither of the lists, a default mode will be chosen which can be specified below.",
-                    IDC_STATIC,216,180,137,30
 END
 
 IDD_DIALOG_SETTINGS_GLOBAL DIALOGEX 0, 0, 388, 311
@@ -187,6 +187,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
 CAPTION "General"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
+    GROUPBOX        "Caching",IDC_STATIC,12,6,366,126
     CONTROL         "Cache file on direct upload",IDC_CHECK_CACHE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,24,24,102,10
     CONTROL         "Open the cached file automatically",IDC_CHECK_CACHEOPEN,
@@ -197,12 +198,12 @@ BEGIN
     CONTROL         "Upload cached file on save",IDC_CHECK_UPLOADONSAVE,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | 
                     WS_TABSTOP,24,76,102,12
-    GROUPBOX        "Caching",IDC_STATIC,12,6,366,126
+    CONTROL         "Specify other cache location",IDC_CHECK_OTHERCACHE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,24,95,108,10
     EDITTEXT        IDC_EDIT_CACHEPATH,42,107,150,14,ES_AUTOHSCROLL | 
                     WS_DISABLED
     PUSHBUTTON      "...",IDC_BUTTON_BROWSECACHE,198,107,18,14,WS_DISABLED
-    CONTROL         "Specify other cache location",IDC_CHECK_OTHERCACHE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,24,95,108,10
+    LTEXT           "Requires reconnect",IDC_STATIC,228,108,63,8
     CONTROL         "Warn on deleting files/folders",IDC_CHECK_WARNDELETE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,150,110,10
     CONTROL         "When a transfer has succeeded, close the folder window",
@@ -210,12 +211,14 @@ BEGIN
                     WS_TABSTOP,18,174,198,10
     CONTROL         "Prepend timestamp on log entries",IDC_CHECK_TIMESTAMP,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,198,123,10
-    LTEXT           "Requires reconnect",IDC_STATIC,228,108,63,8
     CONTROL         "Show initial directory contents",IDC_CHECK_SHOWDIR,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,222,112,10
     CONTROL         "Use explorer icons for files and folders",
                     IDC_CHECK_PRETTYICON,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,18,246,138,10
+    LTEXT           "Keep alive interval (seconds)",IDC_STATIC,240,150,93,8
+    EDITTEXT        IDC_EDIT_KEEPALIVEINTERVAL,246,162,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
 END
 
 IDD_DIALOG_COMMAND DIALOGEX 0, 0, 214, 41
@@ -282,8 +285,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,3,1
- PRODUCTVERSION 0,9,3,1
+ FILEVERSION 0,9,4,0
+ PRODUCTVERSION 0,9,4,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -299,12 +302,12 @@ BEGIN
         BLOCK "000004b0"
         BEGIN
             VALUE "FileDescription", "FTP Plugin for Notepad++, a free (GNU) source code editor"
-            VALUE "FileVersion", "0.9.3.1"
+            VALUE "FileVersion", "0.9.4.0"
             VALUE "InternalName", "FTP_sync"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "Originalfso.name", "FTP_synchronize.dll"
             VALUE "ProductName", " FTP_synchronize"
-            VALUE "ProductVersion", "0.9.3.1"
+            VALUE "ProductVersion", "0.9.4.0"
         END
     END
     BLOCK "VarFileInfo"

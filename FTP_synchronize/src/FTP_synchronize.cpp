@@ -25,7 +25,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 	switch (ul_reason_for_call) {
 		case DLL_PROCESS_ATTACH:{
 			initializedPlugin = false;
-			outputThreadStopEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 			_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_CHECK_ALWAYS_DF | _CRTDBG_LEAK_CHECK_DF );	//Debug build only: check the memory sanity more often
 
 			hDLL = (HINSTANCE)hModule;
@@ -260,9 +259,6 @@ void deinitializePlugin() {
 	//reset output
 	*stdout = stdoutOrig;
 	CloseHandle(writeHandle);
-	if (WaitForSingleObject(outputThreadStopEvent, 5000) == WAIT_TIMEOUT)
-		err(TEXT("Stopping out thread failed"));
-	CloseHandle(outputThreadStopEvent);
 
 	delete [] cacheLocation;
 
@@ -302,6 +298,11 @@ void deinitializePlugin() {
 
 	ZeroMemory(&nppData, sizeof(NppData));
 	deinitializeLogging();
+
+	bool res = waitForAllThreadsToStop();
+	if (!res) {
+		MessageBox(NULL, TEXT("Warning, not all threads have been stopped"), NULL, MB_OK);
+	}
 	initializedPlugin = false;
 }
 
@@ -375,9 +376,10 @@ void readGlobalSettings() {
 	otherCache = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("UseOtherCache"), 0, iniFile);
 
 	GetPrivateProfileString(TEXT("FTP_Settings"), TEXT("OtherCacheLocation"), dllPath, cacheLocation, MAX_PATH, iniFile);
+	otherCache = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("UseOtherCache"), 0, iniFile);
 
 	deletePartialFiles = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("DeletePartialFiles"), 0, iniFile);
-	enableQueue = (BOOL)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("EnableQueue"), 0, iniFile);
+	keepAliveIntervalSec = GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("KeepAliveInterval"), 15, iniFile);
 
 	fallbackMode = (Transfer_Mode)GetPrivateProfileInt(TEXT("FTP_Settings"), TEXT("FallbackTransfermode"), 0, iniFile);
 
@@ -407,6 +409,8 @@ void saveGlobalSettings() {
 	TCHAR * buf = new TCHAR[3];
 	_itot((int)fallbackMode, buf, 10);
 	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("FallbackTransfermode"), buf, iniFile);
+	_itot(keepAliveIntervalSec, buf, 10);
+	WritePrivateProfileString(TEXT("FTP_Settings"), TEXT("KeepAliveInterval"), buf, iniFile);
 	delete [] buf;
 }
 
@@ -1469,7 +1473,7 @@ DWORD WINAPI doConnect(LPVOID param) {
 	mainService->setFindRootParent(currentFTPProfile->getFindRoot());
 	mainService->setInitialDirectory(currentFTPProfile->TVAR(getInitDir)());
 	if (currentFTPProfile->getKeepAlive()) {
-		mainService->setKeepAlive(true, 5000);
+		mainService->setKeepAlive(true, keepAliveIntervalSec * 1000);
 	} else {
 		mainService->setKeepAlive(false,0);
 	}
@@ -2837,6 +2841,8 @@ BOOL CALLBACK GeneralDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			hOtherCachePath = GetDlgItem(hWnd, IDC_EDIT_CACHEPATH);
 			hBrowseCache = GetDlgItem(hWnd, IDC_BUTTON_BROWSECACHE);
 
+			hKeepAliveInterval = GetDlgItem(hWnd, IDC_EDIT_KEEPALIVEINTERVAL);
+
 			SendMessage(hCacheDirect, BM_SETCHECK, (WPARAM) (cacheOnDirect?BST_CHECKED:BST_UNCHECKED), 0);
 			SendMessage(hOpenCache, BM_SETCHECK, (WPARAM) (openOnDirect?BST_CHECKED:BST_UNCHECKED), 0);
 			SendMessage(hUploadCurrent, BM_SETCHECK, (WPARAM) (uploadCurrentOnUncached?BST_CHECKED:BST_UNCHECKED), 0);
@@ -2849,11 +2855,18 @@ BOOL CALLBACK GeneralDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			SendMessage(hUsePrettyIcons, BM_SETCHECK, (WPARAM) (usePrettyIcons?BST_CHECKED:BST_UNCHECKED), 0);
 			SendMessage(hOtherCache, BM_SETCHECK, (WPARAM) (otherCache?BST_CHECKED:BST_UNCHECKED), 0);
 
+			SendMessage(hOtherCachePath, WM_SETTEXT, 0, (LPARAM) cacheLocation);
+
+			TCHAR * buf = new TCHAR[INIBUFSIZE];
+			_itot(keepAliveIntervalSec, buf, 10);
+			SendMessage(hKeepAliveInterval, WM_SETTEXT, 0, (LPARAM)buf);
+			delete [] buf;
+
 			EnableWindow(hOpenCache, cacheOnDirect);
 
 			EnableWindow(hOtherCachePath, otherCache);
 			EnableWindow(hBrowseCache, otherCache);
-			SendMessage(hOtherCachePath, WM_SETTEXT, 0, (LPARAM) cacheLocation);
+			
 
 			return TRUE;
 			break; }
@@ -2900,6 +2913,11 @@ BOOL CALLBACK GeneralDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					if (otherCache) {
 						SendMessage(hOtherCachePath, WM_GETTEXT, (WPARAM)MAX_PATH, (LPARAM) cacheLocation);
 					}
+
+					TCHAR * buf = new TCHAR[INIBUFSIZE];
+					SendMessage(hKeepAliveInterval, WM_GETTEXT, (WPARAM)INIBUFSIZE, (LPARAM)buf);
+					keepAliveIntervalSec = _ttoi(buf);
+					delete [] buf;
 					
 					saveGlobalSettings();
 
@@ -3053,8 +3071,6 @@ BOOL CALLBACK OutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPa
 			if (!threadSuccess) {
 				err(TEXT("Error: could not create outputProc thread!"));
 				*stdout = stdoutOrig;
-			} else {
-				ResetEvent(outputThreadStopEvent);
 			}
 			return TRUE;	//let windows set focus
 			break; }
@@ -3398,7 +3414,6 @@ DWORD WINAPI outputProc(LPVOID param) {
 	delete [] newlinebufferA;
 #endif
 
-	SetEvent(outputThreadStopEvent);
 	return 0;
 }
 

@@ -4,7 +4,7 @@
 #include <utility>
 
 #define HMAP	std::map<HANDLE, const char *>
-
+#define THREADWAITTIMEOUT 5000
 HMAP threadMap;
 
 void threadError(const char * threadName);
@@ -46,7 +46,7 @@ int getNrRunningThreads() {
 		if (GetExitCodeThread(threadMapIterator->first, &exitcode)) {
 			if (exitcode == STILL_ACTIVE) {
 				nrRunning++;
-			} else {	//close handle and remove item
+			} else {	//close handle
 				CloseHandle(threadMapIterator->first);
 			}
 		}
@@ -56,4 +56,25 @@ int getNrRunningThreads() {
 
 void threadError(const char * threadName) {
 	printf("Error: Unable to create thread %s: %d\n", threadName, GetLastError());
+}
+
+bool waitForAllThreadsToStop() {
+	HANDLE * threadArray = new HANDLE[threadMap.size()];
+	int i = 0;
+	HMAP::iterator threadMapIterator;
+	DWORD exitcode;
+	for(threadMapIterator = threadMap.begin(); threadMapIterator != threadMap.end(); threadMapIterator++ ) {
+		if (GetExitCodeThread(threadMapIterator->first, &exitcode)) {
+			if (exitcode == STILL_ACTIVE) {
+				threadArray[i] = threadMapIterator->first;
+				i++;
+			}
+		}
+	}
+	DWORD result = WaitForMultipleObjects(i, threadArray, TRUE, THREADWAITTIMEOUT);
+	delete [] threadArray;
+	if (result == WAIT_FAILED || result == WAIT_TIMEOUT)
+		return false;
+	return true;
+
 }
