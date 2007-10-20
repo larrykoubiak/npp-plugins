@@ -18,7 +18,7 @@
 		<Compiler>
 			<Compiler Name="A">8</Compiler>
 			<Compiler Name="B">0</Compiler>
-			<Compiler Name="C">1</Compiler>
+			<Compiler Name="C">0</Compiler>
 			<Compiler Name="D">0</Compiler>
 			<Compiler Name="E">0</Compiler>
 			<Compiler Name="F">0</Compiler>
@@ -32,8 +32,8 @@
 			<Compiler Name="N">1</Compiler>
 			<Compiler Name="O">1</Compiler>
 			<Compiler Name="P">1</Compiler>
-			<Compiler Name="Q">1</Compiler>
-			<Compiler Name="R">1</Compiler>
+			<Compiler Name="Q">0</Compiler>
+			<Compiler Name="R">0</Compiler>
 			<Compiler Name="S">0</Compiler>
 			<Compiler Name="T">1</Compiler>
 			<Compiler Name="U">0</Compiler>
@@ -124,8 +124,8 @@
 			<Directories Name="PackageDLLOutputDir"></Directories>
 			<Directories Name="PackageDCPOutputDir"></Directories>
 			<Directories Name="SearchPath"></Directories>
-			<Directories Name="Packages">vcl;rtl;vclx;dbrtl;vcldb;adortl;dbxcds;dbexpress;xmlrtl;vclactnband;inet;IntrawebDB_80_100;Intraweb_80_100;vclie;inetdbbde;inetdbxpress;IndyCore;IndySystem;dclOfficeXP;VclSmp;soaprtl;dsnap;IndyProtocols;bdertl;teeui;teedb;tee;vcldbx;dsnapcon;websnap;webdsnap;TntUnicodeVcl;vclshlctrls;ShellPopupMenu</Directories>
-			<Directories Name="Conditionals">DEBUG</Directories>
+			<Directories Name="Packages"></Directories>
+			<Directories Name="Conditionals"></Directories>
 			<Directories Name="DebugSourceDirs"></Directories>
 			<Directories Name="UsePackages">False</Directories>
 		</Directories>
@@ -148,10 +148,10 @@
 			<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
 			<VersionInfo Name="AutoIncBuild">True</VersionInfo>
 			<VersionInfo Name="MajorVer">0</VersionInfo>
-			<VersionInfo Name="MinorVer">1</VersionInfo>
+			<VersionInfo Name="MinorVer">2</VersionInfo>
 			<VersionInfo Name="Release">0</VersionInfo>
-			<VersionInfo Name="Build">371</VersionInfo>
-			<VersionInfo Name="Debug">True</VersionInfo>
+			<VersionInfo Name="Build">383</VersionInfo>
+			<VersionInfo Name="Debug">False</VersionInfo>
 			<VersionInfo Name="PreRelease">True</VersionInfo>
 			<VersionInfo Name="Special">False</VersionInfo>
 			<VersionInfo Name="Private">False</VersionInfo>
@@ -162,7 +162,7 @@
 		<VersionInfoKeys>
 			<VersionInfoKeys Name="CompanyName">Voronwë</VersionInfoKeys>
 			<VersionInfoKeys Name="FileDescription">Notepad++ plug-in for highlighting of matching HTML tag</VersionInfoKeys>
-			<VersionInfoKeys Name="FileVersion">0.1.0.371</VersionInfoKeys>
+			<VersionInfoKeys Name="FileVersion">0.2.0.383</VersionInfoKeys>
 			<VersionInfoKeys Name="InternalName">HTMLTag</VersionInfoKeys>
 			<VersionInfoKeys Name="LegalCopyright">© Martijn Coppoolse</VersionInfoKeys>
 			<VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys>
@@ -171,8 +171,43 @@
 			<VersionInfoKeys Name="ProductVersion">4.1+</VersionInfoKeys>
 			<VersionInfoKeys Name="Comments">http://martijn.coppoolse.com/software/</VersionInfoKeys>
 		</VersionInfoKeys>  
+    
+    
+    
+    
+    
+    
     <Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclstd100.bpl">Borland Standard Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dcldb100.bpl">Borland Database Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dcldbx100.bpl">Borland dbExpress Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclnet100.bpl">Borland Internet Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclIndyCore100.bpl">Indy 10 Core Design Time</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclmid100.bpl">Borland MyBase DataAccess Components</Excluded_Packages>
+      <Excluded_Packages Name="C:\Program Files\Prog\Borland\BDS\4.0\Bin\dclbde100.bpl">Borland BDE DB Components</Excluded_Packages>
+      <Excluded_Packages Name="C:\Program Files\Prog\Borland\BDS\4.0\Bin\dbx100.bpl">Borland SQL Explorer UI Package</Excluded_Packages>
+      <Excluded_Packages Name="C:\Program Files\Prog\Borland\BDS\4.0\Bin\dclwbm100.bpl">Borland InternetExpress Components</Excluded_Packages>
       <Excluded_Packages Name="C:\Program Files\Prog\Borland\BDS\4.0\Bin\vclshlctrls100.bpl">Win32 Shell Controls</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\bin\dclado100.bpl">Borland ADO DB Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclIntraweb_80_100.bpl">Intraweb 8.0 Design Package for Borland Development Studio 2006</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclofficexp100.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclsmp100.bpl">Borland Sample Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclsoap100.bpl">Borland SOAP Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclIndyProtocols100.bpl">Indy 10 Protocols Design Time</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dcl31w100.bpl">Delphi 1.0 Compatibility Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dcltee100.bpl">TeeChart Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclmcn100.bpl">Borland DataSnap Connection Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dcldbxcds100.bpl">Borland SimpleDataset Component (DBX)</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclie100.bpl">Internet Explorer Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclwebsnap100.bpl">Borland WebSnap Components</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclsmpedit100.bpl">Borland Editor Script Enhancements</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclemacsedit100.bpl">Borland Editor Emacs Enhancements</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclmlwiz100.bpl">Borland Markup Language Wizards</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\applet100.bpl">Borland Control Panel Applet Package</Excluded_Packages>
+      <Excluded_Packages Name="c:\program files\prog\borland\bds\4.0\Bin\dclact100.bpl">Borland ActionBar Components</Excluded_Packages>
+      <Excluded_Packages Name="F:\Martijn\Borland Studio Projects\Bpl\TntUnicodeVcl_Design100.bpl">TntWare Unicode Controls</Excluded_Packages>
+      <Excluded_Packages Name="C:\Program Files\Prog\Borland\BDS\4.0\Bin\dclshlctrls100.bpl">Shell Control Property and Component Editors</Excluded_Packages>
+      <Excluded_Packages Name="F:\MM\Code\Snippets\Shell\Delphi\ShellPopupMenu\out\ShellPopupMenu.bpl">(untitled)</Excluded_Packages>
     </Excluded_Packages>
   </Delphi.Personality>
 	<StarTeamAssociation></StarTeamAssociation>

@@ -15,7 +15,7 @@ uses
   NppPluginConstants, NppScintillaConstants;
 
 var
-  Entities: TStringList;
+  EntityLists: TStringList;
   MaxEntityLength: integer;
 
 { ------------------------------------------------------------------------------------------------ }
@@ -30,7 +30,7 @@ begin
 end;
 
 { ------------------------------------------------------------------------------------------------ }
-function LoadEntities(ANpp: TApplication; ASet: string = 'HTML 4'): boolean;
+function LoadEntities(ANpp: TApplication; ASet: string = 'HTML 4'): TStringList;
 var
   IniFile: string;
   Lines: TStringList;
@@ -38,18 +38,27 @@ var
   i, Separation, CodePoint: integer;
   Reading: boolean;
 begin
-  Result := False;
   DebugWrite('LoadEntities', Format('Set "%s"', [ASet]));
 
-  if not Assigned(Entities) then begin
+  if not Assigned(EntityLists) then begin
+    EntityLists := TStringList.Create;
+    EntityLists.CaseSensitive := False;
+  end;
+
+  i := EntityLists.IndexOf(ASet);
+  if i >= 0 then begin
+    Result := TStringList(EntityLists.Objects[i]);
+  end else begin
     IniFile := ChangeFileExt(DLLName, '-entities.ini');
     if not FileExists(IniFile) then begin
       raise Exception.CreateFmt('Unable to find entities file at "%s".', [IniFile]);
     end else begin
-      Entities := TStringList.Create;
-      Entities.NameValueSeparator := '=';
-      Entities.CaseSensitive := True;
-      Entities.Duplicates := dupIgnore;
+      Result := TStringList.Create;
+      Result.NameValueSeparator := '=';
+      Result.CaseSensitive := True;
+      Result.Duplicates := dupIgnore;
+
+      EntityLists.AddObject(ASet, Result);
 
       Lines := TStringList.Create;
       try
@@ -82,7 +91,7 @@ begin
 
               Value := Trim(Copy(Line, Separation + 1));
               if TryStrToInt(Value, CodePoint) then begin
-                Entities.AddObject(Lines[i], TObject(CodePoint));
+                Result.AddObject(Lines[i], TObject(CodePoint));
               end;
             end;
           end;
@@ -91,8 +100,7 @@ begin
         FreeAndNil(Lines);
       end;
 
-      DebugWrite('LoadEntities', Format('%d entities loaded', [Entities.Count]));
-      Result := True;
+      DebugWrite('LoadEntities', Format('%d entities loaded', [Result.Count]));
     end;
   end;
 end;
@@ -102,6 +110,7 @@ procedure EncodeEntities();
 var
   npp: TApplication;
   doc: TActiveDocument;
+  Entities: TStringList;
   Text: Widestring;
   CharIndex, EntityIndex: integer;
   ReplaceEntity: boolean;
@@ -111,9 +120,13 @@ begin
   EntitiesReplaced := 0;
 
   npp := GetApplication();
-  LoadEntities(npp);
-
   doc := npp.ActiveDocument;
+  if doc.Language = L_XML then begin
+    Entities := LoadEntities(npp, 'XML');
+  end else begin
+    Entities := LoadEntities(npp);
+  end;
+
   Text := doc.Selection.Text;
   for CharIndex := Length(Text) downto 1 do begin
     EntityIndex := Entities.IndexOfObject(TObject(integer(Ord(Text[CharIndex]))));
@@ -147,6 +160,7 @@ const
 var
   npp: TApplication;
   doc: TActiveDocument;
+  Entities: TStringList;
   Text: WideString;
   CharIndex, EntityIndex: integer;
   EntitiesReplaced: integer;
@@ -159,9 +173,13 @@ begin
   EntitiesReplaced := 0;
 
   npp := GetApplication();
-  LoadEntities(npp);
-
   doc := npp.ActiveDocument;
+  if doc.Language = L_XML then begin
+    Entities := LoadEntities(npp, 'XML');
+  end else begin
+    Entities := LoadEntities(npp);
+  end;
+
   Text := doc.Selection.Text;
 
   CharIndex := Pos('&', Text);
@@ -264,8 +282,12 @@ end;
 initialization
 
 finalization
-  if Assigned(Entities) then begin
-    FreeAndNil(Entities);
+  if Assigned(EntityLists) then begin
+    while EntityLists.Count > 0 do begin
+      EntityLists.Objects[0].Free;
+      EntityLists.Delete(0);                             
+    end;
+    FreeAndNil(EntityLists);
   end;
 
 end.
