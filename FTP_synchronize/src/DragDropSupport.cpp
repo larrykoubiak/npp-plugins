@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "DragDropSupport.h"
+#include "Logging.h"
 
 #ifdef UNICODE
 #define CustomClipBoardFormatName L"FTP_Sync_Fileobject"
@@ -46,7 +47,7 @@ STDMETHODIMP_(ULONG) CDropTarget::Release(void) {
 //					IDropTarget Methods
 //---------------------------------------------------------------------  
 STDMETHODIMP CDropTarget::DragEnter(LPDATAOBJECT pDataObj, DWORD grfKeyState, POINTL pt, LPDWORD pdwEffect) {
-	//printf("DragEnter!\n");
+	//printToLog("DragEnter!\n");
 	FORMATETC fmtetc;
 	   
 	fmtetc.ptd	  = NULL;
@@ -71,7 +72,7 @@ STDMETHODIMP CDropTarget::DragEnter(LPDATAOBJECT pDataObj, DWORD grfKeyState, PO
 }
 
 STDMETHODIMP CDropTarget::DragOver(DWORD grfKeyState, POINTL pt, LPDWORD pdwEffect) {
-	//printf("DragOver!\n");
+	//printToLog("DragOver!\n");
 	//do pdwEffect thing
 	if (m_bAcceptFmt) {
 		if (this->dragPoint(pt)) {
@@ -84,14 +85,14 @@ STDMETHODIMP CDropTarget::DragOver(DWORD grfKeyState, POINTL pt, LPDWORD pdwEffe
 }
 
 STDMETHODIMP CDropTarget::DragLeave() {
-	//printf("DragLeave!\n");
+	//printToLog("DragLeave!\n");
 	this->dragCancel();
 	m_bAcceptFmt = FALSE;   
 	return NOERROR;
 }
 
 STDMETHODIMP CDropTarget::Drop(LPDATAOBJECT pDataObj, DWORD grfKeyState, POINTL pt, LPDWORD pdwEffect) {
-	printf("Drop! %d %d\n", pt.x, pt.y);
+	printToLog("Drop! %d %d\n", pt.x, pt.y);
 	FORMATETC fmtetc;   
 	STGMEDIUM medium;   
 	HGLOBAL hDropFiles;
