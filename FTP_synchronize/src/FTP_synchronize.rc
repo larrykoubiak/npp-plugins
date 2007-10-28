@@ -52,7 +52,7 @@ END
 // Dialog
 //
 
-IDD_DIALOG_SETTINGS_PROFILES DIALOGEX 0, 0, 388, 311
+IDD_DIALOG_SETTINGS_PROFILES DIALOGEX 0, 0, 388, 317
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
 CAPTION "Profiles"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
@@ -144,92 +144,123 @@ BEGIN
     EDITTEXT        IDC_EDIT_NEWNAME,6,6,144,14,ES_PASSWORD | ES_AUTOHSCROLL
 END
 
-IDD_DIALOG_SETTINGS_TRANSFERS DIALOGEX 0, 0, 388, 311
+IDD_DIALOG_SETTINGS_TRANSFERS DIALOGEX 0, 0, 388, 317
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
 CAPTION "Transfers"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "Delete partially downloaded files",IDC_CHECK_DELPARTDLD,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,12,119,10
-    GROUPBOX        "Queueing",IDC_STATIC,12,30,366,90
-    LTEXT           "Queueing is currently unavailable",IDC_STATIC,18,42,107,
-                    8
-    GROUPBOX        "Automatic transfertype detection",IDC_STATIC,12,126,366,
+    CONTROL         "When a download has failed, delete the partially downloaded file",
+                    IDC_CHECK_DELPARTDLD,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,12,12,223,10
+    GROUPBOX        "Queueing",IDC_STATIC,12,30,366,108
+    CONTROL         "Show queue",IDC_CHECK_SHOWQUEUE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,24,48,55,10
+    CONTROL         "Open the window when something is added to the queue",
+                    IDC_CHECK_OPENQUEUE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,66,198,10
+    CONTROL         "Close the window when the queue is emptied",
+                    IDC_CHECK_CLOSEQUEUE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,84,160,10
+    CONTROL         "Queue directory refreshes",IDC_CHECK_QUEUEREFRESH,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,24,102,101,10
+    CONTROL         "Queue manual disconnects (dangerous)",
+                    IDC_CHECK_QUEUEDISCONNECT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,120,143,10
+    GROUPBOX        "Automatic transfertype detection",IDC_STATIC,12,144,366,
                     162
     LTEXT           "Key in the extension and press Enter, for example 'txt'",
-                    IDC_STATIC,18,138,180,8
-    LTEXT           "ASCII types",IDC_STATIC,24,150,40,8
-    EDITTEXT        IDC_EDIT_ADDASCII,36,162,60,14,ES_AUTOHSCROLL | 
+                    IDC_STATIC,18,156,180,8
+    LTEXT           "ASCII types",IDC_STATIC,24,168,40,8
+    EDITTEXT        IDC_EDIT_ADDASCII,36,180,60,14,ES_AUTOHSCROLL | 
                     ES_WANTRETURN
-    LISTBOX         IDC_LIST_ASCII,36,180,60,84,LBS_SORT | 
+    LISTBOX         IDC_LIST_ASCII,36,198,60,84,LBS_SORT | 
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Binary types",IDC_STATIC,114,150,41,8
-    EDITTEXT        IDC_EDIT_ADDBINARY,126,162,60,14,ES_AUTOHSCROLL | 
+    LTEXT           "Binary types",IDC_STATIC,114,168,41,8
+    EDITTEXT        IDC_EDIT_ADDBINARY,126,180,60,14,ES_AUTOHSCROLL | 
                     ES_WANTRETURN
-    LISTBOX         IDC_LIST_BINARY,126,180,60,84,LBS_SORT | 
+    LISTBOX         IDC_LIST_BINARY,126,198,60,84,LBS_SORT | 
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Doubleclick an item to remove it",IDC_STATIC,36,270,102,
+    LTEXT           "Doubleclick an item to remove it",IDC_STATIC,36,288,102,
                     8
     LTEXT           "Use this to specify what mode to use when transferring files with a known extension. Extensions in the ASCII list have predecence over the ones in the Binary list.",
-                    IDC_STATIC,216,138,138,42
+                    IDC_STATIC,216,156,138,42
     LTEXT           "When an extension is not present or it is in neither of the lists, a default mode will be chosen which can be specified below.",
-                    IDC_STATIC,216,180,137,30
+                    IDC_STATIC,216,198,137,30
     GROUPBOX        "When a type is not registered, transfer as",IDC_STATIC,
-                    210,240,150,24
+                    210,258,150,24
     CONTROL         "ASCII",IDC_RADIO_ASCII,"Button",BS_AUTORADIOBUTTON,216,
-                    252,35,10
+                    270,35,10
     CONTROL         "Binary",IDC_RADIO_BINARY,"Button",BS_AUTORADIOBUTTON,
-                    264,252,36,10
+                    258,270,36,10
 END
 
-IDD_DIALOG_SETTINGS_GLOBAL DIALOGEX 0, 0, 388, 311
+IDD_DIALOG_SETTINGS_GENERAL DIALOGEX 0, 0, 388, 317
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION
 CAPTION "General"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     GROUPBOX        "Caching",IDC_STATIC,12,6,366,126
-    CONTROL         "Cache file on direct upload",IDC_CHECK_CACHE,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,24,24,102,10
+    CONTROL         "If a new file is uploaded to the server, cache it",
+                    IDC_CHECK_CACHE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,24,
+                    24,162,10
     CONTROL         "Open the cached file automatically",IDC_CHECK_CACHEOPEN,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,30,35,126,10
-    CONTROL         "If a file to be uploaded is not a cached file, upload to the last selected directory",
-                    IDC_CHECK_UPLOADDIRECT,"Button",BS_AUTOCHECKBOX | BS_TOP | 
-                    BS_MULTILINE | WS_TABSTOP,24,52,216,18
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,246,24,126,10
+    CONTROL         "If a file is renamed on the server, rename it in the cache aswell",
+                    IDC_CHECK_RENAMECACHE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,42,216,10
+    CONTROL         "If a file is deleted from the server, remove it from the cache aswell",
+                    IDC_CHECK_DELETECACHE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,60,228,10
     CONTROL         "Upload cached file on save",IDC_CHECK_UPLOADONSAVE,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | 
                     WS_TABSTOP,24,76,102,12
-    CONTROL         "Specify other cache location",IDC_CHECK_OTHERCACHE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,24,95,108,10
+    CONTROL         "Use nondefault cache location if none provided by profile",
+                    IDC_CHECK_OTHERCACHE,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,95,198,10
     EDITTEXT        IDC_EDIT_CACHEPATH,42,107,150,14,ES_AUTOHSCROLL | 
                     WS_DISABLED
     PUSHBUTTON      "...",IDC_BUTTON_BROWSECACHE,198,107,18,14,WS_DISABLED
     LTEXT           "Requires reconnect",IDC_STATIC,228,108,63,8
+    GROUPBOX        "Behaviour",IDC_STATIC,12,132,366,72
+    CONTROL         "If a file to be uploaded is not a cached file, upload to the last selected directory",
+                    IDC_CHECK_UPLOADDIRECT,"Button",BS_AUTOCHECKBOX | BS_TOP | 
+                    BS_MULTILINE | WS_TABSTOP,24,150,216,18
+    LTEXT           "Keep alive interval (seconds)",IDC_STATIC,24,174,93,8
+    EDITTEXT        IDC_EDIT_KEEPALIVEINTERVAL,30,186,40,14,ES_AUTOHSCROLL | 
+                    ES_NUMBER
+    LTEXT           "Multiplier for dataconnection keep alive (0 to disable)",
+                    IDC_STATIC,126,174,174,8
+    EDITTEXT        IDC_EDIT_KEEPALIVEDATA,132,186,40,14,ES_AUTOHSCROLL | 
+                    ES_READONLY | ES_NUMBER
+    GROUPBOX        "UI",IDC_STATIC,12,204,366,66
     CONTROL         "Warn on deleting files/folders",IDC_CHECK_WARNDELETE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,150,110,10
-    CONTROL         "When a transfer has succeeded, close the folder window",
-                    IDC_CHECK_CLOSEONTRANSFER,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,18,174,198,10
-    CONTROL         "Prepend timestamp on log entries",IDC_CHECK_TIMESTAMP,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,198,123,10
-    CONTROL         "Show initial directory contents",IDC_CHECK_SHOWDIR,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,222,112,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,24,216,110,10
+    CONTROL         "Timestamp log entries",IDC_CHECK_TIMESTAMP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,24,234,85,10
     CONTROL         "Use explorer icons for files and folders",
                     IDC_CHECK_PRETTYICON,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,18,246,138,10
-    LTEXT           "Keep alive interval (seconds)",IDC_STATIC,240,150,93,8
-    EDITTEXT        IDC_EDIT_KEEPALIVEINTERVAL,246,162,40,14,ES_AUTOHSCROLL | 
-                    ES_NUMBER
+                    WS_TABSTOP,24,252,138,10
+    GROUPBOX        "Events",IDC_STATIC,12,270,366,42
+    CONTROL         "Show initial directory contents on connect",
+                    IDC_CHECK_SHOWDIR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    24,282,149,10
+    CONTROL         "Close the folder window when a transfer has succeeded",
+                    IDC_CHECK_CLOSEONTRANSFER,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,24,294,192,10
+    LTEXT           "(Currently disabled)",IDC_STATIC,174,186,66,8
 END
 
-IDD_DIALOG_COMMAND DIALOGEX 0, 0, 214, 41
+IDD_DIALOG_COMMAND DIALOGEX 0, 0, 214, 77
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_POPUP | 
     WS_CAPTION | WS_SYSMENU
 CAPTION "Please enter the command"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDB_BUTTON_OK,162,6,50,14
-    PUSHBUTTON      "Cancel",IDB_BUTTON_CANCEL,162,24,50,14
-    EDITTEXT        IDC_EDIT_NEWNAME,6,6,144,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDB_BUTTON_OK,96,54,50,14
+    PUSHBUTTON      "Cancel",IDB_BUTTON_CANCEL,156,54,50,14
+    EDITTEXT        IDC_EDIT_NEWNAME,6,36,204,14,ES_AUTOHSCROLL
+    LTEXT           "Warning, issuing raw FTP commands can cause the view of the plugin to mismatch the state of the server. It is recommended to refresh the root after sending a raw command.",
+                    IDC_STATIC,6,6,204,24
 END
 
 IDD_DIALOG_PERMISSION DIALOGEX 0, 0, 292, 202
@@ -238,44 +269,44 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION |
 CAPTION "Access permissions"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,228,6,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,228,24,50,14
+    LTEXT           "Name",IDC_STATIC_OBJECTNAME,6,6,210,8
     GROUPBOX        "Owner",IDC_STATIC,6,24,210,42
-    GROUPBOX        "Group",IDC_STATIC,6,78,210,48
-    GROUPBOX        "Public",IDC_STATIC,6,132,210,54
     CONTROL         "Read",IDC_CHECK_OWNERREAD,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,24,42,33,10
     CONTROL         "Write",IDC_CHECK_OWNERWRITE,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,66,42,33,10
     CONTROL         "Execute",IDC_CHECK_OWNEREXEC,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,114,42,42,10
+    LTEXT           "Value",IDC_STATIC,168,30,18,8
     EDITTEXT        IDC_EDIT_OWNERVAL,174,42,18,14,ES_AUTOHSCROLL | 
                     ES_READONLY
-    EDITTEXT        IDC_EDIT_RESVAL,258,150,24,14,ES_AUTOHSCROLL | 
-                    ES_READONLY
-    LTEXT           "Resulting value",IDC_STATIC,234,138,50,8
-    LTEXT           "Value",IDC_STATIC,168,30,18,8
+    GROUPBOX        "Group",IDC_STATIC,6,78,210,48
     CONTROL         "Read",IDC_CHECK_GROUPREAD,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,24,102,33,10
     CONTROL         "Write",IDC_CHECK_GROUPWRITE,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,66,102,33,10
     CONTROL         "Execute",IDC_CHECK_GROUPEXEC,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,114,102,42,10
+    LTEXT           "Value",IDC_STATIC,168,90,18,8
     EDITTEXT        IDC_EDIT_GROUPVAL,174,102,18,14,ES_AUTOHSCROLL | 
                     ES_READONLY
-    LTEXT           "Value",IDC_STATIC,168,90,18,8
+    GROUPBOX        "Public",IDC_STATIC,6,132,210,54
     CONTROL         "Read",IDC_CHECK_PUBREAD,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,24,156,33,10
     CONTROL         "Write",IDC_CHECK_PUBWRITE,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,66,156,33,10
     CONTROL         "Execute",IDC_CHECK_PUBEXEC,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,114,156,42,10
+    LTEXT           "Value",IDC_STATIC,168,144,18,8
     EDITTEXT        IDC_EDIT_PUBVAL,174,156,18,14,ES_AUTOHSCROLL | 
                     ES_READONLY
-    LTEXT           "Value",IDC_STATIC,168,144,18,8
     LTEXT           "Notice: altering filepermissions is not possible on all FTP servers",
                     IDC_STATIC,84,192,203,8
-    LTEXT           "Name",IDC_STATIC_OBJECTNAME,6,6,210,8
+    LTEXT           "Resulting value",IDC_STATIC,234,138,50,8
+    EDITTEXT        IDC_EDIT_RESVAL,258,150,24,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    DEFPUSHBUTTON   "OK",IDOK,228,6,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,228,24,50,14
 END
 
 
@@ -285,8 +316,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,4,0
- PRODUCTVERSION 0,9,4,0
+ FILEVERSION 0,9,5,0
+ PRODUCTVERSION 0,9,5,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -302,12 +333,12 @@ BEGIN
         BLOCK "000004b0"
         BEGIN
             VALUE "FileDescription", "FTP Plugin for Notepad++, a free (GNU) source code editor"
-            VALUE "FileVersion", "0.9.4.0"
+            VALUE "FileVersion", "0.9.5.0"
             VALUE "InternalName", "FTP_sync"
             VALUE "LegalCopyright", "Copyright (C) 2007"
-            VALUE "Originalfso.name", "FTP_synchronize.dll"
-            VALUE "ProductName", " FTP_synchronize"
-            VALUE "ProductVersion", "0.9.4.0"
+            VALUE "OriginalFilename", "FTP_synchronize.dll"
+            VALUE "ProductName", "FTP_synchronize"
+            VALUE "ProductVersion", "0.9.5.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -322,7 +353,7 @@ END
 // Bitmap
 //
 
-IDB_TREEICONS           BITMAP                  "bitmaps\\icons_treeview.bmp"
+IDB_BITMAP_TREEICONS    BITMAP                  "bitmaps\\icons_treeview.bmp"
 IDB_BITMAP_FOLDERS      BITMAP                  "bitmaps\\maintoolbar_folder.bmp"
 IDB_BITMAP_CONNECT      BITMAP                  "bitmaps\\toolbar_connected.bmp"
 IDB_BITMAP_DISCONNECT   BITMAP                  "bitmaps\\toolbar_disconnected.bmp"
@@ -343,25 +374,6 @@ IDB_BITMAP_RAWCOMMAND   BITMAP                  "bitmaps\\toolbar_rawcommand.bmp
 // remains consistent on all systems.
 IDI_ICON_FOLDERS        ICON                    "..\\src\\bitmaps\\icon_folder.ico"
 IDI_ICON_MESSAGES       ICON                    "bitmaps\\icon_messages.ico"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
-BEGIN
-    IDD_DIALOG_PERMISSION, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 285
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 195
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 

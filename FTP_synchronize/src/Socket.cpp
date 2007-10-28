@@ -68,7 +68,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
 		//hostname retrieval timed out. Although the thread will continue, the socket will return, the thread will close later on
 		closesocket(this->m_hSocket);
-		printf("%sTimeout when waiting for hostent\n", getCurrentTimeStamp());
+		printToLog("Timeout when waiting for hostent\n");
 		return false;
 	}
 
@@ -85,7 +85,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	sin.sin_port = htons(0);
 	if (bind(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin))) {					//bind the socket to some interface.
 		this->m_iError = WSAGetLastError();
-		printf("%sCould not bind socket\n", getCurrentTimeStamp());
+		printToLog("Could not bind socket\n");
 		return false;
 	}
 
@@ -109,7 +109,7 @@ bool Socket::connectClient(unsigned int timeout) {
 
 	if (connectres) {				//connect to server
 		this->m_iError = WSAGetLastError();
-		printf("%sError when connecting: %d\n", getCurrentTimeStamp(), this->m_iError);
+		printToLog("Error when connecting: %d\n", this->m_iError);
 		return false;
 	}
 	return true;
@@ -160,7 +160,7 @@ DWORD WINAPI hostnameTimeoutCheck(LPVOID param) {
 	} else {							//invalid ip, go for hostname
 		host = gethostbyname(hostname);
 		if (!host) {
-			printf("%sError getting host of %s: %d\n", getCurrentTimeStamp(), hostname, WSAGetLastError());
+			printToLog("Error getting host of %s: %d\n", hostname, WSAGetLastError());
 			memset(newhost->h_addr_list[0], 0xFF, newhost->h_length);		//IP-address of -1 means error
 		} else {
 			memcpy(newhost->h_addr_list[0], host->h_addr_list[0], newhost->h_length);		//copy the address from the WinSock buffer

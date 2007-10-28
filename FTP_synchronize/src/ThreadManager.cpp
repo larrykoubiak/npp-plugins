@@ -28,7 +28,7 @@ int printAllRunningThreads() {	//function prints all threads that still run and 
 	for(threadMapIterator = threadMap.begin(); threadMapIterator != threadMap.end(); threadMapIterator++ ) {
 		if (GetExitCodeThread(threadMapIterator->first, &exitcode)) {
 			if (exitcode == STILL_ACTIVE) {
-				printf("Thread '%s' with handle %d still running\n", threadMapIterator->second, threadMapIterator->first);
+				printToLog("Thread '%s' with handle %d still running\n", threadMapIterator->second, threadMapIterator->first);
 				nrRunning++;
 			} else {	//close handle and remove item
 				CloseHandle(threadMapIterator->first);
@@ -55,7 +55,7 @@ int getNrRunningThreads() {
 }
 
 void threadError(const char * threadName) {
-	printf("Error: Unable to create thread %s: %d\n", threadName, GetLastError());
+	printToLog("Error: Unable to create thread %s: %d\n", threadName, GetLastError());
 }
 
 bool waitForAllThreadsToStop() {
@@ -71,11 +71,11 @@ bool waitForAllThreadsToStop() {
 			}
 		}
 	}
-	if (i == 0) {
-		delete [] threadArray;
-		return true;	//no threads to wait for, everything has stopped
-	}
-	DWORD result = WaitForMultipleObjects(i, threadArray, TRUE, THREADWAITTIMEOUT);
+
+	DWORD result = 0;
+	if (i > 0) {
+		result = WaitForMultipleObjects(i, threadArray, TRUE, THREADWAITTIMEOUT);
+	}	//else not threads to wait for
 	delete [] threadArray;
 	if (result == WAIT_FAILED || result == WAIT_TIMEOUT)
 		return false;

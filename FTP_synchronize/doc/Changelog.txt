@@ -11,3 +11,7 @@ Added ThreadHandler. Deleting FTP_Service waits for everything to finish
 Using new NPPN messages. All threads stop and no more subclassing NPP
 Fixed FTP_synchronize.cpp newline problems. Intellisense should work properly again, aswell as finding proper lines
 Updated DOS parsing rules to be just a tad more generic, works on ftp.microsoft.com at time of writing (+1 for microsoft for using own MS-DOS format:))
+
+DestroyWindow removed on dockables, caused save on exit problems
+Disable messageloop on windows on exit
+Took control of logging, no more invalid HANDLE exception on exit

@@ -3,7 +3,4 @@
 -Finish keep alive
 -SFTP
 
--Transfer multiple files at once after eachother:Queueing
--Save all support:Queueing
-
--Fix tab order on dialogs
+-Match FTP file with item in treeview to keep track of updates

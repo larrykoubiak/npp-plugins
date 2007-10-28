@@ -29,12 +29,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define recieve_buffer_size		response_buffer_size - 1
 #define codeSize				3
 
-#define WAITEVENTPARSETIME		5000		//time the socket reader waits before setting a new response. Effectively means the application cannot take longer than 5 seconds before things may get corrupted
+#define WAITEVENTPARSETIME		2000		//time the socket reader waits before setting a new response. Effectively means the application cannot take longer than 5 seconds before things may get corrupted
 
 enum Connection_Mode {Mode_Passive = 0, Mode_Active};
 enum Transfer_Mode {Mode_Binary = 0, Mode_ASCII = 1, Mode_Auto = 2};	//Mode_Auto may not be used on transfers
-enum Event_Type {Event_Connection=1, Event_Download=2, Event_Upload=4, Event_Directory=8};
-//Event_Connection: 0 = connect, 1 = disconnect
+enum Event_Type {Event_Connection = 0x01, Event_Login = 0x02, Event_Download = 0x04, Event_Upload = 0x08, Event_Directory = 0x10};
+//Event: 0=success, 1=failure, 2=initializing
+
+//Event_Connection: 0 = connect, 1 = disconnect/failure
 //Event_Download: 0 = success, 1 = failure
 //Event_Upload: 0 = success, 1 = failure
 
@@ -83,19 +85,21 @@ public:
 	FTP_Service();
 	bool connectToServer(const char * address, int port);
 	bool login(const char * username, const char * password);
+	bool initializeRoot();
 	bool disconnect();
 
 	bool downloadFile(HANDLE localFile, FILEOBJECT * serverFile, Transfer_Mode mode);
 	bool uploadFile(HANDLE localFile, const char * serverFile, Transfer_Mode mode);
-	bool getDirectoryContents(DIRECTORY * dir, bool overrideBusy = false);	//please do not use override busy, is here due to implementation
-	bool renameFile(FILEOBJECT * file, const char * newName);
-	bool deleteFile(FILEOBJECT * file);
-	bool createDirectory(DIRECTORY * root, DIRECTORY * newDir);
-	bool renameDirectory(DIRECTORY * dir, const char * newName);
-	bool deleteDirectory(DIRECTORY * dir);
+	bool getDirectoryContents(DIRECTORY * dir);
 
-	bool issueRawCommand(const char * command);
-	bool abortOperation();
+	bool createDirectory(DIRECTORY * root, DIRECTORY * newDir);
+	bool deleteDirectory(DIRECTORY * dir);
+	bool deleteFile(FILEOBJECT * file);
+	bool renameObject(FILESYSTEMOBJECT * fso, const char * newName);
+	bool updateObjectProperties(FILESYSTEMOBJECT * fso);
+
+	bool issueRawCommand(const char * command, bool hasReply = false);
+	bool abortOperation(bool clean);
 
 	void setMode(Connection_Mode);
 	void setInitialDirectory(const char * dir);
@@ -103,6 +107,7 @@ public:
 
 	void setProgressCallback(void (FTP_Service *, int, int));
 	void setEventCallback(void (FTP_Service *, unsigned int, int));
+	void setTimeout(int timeout);
 
 	void setKeepAlive(bool enabled, int interval);
 	DIRECTORY * getRoot();
@@ -147,20 +152,15 @@ private:
 	bool busy;						//true when performing action
 	int connectionStatus;			//current status of server connection (ie connected and logged in)
 	int callbackSet;				//true when events properly set (such as timeout and events)
+	bool wasAborted;
 
 	//response parsing
 	int lastResponseValue, responseCodeToSet;
 	char * lastResponse;			//last response message recieved, use mutex to aquire lock
 	char * lastResponseBuffer;		//copy response here first, then lastResponse later to ensure no corruption occurs during reading
-
 	bool mustWait;					//if true, response queueing has been enabled (ie one message parsed at a time)
 	bool lastResponseCompleted;		
-	bool needCode;
 	bool multiline;
-	bool checkmultiline;
-	int codeSizeLeft;
-	char * codebuffer;
-	bool wasAborted;
 
 	//directory parsing
 	char * lastFileDescriptor;
@@ -174,8 +174,6 @@ private:
 	PROGRESSMONITOR * progress;
 	EVENTCALLBACK * events;
 
-	int getFilesize(const char * filename);
-
 	bool createActiveConnection(SOCKCALLBACKFORMAT * params);
 	bool createActiveConnection2(SOCKCALLBACKFORMAT * params);
 	bool createPassiveConnection(SOCKCALLBACKFORMAT * params);
@@ -187,6 +185,7 @@ private:
 	int waitForReply(int timeout);
 
 	void readResponse(char * buf, int size, SOCKET& s, void * additionalInfo);
+	char * parseResponse(char * response); //returns offset in buffer where body begins
 	void cleanupSocket(void *);
 
 	void saveData(char * buf, int size, SOCKET& s, void * additionalInfo);
@@ -223,7 +222,6 @@ DWORD WINAPI listenForClient(LPVOID);
 DWORD WINAPI watchDogTimeoutThread(LPVOID param);
 DWORD WINAPI keepAliveThread(LPVOID param);
 
-int parseAsciiToDecimal(const char * string, int * result);		//read begin of string for number with separator dots
 void enableDirectoryContents(DIRECTORY * currentdir, int type);	//make sure enough memory allocated for directory
 void sortDirectory(DIRECTORY * dir, bool sortDirs, bool sortFiles);
 

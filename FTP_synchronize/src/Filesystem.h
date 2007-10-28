@@ -50,3 +50,4 @@ struct FILEOBJECT {
 };
 
 FILESYSTEMOBJECT * createFilesystemObjectFromFTP(const char * listItem, DIRECTORY * parent);
+void joinPath(char * buffer, const char * beginpath, const char * endpath);

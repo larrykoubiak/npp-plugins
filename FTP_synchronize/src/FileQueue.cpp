@@ -3,11 +3,11 @@
 
 OperationQueue::OperationQueue() {
 	newQueueItemEvent = CreateEvent(NULL, FALSE, FALSE, NULL);	//initially false, the queue will be empty
-	queueRunningEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	queueRunningEvent = CreateEvent(NULL, TRUE, FALSE, NULL);	//manual reset
 	queueEndEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	InitializeCriticalSection(&queueCriticalSection);
 	StartThread(queueThread, this, "Queue main thread");
-	busy = false;
+	queueBusy = false;
 	stopping = false;
 }
 
@@ -24,39 +24,65 @@ OperationQueue::~OperationQueue() {
 
 void OperationQueue::addOperationToQueue(QueueItem * qi) {
 	EnterCriticalSection(&queueCriticalSection);
-	operationQueue.push(qi);
+	operationQueue.push_back(qi);
+	QueueItem * test = operationQueue.front();
+	callCallback(qi, Queue_NewItem);
 	LeaveCriticalSection(&queueCriticalSection);
+	SetEvent(newQueueItemEvent);
+}
+
+void OperationQueue::addOperationsToQueue(QueueItem ** pqiArray, int amount) {
+	EnterCriticalSection(&queueCriticalSection);
+	for (int i = 0; i < amount; i++) {
+		operationQueue.push_back(pqiArray[i]);
+		callCallback(pqiArray[i], Queue_NewItem);
+	}
+	LeaveCriticalSection(&queueCriticalSection);
+	SetEvent(newQueueItemEvent);
 }
 
 void OperationQueue::removeOperationFromQueue(QueueItem * qi) {
 	EnterCriticalSection(&queueCriticalSection);
-	//operationQueue.remove(qi);
+	if (queueBusy == true) {	//not allowed to remove item if the queue is working on it
+		if (qi == operationQueue.front())
+			return;
+	}
+	operationQueue.remove(qi);
+	callCallback(qi, Queue_RemovedItem);
 	LeaveCriticalSection(&queueCriticalSection);
 }
 
 bool OperationQueue::isBusy() {
-	return busy;
+	return queueBusy;
 }
 
 void OperationQueue::stop() {
 	ResetEvent(queueRunningEvent);
+	updateCallback(this, NULL, Queue_Stopped);
 }
 
 void OperationQueue::start() {
 	SetEvent(queueRunningEvent);
+	updateCallback(this, NULL, Queue_Started);
 }
 
 void OperationQueue::clear() {
 	EnterCriticalSection(&queueCriticalSection);
 	while(!operationQueue.empty()) {
-		operationQueue.pop();
+		if (queueBusy == true && operationQueue.size() == 1)	//down to last item which is in use, break
+			break;
+		QueueItem * qi = operationQueue.back();
+		operationQueue.pop_back();	//remove last item
+		callCallback(qi, Queue_RemovedItem);
+		//delete qi;
 	}
 	LeaveCriticalSection(&queueCriticalSection);
 }
 
 void OperationQueue::queueInternalThread() {
 	DWORD waitResult = 0;
-	while(waitResult != WAIT_FAILED) {
+	QueueItem * qi;
+	while(true) {
 
 		waitResult = WaitForSingleObject(queueRunningEvent, INFINITE);
 		if (waitResult == WAIT_FAILED || stopping) {	//the eventobject is destroyed, this means we have to stop
@@ -70,22 +96,25 @@ void OperationQueue::queueInternalThread() {
 			}
 		}
 
-		busy = true;
+		queueBusy = true;
 
 		EnterCriticalSection(&queueCriticalSection);
-		QueueItem * qi = operationQueue.front();
-		operationQueue.pop();
+		qi = operationQueue.front();
 		LeaveCriticalSection(&queueCriticalSection);
 
 		//perform the queueitems operation
-		qi->operationRoutine(qi->customData);
+		callCallback(qi, Queue_BeginOperation);
+		qi->result = qi->operationRoutine(qi->customData);
+		callCallback(qi, Queue_EndOperation);
 
 		EnterCriticalSection(&queueCriticalSection);
+		operationQueue.pop_front();
+		callCallback(qi, Queue_RemovedItem);
 		delete qi;
 		ResetEvent(newQueueItemEvent);
 		LeaveCriticalSection(&queueCriticalSection);
 
-		busy = false;
+		queueBusy = false;
 	}
 	//queue has to end
 	SetEvent(queueEndEvent);

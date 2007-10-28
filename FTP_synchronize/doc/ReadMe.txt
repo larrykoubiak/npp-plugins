@@ -63,6 +63,4 @@ Upload cached file on save
 Current bugs/limitations:
 -------------------------
 -One connection
--Treeview redraw issue
--Aborted downloads leave file
 -No resume supported
