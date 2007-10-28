@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "DragDropSupport.h"
-#include "Logging.h"
 
 #ifdef UNICODE
 #define CustomClipBoardFormatName L"FTP_Sync_Fileobject"
