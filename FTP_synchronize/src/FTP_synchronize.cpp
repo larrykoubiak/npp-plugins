@@ -76,6 +76,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			outputDockInfo = new TCHAR[INIBUFSIZE];
 			lstrcpy(folderDockName, TEXT("FTP Folders"));
 			lstrcpy(outputDockName, TEXT("FTP Messages"));
+			lstrcpy(folderDockInfo, TEXT("Disconnected"));
+			lstrcpy(outputDockInfo, TEXT("No connection"));
 #ifdef UNICODE
 			folderDockNameA = new char[INIBUFSIZE];
 			outputDockNameA = new char[INIBUFSIZE];
@@ -83,6 +85,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			outputDockInfoA = new char[INIBUFSIZE];
 			strcpy(folderDockNameA, "FTP Folders");
 			strcpy(outputDockNameA, "FTP Messages");
+			strcpy(folderDockInfoA, "Disconnected");
+			strcpy(outputDockInfoA, "No connection");
 #endif
 
 			toolBitmapFolders = CreateMappedBitmap(hDLL,IDB_BITMAP_FOLDERS,0,0,0);
@@ -821,7 +825,6 @@ void showFolders() {
 			folderWindowInitialized = true;
 			setTitleBarAddon(TEXT("Disconnected"));
 			iconFolderDock = LoadIcon(hDLL, MAKEINTRESOURCE(IDI_ICON_FOLDERS));
-
 			tTbData tbd;
 			ZeroMemory(&tbd, sizeof(tTbData));
 			tbd.dlgID = 0;													//Nr of menu item to assign (!= _cmdID, beware)
@@ -860,7 +863,6 @@ void showOutput() {
 		outputWindowVisible = true;
 		if (!outputWindowInitialized) {
 			outputWindowInitialized = true;
-			setOutputTitleAddon(TEXT("No connection"));
 			iconOuputDock = LoadIcon(hDLL, MAKEINTRESOURCE(IDI_ICON_MESSAGES));
 			tTbData tbd;
 			ZeroMemory(&tbd, sizeof(tTbData));

@@ -247,7 +247,7 @@
 				RelativePath="..\src\DragDropSupport.cpp">
 			</File>
 			<File
-				RelativePath="..\src\FileQueue.cpp">
+				RelativePath=".\..\src\FileQueue.cpp">
 			</File>
 			<File
 				RelativePath="..\src\Filesystem.cpp">
@@ -259,7 +259,7 @@
 				RelativePath=".\..\src\FTP_synchronize.cpp">
 			</File>
 			<File
-				RelativePath="..\src\Logging.cpp">
+				RelativePath=".\..\src\Logging.cpp">
 			</File>
 			<File
 				RelativePath=".\..\src\Profile.cpp">
@@ -271,7 +271,7 @@
 				RelativePath=".\..\src\Socket.cpp">
 			</File>
 			<File
-				RelativePath="..\src\Splitter.cpp">
+				RelativePath=".\..\src\Splitter.cpp">
 			</File>
 			<File
 				RelativePath=".\..\src\stdafx.cpp">
@@ -301,7 +301,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\src\ThreadManager.cpp">
+				RelativePath=".\..\src\ThreadManager.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -312,10 +312,10 @@
 				RelativePath="..\src\DragDropSupport.h">
 			</File>
 			<File
-				RelativePath="..\src\FileQueue.h">
+				RelativePath=".\..\src\FileQueue.h">
 			</File>
 			<File
-				RelativePath="..\src\Filesystem.h">
+				RelativePath=".\..\src\Filesystem.h">
 			</File>
 			<File
 				RelativePath=".\..\src\FTP_Service.h">
@@ -327,13 +327,13 @@
 				RelativePath=".\..\src\keys.h">
 			</File>
 			<File
-				RelativePath="..\src\Logging.h">
+				RelativePath=".\..\src\Logging.h">
 			</File>
 			<File
 				RelativePath=".\..\src\Profile.h">
 			</File>
 			<File
-				RelativePath="..\src\QueueStructs.h">
+				RelativePath=".\..\src\QueueStructs.h">
 			</File>
 			<File
 				RelativePath=".\..\src\resource.h">
@@ -345,13 +345,13 @@
 				RelativePath=".\..\src\Socket.h">
 			</File>
 			<File
-				RelativePath="..\src\Splitter.h">
+				RelativePath=".\..\src\Splitter.h">
 			</File>
 			<File
 				RelativePath=".\..\src\stdafx.h">
 			</File>
 			<File
-				RelativePath="..\src\ThreadManager.h">
+				RelativePath=".\..\src\ThreadManager.h">
 			</File>
 			<Filter
 				Name="Notepad++"
@@ -369,7 +369,7 @@
 					RelativePath=".\..\..\Common\Ccpp\PluginInterface.h">
 				</File>
 				<File
-					RelativePath="..\src\Notepad_specific\resourceNPP.h">
+					RelativePath=".\..\src\Notepad_specific\resourceNPP.h">
 				</File>
 				<File
 					RelativePath=".\..\..\Common\Ccpp\Scintilla.h">
@@ -414,10 +414,10 @@
 				RelativePath=".\..\src\bitmaps\toolbar_messages.bmp">
 			</File>
 			<File
-				RelativePath="..\src\bitmaps\toolbar_rawcommand.bmp">
+				RelativePath=".\..\src\bitmaps\toolbar_rawcommand.bmp">
 			</File>
 			<File
-				RelativePath="..\src\bitmaps\toolbar_refresh.bmp">
+				RelativePath=".\..\src\bitmaps\toolbar_refresh.bmp">
 			</File>
 			<File
 				RelativePath=".\..\src\bitmaps\toolbar_settings.bmp">
