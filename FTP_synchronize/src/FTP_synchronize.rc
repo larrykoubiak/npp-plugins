@@ -82,13 +82,13 @@ BEGIN
     CONTROL         "Enable keep alive",IDC_CHECK_KEEPALIVE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,162,204,72,10
     GROUPBOX        "Connection mode",IDC_STATIC,312,72,72,40
-    CONTROL         "Active",IDC_RADIO_ACTIVE,"Button",BS_AUTORADIOBUTTON,
-                    318,84,36,10
+    CONTROL         "Active",IDC_RADIO_ACTIVE,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP | WS_TABSTOP,318,84,36,10
     CONTROL         "Passive",IDC_RADIO_PASSIVE,"Button",BS_AUTORADIOBUTTON,
                     318,96,40,10
     GROUPBOX        "Transfer mode",IDC_STATIC,312,126,72,54
-    CONTROL         "Binary",IDC_RADIO_BINARY,"Button",BS_AUTORADIOBUTTON,
-                    318,138,36,10
+    CONTROL         "Binary",IDC_RADIO_BINARY,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP | WS_TABSTOP,318,138,36,10
     CONTROL         "ASCII",IDC_RADIO_ASCII,"Button",BS_AUTORADIOBUTTON,318,
                     150,35,10
     CONTROL         "Automatic",IDC_RADIO_AUTOMATIC,"Button",
@@ -188,8 +188,8 @@ BEGIN
                     IDC_STATIC,216,198,137,30
     GROUPBOX        "When a type is not registered, transfer as",IDC_STATIC,
                     210,258,150,24
-    CONTROL         "ASCII",IDC_RADIO_ASCII,"Button",BS_AUTORADIOBUTTON,216,
-                    270,35,10
+    CONTROL         "ASCII",IDC_RADIO_ASCII,"Button",BS_AUTORADIOBUTTON | 
+                    WS_GROUP | WS_TABSTOP,216,270,35,10
     CONTROL         "Binary",IDC_RADIO_BINARY,"Button",BS_AUTORADIOBUTTON,
                     258,270,36,10
 END
