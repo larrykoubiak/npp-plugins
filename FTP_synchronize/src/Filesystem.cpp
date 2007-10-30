@@ -75,6 +75,21 @@ int monthToDecimal(const char * monthStr) {
 	return 0;
 }
 
+bool isMonth(const char * string) {
+	return (
+		!strnicmp(string, "Jan", 3) ||
+		!strnicmp(string, "Feb", 3) ||
+		!strnicmp(string, "Mar", 3) ||
+		!strnicmp(string, "May", 3) ||
+		!strnicmp(string, "Jun", 3) ||
+		!strnicmp(string, "Jul", 3) ||
+		!strnicmp(string, "Aug", 3) ||
+		!strnicmp(string, "Sep", 3) ||
+		!strnicmp(string, "Oct", 3) ||
+		!strnicmp(string, "Nov", 3) ||
+		!strnicmp(string, "Dec", 3)
+		);
+}
 //skip = amount of whitespaces to cross
 const char * findNextWord(const char * beginOffset, int skip) {
 	while(skip > 0) {
@@ -165,13 +180,18 @@ FILESYSTEMOBJECT * parseUNIX(const char * listItem, DIRECTORY * parent, bool isD
 
 	listItem = findNextWord(listItem, 2);	//skip modifier and subdir count
 
-	while(*listItem < '0' || *listItem > '9') {	//go to filesize by skipping non integer words (this helps with lists with or without group identifier
-		listItem = findNextWord(listItem, 1);
-	}
+	//We need to skip any group/user information, but we do need to following filesize and the month. Months can easily be identified, backtracking gives us the file
+	const char * monthCandidate = listItem;
+	int skip = 0;
+	do {
+		monthCandidate = findNextWord(monthCandidate, 1);
+		skip++;
+	} while(!isMonth(monthCandidate));
 
 	if (isDir) {
-		listItem = findNextWord(listItem, 1);	//go to the month
+		listItem = findNextWord(listItem, skip);		//go to the month
 	} else {
+		listItem = findNextWord(listItem, skip - 1);	//go to the filesize
 		long fileSize;							//store filesize
 		parseFilesize(listItem, &fileSize);
 		newFile->filesize = fileSize;
