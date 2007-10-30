@@ -144,6 +144,7 @@ FTP_Service * mainService;
 OperationQueue * mainQueue;
 
 HWND hFolderWindow, hFolderTreeview, hStatusbar, hProgressbar, hFolderToolbar, hFolderQueueList, hOutputWindow, hOutputEdit;
+HWND hPropertySheet;
 HWND hCheckOwnerRead, hCheckOwnerWrite, hCheckOwnerExecute, hCheckGroupRead, hCheckGroupWrite, hCheckGroupExecute, hCheckPublicRead, hCheckPublicWrite, hCheckPublicExecute,
 	 hEditOwner, hEditGroup, hEditPublic, hEditResult, hStaticName;
 bool folderWindowInitialized, folderWindowVisible, outputWindowInitialized, outputWindowVisible;

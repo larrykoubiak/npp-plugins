@@ -2891,10 +2891,10 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 	switch(message) {
 		case WM_INITDIALOG: {
 			//Center the property sheet.  This Proc only, as profiles is always the first tab
-			HWND hPropsheet = GetParent(hWnd);
+			hPropertySheet = GetParent(hWnd);
 			RECT rc;
-			GetWindowRect(hPropsheet, &rc);
-			SetWindowPos(hPropsheet, NULL, ((GetSystemMetrics(SM_CXSCREEN) - (rc.right - rc.left)) / 2), ((GetSystemMetrics(SM_CYSCREEN) - (rc.bottom - rc.top)) / 2), 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+			GetWindowRect(hPropertySheet, &rc);
+			SetWindowPos(hPropertySheet, NULL, ((GetSystemMetrics(SM_CXSCREEN) - (rc.right - rc.left)) / 2), ((GetSystemMetrics(SM_CYSCREEN) - (rc.bottom - rc.top)) / 2), 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
 
 			hProfileList = GetDlgItem(hWnd,IDC_LIST_PROFILES);
 			hProfilename = GetDlgItem(hWnd,IDC_SETTINGS_NAME);
@@ -3649,15 +3649,8 @@ LRESULT CALLBACK SubclassedEditWindowProc(HWND hwnd, UINT msg, WPARAM wParam, LP
 				case VK_TAB: {
 					SHORT state = GetKeyState(VK_SHIFT) >> 1;	//shift the state one to the right, so only the 'high order bit' is involved, the up/down state bit
 					HWND hwndToFocus;
-					if (state == 0) {	
-						hwndToFocus = GetWindow(hwnd, GW_HWNDNEXT);
-						if (hwndToFocus == NULL)
-							hwndToFocus = GetWindow(hwnd, GW_HWNDLAST);
-					} else {
-						hwndToFocus = GetWindow(hwnd, GW_HWNDPREV);
-						if (hwndToFocus == NULL)
-							hwndToFocus = GetWindow(hwnd, GW_HWNDFIRST);
-					}
+					BOOL reverse = (state == 0)?FALSE:TRUE;
+					hwndToFocus = GetNextDlgTabItem(hPropertySheet, hwnd, reverse);
 					SetFocus(hwndToFocus); 
 					break; }
 			}
