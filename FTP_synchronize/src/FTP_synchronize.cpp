@@ -1799,37 +1799,56 @@ int doUpload(void * param) {
 	}
 
 	bool result = mainService->uploadFile(uld->local, uld->serverName, tMode);
+	CloseHandle(uld->local);
 
 	if (result) {
 		if (cacheOnDirect) {	//The file should be cached now, overwriting anything existing (since that happens on the server aswell)
-			TCHAR * filestoragepath = new TCHAR[MAX_PATH];
-			lstrcpy(filestoragepath, storage);
-			strcatAtoT(filestoragepath, uld->parent->fso.fullpath, MAX_PATH - lstrlen(filestoragepath));
-			lstrcat(filestoragepath, TEXT("\\"));
-			validatePath(filestoragepath);
-			if (createDirectory(filestoragepath)) {
-				lstrcat(filestoragepath, PathFindFileName(uld->localName));
-				if (!CopyFile(uld->localName, filestoragepath, FALSE)) {	//FALSE means overwrite
-					printToLog("Error copying file over to the cache: %d\n", GetLastError());
-				} else if (openOnDirect) {		//open cached file in N++ if option enabled
-					char * filestoragepathA = new char[MAX_PATH];
-					strcpyTtoA(filestoragepathA, filestoragepath, MAX_PATH);
-					SendMessage(nppData._nppHandle,WM_DOOPEN,0,(LPARAM) filestoragepathA);
-					SendMessage(nppData._nppHandle,NPPM_RELOADFILE,(WPARAM)FALSE,(LPARAM) filestoragepathA);
-					delete [] filestoragepathA;
+			if (!cached) {		//not already cached, so calculate and create directories
+				TCHAR * filestoragepath = new TCHAR[MAX_PATH];
+				lstrcpy(filestoragepath, storage);
+				strcatAtoT(filestoragepath, uld->serverName, MAX_PATH - lstrlen(filestoragepath));
+				PathRemoveFileSpec(filestoragepath);
+				lstrcat(filestoragepath, TEXT("\\"));	//reappend backslash
+				validatePath(filestoragepath);
+				if (createDirectory(filestoragepath)) {
+					lstrcat(filestoragepath, PathFindFileName(uld->localName));
+					if (!CopyFile(uld->localName, filestoragepath, FALSE)) {	//FALSE means overwrite
+						printToLog("Error copying file over to the cache: %d\n", GetLastError());
+					} else if (openOnDirect) {		//open cached file in N++ if option enabled
+						char * filestoragepathA = new char[MAX_PATH];
+						strcpyTtoA(filestoragepathA, filestoragepath, MAX_PATH);
+						SendMessage(nppData._nppHandle,WM_DOOPEN,0,(LPARAM) filestoragepathA);
+						SendMessage(nppData._nppHandle,NPPM_RELOADFILE,(WPARAM)FALSE,(LPARAM) filestoragepathA);
+						delete [] filestoragepathA;
+					}
+				} else {
+					printToLog("Unable to create cache directory %s for file %s.\n", filestoragepath, uld->localName);
 				}
+				delete [] filestoragepath;
 			} else {
-				printToLog("Unable to create cache directory %s for file %s.\n", filestoragepath, uld->localName);
+				//first check if we upload the file that IS the cached file, if so skip
+				if (lstrcmpi(uld->localName, path)) {
+					if (!CopyFile(uld->localName, path, FALSE)) {	//FALSE means overwrite
+						printToLog("Error copying file over to the cache: %d\n", GetLastError());
+					} else if (openOnDirect) {		//open cached file in N++ if option enabled
+						char * filestoragepathA = new char[MAX_PATH];
+						strcpyTtoA(filestoragepathA, path, MAX_PATH);
+						SendMessage(nppData._nppHandle,WM_DOOPEN,0,(LPARAM) filestoragepathA);
+						SendMessage(nppData._nppHandle,NPPM_RELOADFILE,(WPARAM)FALSE,(LPARAM) filestoragepathA);
+						delete [] filestoragepathA;
+					}
+				}
 			}
-			delete [] filestoragepath;
 		}
+	}
+	if (cached) {
+		delete [] path;
 	}
 
 	acceptedEvents = events;
 
 	HTREEITEM refreshItem = uld->targetTreeDir;
 
-	CloseHandle(uld->local);
 	delete [] uld->serverName;
 	delete [] uld->localName;
 	delete uld;
