@@ -456,7 +456,7 @@ void createWindows() {
 
 	//Add child windows to folderwindow
 	createToolbar();	//Create and prepare toolbar
-	hFolderTreeview =			CreateWindowEx(WS_EX_CLIENTEDGE, WC_TREEVIEW, TEXT(""), WS_CHILD|WS_VISIBLE|WS_BORDER|TVS_HASLINES|TVS_HASBUTTONS|TVS_LINESATROOT,    0, 0, 100, 50,  hFolderWindow, NULL, hDLL, NULL);
+	hFolderTreeview =	CreateWindowEx(WS_EX_CLIENTEDGE, WC_TREEVIEW, TEXT(""), WS_CHILD|WS_VISIBLE|WS_BORDER|TVS_HASLINES|TVS_HASBUTTONS|TVS_LINESATROOT,    0, 0, 100, 50,  hFolderWindow, NULL, hDLL, NULL);
 	hFolderQueueList =	CreateWindowEx(WS_EX_CLIENTEDGE, WC_LISTBOX,  TEXT(""), WS_CHILD|WS_VISIBLE|WS_BORDER|LBS_HASSTRINGS|LBS_NOINTEGRALHEIGHT|LBS_NOTIFY, 0, 55, 100, 45, hFolderWindow, NULL, hDLL, NULL);
 	hStatusbar =		CreateStatusWindow(WS_CHILD|WS_VISIBLE, TEXT(""), hFolderWindow, IDW_STATUSBAR);
 	hProgressbar =		CreateWindowEx(0, PROGRESS_CLASS, TEXT(""), WS_CHILD|WS_VISIBLE|PBS_SMOOTH, 0, 0, 100, 16, hStatusbar, NULL, hDLL, NULL);
@@ -464,6 +464,9 @@ void createWindows() {
 	SendMessage(hStatusbar, SB_SETPARTS, 2, (LPARAM)sizes);
 	SendMessage(hStatusbar, SB_SETTEXT, 1, (LPARAM)TEXT("Not connected"));
 	SendMessage(hProgressbar, PBM_SETRANGE, 0, (LPARAM)MAKELPARAM(0, 100));
+
+	HFONT hGUIFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+	SendMessage(hFolderQueueList, WM_SETFONT, (WPARAM) hGUIFont, (LPARAM) MAKELPARAM(TRUE,0));
 
 	hImageListTreeview = NULL;
 	destroyImageList = false;
