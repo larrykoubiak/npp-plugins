@@ -23,7 +23,7 @@ void deinitializeLogging() {
 	delete [] timeBuffer;
 	CloseHandle(logWriteHandle);
 	DeleteCriticalSection(&csBuffer);
-	logFile = fopen("C:\\exitLog.txt", "wt");
+	logFile = NULL;//fopen("C:\\exitLog.txt", "wt");
 }
 
 char * getCurrentTimeStamp() {
