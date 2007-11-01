@@ -2,7 +2,6 @@
 // Microsoft Visual C++ generated include file.
 // Used by FTP_synchronize.rc
 //
-//Bitmaps
 #define IDB_BITMAP_FOLDERS              101
 #define IDB_BITMAP_TREEICONS            102
 #define IDB_BITMAP_CONNECT              103
@@ -16,7 +15,6 @@
 #define IDB_BITMAP_MESSAGES             111
 #define IDI_ICON_FOLDERS                112
 #define IDI_ICON_MESSAGES               113
-//Dialogs
 #define IDD_DIALOG_RENAME               114
 #define IDD_DIALOG_PASSWORD             115
 #define IDD_DIALOG_COMMAND              116
@@ -26,14 +24,11 @@
 #define IDD_DIALOG_SETTINGS_PROFILES    120
 #define IDD_DIALOG_SETTINGS_GENERAL     121
 #define IDD_DIALOG_SETTINGS_TRANSFERS   122
-//Dialog controls
-//Controls for misc. dlgs
 #define IDC_EDIT_NEWNAME                1001
 #define IDC_EDIT_OUTPUT                 1002
 #define IDC_EDIT_ABOUT                  1003
 #define IDB_BUTTON_OK                   1004
 #define IDB_BUTTON_CANCEL               1005
-//Controls for permission dlg
 #define IDC_CHECK_OWNERREAD             1006
 #define IDC_CHECK_OWNERWRITE            1007
 #define IDC_CHECK_OWNEREXEC             1008
@@ -48,7 +43,6 @@
 #define IDC_EDIT_PUBVAL                 1017
 #define IDC_STATIC_OBJECTNAME           1018
 #define IDC_EDIT_RESVAL                 1019
-//Controls for profile dlg
 #define IDC_LIST_PROFILES               1020
 #define IDC_BUTTON_NEW                  1021
 #define IDC_BUTTON_DELETE               1022
@@ -69,7 +63,6 @@
 #define IDC_RADIO_ASCII                 1037
 #define IDC_RADIO_BINARY                1038
 #define IDB_SETTINGS_APPLY              1039
-//Controls for general dlg
 #define IDC_CHECK_CACHE                 1040
 #define IDC_CHECK_CACHEOPEN             1041
 #define IDC_CHECK_RENAMECACHE           1042
@@ -86,7 +79,6 @@
 #define IDC_CHECK_PRETTYICON            1053
 #define IDC_CHECK_SHOWDIR               1054
 #define IDC_CHECK_CLOSEONTRANSFER       1055
-//Controls for transfer dlg
 #define IDC_CHECK_DELPARTDLD            1056
 #define IDC_CHECK_SHOWQUEUE             1057
 #define IDC_CHECK_OPENQUEUE             1058
@@ -97,6 +89,7 @@
 #define IDC_LIST_ASCII                  1063
 #define IDC_EDIT_ADDBINARY              1064
 #define IDC_LIST_BINARY                 1065
+#define IDC_STATIC_VERSION              1066
 
 // Next default values for new objects
 // 
@@ -105,7 +98,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        123
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1066
+#define _APS_NEXT_CONTROL_VALUE         1067
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

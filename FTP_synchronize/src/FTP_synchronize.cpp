@@ -3432,6 +3432,28 @@ BOOL CALLBACK AboutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 		case WM_INITDIALOG: {
 			HWND hTextControl = GetDlgItem(hWnd, IDC_EDIT_ABOUT);
 			SendMessage(hTextControl, WM_SETTEXT, 0, (LPARAM) TEXT("FTP Plug-in for Notepad++\r\n\r\nPlug-in designed by Harry\r\n-----\r\nThanks to Donho for this great application, without it this plugin wouldn't exist;).\r\nAlso thanks to Jenz Lorens for great ideas (especially the About box;))\r\n\r\n\r\nSelect \"Show FTP Folders\" from the menu to get started, and don't forget to read the ReadMe if supplied."));
+			HWND hVersionControl = GetDlgItem(hWnd, IDC_STATIC_VERSION);
+
+			TCHAR * filename = new TCHAR[MAX_PATH];
+			GetModuleFileName(hDLL, filename, MAX_PATH);
+			BOOL res;
+			DWORD setToZero;
+			DWORD size = GetFileVersionInfoSize(filename, &setToZero);
+			if (size > 0) {
+				char * buffer = new char[size+30];
+				res = GetFileVersionInfo(filename, NULL, size, buffer);
+				if (res) {
+					TCHAR * versionBuffer;
+					unsigned int len = 0;
+					res = VerQueryValue(buffer, TEXT("\\StringFileInfo\\000004b0\\FileVersion"), (LPVOID*)&versionBuffer, &len); 
+					if (res && len) {
+						SendMessage(hVersionControl, WM_SETTEXT, 0, (LPARAM) versionBuffer);
+					}
+				}
+				delete [] buffer;
+			}
+			if (size == 0 || res == FALSE)
+				SendMessage(hVersionControl, WM_SETTEXT, 0, (LPARAM) TEXT("Error"));
 			return TRUE;	//let windows set focus
 			break; }
 		case WM_COMMAND: {
