@@ -80,6 +80,7 @@ bool isMonth(const char * string) {
 		!strnicmp(string, "Jan", 3) ||
 		!strnicmp(string, "Feb", 3) ||
 		!strnicmp(string, "Mar", 3) ||
+		!strnicmp(string, "Apr", 3) ||
 		!strnicmp(string, "May", 3) ||
 		!strnicmp(string, "Jun", 3) ||
 		!strnicmp(string, "Jul", 3) ||
