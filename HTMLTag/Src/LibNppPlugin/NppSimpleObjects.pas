@@ -1499,13 +1499,10 @@ end;
 
 function TApplication.GetConfigFolder: string;
 var
-  PPath: PChar;
+  Path: array [0..MAX_PATH] of char;
 begin
-  SetLength(Result, MAX_PATH);
-  FillChar(Result, MAX_PATH, 0);
-  PPath := PChar(Result);
-  SendMessage(NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, PPath);
-  Result := string(PPath);
+  SendMessage(NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, @Path[0]);
+  Result := string(Path);
 end;
 
 

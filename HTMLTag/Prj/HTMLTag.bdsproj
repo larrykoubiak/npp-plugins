@@ -150,7 +150,7 @@
 			<VersionInfo Name="MajorVer">0</VersionInfo>
 			<VersionInfo Name="MinorVer">2</VersionInfo>
 			<VersionInfo Name="Release">0</VersionInfo>
-			<VersionInfo Name="Build">383</VersionInfo>
+			<VersionInfo Name="Build">406</VersionInfo>
 			<VersionInfo Name="Debug">False</VersionInfo>
 			<VersionInfo Name="PreRelease">True</VersionInfo>
 			<VersionInfo Name="Special">False</VersionInfo>
@@ -162,7 +162,7 @@
 		<VersionInfoKeys>
 			<VersionInfoKeys Name="CompanyName">Voronwë</VersionInfoKeys>
 			<VersionInfoKeys Name="FileDescription">Notepad++ plug-in for highlighting of matching HTML tag</VersionInfoKeys>
-			<VersionInfoKeys Name="FileVersion">0.2.0.383</VersionInfoKeys>
+			<VersionInfoKeys Name="FileVersion">0.2.0.406</VersionInfoKeys>
 			<VersionInfoKeys Name="InternalName">HTMLTag</VersionInfoKeys>
 			<VersionInfoKeys Name="LegalCopyright">© Martijn Coppoolse</VersionInfoKeys>
 			<VersionInfoKeys Name="LegalTrademarks"></VersionInfoKeys>
@@ -171,6 +171,7 @@
 			<VersionInfoKeys Name="ProductVersion">4.1+</VersionInfoKeys>
 			<VersionInfoKeys Name="Comments">http://martijn.coppoolse.com/software/</VersionInfoKeys>
 		</VersionInfoKeys>  
+    
     
     
     

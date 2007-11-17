@@ -13,6 +13,7 @@ interface
   procedure commandSelectTagContents(); cdecl;
   procedure commandEncodeEntities(); cdecl;
   procedure commandDecodeEntities(); cdecl;
+  procedure commandAbout(); cdecl;
 
   procedure setInfo(ANppData: RNppData); cdecl;
   function  getName(): PChar; cdecl;
@@ -26,7 +27,7 @@ interface
 implementation
 uses
   ComObj, Variants, ActiveX, Controls,
-  L_DebugLogger, L_ActiveX,
+  L_DebugLogger, L_ActiveX, L_VersionInfoW,
   NppSimpleObjects, NppScintillaConstants,
   U_HTMLTagFinder, U_Entities;
 
@@ -43,8 +44,8 @@ var
     Command: TFuncPluginCmd;
   begin
     // TODO: assign functions dynamically
-    SetLength(iFunctions, 4);
-    SetLength(iShortcuts, 4);
+    SetLength(iFunctions, 5);
+    SetLength(iShortcuts, 5);
 
     Command := commandFindMatchingTag;
     iFunctions[0].pFunc := Command;
@@ -93,6 +94,12 @@ var
       key := 69; // VK_E
     end;
     iFunctions[3].pShKey := @iShortcuts[3];
+
+    Command := commandAbout;
+    iFunctions[4].pFunc := Command;
+    iFunctions[4].itemName := '&About...';
+    iFunctions[4].init2Check := false;
+    iFunctions[4].pShKey := nil;
 
   end;
 
@@ -168,6 +175,54 @@ var
         HandleException(E, @commandDecodeEntities);
     end;
   end;
+
+{ ------------------------------------------------------------------------------------------------ }
+// like "Application.ExeName", but in a DLL you get the name of
+// the DLL instead of the application name
+function DLLName: String;
+var
+  szFileName: array[0..MAX_PATH] of Char;
+begin
+  GetModuleFileName(hInstance, szFileName, MAX_PATH);
+  Result := szFileName;
+end;
+
+{ ------------------------------------------------------------------------------------------------ }
+  procedure commandAbout(); cdecl;
+  var
+    Npp: TApplication;
+    Version: TFileVersionInfo;
+    Text: WideString;
+  begin
+    try
+      Npp := GetApplication();
+      Version := TFileVersionInfo.Create(DLLName());
+      try
+        Text := WideFormat('%s v%s'#13#10#13#10
+                            + 'Plug-in location:'#9'%s'#13#10
+                            + 'Config location:'#9'%s'#13#10
+                            + 'Download:'#9'%s'#13#10#13#10
+                            + '© %d %s - %s'#13#10
+                            + '  a.k.a. %s - %s'#13#10#13#10
+                            + 'Licensed under the %s - %s',
+                           [ExtractFileName(DLLName()), Version.FileVersion,
+                            ExtractFilePath(DLLName()),
+                            Npp.ConfigFolder,
+                            'https://sourceforge.net/project/showfiles.php?group_id=189927&package_id=242320',
+                            2007, 'Martijn Coppoolse', 'http://martijn.coppoolse.com/software',
+                            'vor0nwe', 'http://sourceforge.net/users/vor0nwe',
+                            'MPL 1.1', 'http://www.mozilla.org/MPL/MPL-1.1.txt']);
+        MessageBoxW(Npp.WindowHandle, PWChar(Text), PWChar(Version.FileDescription), MB_ICONINFORMATION);
+      finally
+        FreeAndNil(Version);
+      end;
+    except
+      on E: Exception do begin
+        HandleException(E, @commandAbout);
+      end;
+    end;
+  end;
+
 
 { ============================ Notepad++ Plugin Manager functions ================================ }
   procedure setInfo(ANppData: RNppData); cdecl;
