@@ -212,7 +212,7 @@ public :
 	virtual void reSizeTo(RECT & rc) {
 		Window::reSizeTo(rc);
 
-		int dwBtnSize	= (int)::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
+		int dwBtnSize	= ::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
 		int iSize		= rc.right - rc.left;
 
 		if (LOWORD(dwBtnSize) < iSize) {
@@ -231,7 +231,7 @@ public :
 	void init(HINSTANCE hInst, HWND hPere, ToolBar *pToolBar);
 	void reNew() {
 		_rbBand.hwndChild  = _pToolBar->getHSelf();
-		int dwBtnSize = (int)::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
+		int dwBtnSize = SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
 		_rbBand.cyMinChild = HIWORD(dwBtnSize);
 		::SendMessage(_hSelf, RB_INSERTBAND, (WPARAM)0, (LPARAM)&_rbBand);
 	};

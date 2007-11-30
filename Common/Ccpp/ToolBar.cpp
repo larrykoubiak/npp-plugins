@@ -64,7 +64,7 @@ bool ToolBar::init(HINSTANCE hInst, HWND hPere, int iconSize,
 	::SendMessage(_hSelf, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
 	
 	/* set ext size to show button down */
-	LONG	exStyle = (LONG)::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
+	LONG	exStyle = ::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
 	::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, exStyle | TBSTYLE_EX_DRAWDDARROWS);
 
 	if (!doUglyStandardIcon)
@@ -138,7 +138,7 @@ void ToolBar::reset()
 	setDisableImageList();
 
 	/* set ext size to show button down */
-	LONG	exStyle = (LONG)::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
+	LONG	exStyle = ::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
 	::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, exStyle | TBSTYLE_EX_DRAWDDARROWS);
 
 	if (_state == TB_STANDARD)
@@ -212,7 +212,7 @@ void ToolBar::setToUglyIcons()
 	::SendMessage(_hSelf, TB_LOADIMAGES, IDB_STD_SMALL_COLOR, reinterpret_cast<LPARAM>(HINST_COMMCTRL));
 
 	/* set ext size to show button down */
-	LONG	exStyle = (LONG)::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
+	LONG	exStyle = ::SendMessage(_hSelf, TB_GETEXTENDEDSTYLE, 0, 0);
 	::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, exStyle | TBSTYLE_EX_DRAWDDARROWS);
 
 	TBADDBITMAP addbmp = {_hInst, 0};
@@ -277,7 +277,7 @@ void ReBar::init(HINSTANCE hInst, HWND hPere, ToolBar *pToolBar)
 	RECT rc;
 	::GetWindowRect(hPere, &rc);
 
-	int dwBtnSize	= (int)::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
+	int dwBtnSize	= ::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
 	int iSize		= rc.right - rc.left;
 
 	_rbBand.hwndChild  = _pToolBar->getHSelf();
