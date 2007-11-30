@@ -128,6 +128,9 @@
 			<File
 				RelativePath="..\..\src\NativeLang_def.h">
 			</File>
+			<File
+				RelativePath="resource.h">
+			</File>
 			<Filter
 				Name="Common"
 				Filter="">
@@ -151,6 +154,9 @@
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+			<File
+				RelativePath="..\..\src\NativeLang.rc">
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
