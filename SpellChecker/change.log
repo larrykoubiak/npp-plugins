@@ -2,6 +2,13 @@
 Change-log for SpellChecker.dll
 
 ------------------------------------------------------------------------------------
+07/11/22  v1.3 :
+------------------------------------------------------------------------------------
+    New: Multi-language support implemented. NativeLang plugin needed.
+    Fix: Relative path to Aspell is now loaded with correct buffer size MAX_PATH.
+    Fix: WideChar to UTF8 conversion on selecting word in suggestion list corrected.
+
+------------------------------------------------------------------------------------
 07/09/09  v1.2 :
 ------------------------------------------------------------------------------------
     Fix: Supports now UNICODE correctly
