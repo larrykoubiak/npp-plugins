@@ -19,6 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
 #include "SpellCheckerDialog.h"
+#include "NativeLang_def.h"
 #include "resource.h"
 #include "Scintilla.h"
 #include "resource.h"
@@ -174,14 +175,13 @@ BOOL CALLBACK SpellCheckerDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wP
         }
 		case WM_DESTROY:
 		{
-			delete_aspell_document_checker(_aspChecker);
-			delete_aspell_speller(_aspSpeller);
-
 			if (_pszLine != NULL)
 				delete [] _pszLine;
 
-			if (_bAspellIsWorking  == TRUE)
+			if (_bAspellIsWorking == TRUE)
 			{
+				delete_aspell_document_checker(_aspChecker);
+				delete_aspell_speller(_aspSpeller);
 				DestroyThreadResources();
 				_bAspellIsWorking = FALSE;
 			}
@@ -225,7 +225,7 @@ RTHR SpellCheckerDialog::NotifyEvent(DWORD event)
             {
 		        TCHAR	szErrorMsg[MAX_PATH];
 		        sprintf(szErrorMsg, _T("Error:\n%s"), aspell_speller_error_message(_aspSpeller));
-		        ::MessageBox(_hSelf, szErrorMsg, _T("Spell-Checker"), MB_OK);
+		        ::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
             }
             break;
         }
@@ -245,7 +245,7 @@ RTHR SpellCheckerDialog::NotifyEvent(DWORD event)
             {
 		        TCHAR	szErrorMsg[MAX_PATH];
 		        sprintf(szErrorMsg, _T("Error:\n%s"), aspell_speller_error_message(_aspSpeller));
-		        ::MessageBox(_hSelf, szErrorMsg, _T("Spell-Checker"), MB_OK);
+		        ::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
             }
 			break;
 		}
@@ -278,18 +278,20 @@ void SpellCheckerDialog::onSelSugg(void)
 
 	if (iSel != LB_ERR)
 	{
-		void*	pvSel	= NULL;
-		INT		length	= (INT)::SendMessageW(_hSuggList, LB_GETTEXTLEN, iSel, 0) + 1;
+		void*	pvSel		= NULL;
+		INT		nMaxCount	= (INT)::SendMessage(_hSuggList, LB_GETTEXTLEN, iSel, 0) + 1;
 
 		if (_uniMode == uni8Bit) {
-			pvSel  = (LPTSTR)new TCHAR[length];
+			pvSel  = (LPTSTR)new TCHAR[nMaxCount];
 			::SendMessage(_hSuggList, LB_GETTEXT, iSel, (LPARAM)((LPTSTR)pvSel));
 		} else {
 			WCHAR	wcChar[MAX_WORD_UNI];
-			pvSel  = (LPWSTR)new WCHAR[length*2];
-			::ZeroMemory(wcChar, sizeof(WCHAR) * MAX_WORD_UNI);
+			::ZeroMemory(wcChar, sizeof(wcChar));
 			::SendMessageW(_hSuggList, LB_GETTEXT, iSel, (LPARAM)wcChar);
-			::WideCharToMultiByte(CP_UTF8, 0, wcChar, -1, (LPTSTR)pvSel, length, NULL, NULL);
+
+			pvSel  = (LPTSTR)new TCHAR[nMaxCount*2];
+			::ZeroMemory(pvSel, sizeof(pvSel));
+			::WideCharToMultiByte(CP_UTF8, 0, wcChar, -1, (LPTSTR)pvSel, nMaxCount*2, NULL, NULL);
 		}
 
 		/* avoid new test of word */
@@ -309,14 +311,25 @@ void SpellCheckerDialog::InitialDialog(void)
 	/* set current focused scintilla as used window */
 	UpdateHSCI();
 
+	/* change language */
+	NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, "Spell-Checker");
+
 	/* when is in rectangle mode, do not check */
 	if ((BOOL)ScintillaMsg(SCI_SELECTIONISRECTANGLE) == TRUE)
 	{
-		::MessageBox(_hSelf, _T("Checking of misspelling is not possible in rectanlge mode!"), _T("Spell-Checker"), MB_OK);
+		LPTSTR	wPtr = NULL;
+		TCHAR	text[MAX_PATH];
+		if (NLGetText(_hInst, _nppData._nppHandle, "MsgBox RectMode", text, MAX_PATH)) {
+			wPtr = _tcstok(text, _T("\t"));
+			wPtr = _tcstok(NULL, _T("\t"));
+			::MessageBox(_hSelf, text, wPtr, MB_OK);
+		} else {
+			::MessageBox(_hSelf, _T("Checking of misspelling is not possible in rectangle mode!"), _T("Spell-Checker"), MB_OK);
+		}
+		::EndDialog(_hSelf, TRUE);
 	}
-
 	/* fill out combo box to set language */
-	if (FillLanguages() == TRUE)
+	else if (FillLanguages() == TRUE)
 	{
 		/* set default language */
 		if (_pSCProp->szLang[0] == '\0')
@@ -431,7 +444,7 @@ void SpellCheckerDialog::UpdateLanguage(void)
 	{
 		TCHAR	szErrorMsg[MAX_PATH];
 		sprintf(szErrorMsg, _T("Error:\n%s"), aspell_error_message(aspRet));
-		::MessageBox(_hSelf, szErrorMsg, _T("Spell-Checker"), MB_OK);
+		::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
 		delete_aspell_can_have_error(aspRet);
 		::DestroyWindow(_hSelf);
 		return;
@@ -447,7 +460,7 @@ void SpellCheckerDialog::UpdateLanguage(void)
 	{
 		TCHAR	szErrorMsg[MAX_PATH];
 		sprintf(szErrorMsg, _T("Error:\n%s"), aspell_error_message(aspRet));
-		::MessageBox(_hSelf, szErrorMsg, _T("Spell-Checker"), MB_OK);
+		::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
 		::DestroyWindow(_hSelf);
 	    return;
 	}
@@ -465,7 +478,7 @@ void SpellCheckerDialog::FillSuggList(const AspellWordList *wl)
 	{
 		TCHAR	szErrorMsg[MAX_PATH];
 		sprintf(szErrorMsg, _T("Error: %s"), aspell_speller_error_message(_aspSpeller));
-		::MessageBox(_hSelf, szErrorMsg, _T("Spell-Checker"), MB_OK);
+		::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
 	}
 	else
 	{
@@ -477,7 +490,7 @@ void SpellCheckerDialog::FillSuggList(const AspellWordList *wl)
 				::SendMessage(_hSuggList, LB_ADDSTRING, 0, (LPARAM)pWord);
 			} else  {
 				WCHAR	wcChar[MAX_WORD_UNI];
-				::ZeroMemory(wcChar, sizeof(WCHAR) * MAX_WORD_UNI);
+				::ZeroMemory(wcChar, sizeof(wcChar));
 				::MultiByteToWideChar(CP_UTF8, 0, pWord, -1, wcChar, MAX_WORD_UNI);
 				::SendMessageW(_hSuggList, LB_ADDSTRING, 0, (LPARAM)wcChar);
 			}
@@ -577,7 +590,15 @@ RTHR SpellCheckerDialog::NextMisspelling(void)
 
 	if ((_iCurLine > _iLastLine) && (_aspToken.len == 0))
 	{
-		::MessageBox(_hSelf, _T("Done"), _T("Spell-Checker"), MB_OK);
+		LPTSTR	wPtr = NULL;
+		TCHAR	text[MAX_PATH];
+		if (NLGetText(_hInst, _nppData._nppHandle, "MsgBox Done", text, MAX_PATH)) {
+			wPtr = _tcstok(text, _T("\t"));
+			wPtr = _tcstok(NULL, _T("\t"));
+			::MessageBox(_hSelf, text, wPtr, MB_OK);
+		} else {
+			::MessageBox(_hSelf, _T("Done"), _T("Spell-Checker"), MB_OK);
+		}
 		return SC_STOP;
 	}
 	return SC_NEXT;
@@ -604,7 +625,7 @@ RTHR SpellCheckerDialog::CheckWord(bool showAspellError)
 	{
 		TCHAR	szErrorMsg[MAX_PATH];
 		sprintf(szErrorMsg, _T("Error: %s"), aspell_speller_error_message(_aspSpeller));
-		::MessageBox(_hSelf, szErrorMsg, _T("Spell-Checker"), MB_OK);
+		::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
         ::SetEvent(hEvent[EID_CANCEL]);
     }
     return SC_NEXT;
@@ -660,7 +681,7 @@ void SpellCheckerDialog::GetEditText(HWND hWnd, char* lpString, int nMaxCount)
 		::SendMessage(hWnd, WM_GETTEXT, nMaxCount, (LPARAM)lpString);
 	} else	{
 		WCHAR	wcChar[MAX_WORD_UNI];
-		::ZeroMemory(wcChar, sizeof(WCHAR) * MAX_WORD_UNI);
+		::ZeroMemory(wcChar, sizeof(wcChar));
 		::SendMessageW(hWnd, WM_GETTEXT, MAX_WORD_UNI, (LPARAM)wcChar);
 		::WideCharToMultiByte(CP_UTF8, 0, wcChar, -1, lpString, nMaxCount, NULL, NULL);
 	}
@@ -672,7 +693,7 @@ void SpellCheckerDialog::SetEditText(HWND hWnd, LPTSTR lpString)
 		::SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)lpString);
 	} else {
 		WCHAR	wcChar[MAX_WORD_UNI];
-		::ZeroMemory(wcChar, sizeof(WCHAR) * MAX_WORD_UNI);
+		::ZeroMemory(wcChar, sizeof(wcChar));
 		::MultiByteToWideChar(CP_UTF8, 0, lpString, -1, wcChar, MAX_WORD_UNI);
 		::SendMessageW(hWnd, WM_SETTEXT, 0, (LPARAM)wcChar);
 	}
