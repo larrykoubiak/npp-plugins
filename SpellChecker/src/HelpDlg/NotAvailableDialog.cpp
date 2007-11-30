@@ -18,6 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 #include "NotAvailableDialog.h"
+#include "NativeLang_def.h"
 
 
 UINT NotAvailableDialog::doDialog(tSCProp* pSCProp)
@@ -37,6 +38,9 @@ BOOL CALLBACK NotAvailableDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wP
 
             _urlAspellWin32.init(_hInst, _hSelf);
             _urlAspellWin32.create(::GetDlgItem(_hSelf, IDC_ASPELL_WIN_URL), "http://aspell.net/win32/");
+
+			/* Change dialog lang */
+			NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, "NotAvailable");
 
 			return TRUE;
 		}

@@ -18,6 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 #include "HelpDialog.h"
+#include "NativeLang_def.h"
 
 
 void HelpDialog::doDialog()
@@ -44,6 +45,9 @@ BOOL CALLBACK HelpDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LP
             _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), "http://sourceforge.net/projects/npp-plugins/");
             _urlAspell.create(::GetDlgItem(_hSelf, IDC_ASPELL_URL), "http://aspell.net/");
             _urlAspellWin32.create(::GetDlgItem(_hSelf, IDC_ASPELL_WIN_URL), "http://aspell.net/win32/");
+
+			/* Change dialog lang */
+			NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, "Help");
 
 			return TRUE;
 		}
