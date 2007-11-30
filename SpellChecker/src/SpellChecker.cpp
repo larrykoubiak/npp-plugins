@@ -1,5 +1,5 @@
 /*
-This file is part of Explorer Plugin for Notepad++
+This file is part of Spell Checker Plugin for Notepad++
 Copyright (C)2006 Jens Lorenz <jens.plugin.npp@gmx.de>
 
 This program is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "NotAvailableDialog.h"
 #include "SpellCheckerDialog.h"
 #include "HelpDialog.h"
+#include "NativeLang_def.h"
 #include "SysMsg.h"
 #include <stdlib.h>
 #include <iostream>
@@ -35,13 +36,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "aspell.h"
 
 
-CONST INT	nbFunc	= 2;
+CONST INT	nbFunc	= 3;
 
 
 
 /* information for notepad */
 #define	SPELLCHECK_INDEX	0
-CONST char  PLUGIN_NAME[] = "&Spell-Checker";
 
 TCHAR		configPath[MAX_PATH];
 TCHAR		iniFilePath[MAX_PATH];
@@ -120,37 +120,15 @@ extern "C" __declspec(dllexport) LPCSTR getName()
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(INT *nbF)
 {
-#ifdef v4_3
-    /* try to load aspell */
-    g_loadLibSucc = LoadAspell(&scProp);
-
-    if (g_loadLibSucc == TRUE)
-    {
-		/* Set function pointers */
-		funcItem[0]._pFunc = spellCheck;
-        funcItem[1]._pFunc = helpDialog;
-    	
-		/* Fill menu names */
-		strcpy(funcItem[0]._itemName, "&Spell-Checker...");
-		strcpy(funcItem[1]._itemName, "&Help...");
-    }
-    else
-    {
-		/* Set function pointers */
-		funcItem[0]._pFunc = howToDlg;
-    	
-		/* Fill menu names */
-		strcpy(funcItem[0]._itemName, "&How to use...");
-    }
-#else
-		/* Set function pointers */
-		funcItem[0]._pFunc = doCheck;
-        funcItem[1]._pFunc = helpDialog;
-    	
-		/* Fill menu names */
-		strcpy(funcItem[0]._itemName, "&Spell-Checker...");
-		strcpy(funcItem[1]._itemName, "&Help...");
-#endif
+	/* Set function pointers */
+	funcItem[0]._pFunc = doCheck;
+    funcItem[1]._pFunc = helpDialog;
+	funcItem[2]._pFunc = howToDlg;
+    
+	/* Fill menu names */
+	strcpy(funcItem[0]._itemName, "&Spell-Checker...");
+	strcpy(funcItem[1]._itemName, "&Help...");
+	strcpy(funcItem[2]._itemName, "&How to use...");
 
 	/* Set shortcuts */
 	funcItem[0]._pShKey = new ShortcutKey;
@@ -159,12 +137,10 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(INT *nbF)
 	funcItem[0]._pShKey->_isShift	= true;
 	funcItem[0]._pShKey->_key		= 0x53;
 	funcItem[1]._pShKey = NULL;
+	funcItem[2]._pShKey = funcItem[0]._pShKey;
 
-#ifdef v4_3
-	*nbF = (g_loadLibSucc == TRUE ? nbFunc : 1);
-#else
 	*nbF = nbFunc;
-#endif
+
 	return funcItem;
 }
 
@@ -178,8 +154,15 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 	if ((notifyCode->nmhdr.hwndFrom == nppData._nppHandle) && 
 		(notifyCode->nmhdr.code == NPPN_TBMODIFICATION))
 	{
+		/* add toolbar icon */
 		g_TBSpellChecker.hToolbarBmp = (HBITMAP)::LoadImage((HINSTANCE)g_hModule, MAKEINTRESOURCE(IDB_SPELLCHECKER), IMAGE_BITMAP, 0, 0, (LR_DEFAULTSIZE | LR_LOADMAP3DCOLORS));
 		::SendMessage(nppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[SPELLCHECK_INDEX]._cmdID, (LPARAM)&g_TBSpellChecker);
+
+		/* change menu language */
+		NLChangeNppMenu((HINSTANCE)g_hModule, nppData._nppHandle, PLUGIN_NAME, funcItem, nbFunc);
+
+		/* init menu */
+		initMenu();
 	}
 }
 
@@ -190,10 +173,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
  */
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam)
 {
-   if (Message == WM_CREATE)
-   {
-      initMenu();
-   }
    return FALSE;
 }
 
@@ -231,7 +210,7 @@ void loadSettings(void)
 	}
 
 	::GetPrivateProfileString(dlgSC, curLang, "", scProp.szLang, MAX_OF_LANG, iniFilePath);
-	::GetPrivateProfileString(dlgSC, relPath, "..\\Aspell\\bin", scProp.szRelPath, MAX_OF_LANG, iniFilePath);
+	::GetPrivateProfileString(dlgSC, relPath, "..\\Aspell\\bin", scProp.szRelPath, MAX_PATH, iniFilePath);
 }
 
 /***
@@ -252,19 +231,18 @@ void saveSettings(void)
  */
 void initMenu(void)
 {
-#ifndef v4_3
+	HMENU	hMenu	= ::GetMenu(nppData._nppHandle);
+
     /* try to load aspell */
     g_loadLibSucc = LoadAspell(&scProp);
 
-	if (g_loadLibSucc == FALSE)
-	{
-		HMENU	hMenu	= ::GetMenu(nppData._nppHandle);
-
-		/* Change menu */
-		::ModifyMenu(hMenu, funcItem[0]._cmdID, MF_BYCOMMAND|MF_STRING, funcItem[0]._cmdID, "&How to use...");
+	/* Change menu */
+	if (g_loadLibSucc == TRUE) {
+		::DeleteMenu(hMenu, funcItem[2]._cmdID, MF_BYCOMMAND);
+	} else {
+		::DeleteMenu(hMenu, funcItem[0]._cmdID, MF_BYCOMMAND);
 		::DeleteMenu(hMenu, funcItem[1]._cmdID, MF_BYCOMMAND);
 	}
-#endif
 }
 
 /***
