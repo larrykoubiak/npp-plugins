@@ -1,5 +1,5 @@
 /*
-This file is part of Explorer Plugin for Notepad++
+This file is part of Spell Checker Plugin for Notepad++
 Copyright (C)2006 Jens Lorenz <jens.plugin.npp@gmx.de>
 
 This program is free software; you can redistribute it and/or
@@ -34,37 +34,18 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <vector>
 #include <string>
 
-#define _DEBUG_ 1
-
-
 using namespace std;
 
+CONST CHAR  PLUGIN_NAME[] = "&Spell-Checker";
 
 /* store name for ini file */
-const TCHAR dlgSC[]				= _T("Spell-Checker");
-const TCHAR curLang[]			= _T("Current Language");
-const TCHAR relPath[]			= _T("Relative Path");
+CONST TCHAR dlgSC[]				= _T("Spell-Checker");
+CONST TCHAR curLang[]			= _T("Current Language");
+CONST TCHAR relPath[]			= _T("Relative Path");
 
 
-const TCHAR SPELLCHECKER_INI[]	= _T("\\SpellChecker.ini");
-const TCHAR CONFIG_PATH[]		= _T("\\plugins\\Config");
-
-
-
-#ifdef	_DEBUG_
-    static TCHAR cDBG[256];
-
-	#define DEBUG(x)            ::MessageBox(NULL, x, _T("DEBUG"), MB_OK)
-	#define DEBUG_VAL(x)        itoa(x,cDBG,10);DEBUG(cDBG)
-	#define DEBUG_VAL_INFO(x,y) sprintf(cDBG, "%s: %d", x, y);DEBUG(cDBG)
-	#define DEBUG_BRACE(x)      ScintillaMsg(SCI_SETSEL, x, x);DEBUG("Brace on position:")
-	#define DEBUG_STRING(x,y)   ScintillaMsg(SCI_SETSEL, x, y);DEBUG("Selection:")
-#else
-	#define DEBUG(x)
-	#define DEBUG_VAL(x)
-	#define DEBUG_VAL_INFO(x,y)
-	#define DEBUG_BRACE(x)
-#endif
+CONST TCHAR SPELLCHECKER_INI[]	= _T("\\SpellChecker.ini");
+CONST TCHAR CONFIG_PATH[]		= _T("\\plugins\\Config");
 
 
 #define	MAX_OF_LANG	30
