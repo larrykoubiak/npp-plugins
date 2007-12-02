@@ -40,21 +40,6 @@ public:
 
    	void doDialog(bool willBeShown = true);
 
-	void NotifyChanges(void) {
-		/* get current sel tabs */
-		_selTabMain = (INT)::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTDOCINDEX, 0, MAIN_VIEW);
-		_selTabSub = (INT)::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTDOCINDEX, 0, SUB_VIEW);
-
-		/* update file states of current active documents*/
-		UpdateFileState(vFileList1, _nppData._scintillaMainHandle, _selTabMain);
-		UpdateFileState(vFileList2, _nppData._scintillaSecondHandle, _selTabSub);
-
-		/* show now lists */
-		_FileList1.updateList(_selTabMain);
-		_FileList2.updateList(_selTabSub);
-		::SendMessage(_hSelf, WM_SIZE, 0, 0);
-	};
-
 	void initFinish(void) {
 		_bStartupFinish = TRUE;
 		::SendMessage(_hSelf, WM_SIZE, 0, 0);
