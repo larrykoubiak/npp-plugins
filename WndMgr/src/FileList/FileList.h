@@ -51,7 +51,7 @@ public:
 
 	void updateList(INT selRow)
 	{
-		if ((_pvFileList == NULL) || _doActivateDoc) return;
+		if (_pvFileList == NULL) return;
 
 		if (selRow != -1) {
 			/* avoid flickering */
@@ -82,23 +82,18 @@ protected:
 	};
 
 	void activateDoc() {
-		_doActivateDoc = TRUE;
 		UINT	selRow	= ListView_GetSelectionMark(_hSelf);
 		::SendMessage(_nppData._nppHandle, NPPM_ACTIVATEDOC, _uView, selRow);
-		_doActivateDoc = FALSE;
 	}
 
 	void activateTabMenu() {
-		_doActivateDoc = TRUE;
 		UINT	selRow	= ListView_GetSelectionMark(_hSelf);
 		::SendMessage(_nppData._nppHandle, NPPM_ACTIVATEDOCMENU, _uView, selRow);
-		_doActivateDoc = FALSE;
 	}
 
 private:
 	/* handles */
 	UINT						_uView;
-	BOOL						_doActivateDoc;
 	NppData						_nppData;
 	HWND						_hSci;
 	WNDPROC						_hDefaultListProc;

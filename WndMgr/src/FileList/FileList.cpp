@@ -30,7 +30,6 @@ FileList::FileList(void)
 {
 	_iItem				= 0;
 	_uCountOld			= 0;
-	_doActivateDoc		= FALSE;
 }
 
 FileList::~FileList(void)
