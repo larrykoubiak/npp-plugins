@@ -86,12 +86,12 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 		}	
 		case DLL_PROCESS_DETACH:
 		{
+			/* save settings */
+			saveSettings();
+
 			/* destroy resources */
 			ImageList_Destroy(ghImgList);
 			delete funcItem[0]._pShKey;
-
-			/* save settings */
-			saveSettings();
 
 			/* Remove subclaasing */
 			SetWindowLong(nppData._nppHandle, GWL_WNDPROC, (LONG)wndProcNotepad);
@@ -175,7 +175,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		if ((notifyCode->nmhdr.code == SCN_SAVEPOINTREACHED) ||
 			(notifyCode->nmhdr.code == SCN_SAVEPOINTLEFT))
 		{
-			WndMgrDlg.NotifyChanges();
+			::SetTimer(WndMgrDlg.getHSelf(), WMXT_UPDATESTATE, 10, NULL);
 		}
 	}
 }
@@ -358,7 +358,7 @@ void FileListUpdate(void)
 	delete [] fileNames1;
 	delete [] fileNames2;
 
-	WndMgrDlg.NotifyChanges();
+	::SetTimer(WndMgrDlg.getHSelf(), WMXT_UPDATESTATE, 10, NULL);
 }
 
 void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCSTR* pFiles, UINT numFiles)
@@ -370,26 +370,25 @@ void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCSTR* pFiles, UINT numFiles
 	TCHAR	pszLongName[MAX_PATH];
 
 	for (UINT i = 0; i < numFiles; i++) {
+		BOOL	found = FALSE;
 		if (GetLongPathName(pFiles[i], pszLongName, MAX_PATH) != 0) {
-			BOOL	found = FALSE;
-			for (UINT j = 0; j < vList.size(); j++) {
-				if (strcmp(pszLongName, vList[j].szCompletePath) == 0) {
-					fileList = vList[j];
-					found = TRUE;
-				}
-			}
-			if (found == FALSE) {
-				strcpy(fileList.szCompletePath, pszLongName);
-				strcpy(fileList.szName, strrchr(pszLongName, '\\')+1);
-				PathRemoveFileSpec(pszLongName);
-				strcpy(fileList.szPath, pszLongName);
-				fileList.fileState = FST_SAVED;
-			}
-		}  else {
+			strcpy(fileList.szCompletePath, pszLongName);
+			strcpy(fileList.szName, strrchr(pszLongName, '\\')+1);
+			PathRemoveFileSpec(pszLongName);
+			strcpy(fileList.szPath, pszLongName);
+		} else {
 			strcpy(fileList.szCompletePath, pFiles[i]);
 			strcpy(fileList.szName, pFiles[i]);
-			strcpy(fileList.szPath, "");
 			fileList.szPath[0] = '\0';
+		}
+		for (UINT j = 0; j < vList.size(); j++) {
+			if (strcmp(fileList.szCompletePath, vList[j].szCompletePath) == 0) {
+				fileList = vList[j];
+				found = TRUE;
+			}
+		}
+		if (found == FALSE) {
+			fileList.fileState = FST_SAVED;
 		}
 
 		vTempList.push_back(fileList);
@@ -399,7 +398,7 @@ void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCSTR* pFiles, UINT numFiles
 
 void UpdateFileState(vector<tFileList> & vList, HWND hSci, INT iDoc)
 {
-	if (iDoc < vList.size())
+	if ((iDoc >= 0) && (iDoc < vList.size()))
 	{
 		if (::SendMessage(hSci, SCI_GETREADONLY, 0, 0)) {
 			vList[iDoc].fileState = FST_READONLY;
