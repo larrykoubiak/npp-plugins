@@ -64,6 +64,10 @@ void WndMgrDialog::doDialog(bool willBeShown)
 		_data.hIconTab		= (HICON)::LoadImage(_hInst, MAKEINTRESOURCE(IDI_WNDMGR), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		_data.pszModuleName	= getPluginFileName();
 		_data.dlgID			= DOCKABLE_WNDMGR_INDEX;
+
+		/* temporary fix to make list visible if plugin isn't started on Notepad++ startup */
+		::SetTimer(_hSelf, WMXT_UPDATESTATE, 0, NULL);
+
 		::SendMessage(_hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&_data);
 	}
 
@@ -218,6 +222,28 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 			}
 			break;
 		}
+		case WM_TIMER:
+		{
+			if (wParam == WMXT_UPDATESTATE)
+			{
+				/* stop timer */
+				::KillTimer(_hSelf, WMXT_UPDATESTATE);
+
+				/* get current sel tabs */
+				_selTabMain = (INT)::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTDOCINDEX, 0, MAIN_VIEW);
+				_selTabSub = (INT)::SendMessage(_nppData._nppHandle, NPPM_GETCURRENTDOCINDEX, 0, SUB_VIEW);
+
+				/* update file states of current active documents*/
+				UpdateFileState(vFileList1, _nppData._scintillaMainHandle, _selTabMain);
+				UpdateFileState(vFileList2, _nppData._scintillaSecondHandle, _selTabSub);
+
+				/* show now lists */
+				_FileList1.updateList(_selTabMain);
+				_FileList2.updateList(_selTabSub);
+				::SendMessage(_hSelf, WM_SIZE, 0, 0);
+			}
+			break;
+		}
 		case WM_DESTROY:
 		{
 			/* restore subclasses */
@@ -343,7 +369,7 @@ LRESULT WndMgrDialog::runSCIProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM 
 	{
 		case WM_SIZE:
 		{
-			NotifyChanges();
+			::SetTimer(_hSelf, WMXT_UPDATESTATE, 0, NULL);
 			break;
 		}
 		default:

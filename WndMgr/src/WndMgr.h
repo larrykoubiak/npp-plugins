@@ -86,6 +86,8 @@ typedef struct tMgrProp {
 	BOOL	debug;
 } tMgrProp;
 
+/* timer notification */
+#define	WMXT_UPDATESTATE	10001
 
 
 void loadSettings(void);
