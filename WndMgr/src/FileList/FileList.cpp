@@ -96,29 +96,32 @@ BOOL FileList::notify(WPARAM wParam, LPARAM lParam)
 			{
 				LV_ITEM &lvItem = reinterpret_cast<LV_DISPINFO*>((LV_DISPINFO FAR *)lParam)->item;
 
-				if (lvItem.mask & LVIF_TEXT)
+				if (lvItem.iItem < _pvFileList->size()) 
 				{
-					/* copy data into const array */
-					static TCHAR	str[MAX_PATH];
-
-					switch (lvItem.iSubItem)
+					if (lvItem.mask & LVIF_TEXT)
 					{
-						case 0:
-							strcpy(str, (*_pvFileList)[lvItem.iItem].szName);
-							break;
-						case 1:
-							strcpy(str, (*_pvFileList)[lvItem.iItem].szPath);
-							break;
-						default:
-							break;
-					}
-					lvItem.pszText		= str;
-					lvItem.cchTextMax	= strlen(str);
-				}
+						/* copy data into const array */
+						static TCHAR	str[MAX_PATH];
 
-				if (lvItem.mask & LVIF_IMAGE)
-				{
-					lvItem.iImage = (*_pvFileList)[lvItem.iItem].fileState;
+						switch (lvItem.iSubItem)
+						{
+							case 0:
+								strcpy(str, (*_pvFileList)[lvItem.iItem].szName);
+								break;
+							case 1:
+								strcpy(str, (*_pvFileList)[lvItem.iItem].szPath);
+								break;
+							default:
+								break;
+						}
+						lvItem.pszText		= str;
+						lvItem.cchTextMax	= strlen(str);
+					}
+
+					if (lvItem.mask & LVIF_IMAGE)
+					{
+						lvItem.iImage = (*_pvFileList)[lvItem.iItem].fileState;
+					}
 				}
 				break;
 			}
