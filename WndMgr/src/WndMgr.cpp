@@ -285,8 +285,8 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				case IDM_FILE_SAVEAS:
 				case IDM_EDIT_SETREADONLY:
 				case IDM_EDIT_CLEARREADONLY:
-				case IDC_DOC_GOTO_ANOTHER_VIEW:
-				case IDC_DOC_CLONE_TO_ANOTHER_VIEW:
+				case IDM_DOC_GOTO_ANOTHER_VIEW:
+				case IDM_DOC_CLONE_TO_ANOTHER_VIEW:
 					FileListUpdate();
 					break;
 				default:
@@ -371,7 +371,8 @@ void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCSTR* pFiles, UINT numFiles
 
 	for (UINT i = 0; i < numFiles; i++) {
 		BOOL	found = FALSE;
-		if (GetLongPathName(pFiles[i], pszLongName, MAX_PATH) != 0) {
+		if ((strncmp(pFiles[i], UNTITLED_STR, strlen(UNTITLED_STR)) != 0) &&
+			(::GetLongPathName(pFiles[i], pszLongName, MAX_PATH) != 0)) {
 			strcpy(fileList.szCompletePath, pszLongName);
 			strcpy(fileList.szName, strrchr(pszLongName, '\\')+1);
 			PathRemoveFileSpec(pszLongName);
