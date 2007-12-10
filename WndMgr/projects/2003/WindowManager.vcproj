@@ -213,6 +213,15 @@
 				RelativePath="..\..\res\leftright.cur">
 			</File>
 			<File
+				RelativePath="..\..\res\readonly.ico">
+			</File>
+			<File
+				RelativePath="..\..\res\saved.ico">
+			</File>
+			<File
+				RelativePath="..\..\res\unsaved.ico">
+			</File>
+			<File
 				RelativePath="..\..\res\updown.cur">
 			</File>
 		</Filter>
