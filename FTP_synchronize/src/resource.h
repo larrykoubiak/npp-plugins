@@ -24,6 +24,7 @@
 #define IDD_DIALOG_SETTINGS_PROFILES    120
 #define IDD_DIALOG_SETTINGS_GENERAL     121
 #define IDD_DIALOG_SETTINGS_TRANSFERS   122
+#define IDD_DIALOG_LINKTYPE             123
 #define IDC_EDIT_NEWNAME                1001
 #define IDC_EDIT_OUTPUT                 1002
 #define IDC_EDIT_ABOUT                  1003
@@ -90,15 +91,17 @@
 #define IDC_EDIT_ADDBINARY              1064
 #define IDC_LIST_BINARY                 1065
 #define IDC_STATIC_VERSION              1066
+#define IDC_RADIO_DIR                   1067
+#define IDC_RADIO_FILE                  1068
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        123
+#define _APS_NEXT_RESOURCE_VALUE        124
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1067
+#define _APS_NEXT_CONTROL_VALUE         1068
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
