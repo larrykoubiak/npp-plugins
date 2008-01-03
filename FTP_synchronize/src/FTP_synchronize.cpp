@@ -143,9 +143,15 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 #endif
 
 	if (!result) {	//npp doesnt support config dir or something else went wrong (ie too small buffer)
-		lstrcpy(iniFile, dllPath);
+		lstrcpy(iniFile, dllPath);	//This directory has to exist always, else the DLL doesn't exist
 	} else {
 		lstrcat(iniFile, TEXT("\\"));	//append backslash as notepad doesnt do this
+		//It's possible the directory does not yet exist
+		if (PathFileExists(iniFile) == FALSE) {
+			if (createDirectory(iniFile) == FALSE) {
+				MessageBox(nppData._nppHandle, TEXT("FTP_synchronize\r\n\r\nUnable to create settings directory"), iniFile, MB_OK);
+			}
+		}
 	}
 	lstrcat(iniFile, pluginName);
 	lstrcat(iniFile, TEXT(".ini"));
@@ -2256,7 +2262,7 @@ BOOL createDirectory(LPCTSTR path) {
 
 	delete [] parsedPath;
 	if (!last && res == ERROR_ALREADY_EXISTS)	//dir already exists, so success
-		return true;
+		return TRUE;
 	return last;
 }
 
