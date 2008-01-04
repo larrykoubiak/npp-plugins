@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "NppExport.h"
+#include "HTMLExporter.h"
+#include "RTFExporter.h"
 
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved) {
 	switch (ul_reason_for_call) {
@@ -51,6 +53,12 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			funcItem[3]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[3]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
+			funcItem[4]._pFunc = &doClipboardAll;
+			strncpy(funcItem[4]._itemName, "&Copy all formats to clipboard", 64);	//Copy in the functionname, no more than 64 chars
+			funcItem[4]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
+			funcItem[4]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
+			ZeroMemory(funcItem[4]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
+
 			initializePlugin();
 			break;
 		}
@@ -63,8 +71,10 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 				delete [] pluginName; delete [] dllName; delete [] dllPath; 
 				delete funcItem[0]._pShKey;
 				delete funcItem[1]._pShKey;
+				delete funcItem[2]._pShKey;
+				delete funcItem[3]._pShKey;
+				delete funcItem[4]._pShKey;
 
-				
 			}
 			break;}
 	}
@@ -89,15 +99,15 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 	strcat(iniFile, pluginName);
 	strcat(iniFile, ".ini");
 
-	HANDLE ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
-	if (ini == INVALID_HANDLE_VALUE) {	//opening file failed
-		//Handle the error
-		delete [] iniFile;
-		iniFile = NULL;
-	} else {
-		CloseHandle(ini);
+	//HANDLE ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
+	//if (ini == INVALID_HANDLE_VALUE) {	//opening file failed
+	//	//Handle the error
+	//	delete [] iniFile;
+	//	iniFile = NULL;
+	//} else {
+	//	CloseHandle(ini);
 		initializePlugin();
-	}
+	//}
 }
 
 extern "C" __declspec(dllexport) const char * getName() {
@@ -131,22 +141,14 @@ void initializePlugin() {
 	
 	initScintillaData(&mainCSD);
 
-	rtf_id = RegisterClipboardFormat(CF_RTF);
-	if (rtf_id == 0) {
-		MessageBox(nppData._nppHandle, "Unable to register clipboard format RTF!", "Error", MB_OK);
-	}
-
-	html_id = RegisterClipboardFormat(CF_HTML);
-	if (rtf_id == 0) {
-		MessageBox(nppData._nppHandle, "Unable to register clipboard format HTML!", "Error", MB_OK);
-	}
-
 	initializedPlugin = true;
 }
 
 void deinitializePlugin() {
 	if (!initializedPlugin)
 		return;
+
+	deinitScintillaData(&mainCSD);
 
 	delete [] iniFile;
 	iniFile = NULL;
@@ -177,11 +179,9 @@ void destroyWindows() {
 
 //Menu command functions
 void doExportRTF() {
-	ExportFileData efd;
 	char filename[MAX_PATH];
-
 	fillScintillaData(&mainCSD, 0 , -1);
-	efd.csd = &mainCSD;	
+
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM) filename);
 	strcat(filename, ".rtf");
 	if (saveFile(filename, MAX_PATH, "RTF file (*.rtf)\0*.rtf\0All files (*.*)\0*.*\0")) {
@@ -189,18 +189,15 @@ void doExportRTF() {
 		if (!output) {
 			return;
 		}
-		efd.file = output;
-		exportRTF(&efd);
-		fclose(efd.file);
+		exportRTF(false, output);
+		fclose(output);
 	}
 }
 
 void doExportHTML() {
-	ExportFileData efd;
 	char filename[MAX_PATH];
-
 	fillScintillaData(&mainCSD, 0 , -1);
-	efd.csd = &mainCSD;
+
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM) filename);
 	strcat(filename, ".html");
 	if (saveFile(filename, MAX_PATH, "HTML file (*.html)\0*.html\0All files (*.*)\0*.*\0")) {
@@ -208,28 +205,85 @@ void doExportHTML() {
 		if (!output) {
 			return;
 		}
-		efd.file = output;
-		exportHTML(&efd);
-		fclose(efd.file);
+		exportHTML(false, output);
+		fclose(output);
 	}
 }
 
 void doClipboardRTF() {
-	ExportFileData efd;
 	fillScintillaData(&mainCSD, 0, 0);
-	efd.csd = &mainCSD;	
-	efd.file = NULL;
-	exportRTF(&efd);
+
+	BOOL result = OpenClipboard(nppData._nppHandle);
+	if (result == FALSE) {
+		err("Unable to open clipboard");
+		return;
+	}
+
+	result = EmptyClipboard();
+	if (result == FALSE) {
+		err("Unable to empty clipboard");
+		return;
+	}
+
+	exportRTF(true, NULL);
+
+	result = CloseClipboard();
+	if (result == FALSE) {
+		err("Unable to close clipboard");
+		return;
+	}
 }
 
 void doClipboardHTML() {
-	ExportFileData efd;
 	fillScintillaData(&mainCSD, 0, 0);
-	efd.csd = &mainCSD;	
-	efd.file = NULL;
-	exportHTML(&efd);
+	
+	BOOL result = OpenClipboard(nppData._nppHandle);
+	if (result == FALSE) {
+		err("Unable to open clipboard");
+		return;
+	}
+
+	result = EmptyClipboard();
+	if (result == FALSE) {
+		err("Unable to empty clipboard");
+		return;
+	}
+
+	exportHTML(true, NULL);
+
+	result = CloseClipboard();
+	if (result == FALSE) {
+		err("Unable to close clipboard");
+		return;
+	}
 }
 
+void doClipboardAll() {
+	fillScintillaData(&mainCSD, 0, 0);
+	
+	BOOL result = OpenClipboard(nppData._nppHandle);
+	if (result == FALSE) {
+		err("Unable to open clipboard");
+		return;
+	}
+
+	result = EmptyClipboard();
+	if (result == FALSE) {
+		err("Unable to empty clipboard");
+		return;
+	}
+
+	exportRTF(true, NULL);
+	exportHTML(true, NULL);
+
+	result = CloseClipboard();
+	if (result == FALSE) {
+		err("Unable to close clipboard");
+		return;
+	}
+}
+
+//Internal functions
 BOOL saveFile(char * filebuffer, int buffersize, const char * filters) {
 	OPENFILENAME ofi;
 	ZeroMemory(&ofi,sizeof(OPENFILENAME));
@@ -245,7 +299,7 @@ BOOL saveFile(char * filebuffer, int buffersize, const char * filters) {
 
 void initScintillaData(CurrentScintillaData * csd) {
 	csd->styles = new StyleData[STYLE_MAX];
-	csd->dataBuffer = 0;
+	csd->dataBuffer = NULL;
 }
 
 void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
@@ -331,399 +385,80 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	}
 }
 
-void exportHTML(ExportFileData * efd) {
-	//estimate buffer size needed
-	char * buffer = efd->csd->dataBuffer;
-	int totalBytesNeeded = 1;	//zero terminator
-	bool addHeader = (efd->file == NULL);	//true if putting data on clipboard
-	
-	totalBytesNeeded += EXPORT_SIZE_HTML_STATIC + EXPORT_SIZE_HTML_STYLE * (efd->csd->nrUsedStyles-1) + efd->csd->totalFontStringLength + EXPORT_SIZE_HTML_SWITCH * efd->csd->nrStyleSwitches;
-	if (addHeader)
-		totalBytesNeeded += EXPORT_SIZE_HTML_HEADER;
-	int startHTML = EXPORT_SIZE_HTML_HEADER, endHTML = 0, startFragment = 0, endFragment = 0;
+void deinitScintillaData(CurrentScintillaData * csd) {
+	delete [] csd->styles;
+	if (csd->dataBuffer)
+		delete [] csd->dataBuffer;
+}
 
-	for(int i = 0; i < efd->csd->nrChars; i++) {
-		switch(buffer[(i*2)]) {
-			case ' ':
-				totalBytesNeeded += 6;	// '\{'
-				break;
-			case '<':
-				totalBytesNeeded += 4;	// '\}'
-				break;
-			case '>':
-				totalBytesNeeded += 4;	// '\\'
-				break;
-			case '\t':
-				totalBytesNeeded += efd->csd->tabSize * 6;
-				break;
-			case '\r':
-				if (buffer[(i*2)+2] == '\n')
-					break;
-			case '\n':
-				totalBytesNeeded += 7;	// '\par\r\n'
-				break;
-			default:
-				totalBytesNeeded += 1; //	'char'
-				break;
+//Export handlers
+void exportHTML(bool isClipboard, FILE * exportFile) {
+
+	HTMLExporter htmlexp;
+	ExportData ed;
+
+	ed.isClipboard = isClipboard;
+	ed.csd = &mainCSD;
+	htmlexp.exportData(&ed);
+
+	if (!ed.hBuffer)
+		return;
+
+	if (!isClipboard) {
+		char * buffer = (char *)GlobalLock(ed.hBuffer);
+		if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
+			err("Error writing data to file");
 		}
-	}
-
-	int currentBufferOffset = 0;
-	HGLOBAL hHTMLBuffer = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, totalBytesNeeded);
-	char * clipbuffer = (char *)GlobalLock(hHTMLBuffer);
-	clipbuffer[0] = 0;
-
-	//add CF_HTML header if needed, return later to fill in the blanks
-	if (addHeader) {
-		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "Version:0.9\r\nStartHTML:0000000105\r\nEndHTML:0000000201\r\nStartFragment:0000000156\r\nEndFragment:0000000165");
-	}
-	//end CF_HTML header
-
-	//begin building context
-
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<html>\r\n<head>\r\n<title>Exported from Notepad++</title>\r\n<style type=\"text/css\">\r\n");
-
-	StyleData * currentStyle, * defaultStyle;
-	defaultStyle = (efd->csd->styles)+STYLE_DEFAULT;
-
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "span {\n", i);
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-family: '%s';\r\n", defaultStyle->fontString);
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-size: %0dpt;\r\n", defaultStyle->size);
-	if (defaultStyle->bold)		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-weight: bold;\r\n");
-	if (defaultStyle->italic)		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-style: italic;\r\n");
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tcolor: #%02X%02X%02X;\r\n", (defaultStyle->fgColor>>0)&0xFF, (defaultStyle->fgColor>>8)&0xFF, (defaultStyle->fgColor>>16)&0xFF);
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n");
-
-	for(int i = 0; i < STYLE_MAX; i++) {
-		if (i == STYLE_DEFAULT)
-			continue;
-
-		currentStyle = (efd->csd->styles)+i;
-		if (efd->csd->usedStyles[i] == true) {
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, ".SpanClass%d {\r\n", i);
-			if (strcmpi(currentStyle->fontString, defaultStyle->fontString))
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-family: '%s';\r\n", currentStyle->fontString);
-			if (currentStyle->size != defaultStyle->size)
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-size: %0dpt;\r\n", currentStyle->size);
-			if (currentStyle->bold != defaultStyle->bold) {
-				if (currentStyle->bold)
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-weight: bold;\r\n");
-				else
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-weight: normal;\r\n");
-			}
-			if (currentStyle->italic != defaultStyle->italic) {
-				if (currentStyle->italic)
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-style: italic;\r\n");
-				else
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-style: normal;\r\n");
-			}
-			if (currentStyle->underlined)
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\ttext-decoration: underline;\r\n");
-			if (currentStyle->fgColor != defaultStyle->fgColor)
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tcolor: #%02X%02X%02X;\r\n", (currentStyle->fgColor>>0)&0xFF, (currentStyle->fgColor>>8)&0xFF, (currentStyle->fgColor>>16)&0xFF);
-			if (currentStyle->bgColor != defaultStyle->bgColor)
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tbackground: #%02X%02X%02X;\r\n", (currentStyle->bgColor>>0)&0xFF, (currentStyle->bgColor>>8)&0xFF, (currentStyle->bgColor>>16)&0xFF);
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n");
-		}
-	}
-
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "</style>\r\n</head>\r\n");
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<body bgcolor=\"#%02X%02X%02X\">\r\n", (defaultStyle->bgColor>>0)&0xFF, (defaultStyle->bgColor>>8)&0xFF, (defaultStyle->bgColor>>16)&0xFF);
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<span>\r\n");
-
-	//end building context
-
-	//add StartFragment if doing CF_HTML
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<!--StartFragment-->\r\n");
-	startFragment = currentBufferOffset;
-	//end StartFragment
-
-//-------Dump text to HTML
-	char * tabBuffer = new char[efd->csd->tabSize * 6 + 1];
-	tabBuffer[0] = 0;
-	for(int i = 0; i < efd->csd->tabSize; i++) {
-		strcat(tabBuffer, "&nbsp;");
-	}
-
-	int nrCharsSinceLinebreak = -1, nrTabCharsToSkip = 0;
-	int lastStyle = -1;
-	char currentChar;
-	bool openSpan = false;
-
-	for(int i = 0; i < efd->csd->nrChars; i++) {
-		//print new span object if style changes
-		if (buffer[i*2+1] != lastStyle) {
-			if (openSpan) {
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "</span>");
-			}
-			lastStyle = buffer[i*2+1];
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<span class=\"SpanClass%d\">", lastStyle);
-			openSpan = true;
-		}
-
-		//print character, parse special ones
-		currentChar = buffer[(i*2)];
-		nrCharsSinceLinebreak++;
-		switch(currentChar) {
-			case '\r':
-				if (buffer[(i*2)+2] == '\n')
-					break;
-			case '\n':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<br/>\r\n");
-				nrCharsSinceLinebreak = -1;
-				break;
-			case '<':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "&lt;");
-				break;
-			case '>':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "&gt;");
-				break;
-			case ' ':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "&nbsp;");
-				break;
-			case '\t':
-				nrTabCharsToSkip = nrCharsSinceLinebreak%(efd->csd->tabSize);
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "%s", tabBuffer + (nrTabCharsToSkip * 6));
-				nrCharsSinceLinebreak += efd->csd->tabSize - nrTabCharsToSkip - 1;
-				break;
-			default:
-				if (currentChar < 20)	//ignore control characters
-					break;
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "%c", currentChar);
-				break;
-		}
-	}
-
-	if (openSpan) {
-		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "</span>");
-	}
-
-	delete [] tabBuffer;
-
-	//add EndFragment if doing CF_HTML
-	endFragment = currentBufferOffset;
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<!--EndFragment-->\r\n");
-	//end EndFragment
-
-	//add closing context
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\r\n</span>\r\n</body>\r\n</html>\r\n");
-	endHTML = currentBufferOffset;
-
-	//if doing CF_HTML, fill in header data
-	if (addHeader) {
-		char number[11];
-		sprintf(number, "%.10d", startHTML);
-		memcpy(clipbuffer + 23, number, 10);
-		sprintf(number, "%.10d", endHTML);
-		memcpy(clipbuffer + 43, number, 10);
-		sprintf(number, "%.10d", startFragment);
-		memcpy(clipbuffer + 69, number, 10);
-		sprintf(number, "%.10d", endFragment);
-		memcpy(clipbuffer + 93, number, 10);
-	}
-	//end header
-
-
-	if (efd->file != NULL) {
-		fwrite(clipbuffer, 1, currentBufferOffset, efd->file);
-		GlobalUnlock(hHTMLBuffer);
-		GlobalFree(hHTMLBuffer);
+		GlobalUnlock(ed.hBuffer);
+		GlobalFree(ed.hBuffer);
 	} else {
-		BOOL result = OpenClipboard(nppData._nppHandle);
-		if (result == FALSE) {
-			err("Unable to open clipboard");
-		}
-		result = EmptyClipboard();
-		if (result == FALSE) {
-			err("Unable to empty clipboard");
+		//BOOL result = OpenClipboard(nppData._nppHandle);
+		//if (result == FALSE) {
+		//	err("Unable to open clipboard");
+		//}
+
+		//result = EmptyClipboard();
+		//if (result == FALSE) {
+		//	err("Unable to empty clipboard");
+		//}
+
+		HANDLE clipHandle = SetClipboardData(htmlexp.getClipboardID(), ed.hBuffer);
+		if (!clipHandle) {
+			GlobalFree(ed.hBuffer);
+			err("Failed setting clipboard data");
 		}
 
-		GlobalUnlock(hHTMLBuffer);
-		SetClipboardData(html_id, hHTMLBuffer);
-
-		result = CloseClipboard();
-		if (result == FALSE) {
-			err("Unable to close clipboard");
-		}
+		//result = CloseClipboard();
+		//if (result == FALSE) {
+		//	err("Unable to close clipboard");
+		//}
 	}
 }
 
-void exportRTF(ExportFileData * efd) {
-	//estimate buffer size needed
-	char * buffer = efd->csd->dataBuffer;
-	int totalBytesNeeded = 1;	//zero terminator
-	
-	totalBytesNeeded += EXPORT_SIZE_RTF_STATIC + EXPORT_SIZE_RTF_STYLE * efd->csd->nrUsedStyles + efd->csd->totalFontStringLength + EXPORT_SIZE_RTF_SWITCH * efd->csd->nrStyleSwitches;
+void exportRTF(bool isClipboard, FILE * exportFile) {
 
-	for(int i = 0; i < efd->csd->nrChars; i++) {
-		switch(buffer[(i*2)]) {
-			case '{':
-				totalBytesNeeded += 2;	// '\{'
-				break;
-			case '}':
-				totalBytesNeeded += 2;	// '\}'
-				break;
-			case '\\':
-				totalBytesNeeded += 2;	// '\\'
-				break;
-			case '\t':
-				totalBytesNeeded += efd->csd->tabSize;
-				break;
-			case '\r':
-				if (buffer[(i*2)+2] == '\n')
-					break;
-			case '\n':
-				totalBytesNeeded += 6;	// '\par\r\n'
-				break;
-			default:
-				totalBytesNeeded += 1; //	'char'
-				break;
+	RTFExporter rtfexp;
+	ExportData ed;
+
+	ed.isClipboard = isClipboard;
+	ed.csd = &mainCSD;
+	rtfexp.exportData(&ed);
+
+	if (!ed.hBuffer)
+		return;
+
+	if (!isClipboard) {
+		char * buffer = (char *)GlobalLock(ed.hBuffer);
+		if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
+			err("Error writing data to file");
 		}
-	}
-
-	int currentBufferOffset = 0;
-	HGLOBAL hRTFBuffer = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, totalBytesNeeded);
-	char * clipbuffer = (char *)GlobalLock(hRTFBuffer);
-	clipbuffer[0] = 0;
-
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\rtf1\\ansi\\deff0\r\n\r\n");
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\fonttbl\r\n");
-
-	StyleData * currentStyle;
-
-	int currentFontIndex = 0;
-	for(int i = 0; i < STYLE_MAX; i++) {
-		if (efd->csd->usedStyles[i] == true) {
-			currentStyle = (efd->csd->styles)+i;
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\f%03d %s;}\r\n", currentFontIndex, currentStyle->fontString);
-			currentStyle->fontIndex = currentFontIndex;
-			currentFontIndex++;
-		}
-	}
-
-
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n\r\n");	//fonttbl
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\colortbl\r\n");
-
-	int currentColorIndex = 0;
-	for(int i = 0; i < STYLE_MAX; i++) {
-		if (efd->csd->usedStyles[i] == true) {
-			currentStyle = (efd->csd->styles)+i;
-
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\red%03d\\green%03d\\blue%03d;\r\n", (currentStyle->fgColor>>0)&0xFF, (currentStyle->fgColor>>8)&0xFF, (currentStyle->fgColor>>16)&0xFF);
-			currentStyle->fgClrIndex = currentColorIndex;
-			currentColorIndex++;
-
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\red%03d\\green%03d\\blue%03d;\r\n", (currentStyle->bgColor>>0)&0xFF, (currentStyle->bgColor>>8)&0xFF, (currentStyle->bgColor>>16)&0xFF);
-			currentStyle->bgClrIndex = currentColorIndex;
-			currentColorIndex++;
-		}
-	}
-
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n\r\n");	//colortbl
-
-//-------Dump text to RTF
-	char * tabBuffer = new char[efd->csd->tabSize+1];
-	tabBuffer[efd->csd->tabSize] = 0;
-	for(int i = 0; i < efd->csd->tabSize; i++)
-		tabBuffer[i] = ' ';
-
-	int nrCharsSinceLinebreak = -1, nrTabCharsToSkip = 0;
-	int lastStyle = -1;
-	int prevStyle = STYLE_DEFAULT;
-	char currentChar;
-	StyleData * styles = efd->csd->styles;
-
-	for(int i = 0; i < efd->csd->nrChars; i++) {
-
-		//print new span object if style changes
-		if (buffer[i*2+1] != lastStyle) {
-			if (lastStyle != -1)
-				prevStyle = lastStyle;
-			lastStyle = buffer[i*2+1];
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\f%d\\fs%d\\cb%d\\cf%d", styles[lastStyle].fontIndex, styles[lastStyle].size * 2, styles[lastStyle].bgClrIndex, styles[lastStyle].fgClrIndex);
-			//if (styles[lastStyle].bold != styles[prevStyle].bold) {
-				if (styles[lastStyle].bold) {
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\b");
-				} else {
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\b0");
-				}
-			//}
-			//if (styles[lastStyle].italic != styles[prevStyle].italic) {
-				if (styles[lastStyle].underlined) {
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\i");
-				} else {
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\i0");
-				}
-			//}
-			//if (styles[lastStyle].underlined != styles[prevStyle].underlined) {
-				if (styles[lastStyle].underlined) {
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\ul");
-				} else {
-					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\ul0");
-				}
-			//}
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, " ");
-		}
-
-		//print character, parse special ones
-		currentChar = buffer[(i*2)];
-		nrCharsSinceLinebreak++;
-		switch(currentChar) {
-			case '{':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\{");
-				break;
-			case '}':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\}");
-				break;
-			case '\\':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\\\");
-				break;
-			case '\t':
-				nrTabCharsToSkip = nrCharsSinceLinebreak%(efd->csd->tabSize);
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, tabBuffer + (nrTabCharsToSkip));
-				nrCharsSinceLinebreak += efd->csd->tabSize - nrTabCharsToSkip - 1;
-				break;
-			case '\r':
-				if (buffer[(i*2)+2] == '\n')
-					break;
-			case '\n':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\par\r\n");
-				nrCharsSinceLinebreak = -1;
-				break;
-			default:
-				if (currentChar < 20)	//ignore control characters
-					break;
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "%c", currentChar);
-				break;
-		}
-	}
-
-	delete [] tabBuffer;
-
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n");	//rtf/ansi
-
-	if (efd->file != NULL) {
-		fwrite(clipbuffer, 1, currentBufferOffset, efd->file);
-		GlobalUnlock(hRTFBuffer);
-		GlobalFree(hRTFBuffer);
+		GlobalUnlock(ed.hBuffer);
+		GlobalFree(ed.hBuffer);
 	} else {
-		BOOL result = OpenClipboard(nppData._nppHandle);
-		if (result == FALSE) {
-			err("Unable to open clipboard");
-		}
-		result = EmptyClipboard();
-		if (result == FALSE) {
-			err("Unable to empty clipboard");
-		}
-
-		GlobalUnlock(hRTFBuffer);
-		SetClipboardData(rtf_id, hRTFBuffer);
-
-		result = CloseClipboard();
-		if (result == FALSE) {
-			err("Unable to close clipboard");
+		HANDLE clipHandle = SetClipboardData(rtfexp.getClipboardID(), ed.hBuffer);
+		if (!clipHandle) {
+			GlobalFree(ed.hBuffer);
+			err("Failed setting clipboard data");
 		}
 	}
-
 }

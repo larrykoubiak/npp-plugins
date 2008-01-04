@@ -125,7 +125,16 @@
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{26D0DAB2-3E6B-463D-BAEC-5484192A6A9A}">
 			<File
+				RelativePath="..\src\Exporter.cpp">
+			</File>
+			<File
+				RelativePath="..\src\HTMLExporter.cpp">
+			</File>
+			<File
 				RelativePath="..\src\NppExport.cpp">
+			</File>
+			<File
+				RelativePath="..\src\RTFExporter.cpp">
 			</File>
 			<File
 				RelativePath="..\src\stdafx.cpp">
@@ -148,10 +157,22 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{167BACF6-650D-4743-99C8-E8BA813D50FB}">
 			<File
+				RelativePath="..\src\Exporter.h">
+			</File>
+			<File
+				RelativePath="..\src\ExportStructs.h">
+			</File>
+			<File
+				RelativePath="..\src\HTMLExporter.h">
+			</File>
+			<File
 				RelativePath="..\src\NppExport.h">
 			</File>
 			<File
 				RelativePath="..\src\resource.h">
+			</File>
+			<File
+				RelativePath="..\src\RTFExporter.h">
 			</File>
 			<File
 				RelativePath="..\src\stdafx.h">
