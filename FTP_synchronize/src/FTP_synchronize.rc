@@ -81,6 +81,12 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,162,186,120,10
     CONTROL         "Enable keep alive",IDC_CHECK_KEEPALIVE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,162,204,72,10
+    CONTROL         "Use profile cache",IDC_CHECK_PROFILECACHE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,162,222,71,10
+    EDITTEXT        IDC_EDIT_PROFILECACHEPATH,186,234,150,14,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    PUSHBUTTON      "...",IDC_BUTTON_BROWSEPROFILECACHE,342,234,18,14,
+                    WS_DISABLED
     GROUPBOX        "Connection mode",IDC_STATIC,312,72,72,40
     CONTROL         "Active",IDC_RADIO_ACTIVE,"Button",BS_AUTORADIOBUTTON | 
                     WS_GROUP | WS_TABSTOP,318,84,36,10
@@ -94,8 +100,8 @@ BEGIN
     CONTROL         "Automatic",IDC_RADIO_AUTOMATIC,"Button",
                     BS_AUTORADIOBUTTON,318,162,48,10
     RTEXT           "You need to reconnect for changes to have effect",
-                    IDC_STATIC,210,228,162,8
-    PUSHBUTTON      "Apply",IDB_SETTINGS_APPLY,318,258,50,14
+                    IDC_STATIC,144,264,162,8
+    PUSHBUTTON      "Apply",IDB_SETTINGS_APPLY,318,264,50,14
     LTEXT           "Profiles:",IDC_STATIC,18,6,27,8
     LISTBOX         IDC_LIST_PROFILES,18,18,114,240,LBS_SORT | 
                     LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
@@ -318,8 +324,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,5,1
- PRODUCTVERSION 0,9,5,1
+ FILEVERSION 0,9,6,0
+ PRODUCTVERSION 0,9,6,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -335,12 +341,12 @@ BEGIN
         BLOCK "000004b0"
         BEGIN
             VALUE "FileDescription", "FTP Plugin for Notepad++, a free (GNU) source code editor"
-            VALUE "FileVersion", "0.9.5.1"
+            VALUE "FileVersion", "0.9.6"
             VALUE "InternalName", "FTP_sync"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "FTP_synchronize.dll"
             VALUE "ProductName", "FTP_synchronize"
-            VALUE "ProductVersion", "0.9.5.1"
+            VALUE "ProductVersion", "0.9.6"
         END
     END
     BLOCK "VarFileInfo"

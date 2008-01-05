@@ -34,6 +34,7 @@ void Profile::allocatebuffers() {
 	password = new TCHAR[BUFFERSIZE];
 	initialDir = new TCHAR[MAX_PATH];
 	iniFile = new TCHAR[MAX_PATH];
+	cachePath = new TCHAR[MAX_PATH];
 #ifdef UNICODE
 	addressA = new char[BUFFERSIZE];
 	usernameA = new char[BUFFERSIZE];
@@ -46,6 +47,7 @@ void Profile::reload() {
 	GetPrivateProfileString(this->name, TEXT("Address"), TEXT(""), this->address, BUFFERSIZE, this->iniFile);
 	GetPrivateProfileString(this->name, TEXT("Username"), TEXT(""), this->username, BUFFERSIZE, this->iniFile);
 	GetPrivateProfileString(this->name, TEXT("InitialDirectory"), TEXT(""), this->initialDir, MAX_PATH, this->iniFile);
+	GetPrivateProfileString(this->name, TEXT("CachePath"), TEXT(""), this->cachePath, MAX_PATH, this->iniFile);
 
 	//Decrypt the password using algorithm
 	TCHAR * encryptedPwd = new TCHAR[BUFFERSIZE];
@@ -75,6 +77,7 @@ void Profile::reload() {
 	this->setFindRoot( GetPrivateProfileInt(this->name, TEXT("FindRoot"), 0, this->iniFile) == 1 );
 	this->setAskPassword( GetPrivateProfileInt(this->name, TEXT("AskForPassword"), 0, this->iniFile) == 1 );
 	this->setKeepAlive( GetPrivateProfileInt(this->name, TEXT("KeepAlive"), 0, this->iniFile) == 1 );
+	this->setUseCache( GetPrivateProfileInt(this->name, TEXT("UseCache"), 0, this->iniFile) == 1 );
 }
 
 void Profile::save() {
@@ -92,9 +95,11 @@ void Profile::save() {
 	WritePrivateProfileString(this->name, TEXT("Address"), this->address, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("Username"), this->username, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("InitialDirectory"), this->initialDir, this->iniFile);
+	WritePrivateProfileString(this->name, TEXT("CachePath"), this->cachePath, this->iniFile);
 	WritePrivateProfileString(this->name, TEXT("FindRoot"), (this->findRoot)?TEXT("1"):TEXT("0"), iniFile);
 	WritePrivateProfileString(this->name, TEXT("AskForPassword"), (this->askPassword)?TEXT("1"):TEXT("0"), iniFile);
 	WritePrivateProfileString(this->name, TEXT("KeepAlive"), (this->keepAlive)?TEXT("1"):TEXT("0"), iniFile);
+	WritePrivateProfileString(this->name, TEXT("UseCache"), (this->useCache)?TEXT("1"):TEXT("0"), iniFile);
 	//Encrypt the password using some algorithm
 	TCHAR * encryptedPwd = new TCHAR[BUFFERSIZE];
 	int res = lstrlen(this->password);
@@ -150,6 +155,10 @@ void Profile::setInitDir(LPCTSTR dir) {
 #endif
 }
 
+void Profile::setCachePath(LPCTSTR path) {
+	lstrcpy(this->cachePath, path);
+}
+
 void Profile::setPort(int newport) {
 	if (newport >= 0 && newport < 65536)
 		this->port = newport;
@@ -190,6 +199,10 @@ void Profile::setKeepAlive(bool enabled) {
 	keepAlive = enabled;
 }
 
+void Profile::setUseCache(bool use) {
+	useCache = use;
+}
+
 LPCTSTR Profile::getName() {
 	return this->name;
 }
@@ -208,6 +221,10 @@ LPCTSTR Profile::getPassword() {
 
 LPCTSTR Profile::getInitDir() {
 	return this->initialDir;
+}
+
+LPCTSTR Profile::getCachePath() {
+	return this->cachePath;
 }
 
 int Profile::getPort() {
@@ -238,6 +255,10 @@ bool Profile::getKeepAlive() {
 	return keepAlive;
 }
 
+bool Profile::getUseCache() {
+	return useCache;
+}
+
 #ifdef UNICODE
 LPCSTR Profile::getAddressA() {
 	return this->addressA;
@@ -254,11 +275,12 @@ LPCSTR Profile::getPasswordA() {
 LPCSTR Profile::getInitDirA() {
 	return this->initialDirA;
 }
+
 #endif
 
 Profile::~Profile(void) {
-	delete [] iniFile; delete [] name; delete [] address; delete [] username; delete [] password;
+	delete [] iniFile; delete [] name; delete [] address; delete [] username; delete [] password; delete [] initialDir; delete [] cachePath;
 #ifdef UNICODE
-	delete [] addressA; delete [] usernameA; delete [] passwordA;
+	delete [] addressA; delete [] usernameA; delete [] passwordA; delete [] initialDirA;
 #endif
 }

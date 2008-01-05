@@ -37,6 +37,7 @@ public:
 	void setUsername(LPCTSTR newusername);
 	void setPassword(LPCTSTR newpassword);
 	void setInitDir(LPCTSTR dir);
+	void setCachePath(LPCTSTR path);
 	void setPort(int newport);
 	void setTimeout(int newtimeout);
 	void setTransferMode(Transfer_Mode newmode);
@@ -44,11 +45,13 @@ public:
 	void setFindRoot(bool find);
 	void setAskPassword(bool ask);
 	void setKeepAlive(bool enabled);
+	void setUseCache(bool use);
 	LPCTSTR getName();
 	LPCTSTR getAddress();
 	LPCTSTR getUsername();
 	LPCTSTR getPassword();
 	LPCTSTR getInitDir();
+	LPCTSTR getCachePath();
 	int getPort();
 	int getTimeout();
 	Transfer_Mode getTransferMode();
@@ -56,6 +59,7 @@ public:
 	bool getFindRoot();
 	bool getAskPassword();
 	bool getKeepAlive();
+	bool getUseCache();
 #ifdef UNICODE
 	LPCSTR getAddressA();
 	LPCSTR getUsernameA();
@@ -69,6 +73,7 @@ private:
 	TCHAR * username;
 	TCHAR * password;
 	TCHAR * initialDir;
+	TCHAR * cachePath;
 #ifdef UNICODE
 	char * addressA, * usernameA, * passwordA, * initialDirA;
 #endif
@@ -79,5 +84,6 @@ private:
 	bool findRoot;
 	bool askPassword;
 	bool keepAlive;
+	bool useCache;
 	TCHAR * iniFile;
 };

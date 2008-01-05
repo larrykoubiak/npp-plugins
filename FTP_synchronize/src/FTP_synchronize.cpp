@@ -95,6 +95,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			expectedDisconnect = false;
 
 			acceptedEvents = -1;	//-1 = 0xFFFF... = everything
+
+			treeViewDeleting = false;
 			break;
 		}
 		case DLL_PROCESS_DETACH:{
@@ -1465,21 +1467,28 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					lastDirectoryItem = NULL;
 					lastDirectoryItemParam = NULL;
 	
-					if (otherCache) {
-						lstrcpy(storage, cacheLocation);
-						if (cacheLocation[lstrlen(cacheLocation-1)] != TEXT('\\'))
-							lstrcat(storage, TEXT("/"));
-					} else {
-						lstrcpy(storage, dllPath);
-					}
+					if (currentFTPProfile->getUseCache()) {	//use profile cache
+						lstrcpy(storage, currentFTPProfile->getCachePath());
+						int len = lstrlen(storage);
+						if (storage[len-1] != '\\')
+							lstrcat(storage, TEXT("\\"));
+					} else {								//use global cache
+						if (otherCache) {
+							lstrcpy(storage, cacheLocation);
+							if (cacheLocation[lstrlen(cacheLocation-1)] != TEXT('\\'))
+								lstrcat(storage, TEXT("/"));
+						} else {
+							lstrcpy(storage, dllPath);
+						}
 
-					lstrcat(storage, dllName);
-					PathRemoveExtension(storage);
-					lstrcat(storage, TEXT("\\"));
-					lstrcat(storage, currentFTPProfile->getUsername());
-					lstrcat(storage, TEXT("@"));
-					lstrcat(storage, currentFTPProfile->getAddress());
-					lstrcat(storage, TEXT("\\"));
+						lstrcat(storage, dllName);
+						PathRemoveExtension(storage);
+						lstrcat(storage, TEXT("\\"));
+						lstrcat(storage, currentFTPProfile->getUsername());
+						lstrcat(storage, TEXT("@"));
+						lstrcat(storage, currentFTPProfile->getAddress());
+						lstrcat(storage, TEXT("\\"));
+					}
 					if (!createDirectory(storage)) {
 						printToLog("Could not create storage cache '%s', getCurrentTimeStamp(), error %d\n", storage, GetLastError());
 					}
@@ -1492,7 +1501,9 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 					setOutputTitleAddon(TEXT("No connection"));
 					connected = false;
 
+					treeViewDeleting = true;
 					TreeView_DeleteAllItems(hFolderTreeview);
+					treeViewDeleting = false;
 					lastDirectoryItem = NULL;
 					lastDirectoryItemParam = NULL;
 					lastFileItem = NULL;
@@ -2160,6 +2171,8 @@ HTREEITEM addFile(HTREEITEM root, FILEOBJECT * file) {
 }
 
 void selectItem(HTREEITEM lastitem, LPARAM lastparam) {
+	if (treeViewDeleting)
+		return;				//ignore selection when deleting items
 	FILESYSTEMOBJECT * fso = (FILESYSTEMOBJECT *) lastparam;
 	if (fso->isDirectory) {	//directories will be opened	
 		lastDirectoryItemParam = (DIRECTORY *) lastparam;
@@ -2237,7 +2250,7 @@ void cancelDragging() {
 BOOL createDirectory(LPCTSTR path) {
 	TCHAR * parsedPath = new TCHAR[MAX_PATH];
 	BOOL last = FALSE;
-	DWORD res;
+	DWORD res = 0;
 	parsedPath[0] = 0;
 	int i = 0, lastoffset = 0;
 	LPCTSTR curStringOffset = path;
@@ -2400,6 +2413,12 @@ void fillProfileData() {
 	SendMessage(hCheckKeepAlive, BM_SETCHECK, (WPARAM) currentProfile->getKeepAlive(), 0);
 
 	EnableWindow(hPassword, (!currentProfile->getAskPassword()));
+
+	SendMessage(hCheckProfileCache, BM_SETCHECK, (WPARAM) currentProfile->getUseCache(), 0);
+	SendMessage(hProfileCache, WM_SETTEXT, 0, (LPARAM)currentProfile->getCachePath());
+
+	EnableWindow(hProfileCache, (currentProfile->getUseCache()));
+	EnableWindow(hBrowseProfileCache, (currentProfile->getUseCache()));
 }
 
 void renameProfile() {
@@ -2857,7 +2876,11 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						break; }
 					case IDB_BUTTON_TOOLBAR_UPLOAD: {
 						if (lastDirectoryItemParam) {
+						#ifdef UNICODE
 							tsprintf(tooltipBuffer, TEXT("Upload current file to folder %S"), lastDirectoryItemParam->fso.name);
+						#else
+							tsprintf(tooltipBuffer, TEXT("Upload current file to folder %s"), lastDirectoryItemParam->fso.name);
+						#endif
 							lpttt->lpszText = tooltipBuffer;//TEXT("Upload current file");
 						} else {
 							lpttt->lpszText = NULL;
@@ -2865,7 +2888,11 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						break; }
 					case IDB_BUTTON_TOOLBAR_DOWNLOAD: {
 						if (lastFileItemParam) {
+						#ifdef UNICODE
 							tsprintf(tooltipBuffer, TEXT("Download file %S"), lastFileItemParam->fso.name);
+						#else
+							tsprintf(tooltipBuffer, TEXT("Download file %s"), lastFileItemParam->fso.name);
+						#endif
 							lpttt->lpszText = tooltipBuffer;//TEXT("Download selected file");
 						} else {
 							lpttt->lpszText = NULL;
@@ -2885,7 +2912,11 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						break; }
 					case IDB_BUTTON_TOOLBAR_REFRESH: {
 						if (lastDirectoryItemParam) {
+						#ifdef UNICODE
 							tsprintf(tooltipBuffer, TEXT("Refresh folder %S"), lastDirectoryItemParam->fso.name);
+						#else
+							tsprintf(tooltipBuffer, TEXT("Refresh folder %s"), lastDirectoryItemParam->fso.name);
+						#endif
 							lpttt->lpszText = tooltipBuffer;//TEXT("Refresh current folder");
 						} else {
 							lpttt->lpszText = NULL;
@@ -2947,6 +2978,10 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 			hInitDir = GetDlgItem(hWnd, IDC_SETTINGS_INITDIR);
 			hCheckKeepAlive = GetDlgItem(hWnd, IDC_CHECK_KEEPALIVE);
 
+			hCheckProfileCache = GetDlgItem(hWnd, IDC_CHECK_PROFILECACHE);
+			hProfileCache = GetDlgItem(hWnd, IDC_EDIT_PROFILECACHEPATH);
+			hBrowseProfileCache = GetDlgItem(hWnd, IDC_BUTTON_BROWSEPROFILECACHE);
+
 #pragma warning (push)
 #pragma warning (disable : 4311 4312 )
 			//Subclass the edit controls to recieve enter key notification
@@ -2966,6 +3001,11 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				case IDC_CHECK_ASKPASS: {
 					UINT state = (UINT)SendMessage(hCheckAskPassword, BM_GETCHECK, 0, 0);
 					EnableWindow(hPassword, (state == BST_UNCHECKED));
+					break; }
+				case IDC_CHECK_PROFILECACHE: {
+					UINT state = (UINT)SendMessage(hCheckProfileCache, BM_GETCHECK, 0, 0);
+					EnableWindow(hProfileCache, (state == BST_CHECKED));
+					EnableWindow(hBrowseProfileCache, (state == BST_CHECKED));
 					break; }
 				case IDB_SETTINGS_APPLY:{
 					if (currentProfile) {
@@ -3021,8 +3061,18 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 						buf = new TCHAR[MAX_PATH];	//do this to make sure always MAX_PATH available (in case buffer too small)
 						SendMessage(hInitDir, WM_GETTEXT, (WPARAM)MAX_PATH, (LPARAM)buf);
 						currentProfile->setInitDir(buf);
+
+						//reuse buf
+						SendMessage(hProfileCache, WM_GETTEXT, (WPARAM)MAX_PATH, (LPARAM)buf);
+						currentProfile->setCachePath(buf);
+						int len = (int)SendMessage(hProfileCache, WM_GETTEXTLENGTH, 0, 0);
+
+						state = (int)SendMessage(hCheckProfileCache, BM_GETCHECK, 0, 0);
+						currentProfile->setUseCache( state != 0 && len > 0 );
+
 						currentProfile->save();
 						delete [] buf;
+						
 					}
 					return TRUE;
 					break; }
@@ -3091,6 +3141,12 @@ BOOL CALLBACK ProfileDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 				case IDC_SETTINGS_NAME: {
 					if (HIWORD(wParam) == EN_RETURN) {
 						renameProfile();
+					}
+					break; }
+				case IDC_BUTTON_BROWSEPROFILECACHE: {
+					TCHAR * buf = new TCHAR[MAX_PATH];
+					if (browseFolder(buf) == TRUE) {
+						SendMessage(hProfileCache, WM_SETTEXT, 0, (LPARAM) buf);
 					}
 					break; }
 			}
@@ -3219,7 +3275,8 @@ BOOL CALLBACK GeneralDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM
 					closeOnTransfer = (BOOL)(SendMessage(hCloseOnTransfer, BM_GETCHECK, 0, 0) == BST_CHECKED);
 					showInitialDir = (BOOL)(SendMessage(hShowInitialDir, BM_GETCHECK, 0, 0) == BST_CHECKED);
 					BOOL oldusePrettyIcons = (BOOL)(SendMessage(hUsePrettyIcons, BM_GETCHECK, 0, 0) == BST_CHECKED);
-					otherCache = (BOOL)(SendMessage(hOtherCache, BM_GETCHECK, 0, 0) == BST_CHECKED);
+					int len = (int)SendMessage(hOtherCachePath, WM_GETTEXTLENGTH, 0, 0);
+					otherCache = (BOOL)(SendMessage(hOtherCache, BM_GETCHECK, 0, 0) == BST_CHECKED) && len > 0;
 
 					if (otherCache) {
 						SendMessage(hOtherCachePath, WM_GETTEXT, (WPARAM)MAX_PATH, (LPARAM) cacheLocation);

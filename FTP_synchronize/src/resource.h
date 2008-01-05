@@ -93,6 +93,9 @@
 #define IDC_STATIC_VERSION              1066
 #define IDC_RADIO_DIR                   1067
 #define IDC_RADIO_FILE                  1068
+#define IDC_CHECK_PROFILECACHE          1068
+#define IDC_EDIT_PROFILECACHEPATH       1069
+#define IDC_BUTTON_BROWSEPROFILECACHE   1070
 
 // Next default values for new objects
 // 
@@ -101,7 +104,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        124
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1068
+#define _APS_NEXT_CONTROL_VALUE         1071
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

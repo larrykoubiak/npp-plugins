@@ -150,7 +150,7 @@ HWND hCheckOwnerRead, hCheckOwnerWrite, hCheckOwnerExecute, hCheckGroupRead, hCh
 bool folderWindowInitialized, folderWindowVisible, outputWindowInitialized, outputWindowVisible;
 HMENU contextDirectory, contextFile, contextMessages, popupProfiles;
 HWND hAddress, hPort, hUsername, hPassword, hTimeout, hRadioActive, hRadioPassive, hCheckFindRoot, hCheckAskPassword, 
-	 hInitDir, hProfileList, hProfilename, hCheckKeepAlive, hRadioAuto, hRadioASCII, hRadioBinary;
+	 hInitDir, hProfileList, hProfilename, hCheckKeepAlive, hRadioAuto, hRadioASCII, hRadioBinary, hCheckProfileCache, hProfileCache, hBrowseProfileCache;
 HWND hCacheDirect, hOpenCache, hUploadCurrent, hUploadSave, hTimestampLog, hWarnDelete, hCloseOnTransfer, hRenameCache, hDeleteCache, 
 	 hOtherCache, hOtherCachePath, hBrowseCache, hShowInitialDir, hUsePrettyIcons, hKeepAliveInterval, hKeepAliveDataMultiplier;
 HWND hDeletePartialFiles, hShowQueue, hOpenQueue, hCloseQueue, hQueueRefresh, hQueueDisconnect, hAddASCII, hAddBinary, hListASCII, hListBinary, hRadioDefaultASCII, hRadioDefaultBinary;
@@ -193,6 +193,8 @@ unsigned int acceptedEvents;
 //bool busy;	//single connection allows for one action	//queueing makes this obsolete
 bool expectedDisconnect;
 bool connected;
+
+bool treeViewDeleting;	//this shouldn't be necessary, unfortunatly it is, TVN_SELCHANGE occurs when deleting treeview items, with invalid selection
 
 //Default window procedures
 WNDPROC DefaultMessageEditWindowProc;
