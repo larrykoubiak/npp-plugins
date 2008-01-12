@@ -351,6 +351,9 @@
 				RelativePath=".\..\src\stdafx.h">
 			</File>
 			<File
+				RelativePath="..\src\symbols.h">
+			</File>
+			<File
 				RelativePath=".\..\src\ThreadManager.h">
 			</File>
 			<Filter

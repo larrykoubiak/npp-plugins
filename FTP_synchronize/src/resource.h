@@ -92,6 +92,7 @@
 #define IDC_LIST_BINARY                 1065
 #define IDC_STATIC_VERSION              1066
 #define IDC_RADIO_DIR                   1067
+#define IDC_STATIC_BUILD                1067
 #define IDC_RADIO_FILE                  1068
 #define IDC_CHECK_PROFILECACHE          1068
 #define IDC_EDIT_PROFILECACHEPATH       1069

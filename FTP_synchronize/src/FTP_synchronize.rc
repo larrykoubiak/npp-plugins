@@ -8,6 +8,7 @@
 // Generated from the TEXTINCLUDE 2 resource.
 //
 #include "afxres.h"
+#include "symbols.h"
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -35,12 +36,12 @@ END
 2 TEXTINCLUDE 
 BEGIN
     "#include ""afxres.h""\r\n"
+    "#include ""symbols.h""\r\n"
     "\0"
 END
 
 3 TEXTINCLUDE 
 BEGIN
-    "\r\n"
     "\0"
 END
 
@@ -137,8 +138,10 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "Close",IDOK,96,157,50,14,BS_FLAT
     EDITTEXT        IDC_EDIT_ABOUT,7,6,242,132,ES_MULTILINE | ES_READONLY
-    LTEXT           "Current version:",IDC_STATIC,18,144,54,8
-    LTEXT           "VERSION",IDC_STATIC_VERSION,78,144,30,8
+    LTEXT           "Current version:",IDC_STATIC,6,144,54,8
+    LTEXT           "VERSION",IDC_STATIC_VERSION,66,144,30,8
+    LTEXT           "Build:",IDC_STATIC,198,144,18,8
+    LTEXT           "BUILD",IDC_STATIC_BUILD,222,144,20,8
 END
 
 IDD_DIALOG_PASSWORD DIALOGEX 0, 0, 214, 41
@@ -324,8 +327,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,6,0
- PRODUCTVERSION 0,9,6,0
+ FILEVERSION IDT_VERSION_NUM
+ PRODUCTVERSION IDT_VERSION_NUM
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x3L
@@ -341,12 +344,12 @@ BEGIN
         BLOCK "000004b0"
         BEGIN
             VALUE "FileDescription", "FTP Plugin for Notepad++, a free (GNU) source code editor"
-            VALUE "FileVersion", "0.9.6"
+            VALUE "FileVersion", IDT_VERSION_TEXT
             VALUE "InternalName", "FTP_sync"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "FTP_synchronize.dll"
             VALUE "ProductName", "FTP_synchronize"
-            VALUE "ProductVersion", "0.9.6"
+            VALUE "ProductVersion", IDT_VERSION_TEXT
         END
     END
     BLOCK "VarFileInfo"
@@ -435,15 +438,4 @@ END
 #endif    // Dutch (Netherlands) resources
 /////////////////////////////////////////////////////////////////////////////
 
-
-
-#ifndef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// Generated from the TEXTINCLUDE 3 resource.
-//
-
-
-/////////////////////////////////////////////////////////////////////////////
-#endif    // not APSTUDIO_INVOKED
 

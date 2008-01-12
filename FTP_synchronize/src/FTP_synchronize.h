@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "keys.h"
 
 #include "resource.h"
+#include "symbols.h"
 #include "shlwapi.h"
 #include "commctrl.h"
 #include "commdlg.h"

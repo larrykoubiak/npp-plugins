@@ -17,7 +17,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-
 #include "stdafx.h"
 #include "FTP_synchronize.h"
 
@@ -32,14 +31,14 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 
 			InitCommonControls();	//for treeview etc
 
-			dllName = new TCHAR[MAX_PATH];
-			dllPath = new TCHAR[MAX_PATH];
-			iniFile = new TCHAR[MAX_PATH];
-			storage = new TCHAR[MAX_PATH];
-			pluginName = new TCHAR[MAX_PATH];
+			dllName = new TCHAR[MAX_PATH];		//name of dll, eg "FTP_synchronize.dll"
+			dllPath = new TCHAR[MAX_PATH];		//Path to dll, eg C:\Npp\plugins
+			iniFile = new TCHAR[MAX_PATH];		//path to iniFile, eg C:\Npp\plugins\config\FTP_s.ini
+			storage = new TCHAR[MAX_PATH];		//Path to cache
+			pluginName = new TCHAR[MAX_PATH];	//Filename of plugin, eg FTP_synchronize
 
 			if (!GetModuleFileName(hDLL, dllPath, MAX_PATH))
-				Error(TEXT("GetModulefso.name"));
+				Error(TEXT("GetModuleFileName"));
 
 			lstrcpy(dllName,PathFindFileName(dllPath));
 
@@ -168,9 +167,11 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 
 extern "C" __declspec(dllexport) const char * getName() {
 #ifdef UNICODE
-	return pluginNameA;
+	//return pluginNameA;
+	return "FTP_synchronize";
 #else
-	return pluginName;
+	//return pluginName;
+	return "FTP_synchronize";
 #endif
 	
 }
@@ -566,6 +567,7 @@ void createContextMenus() {
 	//Create empty profile menu, current implementation requires this
 	popupProfiles = CreatePopupMenu();
 }
+
 void destroyContextMenus() {
 	DestroyMenu(contextFile);
 	DestroyMenu(contextDirectory);
@@ -642,7 +644,7 @@ void createToolbar() {
 	/*imgnr = */connectBitmapIndex = (int)SendMessage(hFolderToolbar, TB_ADDBITMAP, (WPARAM) 1, (LPARAM) &ab);
 	
 	//tb[0].fsState = TBSTATE_ENABLED;
-	tb[currentIndex].fsStyle = BTNS_BUTTON;
+	tb[currentIndex].fsStyle = TBSTYLE_DROPDOWN;	//BTNS_DROPDOWN
 	tb[currentIndex].iBitmap = imgnr;
 	tb[currentIndex].idCommand = IDB_BUTTON_TOOLBAR_CONNECT;
 	currentIndex++;
@@ -1399,6 +1401,7 @@ void updateObject(FILESYSTEMOBJECT * fso) {
 void permissions(FILESYSTEMOBJECT * fso) {
 	DialogBoxParam(hDLL, MAKEINTRESOURCE(IDD_DIALOG_PERMISSION), nppData._nppHandle, PermissionDlgProcedure, (LPARAM) fso);
 }
+
 void reloadTreeDirectory(HTREEITEM directory, bool doRefresh) {
 	if (!connected)
 		return;
@@ -1476,14 +1479,13 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 						if (otherCache) {
 							lstrcpy(storage, cacheLocation);
 							if (cacheLocation[lstrlen(cacheLocation-1)] != TEXT('\\'))
-								lstrcat(storage, TEXT("/"));
+								lstrcat(storage, TEXT("\\"));
 						} else {
 							lstrcpy(storage, dllPath);
+							lstrcat(storage, TEXT("\\"));
+							lstrcat(storage, pluginName);
+							lstrcat(storage, TEXT("\\"));
 						}
-
-						lstrcat(storage, dllName);
-						PathRemoveExtension(storage);
-						lstrcat(storage, TEXT("\\"));
 						lstrcat(storage, currentFTPProfile->getUsername());
 						lstrcat(storage, TEXT("@"));
 						lstrcat(storage, currentFTPProfile->getAddress());
@@ -1906,6 +1908,7 @@ int doGetDirectory(void * param) {
 
 	return result?0:-1;
 }
+
 int doCreateDirectory(void * param) {
 	MKDIRDATA * mdd = (MKDIRDATA*) param;
 
@@ -2338,7 +2341,7 @@ BOOL browseFolder(TCHAR * buffer) {
 	SHGetPathFromIDList(il, buffer);
 	return TRUE;
 }
-bool isCached(const char *  FTPPath, bool isDirectory, TCHAR ** resultingPath) {
+bool isCached(const char * FTPPath, bool isDirectory, TCHAR ** resultingPath) {
 	bool cached = false;
 
 	TCHAR * localPath = new TCHAR[MAX_PATH];
@@ -2350,7 +2353,7 @@ bool isCached(const char *  FTPPath, bool isDirectory, TCHAR ** resultingPath) {
 	HANDLE filehandle = FindFirstFile(localPath, &wfd);
 	if (filehandle != INVALID_HANDLE_VALUE) {
 		if (isDirectory)
-			cached = ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) > 0);
+			cached = ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
 		else
 			cached = ((wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
 		FindClose(filehandle);
@@ -2653,21 +2656,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					return TRUE;
 					break; }
 				case IDB_BUTTON_TOOLBAR_CONNECT: {
-					if (connected) {	//only call disconnect routine to disconnect, else pick profile
-						disconnect();
-						return TRUE;
-					}
-					//if (busy)	//no popup when busy, might already be connecting//check if the queue is empty before showing servers
-					//	return TRUE;
-					popupProfiles;
-					DestroyMenu(popupProfiles);
-					popupProfiles = CreatePopupMenu();
-					for(unsigned int i = 0; i < vProfiles->size(); i++) {
-						AppendMenu(popupProfiles, MF_STRING, IDM_POPUP_PROFILE_FIRST + i, (*vProfiles)[i]->getName());
-					}
-					POINT pos;
-					GetCursorPos(&pos);
-					TrackPopupMenu(popupProfiles, TPM_LEFTALIGN | TPM_LEFTBUTTON, pos.x, pos.y, 0, hFolderWindow, NULL);
+					//Shouldnt happen, dropdown only
 					return TRUE;
 					break;}
 				case IDB_BUTTON_TOOLBAR_DOWNLOAD: {
@@ -2862,72 +2851,116 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						}
 						break; }
 				}
-			} else if (nmh.code == TTN_GETDISPINFO) {
-				LPTOOLTIPTEXT lpttt = (LPTOOLTIPTEXT) lParam; 
-				//lpttt->hinst = hDLL;
-				lpttt->hinst = NULL;
-				switch (lpttt->hdr.idFrom) {
-					case IDB_BUTTON_TOOLBAR_CONNECT: {
-						if (connected)
-							lpttt->lpszText = TEXT("Disconnect");
-						else
-							lpttt->lpszText = TEXT("Connect");
-						return FALSE;
-						break; }
-					case IDB_BUTTON_TOOLBAR_UPLOAD: {
-						if (lastDirectoryItemParam) {
-						#ifdef UNICODE
-							tsprintf(tooltipBuffer, TEXT("Upload current file to folder %S"), lastDirectoryItemParam->fso.name);
-						#else
-							tsprintf(tooltipBuffer, TEXT("Upload current file to folder %s"), lastDirectoryItemParam->fso.name);
-						#endif
-							lpttt->lpszText = tooltipBuffer;//TEXT("Upload current file");
-						} else {
-							lpttt->lpszText = NULL;
+				return TRUE;
+			} else if (nmh.hwndFrom == hFolderToolbar) {
+				switch(nmh.code) {
+					case TBN_DROPDOWN: {
+						NMTOOLBAR * pnmtb = (NMTOOLBAR*)lParam;
+						if (pnmtb->iItem == IDB_BUTTON_TOOLBAR_CONNECT) {
+							if (connected) {	//only call disconnect routine to disconnect, else pick profile
+								disconnect();
+								return TRUE;
+							}
+							//if (busy)	//no popup when busy, might already be connecting//check if the queue is empty before showing servers
+							//	return TRUE;
+							DestroyMenu(popupProfiles);
+							popupProfiles = CreatePopupMenu();
+							for(unsigned int i = 0; i < vProfiles->size(); i++) {
+								AppendMenu(popupProfiles, MF_STRING, IDM_POPUP_PROFILE_FIRST + i, (*vProfiles)[i]->getName());
+							}
+							POINT pos;
+							RECT offsetRect;
+							if (SendMessage(hFolderToolbar, TB_GETITEMRECT, 0, (LPARAM)&offsetRect) == TRUE) {
+								pos.x = offsetRect.left;
+								pos.y = offsetRect.bottom + 1;
+								if (GetWindowRect(hFolderToolbar, &offsetRect) == TRUE) {
+									pos.x += offsetRect.left;
+									pos.y += offsetRect.top;
+								} else {
+									GetCursorPos(&pos);
+								}
+							} else {
+								GetCursorPos(&pos);
+							}
+							TrackPopupMenu(popupProfiles, TPM_LEFTALIGN | TPM_LEFTBUTTON, pos.x, pos.y, 0, hFolderWindow, NULL);
+							return TBDDRET_DEFAULT;
 						}
+						return TBDDRET_NODEFAULT;
 						break; }
-					case IDB_BUTTON_TOOLBAR_DOWNLOAD: {
-						if (lastFileItemParam) {
-						#ifdef UNICODE
-							tsprintf(tooltipBuffer, TEXT("Download file %S"), lastFileItemParam->fso.name);
-						#else
-							tsprintf(tooltipBuffer, TEXT("Download file %s"), lastFileItemParam->fso.name);
-						#endif
-							lpttt->lpszText = tooltipBuffer;//TEXT("Download selected file");
-						} else {
-							lpttt->lpszText = NULL;
-						}
-						break; }
-					case IDB_BUTTON_TOOLBAR_ABORT: {
-						lpttt->lpszText = TEXT("Abort current operation");
-						break; }
-					case IDB_BUTTON_TOOLBAR_SETTINGS: {
-						lpttt->lpszText = TEXT("Open settings dialog...");
-						break; }
-					case IDB_BUTTON_TOOLBAR_MESSAGES: {
-						lpttt->lpszText = TEXT("Show messages");
-						break; }
-					case IDB_BUTTON_TOOLBAR_RAWCMD: {
-						lpttt->lpszText = TEXT("Issue raw command");
-						break; }
-					case IDB_BUTTON_TOOLBAR_REFRESH: {
-						if (lastDirectoryItemParam) {
-						#ifdef UNICODE
-							tsprintf(tooltipBuffer, TEXT("Refresh folder %S"), lastDirectoryItemParam->fso.name);
-						#else
-							tsprintf(tooltipBuffer, TEXT("Refresh folder %s"), lastDirectoryItemParam->fso.name);
-						#endif
-							lpttt->lpszText = tooltipBuffer;//TEXT("Refresh current folder");
-						} else {
-							lpttt->lpszText = NULL;
-						}
-						break; }
-					default:
-						break;
 				}
-			} else if (nmh.code == DMN_CLOSE) {
-				//close dock;
-				showFolders();
+				return TRUE;
+			} else {
+				switch(nmh.code) {
+					case TTN_GETDISPINFO: {
+						LPTOOLTIPTEXT lpttt = (LPTOOLTIPTEXT) lParam; 
+						//lpttt->hinst = hDLL;
+						lpttt->hinst = NULL;
+						switch (lpttt->hdr.idFrom) {
+							case IDB_BUTTON_TOOLBAR_CONNECT: {
+								if (connected)
+									lpttt->lpszText = TEXT("Disconnect");
+								else
+									lpttt->lpszText = TEXT("Connect");
+								return FALSE;
+								break; }
+							case IDB_BUTTON_TOOLBAR_UPLOAD: {
+								if (lastDirectoryItemParam) {
+								#ifdef UNICODE
+									tsprintf(tooltipBuffer, TEXT("Upload current file to folder %S"), lastDirectoryItemParam->fso.name);
+								#else
+									tsprintf(tooltipBuffer, TEXT("Upload current file to folder %s"), lastDirectoryItemParam->fso.name);
+								#endif
+									lpttt->lpszText = tooltipBuffer;//TEXT("Upload current file");
+								} else {
+									lpttt->lpszText = NULL;
+								}
+								break; }
+							case IDB_BUTTON_TOOLBAR_DOWNLOAD: {
+								if (lastFileItemParam) {
+								#ifdef UNICODE
+									tsprintf(tooltipBuffer, TEXT("Download file %S"), lastFileItemParam->fso.name);
+								#else
+									tsprintf(tooltipBuffer, TEXT("Download file %s"), lastFileItemParam->fso.name);
+								#endif
+									lpttt->lpszText = tooltipBuffer;//TEXT("Download selected file");
+								} else {
+									lpttt->lpszText = NULL;
+								}
+								break; }
+							case IDB_BUTTON_TOOLBAR_ABORT: {
+								lpttt->lpszText = TEXT("Abort current operation");
+								break; }
+							case IDB_BUTTON_TOOLBAR_SETTINGS: {
+								lpttt->lpszText = TEXT("Open settings dialog...");
+								break; }
+							case IDB_BUTTON_TOOLBAR_MESSAGES: {
+								lpttt->lpszText = TEXT("Show messages");
+								break; }
+							case IDB_BUTTON_TOOLBAR_RAWCMD: {
+								lpttt->lpszText = TEXT("Issue raw command");
+								break; }
+							case IDB_BUTTON_TOOLBAR_REFRESH: {
+								if (lastDirectoryItemParam) {
+								#ifdef UNICODE
+									tsprintf(tooltipBuffer, TEXT("Refresh folder %S"), lastDirectoryItemParam->fso.name);
+								#else
+									tsprintf(tooltipBuffer, TEXT("Refresh folder %s"), lastDirectoryItemParam->fso.name);
+								#endif
+									lpttt->lpszText = tooltipBuffer;//TEXT("Refresh current folder");
+								} else {
+									lpttt->lpszText = NULL;
+								}
+								break; }
+							default:
+								break;
+						}
+						break; }
+					case DMN_CLOSE: {
+						//close dock;
+						showFolders();
+						break; }
+				}
+				return TRUE;
 			}
 			break; }
 		case WM_ERASEBKGND: {
@@ -3518,27 +3551,13 @@ BOOL CALLBACK AboutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM l
 			HWND hTextControl = GetDlgItem(hWnd, IDC_EDIT_ABOUT);
 			SendMessage(hTextControl, WM_SETTEXT, 0, (LPARAM) TEXT("FTP Plug-in for Notepad++\r\n\r\nPlug-in designed by Harry\r\n-----\r\nThanks to Donho for this great application, without it this plugin wouldn't exist;).\r\nAlso thanks to Jenz Lorens for great ideas (especially the About box;))\r\n\r\n\r\nSelect \"Show FTP Folders\" from the menu to get started, and don't forget to read the ReadMe if supplied."));
 			HWND hVersionControl = GetDlgItem(hWnd, IDC_STATIC_VERSION);
-
-			TCHAR * filename = new TCHAR[MAX_PATH];
-			GetModuleFileName(hDLL, filename, MAX_PATH);
-			BOOL res;
-			DWORD setToZero;
-			DWORD size = GetFileVersionInfoSize(filename, &setToZero);
-			if (size > 0) {
-				char * buffer = new char[size+30];
-				res = GetFileVersionInfo(filename, NULL, size, buffer);
-				if (res) {
-					TCHAR * versionBuffer;
-					unsigned int len = 0;
-					res = VerQueryValue(buffer, TEXT("\\StringFileInfo\\000004b0\\FileVersion"), (LPVOID*)&versionBuffer, &len); 
-					if (res && len) {
-						SendMessage(hVersionControl, WM_SETTEXT, 0, (LPARAM) versionBuffer);
-					}
-				}
-				delete [] buffer;
-			}
-			if (size == 0 || res == FALSE)
-				SendMessage(hVersionControl, WM_SETTEXT, 0, (LPARAM) TEXT("Error"));
+			HWND hBuildControl = GetDlgItem(hWnd, IDC_STATIC_BUILD);
+			SendMessage(hVersionControl, WM_SETTEXT, 0, (LPARAM) TEXT(IDT_VERSION_TEXT));
+#ifdef UNICODE
+			SendMessage(hBuildControl, WM_SETTEXT, 0, (LPARAM) TEXT("Unicode"));
+#else
+			SendMessage(hBuildControl, WM_SETTEXT, 0, (LPARAM) TEXT("ANSI"));
+#endif
 			return TRUE;	//let windows set focus
 			break; }
 		case WM_COMMAND: {
