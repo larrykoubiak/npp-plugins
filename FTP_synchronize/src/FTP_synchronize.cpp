@@ -625,7 +625,7 @@ void cacheFolderIndices() {
 }
 //Toolbar functions
 void createToolbar() {
-	hFolderToolbar = CreateWindowEx(WS_EX_PALETTEWINDOW, TOOLBARCLASSNAME, TEXT(""), WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS|CCS_TOP|TBSTYLE_FLAT, 0, 0, 100, 16, hFolderWindow, NULL, hDLL, NULL);
+	hFolderToolbar = CreateWindowEx(WS_EX_PALETTEWINDOW, TOOLBARCLASSNAME, TEXT(""), WS_CHILD|WS_VISIBLE|TBSTYLE_TOOLTIPS|CCS_TOP|TBSTYLE_FLAT|BTNS_AUTOSIZE, 0, 0, 100, 16, hFolderWindow, NULL, hDLL, NULL);
 
 	SendMessage(hFolderToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM) sizeof(TBBUTTON), 0);
 	SendMessage(hFolderToolbar, TB_SETBITMAPSIZE, 0, (LPARAM)MAKELONG(16, 16));
@@ -2719,6 +2719,10 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 								break; }
 							case TVE_COLLAPSE: {
 								TreeView_Expand(hFolderTreeview, tvi.hItem, TVE_COLLAPSE | TVE_COLLAPSERESET);
+								return FALSE;
+								break; }
+							default: {
+								return FALSE;
 								break; }
 						}
 						break; }
@@ -2793,7 +2797,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 							delete [] path;
 							//return 0;
 						}
-						return 0;
+						return TRUE;
 						break; }
 					case NM_RCLICK:
 					case NM_DBLCLK:
@@ -2818,25 +2822,30 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 										//Do nothing, as directories will trigger the expand message themselves if they have (possible) children
 									} else {	//files will be downloaded
 										SendMessage(hFolderWindow, WM_COMMAND, IDM_POPUP_DOWNLOADFILE, 0);
+										return TRUE;
 									}
 								} else {
 									ClientToScreen(hFolderTreeview, &pos);
 									if (fso->isDirectory) {
 											if (!TrackPopupMenu(contextDirectory, TPM_LEFTALIGN, pos.x, pos.y, 0, hFolderWindow, NULL))
 												printToLog("Error displaying popup-menu: %d\n", GetLastError());
+											return TRUE;
 									} else {
 											if (!TrackPopupMenu(contextFile, TPM_LEFTALIGN, pos.x, pos.y, 0, hFolderWindow, NULL))
 												printToLog("Error displaying popup-menu: %d\n", GetLastError());
+											return TRUE;
 									}
 								}
 							}
 						}
+						//return TRUE;
 						break; }
 					case TVN_SELCHANGED: {
 						NM_TREEVIEW * pnmt = (NM_TREEVIEW*)lParam;
 						HTREEITEM selectedItem = pnmt->itemNew.hItem;
 						LPARAM selectedParam = pnmt->itemNew.lParam;
 						selectItem(selectedItem, selectedParam);
+						return TRUE;
 						break; }
 					case TVN_BEGINDRAG: {
 						break;
@@ -2849,9 +2858,10 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 							HRESULT res = DoDragDrop(mainDataObject, mainDropSource, DROPEFFECT_COPY, &resEffect);
 							TreeView_SelectDropTarget(hFolderTreeview, NULL);
 						}
+						return FALSE;
 						break; }
 				}
-				return TRUE;
+				//return TRUE;
 			} else if (nmh.hwndFrom == hFolderToolbar) {
 				switch(nmh.code) {
 					case TBN_DROPDOWN: {
@@ -2859,7 +2869,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						if (pnmtb->iItem == IDB_BUTTON_TOOLBAR_CONNECT) {
 							if (connected) {	//only call disconnect routine to disconnect, else pick profile
 								disconnect();
-								return TRUE;
+								return TBDDRET_DEFAULT;
 							}
 							//if (busy)	//no popup when busy, might already be connecting//check if the queue is empty before showing servers
 							//	return TRUE;
@@ -2888,7 +2898,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 						return TBDDRET_NODEFAULT;
 						break; }
 				}
-				return TRUE;
+				//return TRUE;
 			} else {
 				switch(nmh.code) {
 					case TTN_GETDISPINFO: {
@@ -2954,13 +2964,15 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 							default:
 								break;
 						}
+						return TRUE;
 						break; }
 					case DMN_CLOSE: {
 						//close dock;
 						showFolders();
+						return TRUE;
 						break; }
 				}
-				return TRUE;
+				//return TRUE;
 			}
 			break; }
 		case WM_ERASEBKGND: {
