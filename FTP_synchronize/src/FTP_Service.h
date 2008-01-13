@@ -44,29 +44,28 @@ enum Event_Type {Event_Connection = 0x01, Event_Login = 0x02, Event_Download = 0
 class FTP_Service;
 
 //various structs
-struct SOCKCALLBACK {
-	SOCKET sock;
-	Socket * sckt;
-	void * additionalInfo;
-	void (FTP_Service::*callback) (char *, int, SOCKET&, void *);
+struct SOCKCALLBACK {	//defined variables used for callback function etc
+	void (FTP_Service::*callback) (char *, int, Socket *, void *);
 	void (FTP_Service::*cleanup) (void *);
 	FTP_Service * service;
+	Socket * sckt;
 	HANDLE sockEndEvent;
+	void * additionalInfo;
 	char * id;
+};
+
+struct SOCKCALLBACKFORMAT {	//specifies how a SOCKCALLBACK should be generated
+	void (FTP_Service::*callback) (char *, int, Socket *, void *);
+	void (FTP_Service::*cleanup) (void *);
+	FTP_Service * service;
+	void * param;
+	Socket * sckt;
+	HANDLE sockEndEvent;
 };
 
 struct LISTENDATA {
 	FTP_Service * service;
 	ServerSocket * servSock;
-};
-
-struct SOCKCALLBACKFORMAT {
-	void (FTP_Service::*callback) (char *, int, SOCKET&, void *);
-	void (FTP_Service::*cleanup) (void *);
-	void * param;
-	FTP_Service * service;
-	SOCKET result;
-	HANDLE sockEndEvent;
 };
 
 struct PROGRESSMONITOR {
@@ -140,8 +139,8 @@ private:
 	CRITICAL_SECTION responseBufferMutex;	//warning: do not use when performing response operation. Only use this when working with the buffer
 	CRITICAL_SECTION transferProgressMutex;	//used when setting transferProgressEvent, avoid setting it while resetting it
 
-	SOCKET lastIncomingDataConnection;		//last socket created for active mode as result of listen (equals more or less lastDataConnection)
-	SOCKET lastDataConnection;	//last socket created as dataconnection = socket to close when calling abort operations;
+	Socket * lastIncomingDataConnection;	//last socket created for active mode as result of listen (equals more or less lastDataConnection)
+	Socket * lastDataConnection;	//last socket created as dataconnection = socket to close when calling abort operations;
 	DIRECTORY * emptyDir;			//empty directory to use as parent of root
 	DIRECTORY * root;				//directory that identifies the root of the FTP connection
 	char * initialRoot;				//Start at specified location in dirtree
@@ -181,17 +180,17 @@ private:
 
 	bool waitForDataConnection();	//to be used in ACTIVE mode
 
-	bool sendMessage(const char *, int, SOCKET&, bool print = true);
+	bool sendMessage(const char *, int, Socket * s);
 	int waitForReply(int timeout);
 
-	void readResponse(char * buf, int size, SOCKET& s, void * additionalInfo);
+	void readResponse(char * buf, int size, Socket * s, void * additionalInfo);
 	char * parseResponse(char * response); //returns offset in buffer where body begins
 	void cleanupSocket(void *);
 
-	void saveData(char * buf, int size, SOCKET& s, void * additionalInfo);
+	void saveData(char * buf, int size, Socket * s, void * additionalInfo);
 	void cleanFile(void *);
 
-	void readDirectory(char * buf, int size, SOCKET& s, void * additionalInfo);
+	void readDirectory(char * buf, int size, Socket * s, void * additionalInfo);
 	void cleanDirectory(void * additionalInfo);
 
 	void recursiveDeleteDirectory(DIRECTORY * root, bool self = true);

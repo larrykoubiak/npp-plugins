@@ -23,9 +23,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 int Socket::amount = 0;
 
 Socket::Socket(const char * pszAddress, int iPort) {
-	m_iPort = iPort;
 	m_pszAddress = new char[strlen(pszAddress)+1];
 	strcpy(m_pszAddress, pszAddress);
+	m_iPort = iPort;
 	m_iError = 0;
 
 	m_hTimeoutWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -37,10 +37,44 @@ Socket::Socket(const char * pszAddress, int iPort) {
 		//return false;
 	}
 
+	connected = false;
+
+	Socket::amount++;
+}
+
+//Assumes SOCKET is connected (mostly used for SOCKETs created by listen()
+Socket::Socket(SOCKET socket) {
+	SOCKADDR_IN sa;
+	int sizesa = sizeof(SOCKADDR_IN);
+
+	int res = getpeername(socket, (sockaddr*)&sa, &sizesa);
+	if (res == SOCKET_ERROR) {
+		this->m_iError = WSAGetLastError();
+		printToLog("A problem while getting peer name: %d\n", this->m_iError);
+		m_pszAddress = new char[1];
+		*m_pszAddress = 0;
+		m_iPort = 0;
+	} else {
+		m_pszAddress = new char[16];
+		strcpy(m_pszAddress, inet_ntoa(sa.sin_addr));
+		m_iPort = ntohs(sa.sin_port);
+		m_iError = 0;
+	}
+
+	m_hTimeoutWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_hTimeoutHostnameWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
+	m_hSocket = socket;
+
+	connected = true;
+
 	Socket::amount++;
 }
 
 bool Socket::connectClient(unsigned int timeout) {
+	if (connected)
+		return true;
+
 	SOCKADDR_IN sin;
 
 	this->m_iTimeoutVal = timeout;
@@ -115,12 +149,59 @@ bool Socket::connectClient(unsigned int timeout) {
 	return true;
 }
 
+bool Socket::disconnect() {
+	bool retval = true;
+	if (shutdown(this->m_hSocket, SD_SEND) == SOCKET_ERROR) {
+		this->m_iError = WSAGetLastError();
+		printToLog("A problem while shutting down socket: %d\n", this->m_iError);
+		retval = false;
+	}
+
+	if (closesocket(this->m_hSocket)) {
+		this->m_iError = WSAGetLastError();
+		if (this->m_iError != WSAENOTSOCK) {		//WSAENOTSOCK happens when the socket is already closed, so check for other errors
+			printToLog("A problem while closing socket: %d\n", this->m_iError);
+		}
+		retval = false;
+	}
+	connected = false;
+
+	return retval;
+}
+
+bool Socket::sendData(const char * data, int size) {
+	int nrleft = size;
+	int offset = 0, result;
+	while (nrleft > 0) {
+		result = send(this->m_hSocket, data+offset, nrleft, 0);
+		if (result == SOCKET_ERROR) {
+			this->m_iError = WSAGetLastError();
+			printToLog("Failed to send data: %d\n", this->m_iError);
+			return false;
+		}
+		offset += result;
+		nrleft -= offset;
+	}
+	return true;
+}
+
+int Socket::recieveData(char * buffer, int buffersize) {
+	int result = recv(this->m_hSocket, buffer, buffersize, 0);
+	if (result == SOCKET_ERROR) {
+		this->m_iError = WSAGetLastError();
+		printToLog("Failed to recieve data: %d\n", this->m_iError);
+	}
+	return result;
+}
+
 Socket::~Socket() {
 	delete [] m_pszAddress;
 	CloseHandle(m_hTimeoutWaitEvent);
 	Socket::amount--;
-	//This seems to crash Win98 at times, considering all implementations have closed sockets before calling this, I reckon its safe to comment closesocket out
+	//This seems to crash in Win98 at times
 	//closesocket(m_hSocket);
+	if (connected)
+		disconnect();
 	return;
 }
 

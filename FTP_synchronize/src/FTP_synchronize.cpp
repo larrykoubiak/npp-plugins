@@ -902,7 +902,7 @@ void showOutput() {
 void settings() {
 	
 	//Create Property sheets
-	int nrPages = 3;
+	int nrPages = 4;
 
 	PROPSHEETHEADER psh;
 	PROPSHEETPAGE * psp = new PROPSHEETPAGE[nrPages];
@@ -925,6 +925,9 @@ void settings() {
 
 	psp[2].pszTemplate = (LPCTSTR) IDD_DIALOG_SETTINGS_TRANSFERS;
 	psp[2].pfnDlgProc = &TransferDlgProcedure;
+
+	psp[3].pszTemplate = (LPCTSTR) IDD_DIALOG_SETTINGS_PROXY;
+	psp[3].pfnDlgProc = &ProxyDlgProcedure;
 
 	psh.dwSize = sizeof(PROPSHEETHEADER);
 	psh.dwFlags = PSH_DEFAULT | PSH_PROPSHEETPAGE | PSH_NOAPPLYNOW;
@@ -3477,6 +3480,68 @@ BOOL CALLBACK TransferDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARA
 					fillTypeLists();
 					SendMessage(hRadioDefaultASCII, BM_SETCHECK, (WPARAM) (fallbackMode == Mode_ASCII?BST_CHECKED:BST_UNCHECKED), 0);
 					SendMessage(hRadioDefaultBinary, BM_SETCHECK, (WPARAM) (fallbackMode == Mode_Binary?BST_CHECKED:BST_UNCHECKED), 0);
+					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, FALSE);
+					return TRUE;
+					break; }
+				case PSN_APPLY: {	//Ok clicked, killactive already called
+					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, PSNRET_NOERROR);
+					return TRUE;
+					break; }
+				case PSN_RESET: {	//cancel or closed
+					return TRUE;
+					break; }
+			}
+			break; }
+	}
+	return FALSE;
+}
+
+BOOL CALLBACK ProxyDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
+	switch(message) {
+		case WM_INITDIALOG: {
+			hDeletePartialFiles = GetDlgItem(hWnd, IDC_CHECK_DELPARTDLD);
+
+#pragma warning (push)
+#pragma warning (disable : 4311 4312 )
+			//Subclass the edit controls to recieve enter key notification
+			DefaultEditWindowProc = (WNDPROC)	SetWindowLongPtr(hAddASCII,GWLP_WNDPROC,(LONG)&SubclassedEditWindowProc);
+												SetWindowLongPtr(hAddBinary,GWLP_WNDPROC,(LONG)&SubclassedEditWindowProc);
+#pragma warning (pop)
+			return TRUE;
+			break; }
+		case WM_COMMAND: {
+			switch(LOWORD(wParam)) {
+				case IDC_EDIT_ADDASCII: {
+					if (HIWORD(wParam) == EN_RETURN) {
+						int length = (int)SendMessage(hAddASCII, WM_GETTEXTLENGTH, 0, 0) + 1;
+						if (length > 1) {
+							TCHAR * buffer = new TCHAR[length];
+							SendMessage(hAddASCII, WM_GETTEXT, (WPARAM) length, (LPARAM) buffer);
+							SendMessage(hAddASCII, WM_SETTEXT, 0, (LPARAM) "");
+							addASCII(buffer);
+							fillTypeLists();
+						}
+					}
+					break; }
+			}
+			break; }
+		case WM_NOTIFY: {
+			//When changing tab: apply changes
+			//When recieving tab: display current settings, this is saved
+			//When choosing ok: apply changes
+			//When choosing cancel: discard changes
+			NMHDR * pnmh = (NMHDR*)lParam;
+			switch(pnmh->code) {
+				case PSN_KILLACTIVE: {
+					deletePartialFiles = (BOOL)(SendMessage(hDeletePartialFiles, BM_GETCHECK, 0, 0) == BST_CHECKED);
+
+					//saveProxySettings();
+
+					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, FALSE);
+					return TRUE;
+					break; }
+				case PSN_SETACTIVE: {
+					//SendMessage(hRadioDefaultBinary, BM_SETCHECK, (WPARAM) (fallbackMode == Mode_Binary?BST_CHECKED:BST_UNCHECKED), 0);
 					SetWindowLong(pnmh->hwndFrom, DWL_MSGRESULT, FALSE);
 					return TRUE;
 					break; }

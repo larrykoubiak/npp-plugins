@@ -74,7 +74,7 @@ bool ServerSocket::initiate() {
 	return true;
 }
 
-SOCKET ServerSocket::listenForClient(unsigned int timeout) {
+Socket * ServerSocket::listenForClient(unsigned int timeout) {
 	SOCKADDR_IN sa;
 	int size = sizeof(SOCKADDR_IN);
 
@@ -99,7 +99,9 @@ SOCKET ServerSocket::listenForClient(unsigned int timeout) {
 	ZeroMemory(name, NI_MAXHOST);
 	getnameinfo((const sockaddr*)&sa,sizeof(sockaddr),name,NI_MAXHOST,NULL,0,0);
 	printToLog("\n", name);*/
-	return incoming;
+
+	Socket * pSocket = new Socket(incoming);
+	return pSocket;
 }
 
 ServerSocket::~ServerSocket() {

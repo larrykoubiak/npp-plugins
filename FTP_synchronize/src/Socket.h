@@ -33,11 +33,16 @@ private:
 	SOCKET m_hSocket;
 	int m_iError;
 	int m_iPort;
+	bool connected;
 public:
 	Socket(const char * pszAddress, int iPort);
+	Socket(SOCKET socket);
 	SOCKET & getSocket();
 	int getLastError();
 	bool connectClient(unsigned int timeout);
+	bool disconnect();
+	bool sendData(const char * data, int size);
+	int recieveData(char * buffer, int buffersize);
 	~Socket();
 
 	//Made public for threads, dont abuse

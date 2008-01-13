@@ -38,7 +38,7 @@ public:
 	SOCKET & getSocket();
 	int getLastError();
 	bool initiate();
-	SOCKET listenForClient(unsigned int timeout);
+	Socket * listenForClient(unsigned int timeout);
 	int getPort();
 	~ServerSocket();
 	HANDLE m_hTimeoutWaitEvent;

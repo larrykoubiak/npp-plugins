@@ -25,6 +25,7 @@
 #define IDD_DIALOG_SETTINGS_GENERAL     121
 #define IDD_DIALOG_SETTINGS_TRANSFERS   122
 #define IDD_DIALOG_LINKTYPE             123
+#define IDD_DIALOG_SETTINGS_PROXY       124
 #define IDC_EDIT_NEWNAME                1001
 #define IDC_EDIT_OUTPUT                 1002
 #define IDC_EDIT_ABOUT                  1003
@@ -97,6 +98,14 @@
 #define IDC_CHECK_PROFILECACHE          1068
 #define IDC_EDIT_PROFILECACHEPATH       1069
 #define IDC_BUTTON_BROWSEPROFILECACHE   1070
+#define IDC_RADIO_PROXY4                1071
+#define IDC_RADIO_PROXY4A               1072
+#define IDC_RADIO_PROXY5                1073
+#define IDC_EDIT_PROXYADDRESS           1074
+#define IDC_EDIT_PROXYPORT              1075
+#define IDC_EDIT_PROXYUSERNAME          1076
+#define IDC_EDIT_PROXYPASSWORD          1077
+#define IDC_CHECK_USEPROXY              1078
 
 // Next default values for new objects
 // 
@@ -105,7 +114,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        124
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1071
+#define _APS_NEXT_CONTROL_VALUE         1080
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
