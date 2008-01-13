@@ -1,17 +1,3 @@
-Fixed tree duplication bugs
-Made directory parser more modular
-Filesize is now cached
-Refresh icon in toolbar
-Raw command icon in toolbar
-Added permission support, this is not standard FTP
-Fixed treeview redraw issue
-Removed redundant timeout threading
-Removed redundant checks in FTP_Service functions, fixed improper checks
-Added ThreadHandler. Deleting FTP_Service waits for everything to finish
-Using new NPPN messages. All threads stop and no more subclassing NPP
-Fixed FTP_synchronize.cpp newline problems. Intellisense should work properly again, aswell as finding proper lines
-Updated DOS parsing rules to be just a tad more generic, works on ftp.microsoft.com at time of writing (+1 for microsoft for using own MS-DOS format:))
-
-DestroyWindow removed on dockables, caused save on exit problems
-Disable messageloop on windows on exit
-Took control of logging, no more invalid HANDLE exception on exit
+Changelog no longer being maintained, just didn't have the discipline for it ;)
+Browse through the CVS history to get a feeling what has happened over time,
+it's usually FTP_synchronize.cpp and FTP_Service.cpp that get most updates.
