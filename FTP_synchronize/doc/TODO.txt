@@ -1,6 +1,10 @@
 -Better documentation
 
 -Finish keep alive
+-Per profile cache making use of initial directory to allow offset
+
+-FTPS/FTPES
 -SFTP
+-SOCKS5 (4, 4A?)
 
 -Match FTP file with item in treeview to keep track of updates
