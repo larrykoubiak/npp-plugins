@@ -30,10 +30,18 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 class Socket {
 private:
-	SOCKET m_hSocket;
-	int m_iError;
+	char * m_pszAddress;
 	int m_iPort;
+	SOCKET m_hSocket;
+	unsigned int m_iTimeoutVal;
+	int m_iError;
 	bool connected;
+
+	HANDLE m_hTimeoutWaitEvent;
+	HANDLE m_hTimeoutHostnameWaitEvent;
+	hostent * m_pHostent;
+	char * m_pHostBuffer;
+	bool hostnameSucces;
 public:
 	Socket(const char * pszAddress, int iPort);
 	Socket(SOCKET socket);
@@ -45,12 +53,9 @@ public:
 	int recieveData(char * buffer, int buffersize);
 	~Socket();
 
-	//Made public for threads, dont abuse
-	HANDLE m_hTimeoutWaitEvent;
-	HANDLE m_hTimeoutHostnameWaitEvent;
-	unsigned int m_iTimeoutVal;
-	char * m_pszAddress;
-	hostent * m_pHostent;
+	//Made public for threads, dont call
+	void Socket::timeoutThread();
+	void Socket::hostnameThread();
 
 	static int amount;
 };

@@ -113,10 +113,11 @@ public:
 	~FTP_Service();
 
 	//public due to implementation, do not call
+	CRITICAL_SECTION socketCleanupMutex;	//used when closing transfer sockets
+
 	void watchDogProcedure();
 	void listenForClientProcedure(LISTENDATA * listendat);
 	void keepAlive();
-
 private:
 	Connection_Mode connectionMode;	//Used to keep track of what mode to use (passive/active)
 	Socket * controlConnection;		//Used to keep track of control connection

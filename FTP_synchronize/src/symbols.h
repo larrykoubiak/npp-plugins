@@ -1,2 +1,2 @@
-#define IDT_VERSION_TEXT	"0.9.6"
-#define IDT_VERSION_NUM		0,9,6,0
+#define IDT_VERSION_TEXT	"0.9.6.1 ALPHA"
+#define IDT_VERSION_NUM		0,9,6,1

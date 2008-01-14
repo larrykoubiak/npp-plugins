@@ -28,21 +28,24 @@ Socket::Socket(const char * pszAddress, int iPort) {
 	m_iPort = iPort;
 	m_iError = 0;
 
-	m_hTimeoutWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-	m_hTimeoutHostnameWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-
 	m_hSocket = socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
 	if (m_hSocket == INVALID_SOCKET) {
 		this->m_iError = WSAGetLastError();
-		//return false;
 	}
 
 	connected = false;
 
+	this->m_pHostent = new hostent;
+	this->m_pHostBuffer = new char[4];	//IPv4
+	this->m_pHostent->h_addr_list = &(this->m_pHostBuffer);
+
+	m_hTimeoutWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_hTimeoutHostnameWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+
 	Socket::amount++;
 }
 
-//Assumes SOCKET is connected (mostly used for SOCKETs created by listen()
+//Assumes SOCKET is connected (mostly used for SOCKETs created by listen())
 Socket::Socket(SOCKET socket) {
 	SOCKADDR_IN sa;
 	int sizesa = sizeof(SOCKADDR_IN);
@@ -61,12 +64,16 @@ Socket::Socket(SOCKET socket) {
 		m_iError = 0;
 	}
 
-	m_hTimeoutWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-	m_hTimeoutHostnameWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-
 	m_hSocket = socket;
 
 	connected = true;
+
+	this->m_pHostent = new hostent;
+	this->m_pHostBuffer = new char[4];	//IPv4
+	this->m_pHostent->h_addr_list = &(this->m_pHostBuffer);
+
+	m_hTimeoutWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_hTimeoutHostnameWaitEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 	Socket::amount++;
 }
@@ -81,35 +88,30 @@ bool Socket::connectClient(unsigned int timeout) {
 
 	ResetEvent(m_hTimeoutHostnameWaitEvent);
 
-	this->m_pHostent = new hostent;
-	char * hostBuffer = new char[4];	//IPv4
-
 	this->m_pHostent->h_addrtype = AF_INET;
 	this->m_pHostent->h_length = 4;	//IPv4
 	this->m_pHostent->h_aliases = NULL;
 	this->m_pHostent->h_name = NULL;
 
-	this->m_pHostent->h_addr_list = &hostBuffer;
+	hostnameSucces = false;
 
 	bool threadSuccess = StartThread(hostnameTimeoutCheck, this, "hostnameTimeoutCheck");
 	if (!threadSuccess) {
-		closesocket(this->m_hSocket);
+		this->disconnect();
 		this->m_iError = GetLastError();
 		return false;
 	}
 
+	//For some reason, this triggers RPC exception in Wow64, not sure about native win32
 	DWORD res = WaitForSingleObject(m_hTimeoutHostnameWaitEvent, this->m_iTimeoutVal);
 	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
 		//hostname retrieval timed out. Although the thread will continue, the socket will return, the thread will close later on
-		closesocket(this->m_hSocket);
+		this->disconnect();
 		printToLog("Timeout when waiting for hostent\n");
 		return false;
 	}
 
-	char badIP[4];
-	memset(badIP, 0xFF, 4);
-	if (!memcmp(this->m_pHostent->h_addr_list[0], badIP, 4)) {
-		this->m_iError = WSAGetLastError();
+	if (!hostnameSucces) {
 		return false;
 	}
 
@@ -119,6 +121,7 @@ bool Socket::connectClient(unsigned int timeout) {
 	sin.sin_port = htons(0);
 	if (bind(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin))) {					//bind the socket to some interface.
 		this->m_iError = WSAGetLastError();
+		this->disconnect();
 		printToLog("Could not bind socket\n");
 		return false;
 	}
@@ -129,31 +132,36 @@ bool Socket::connectClient(unsigned int timeout) {
 	ResetEvent(m_hTimeoutWaitEvent);
 	threadSuccess = StartThread(socketTimeoutCheck, this, "socketTimeoutCheck");
 	if (!threadSuccess) {
-		closesocket(this->m_hSocket);
-		delete this->m_pHostent;
 		this->m_iError = GetLastError();
+		this->disconnect();
 		return false;
 	}
 
 	int connectres = connect(m_hSocket,(LPSOCKADDR)&sin,sizeof(sin));
 	SetEvent(this->m_hTimeoutWaitEvent);
 
-	delete [] this->m_pHostent->h_addr_list[0];
-	delete this->m_pHostent;
-
 	if (connectres) {				//connect to server
 		this->m_iError = WSAGetLastError();
+		this->disconnect();
 		printToLog("Error when connecting: %d\n", this->m_iError);
 		return false;
 	}
+
+	connected = true;
+
 	return true;
 }
 
 bool Socket::disconnect() {
+	if (!connected)
+		return true;
+
 	bool retval = true;
 	if (shutdown(this->m_hSocket, SD_SEND) == SOCKET_ERROR) {
 		this->m_iError = WSAGetLastError();
-		printToLog("A problem while shutting down socket: %d\n", this->m_iError);
+		if (this->m_iError != WSAENOTSOCK) {		//WSAENOTSOCK happens when the socket is already closed, so check for other errors
+			printToLog("A problem while shutting down socket: %d\n", this->m_iError);
+		}
 		retval = false;
 	}
 
@@ -176,7 +184,7 @@ bool Socket::sendData(const char * data, int size) {
 		result = send(this->m_hSocket, data+offset, nrleft, 0);
 		if (result == SOCKET_ERROR) {
 			this->m_iError = WSAGetLastError();
-			printToLog("Failed to send data: %d\n", this->m_iError);
+			//printToLog("Failed to send data: %d\n", this->m_iError);
 			return false;
 		}
 		offset += result;
@@ -189,19 +197,23 @@ int Socket::recieveData(char * buffer, int buffersize) {
 	int result = recv(this->m_hSocket, buffer, buffersize, 0);
 	if (result == SOCKET_ERROR) {
 		this->m_iError = WSAGetLastError();
-		printToLog("Failed to recieve data: %d\n", this->m_iError);
+		//printToLog("Failed to recieve data: %d\n", this->m_iError);
 	}
 	return result;
 }
 
 Socket::~Socket() {
+	if (connected)
+		disconnect();
+
 	delete [] m_pszAddress;
+	delete this->m_pHostBuffer;
+	delete this->m_pHostent;
 	CloseHandle(m_hTimeoutWaitEvent);
+	CloseHandle(m_hTimeoutHostnameWaitEvent);
 	Socket::amount--;
 	//This seems to crash in Win98 at times
 	//closesocket(m_hSocket);
-	if (connected)
-		disconnect();
 	return;
 }
 
@@ -213,41 +225,49 @@ int Socket::getLastError() {
 	return m_iError;
 }
 
+void Socket::timeoutThread() {
+	DWORD res = WaitForSingleObject(m_hTimeoutWaitEvent, m_iTimeoutVal);
+	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
+		disconnect();
+	}
+}
+
+void Socket::hostnameThread() {
+	unsigned long ipInN;
+	hostent * host;
+
+	//newhost is used to fill in everything when an IP-address is given.
+	//The possibility exists an ip address cannot be resolved, although its valid
+
+	ipInN = inet_addr(this->m_pszAddress);
+
+	if (ipInN != INADDR_NONE) {	//ip is not invalid, ie valid
+		//just copy the ip to the hostent structure, no need for a lookup on ip addresses
+		memcpy(this->m_pHostent->h_addr_list[0], &ipInN, this->m_pHostent->h_length);					//copy the address from the ip in network format buffer
+		//host = gethostbyaddr((const char*)&iaHost,sizeof(in_addr),PF_INET);		//Use this to get Domain out of IP, commented since it can fail
+		hostnameSucces = true;
+	} else {							//invalid ip, go for hostname
+		host = gethostbyname(this->m_pszAddress);
+		if (!host) {
+			this->m_iError = WSAGetLastError();
+			printToLog("Error getting host of %s: %d\n", this->m_pszAddress, this->m_iError);
+		} else {
+			memcpy(this->m_pHostent->h_addr_list[0], host->h_addr_list[0], m_pHostent->h_length);		//copy the address from the WinSock buffer
+			hostnameSucces = true;
+		}
+	}
+
+	SetEvent(this->m_hTimeoutHostnameWaitEvent);
+}
+
 DWORD WINAPI socketTimeoutCheck(LPVOID param) {
 	Socket * client = (Socket*)param;
-	DWORD res = WaitForSingleObject(client->m_hTimeoutWaitEvent, client->m_iTimeoutVal);
-	if (res == WAIT_FAILED || res == WAIT_TIMEOUT) {
-		closesocket(client->getSocket());
-	}
+	client->timeoutThread();
 	return 0;
 }
 
 DWORD WINAPI hostnameTimeoutCheck(LPVOID param) {
 	Socket * client = (Socket*) param;
-	char * hostname = client->m_pszAddress;
-
-	unsigned long ipInN;
-	hostent * host, * newhost = client->m_pHostent;
-
-	//newhost is used to fill in everything when an IP-address is given.
-	//The possibility exists an ip address cannot be resolved, although its valid
-
-	ipInN = inet_addr(hostname);
-
-	if (ipInN != INADDR_NONE) {	//ip is not invalid, ie valid
-		//just copy the ip to the hostent structure, no need for a lookup on ip addresses
-		memcpy(newhost->h_addr_list[0], &ipInN, newhost->h_length);					//copy the address from the ip in network format buffer
-		//host = gethostbyaddr((const char*)&iaHost,sizeof(in_addr),PF_INET);
-	} else {							//invalid ip, go for hostname
-		host = gethostbyname(hostname);
-		if (!host) {
-			printToLog("Error getting host of %s: %d\n", hostname, WSAGetLastError());
-			memset(newhost->h_addr_list[0], 0xFF, newhost->h_length);		//IP-address of -1 means error
-		} else {
-			memcpy(newhost->h_addr_list[0], host->h_addr_list[0], newhost->h_length);		//copy the address from the WinSock buffer
-		}
-	}
-
-	SetEvent(client->m_hTimeoutHostnameWaitEvent);
+	client->hostnameThread();
 	return 0;
 }

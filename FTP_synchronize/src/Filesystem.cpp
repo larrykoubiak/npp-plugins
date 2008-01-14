@@ -36,6 +36,20 @@ int parseFilesize(const char * nrOffset, long * result) {
 	return offset;
 }
 
+bool isNumerical(const char * nrOffset) {
+	bool isNum = true;
+	int offset = 0;
+	while(*nrOffset != ' ' && *nrOffset != 0) {
+		if ((*nrOffset < '0' || *nrOffset > '9') && *nrOffset != '.') {
+			isNum = false;
+			break;
+		}
+		*nrOffset++;
+		offset++;
+	}
+	return isNum;
+}
+
 int monthToDecimal(const char * monthStr) {
 	switch(*monthStr) {
 		case 'A': {						//April, August
@@ -92,6 +106,7 @@ bool isMonth(const char * string) {
 		);
 }
 //skip = amount of whitespaces to cross
+//Should automatically halt alt zero terminator
 const char * findNextWord(const char * beginOffset, int skip) {
 	while(skip > 0) {
 		while(*beginOffset != 0 && *beginOffset != ' ' && *beginOffset != '\t') {	//first skip the word
@@ -107,7 +122,7 @@ const char * findNextWord(const char * beginOffset, int skip) {
 
 int getNrWords(const char * beginOffset) {
 	int nrWords = 0;
-	while(*beginOffset != 0) {
+	while(*beginOffset != ' ' && *beginOffset != 0) {
 		while(*beginOffset == ' ' || *beginOffset == '\t') {	//first skip any whitespace whitespace
 			beginOffset++;
 		}
@@ -179,15 +194,22 @@ FILESYSTEMOBJECT * parseUNIX(const char * listItem, DIRECTORY * parent, bool isD
 	fso->modifiers[10] = 0;
 	calculateModifierValues(fso);
 
-	listItem = findNextWord(listItem, 2);	//skip modifier and subdir count
+	listItem = findNextWord(listItem, 3);	//skip modifier and subdir count, aswell as username
 
-	//We need to skip any group/user information, but we do need to following filesize and the month. Months can easily be identified, backtracking gives us the file
-	const char * monthCandidate = listItem;
+	//We need to skip group information, but we do need to following filesize and the month. 
+	//Filesize will be the last numerical value before month (group may be numerical), so min 1 num, max 2 nums.
+	const char * sizeCandidate = listItem, * prevSizeCandidate = listItem;
 	int skip = 0;
-	do {
-		monthCandidate = findNextWord(monthCandidate, 1);
+	bool wasNum = false;
+	while( (sizeCandidate = findNextWord(prevSizeCandidate, 1)) != prevSizeCandidate ) {	//this should prevent endless loops
+		prevSizeCandidate = sizeCandidate;
 		skip++;
-	} while(!isMonth(monthCandidate));
+		if (isNumerical(sizeCandidate)) {
+			wasNum = true;
+		} else if (wasNum) {	//end of numericals, we should have hit the month now
+			break;
+		}
+	}
 
 	if (isDir) {
 		listItem = findNextWord(listItem, skip);		//go to the month
@@ -224,7 +246,7 @@ FILESYSTEMOBJECT * parseUNIX(const char * listItem, DIRECTORY * parent, bool isD
 
 	if (isLink) {	//symlink name parsing, link name syntax: 'dirname' -> 'relative link'
 		int j = 0;
-		while(listItem[j] != ' ') {	//copy linkname
+		while(listItem[j] != ' ' && listItem[j] != 0) {	//copy linkname
 			fso->name[j] = listItem[j];
 			j++;
 		}
