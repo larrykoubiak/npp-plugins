@@ -50,16 +50,23 @@ const char UNTITLED_STR[] = "new";
 
 /* store name for ini file */
 CONST TCHAR dlgWndMgr[]			= _T("Window Manager");
+CONST TCHAR IsTabHidden[]		= _T("IsTabHidden");
 CONST TCHAR SplitterPos[]		= _T("SplitterPos");
 CONST TCHAR SplitterPosHor[]	= _T("SplitterPosHor");
 CONST TCHAR ColumnPosNameMain[]	= _T("ColumnPosNameMain");
 CONST TCHAR ColumnPosPathMain[]	= _T("ColumnPosPathMain");
+CONST TCHAR SortStateMain[]		= _T("SortStateMain");
+CONST TCHAR SortColMain[]		= _T("SortColMain");
 CONST TCHAR ColumnPosNameSec[]	= _T("ColumnPosNameSec");
 CONST TCHAR ColumnPosPathSec[]	= _T("ColumnPosPathSec");
+CONST TCHAR SortStateSec[]		= _T("SortStateSec");
+CONST TCHAR SortColSec[]		= _T("SortColSec");
 CONST TCHAR Debug[]				= _T("Debug");
 
 CONST TCHAR WINDOWMANAGER_INI[]	= _T("\\WndMgr.ini");
 
+extern winVer	gWinVersion;
+extern UINT		gNppVersion;
 
 typedef enum eFileState {
 	FST_SAVED,
@@ -68,22 +75,34 @@ typedef enum eFileState {
 } eFSt;
 
 typedef struct tFileList {
+	INT		iTabPos;
 	eFSt	fileState;
+	eFSt	oldFileState;
 	CHAR	szName[MAX_PATH];
 	CHAR	szPath[MAX_PATH];
 	CHAR	szCompletePath[MAX_PATH];
 } tFileList;
 
+typedef enum eSortState {
+	SST_UNSORT,
+	SST_ASCENDING,
+	SST_DESCENDING
+} eSSt;
 
+typedef struct tWndProp {
+	INT		iColumnPosPath;
+	INT		iColumnPosName;
+	eSSt	sortState;
+	INT		iSortCol;
+} tWndProp;
 
 typedef struct tMgrProp {
-	INT		iSplitterPos;
-	INT		iSplitterPosHorizontal;
-	INT		iColumnPosNameMain;
-	INT		iColumnPosPathMain;
-	INT		iColumnPosNameSec;
-	INT		iColumnPosPathSec;
-	BOOL	debug;
+	INT			iSplitterPos;
+	INT			iSplitterPosHorizontal;
+	BOOL		isTabHidden;
+	tWndProp	propMain;
+	tWndProp	propSec;
+	BOOL		debug;
 } tMgrProp;
 
 /* timer notification */
@@ -92,9 +111,11 @@ typedef struct tMgrProp {
 
 void loadSettings(void);
 void saveSettings(void);
+void initMenu(void);
 
 /* menu functions */
 void toggleMgr(void);
+void toggleTab(void);
 void aboutDlg(void);
 
 /* subclassing of notepad */
@@ -104,5 +125,11 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 void FileListUpdate(void);
 void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCSTR* pFiles, UINT numFiles);
 void UpdateFileState(vector<tFileList> & vList, HWND hSci, INT iDoc);
+void ChangeFileState(UINT iView, UINT iDoc, eFSt fileState);
+
+/* Extended Window Funcions */
+void ClientToScreen(HWND hWnd, RECT* rect);
+void ScreenToClient(HWND hWnd, RECT* rect);
+void ErrorMessage(DWORD err);
 
 #endif	/* WINDOW_MANAGER_H */
