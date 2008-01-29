@@ -1,6 +1,6 @@
 /**
  * @author		Jens Lorenz		<jens.plugin.npp@gmx.de>
- * @version		1.0
+ * @version		1.1
  * @date		2007
  *
  * This program is free software; you can redistribute it and/or
@@ -76,7 +76,6 @@ typedef struct tNatLangInfo {
  *
  * @note		'&' sign for key selection supported, e.g. "&Cancel process"
  */
-__inline
 static void NLChangeDialog(HINSTANCE hInst, HWND hNpp, HWND hWnd, LPCSTR pszSection)
 {
 	CHAR		szPath[MAX_PATH];
@@ -113,7 +112,6 @@ static void NLChangeDialog(HINSTANCE hInst, HWND hNpp, HWND hWnd, LPCSTR pszSect
  *
  * @note		'&' sign for key selection supported, e.g. "&Explorer..."
  */
-__inline
 static void NLChangeNppMenu(HINSTANCE hInst, HWND hNpp, LPCSTR pszPluginName, FuncItem* funcItem, UINT nbFunc)
 {
 	CHAR		szPath[MAX_PATH];
@@ -151,7 +149,6 @@ static void NLChangeNppMenu(HINSTANCE hInst, HWND hNpp, LPCSTR pszPluginName, Fu
  *
  * @note		'&' sign for key selection supported, e.g. "&Open.."
  */
-__inline
 static BOOL NLChangeMenu(HINSTANCE hInst, HWND hNpp, HMENU hMenu, LPCSTR pszMenu, UINT mf_ByComPos)
 {
 	CHAR		szPath[MAX_PATH];
@@ -188,7 +185,6 @@ static BOOL NLChangeMenu(HINSTANCE hInst, HWND hNpp, HMENU hMenu, LPCSTR pszMenu
  *				orig_name="new name"\n
  *				...\n
  */
-__inline
 static void NLChangeHeader(HINSTANCE hInst, HWND hNpp, HWND hHeader, LPCSTR pszSection)
 {
 	CHAR		szPath[MAX_PATH];
@@ -222,7 +218,6 @@ static void NLChangeHeader(HINSTANCE hInst, HWND hNpp, HWND hHeader, LPCSTR pszS
  *				pos_in_combo="new name"\n
  *				...\n
  */
-__inline
 static void NLChangeCombo(HINSTANCE hInst, HWND hNpp, HWND hCombo, LPCSTR pszSection, UINT count)
 {
 	CHAR		szPath[MAX_PATH];
@@ -268,7 +263,6 @@ static void NLChangeCombo(HINSTANCE hInst, HWND hNpp, HWND hCombo, LPCSTR pszSec
  *
  * @note		Format tags are supported. Use % instead of \, e.g. %t %s %d %n
  */
-__inline
 static UINT NLGetTextA(HINSTANCE hInst, HWND hNpp, LPCSTR pszKey, LPSTR pszText, UINT length)
 {
 	CHAR		szPath[MAX_PATH];
@@ -309,7 +303,6 @@ static UINT NLGetTextA(HINSTANCE hInst, HWND hNpp, LPCSTR pszKey, LPSTR pszText,
  *
  * @note		Format tags are supported. Use % instead of \, e.g. %t %s %d %n
  */
-__inline
 static UINT NLGetTextW(HINSTANCE hInst, HWND hNpp, LPCSTR pszKey, LPWSTR pszText, UINT length)
 {
 	CHAR		szPath[MAX_PATH];
@@ -330,6 +323,42 @@ static UINT NLGetTextW(HINSTANCE hInst, HWND hNpp, LPCSTR pszKey, LPWSTR pszText
 
 	return (UINT)nli.lRes;
 }
+
+
+/**
+ * @fn			BOOL NLMessageBox(HINSTANCE hInst, HWND hNpp, LPCSTR pszKey, UINT uType)
+ * @brief		Show message box identified by a key.
+ *
+ * @param[in]	hInst			The instance handle of dialog.
+ * @param[in]	hNpp			The window handle of Notepad++.
+ * @param[in]	pszKey			The key name in NativeLang.ini file.
+ * @param[in]	uType			The buffer to fill.
+ * @retval		INT				The message box was shown.
+ *
+ * @details		Add in NativeLang.ini a section like the following:\n
+ *				\n
+ *				['plugin_file_name' Text]\n
+ *				key_name="text%tcaption%t"\n
+ *				...\n
+ */
+static INT NLMessageBox(HINSTANCE hInst, HWND hNpp, LPCSTR pszKey, UINT uType)
+{
+	LPTSTR	wPtr = NULL;
+	TCHAR	text[MAX_PATH]	= {0};
+	if (NLGetText(hInst, hNpp, pszKey, text, MAX_PATH)) {
+#ifdef _UNICODE
+		wPtr = wcstok(text, _T("\t"));
+		wPtr = wcstok(NULL, _T("\t"));
+#else
+		wPtr = strtok(text, "\t");
+		wPtr = strtok(NULL, "\t");
+#endif
+		return ::MessageBox(hNpp, text, wPtr, uType);
+	}
+	return FALSE;
+}
+
+
 
 #endif	/* NATIVE_LANG_DEF_H */
 
