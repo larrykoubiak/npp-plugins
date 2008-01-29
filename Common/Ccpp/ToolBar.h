@@ -43,26 +43,6 @@ enum toolBarStatusType {TB_HIDE, TB_SMALL, TB_LARGE, TB_STANDARD};
 #include "ImageListSet.h"
 
 
-/**************************************************************************
- *	Windows helper functions
- */
-static void ScreenToClient(HWND hWnd, RECT* rect)
-{
-	POINT		pt;
-
-	pt.x		 = rect->left;
-	pt.y		 = rect->top;
-	::ScreenToClient( hWnd, &pt );
-	rect->left   = pt.x;
-	rect->top    = pt.y;
-
-	pt.x		 = rect->right;
-	pt.y		 = rect->bottom;
-	::ScreenToClient( hWnd, &pt );
-	rect->right  = pt.x;
-	rect->bottom = pt.y;
-}
-
 class ToolBar : public Window
 {
 public :
