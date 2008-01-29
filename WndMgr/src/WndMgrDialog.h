@@ -45,6 +45,18 @@ public:
 		::SendMessage(_hSelf, WM_SIZE, 0, 0);
 	};
 
+	__inline void doUpdate(UINT msec) {
+		::KillTimer(_hSelf, WMXT_UPDATESTATE);
+		::SetTimer(_hSelf, WMXT_UPDATESTATE, msec, NULL);
+	};
+
+	BOOL isFileListRBtnTrigg(WPARAM wParam, LPARAM lParam){
+		if ((_FileList1.isRBtnTrigg(wParam, lParam) == TRUE) ||
+			(_FileList2.isRBtnTrigg(wParam, lParam) == TRUE))
+			return TRUE;
+		return FALSE;
+	};
+
 protected:
 
 	/* Subclassing splitter */
