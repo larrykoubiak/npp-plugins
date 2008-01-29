@@ -210,17 +210,17 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 			} else if (nmhdr->hwndFrom == _hList2Ctrl) {
 				return _FileList2.notify(wParam, lParam);
 			} else if ((nmhdr->hwndFrom == _hHeader1Ctrl) && (nmhdr->code == HDN_ITEMCHANGED)) {
-				_pMgrProp->iColumnPosNameMain = ListView_GetColumnWidth(_hList1Ctrl, 0);
-				_pMgrProp->iColumnPosPathMain = ListView_GetColumnWidth(_hList1Ctrl, 1);
+				_pMgrProp->propMain.iColumnPosName = ListView_GetColumnWidth(_hList1Ctrl, 0);
+				_pMgrProp->propMain.iColumnPosPath = ListView_GetColumnWidth(_hList1Ctrl, 1);
 				return TRUE;
 			} else if ((nmhdr->hwndFrom == _hHeader2Ctrl) && (nmhdr->code == HDN_ITEMCHANGED)) {
-				_pMgrProp->iColumnPosNameSec = ListView_GetColumnWidth(_hList2Ctrl, 0);
-				_pMgrProp->iColumnPosPathSec = ListView_GetColumnWidth(_hList2Ctrl, 1);
+				_pMgrProp->propSec.iColumnPosName = ListView_GetColumnWidth(_hList2Ctrl, 0);
+				_pMgrProp->propSec.iColumnPosPath = ListView_GetColumnWidth(_hList2Ctrl, 1);
 				return TRUE;
-			} else {
-				return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
+			} else if ((nmhdr->hwndFrom == _hParent) && (LOWORD(nmhdr->code) == DMN_CLOSE)) {
+				toggleMgr();
 			}
-			break;
+			return DockingDlgInterface::run_dlgProc(hWnd, Message, wParam, lParam);
 		}
 		case WM_TIMER:
 		{
@@ -238,8 +238,8 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 				UpdateFileState(vFileList2, _nppData._scintillaSecondHandle, _selTabSub);
 
 				/* show now lists */
-				_FileList1.updateList(_selTabMain);
-				_FileList2.updateList(_selTabSub);
+				_FileList1.updateList(vFileList1, _selTabMain);
+				_FileList2.updateList(vFileList2, _selTabSub);
 				::SendMessage(_hSelf, WM_SIZE, 0, 0);
 			}
 			break;
@@ -262,7 +262,7 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 }
 
 /****************************************************************************
- *	Message handling of header
+ *	Message handling of splitter
  */
 LRESULT WndMgrDialog::runSplitterProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
@@ -369,7 +369,7 @@ LRESULT WndMgrDialog::runSCIProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM 
 	{
 		case WM_SIZE:
 		{
-			::SetTimer(_hSelf, WMXT_UPDATESTATE, 0, NULL);
+			doUpdate(0);
 			break;
 		}
 		default:
@@ -396,8 +396,8 @@ void WndMgrDialog::InitialDialog(void)
 	_hSplitterCtrl	= ::GetDlgItem(_hSelf, IDC_BUTTON_SPLITTER);
 
 	/* create lists */
-	_FileList1.init(_hInst, _hSelf, _hList1Ctrl, _nppData, MAIN_VIEW);
-	_FileList2.init(_hInst, _hSelf, _hList2Ctrl, _nppData, SUB_VIEW);
+	_FileList1.init(_hInst, _hSelf, _hList1Ctrl, _nppData, MAIN_VIEW, &_pMgrProp->propMain);
+	_FileList2.init(_hInst, _hSelf, _hList2Ctrl, _nppData, SUB_VIEW, &_pMgrProp->propSec);
 
 	/* create splitter cursors */
 	_hSplitterCursorUpDown		= ::LoadCursor(_hInst, MAKEINTRESOURCE(IDC_UPDOWN));
@@ -415,15 +415,15 @@ void WndMgrDialog::InitialDialog(void)
 	ColSetup.fmt		= LVCFMT_LEFT;
 	ColSetup.pszText	= "Name";
 	ColSetup.cchTextMax = (INT)strlen("Name");
-	ColSetup.cx			= _pMgrProp->iColumnPosNameMain;
+	ColSetup.cx			= _pMgrProp->propMain.iColumnPosName;
 	ListView_InsertColumn(_hList1Ctrl, 0, &ColSetup);
-	ColSetup.cx			= _pMgrProp->iColumnPosNameSec;
+	ColSetup.cx			= _pMgrProp->propSec.iColumnPosName;
 	ListView_InsertColumn(_hList2Ctrl, 0, &ColSetup);
 	ColSetup.pszText	= "Path";
 	ColSetup.cchTextMax = (INT)strlen("Path");
-	ColSetup.cx			= _pMgrProp->iColumnPosPathMain;
+	ColSetup.cx			= _pMgrProp->propMain.iColumnPosPath;
 	ListView_InsertColumn(_hList1Ctrl, 1, &ColSetup);
-	ColSetup.cx			= _pMgrProp->iColumnPosPathSec;
+	ColSetup.cx			= _pMgrProp->propSec.iColumnPosPath;
 	ListView_InsertColumn(_hList2Ctrl, 1, &ColSetup);
 
 	/* change language */
