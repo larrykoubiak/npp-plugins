@@ -9,6 +9,8 @@
 #define IDI_READONLY                    105
 #define IDI_SAVED                       106
 #define IDB_WNDMGR                      1000
+#define IDB_SORTUP                      1001
+#define IDB_SORTDOWN                    1002
 #define IDD_WNDMGR_DLG                  30500
 #define IDC_LIST_MAIN                   30501
 #define IDC_LIST_SUB                    30502
