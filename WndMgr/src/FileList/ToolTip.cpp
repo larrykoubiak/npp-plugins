@@ -19,7 +19,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 #include "ToolTip.h"
 #include "SysMsg.h"
-#include "ExplorerResource.h"
+#include "resource.h"
 
 
 
@@ -46,7 +46,7 @@ void ToolTip::init(HINSTANCE hInst, HWND hParent)
 }
 
 
-void ToolTip::Show(RECT rectTitle, char* pszTitle, int iXOff, int iWidthOff)
+void ToolTip::Show(RECT rectTitle, char* pszTitle, int iXOff, int iYOff)
 {
 	if (isVisible())
 		destroy();
@@ -54,7 +54,7 @@ void ToolTip::Show(RECT rectTitle, char* pszTitle, int iXOff, int iWidthOff)
 	if (strlen(pszTitle) == 0)
 		return;
 
-	// INITIALIZE MEMBERS OF THE TOOLINFO STRUCTURE
+	/* INITIALIZE MEMBERS OF THE TOOLINFO STRUCTURE */
 	_ti.cbSize		= sizeof(TOOLINFO);
 	_ti.uFlags		= TTF_TRACK | TTF_ABSOLUTE;
 	_ti.hwnd		= ::GetParent(_hParent);
@@ -66,15 +66,31 @@ void ToolTip::Show(RECT rectTitle, char* pszTitle, int iXOff, int iWidthOff)
 	_ti.rect.right	= rectTitle.right;
 	_ti.rect.bottom	= rectTitle.bottom;
 
-	::SendMessage(_hSelf, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &_ti);
-	::SendMessage(_hSelf, TTM_TRACKPOSITION, 0, (LPARAM)(DWORD) MAKELONG(_ti.rect.left + iXOff, _ti.rect.top + iWidthOff));
-	::SendMessage(_hSelf, TTM_TRACKACTIVATE, true, (LPARAM)(LPTOOLINFO) &_ti);
-
-	HFONT	_hFont = (HFONT)::SendMessage(_hParent, WM_GETFONT, 0, 0);	
+	HFONT	_hFont = (HFONT)::SendMessage(_hParent, WM_GETFONT, 0, 0);
 	::SendMessage(_hSelf, WM_SETFONT, reinterpret_cast<WPARAM>(_hFont), TRUE);
 
+	UINT posX		= _ti.rect.left + iXOff;
+	UINT posY		= _ti.rect.top  + iYOff;
+
 	_ti.lpszText	= pszTitle;
-    ::SendMessage(_hSelf, TTM_UPDATETIPTEXT, 0, (LPARAM)(LPTOOLINFO) &_ti);
+	::SendMessage(_hSelf, TTM_ADDTOOL, 0, (LPARAM) (LPTOOLINFO) &_ti);
+	::SendMessage(_hSelf, TTM_SETMAXTIPWIDTH, 0, MAX_TIP_WIDTH);
+	::SendMessage(_hSelf, TTM_TRACKPOSITION, 0, (LPARAM)(DWORD) MAKELONG(posX, posY));
+	::SendMessage(_hSelf, TTM_TRACKACTIVATE, true, (LPARAM)(LPTOOLINFO) &_ti);
+
+	RECT	rcCurr	= {0};
+	::GetWindowRect(_hSelf, &rcCurr);
+
+	/* repositioning of tooltip */
+	UINT primDispWidth	= ::GetSystemMetrics(SM_CXSCREEN);
+	UINT primDispHeigth = ::GetSystemMetrics(SM_CYSCREEN);
+	if (((rcCurr.right % primDispWidth) < (rcCurr.left % primDispWidth)) || 
+		((rcCurr.left % primDispWidth) < (rectTitle.left % primDispWidth)))
+		posX -= (rcCurr.right % primDispWidth);
+	if (((rcCurr.bottom % primDispHeigth) < (rcCurr.top % primDispHeigth)) ||
+		((rcCurr.top % primDispHeigth) < (rectTitle.top % primDispHeigth)))
+		posY -= (iYOff + (rcCurr.bottom - rcCurr.top));
+	::SendMessage(_hSelf, TTM_TRACKPOSITION, 0, (LPARAM)(DWORD) MAKELONG(posX, posY));
 }
 
 
@@ -82,54 +98,13 @@ LRESULT ToolTip::runProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-		case WM_MOUSEACTIVATE:
-		{
-			return MA_NOACTIVATE;
-		}
-		case WM_CREATE:
-		{
-			TRACKMOUSEEVENT tme;
-			tme.cbSize = sizeof(tme);
-			tme.hwndTrack = _hSelf;
-			tme.dwFlags = TME_LEAVE | TME_HOVER;
-			tme.dwHoverTime = 5000;
-			_bTrackMouse = _TrackMouseEvent(&tme);
-			break;
-		}
-		case WM_LBUTTONDBLCLK:
-    	case WM_RBUTTONDOWN:
-    	case WM_LBUTTONDOWN:
-		{
-			POINT			pt			= {0};
-			LVHITTESTINFO	hittest		= {0};
-
-			::GetCursorPos(&hittest.pt);
-			ScreenToClient(_hParent, &hittest.pt);
-			::SendMessage(_hParent, LVM_SUBITEMHITTEST, 0, (LPARAM)&hittest);
-			::SendMessage(_hParent, EXM_TOOLTIP, message, (LPARAM)&hittest);
-			return TRUE;
-		}
 		case WM_MOUSEMOVE:
-		{
-			if (!_bTrackMouse)
-			{
-				TRACKMOUSEEVENT tme;
-				tme.cbSize = sizeof(tme);
-				tme.hwndTrack = _hSelf;
-				tme.dwFlags = TME_LEAVE | TME_HOVER;
-				tme.dwHoverTime = 5000;
-				_bTrackMouse = _TrackMouseEvent(&tme);
-			}
-			else
-				_bTrackMouse = FALSE;
-			return TRUE;
-		}
- 		case WM_MOUSEHOVER:
-		case WM_MOUSELEAVE:
 		{
 			destroy();
 			return TRUE;
 		}
+		default:
+			break;
 	}
 
 	return ::CallWindowProc(_defaultProc, _hSelf, message, wParam, lParam);

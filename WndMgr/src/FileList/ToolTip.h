@@ -28,11 +28,13 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 using namespace std;
 
+#define	MAX_TIP_WIDTH	500
+
 
 class ToolTip : public Window
 {
 public :
-	ToolTip() : _bTrackMouse(FALSE) {};
+	ToolTip() {};
     
 	void destroy(void){
 		DestroyWindow(_hSelf);
@@ -49,7 +51,6 @@ public:
 
 protected:
     WNDPROC		_defaultProc;
-	BOOL		_bTrackMouse;
 	TOOLINFO	_ti;
 
 
