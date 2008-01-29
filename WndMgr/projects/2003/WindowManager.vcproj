@@ -15,15 +15,16 @@
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="2"
+			UseOfMFC="0"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../src;../../src/FileList;../../src/AboutDlg;../../../Common/Ccpp;../../../NativeLang/src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;WINDOWMANAGER_EXPORTS"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;WINDOWMANAGER_EXPORTS;USE_HIDE_TAB"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="FALSE"
@@ -64,7 +65,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalIncludeDirectories="../../src;../../src/FileList;../../src/AboutDlg;../../../Common/Ccpp;../../../NativeLang/src"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;WINDOWMANAGER_EXPORTS"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;WINDOWMANAGER_EXPORTS;USE_HIDE_TAB"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -108,7 +109,13 @@
 				RelativePath="..\..\src\AboutDlg\AboutDialog.cpp">
 			</File>
 			<File
+				RelativePath="..\..\src\FileList\DragDropImpl.cpp">
+			</File>
+			<File
 				RelativePath="..\..\src\FileList\FileList.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\FileList\ToolTip.cpp">
 			</File>
 			<File
 				RelativePath="..\..\src\AboutDlg\URLCtrl.cpp">
@@ -141,7 +148,13 @@
 				RelativePath="..\..\src\AboutDlg\AboutDialog.h">
 			</File>
 			<File
+				RelativePath="..\..\src\FileList\DragDropImpl.h">
+			</File>
+			<File
 				RelativePath="..\..\src\FileList\FileList.h">
+			</File>
+			<File
+				RelativePath="..\..\src\FileList\ToolTip.h">
 			</File>
 			<File
 				RelativePath="..\..\src\AboutDlg\URLCtrl.h">
@@ -189,11 +202,24 @@
 					RelativePath="..\..\..\Common\Ccpp\stdafx.h">
 				</File>
 			</Filter>
+			<Filter
+				Name="Plugin_def"
+				Filter="">
+				<File
+					RelativePath="..\..\..\NativeLang\src\NativeLang_def.h">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+			<File
+				RelativePath="..\..\res\SortDown.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\SortUp.bmp">
+			</File>
 			<File
 				RelativePath="..\..\res\ToolBar.bmp">
 			</File>
