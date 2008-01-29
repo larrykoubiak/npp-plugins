@@ -2,12 +2,22 @@
 Change-log for WindowManager.dll
 
 ------------------------------------------------------------------------------------
+08/01/29  v1.1 :
+------------------------------------------------------------------------------------
+    New: Three state column sorting implemented
+    New: Multiline tool tip with file name and location implemented
+    New: Drag'n'Drop of files from/into/between lists possible (move CTRL)
+    New: Multiselection of items possible with fully DnD and ContextMenu support
+    New: Middle mouse click closes a file
+    New: Hide tabbar feature of upcomming Notepad++ 4.8.0 supported
+
+------------------------------------------------------------------------------------
 07/12/02  v1.0.1 :
 ------------------------------------------------------------------------------------
-    Fix: Update of file state. Now icons show the correct one.
-    Fix: Now a timer notification updates the list to show correct info anytime.
+    Fix: Update of file state. Now icons show the correct one
+    Fix: Now a timer notification updates the list to show correct info anytime
 
 ------------------------------------------------------------------------------------
 07/11/30  v1.0 :
 ------------------------------------------------------------------------------------
-    Initial version.
+    Initial version
