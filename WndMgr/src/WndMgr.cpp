@@ -222,10 +222,20 @@ void loadSettings(void)
 	/* initialize the config directory */
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM)configPath);
 
-	/* Test if config path exist */
-	if (PathFileExists(configPath) == FALSE)
+	/* Test if config path exist, if not create */
+	if (::PathFileExists(configPath) == FALSE)
 	{
-		::CreateDirectory(configPath, NULL);
+		vector<string>    vPaths;
+		do {
+			vPaths.push_back(configPath);
+			::PathRemoveFileSpec(configPath);
+		} while (::PathFileExists(configPath) == FALSE);
+
+		for (INT i = vPaths.size()-1; i >= 0; i--)
+		{
+			strcpy(configPath, vPaths[i].c_str());
+			::CreateDirectory(configPath, NULL);
+		}
 	}
 
 	strcpy(iniFilePath, configPath);
@@ -330,6 +340,9 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 {
 	LRESULT	ret = 0;
 
+	if (WndMgrDlg.isFileListRBtnTrigg(message, LOWORD(wParam), lParam) == TRUE)
+		return ret;
+
 	switch (message)
 	{
 		case WM_NCACTIVATE:
@@ -353,11 +366,22 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 		}
 		case WM_COMMAND:
 		{
-			if (WndMgrDlg.isFileListRBtnTrigg(LOWORD(wParam), lParam) == TRUE)
-				break;
-
 			switch (LOWORD(wParam))
 			{
+				case IDM_FILE_SAVEALL:
+				{
+					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
+					for (UINT i = 0; i < vFileList1.size(); i++) {
+						vFileList1[i].fileState = FST_SAVED;
+						vFileList1[i].oldFileState = FST_SAVED;
+					}
+					for (UINT i = 0; i < vFileList2.size(); i++) {
+						vFileList2[i].fileState = FST_SAVED;
+						vFileList2[i].oldFileState = FST_SAVED;
+					}
+					FileListUpdate();
+					break;
+				}
 				case IDM_FILE_NEW:
 				case IDM_FILE_SAVEAS:
 				case IDM_FILE_CLOSEALL:
@@ -366,12 +390,16 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				case IDM_EDIT_CLEARREADONLY:
 				case IDM_DOC_GOTO_ANOTHER_VIEW:
 				case IDM_DOC_CLONE_TO_ANOTHER_VIEW:
+				{
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					FileListUpdate();
 					break;
+				}
 				default:
+				{
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					break;
+				}
 			}
 			break;
 		}
