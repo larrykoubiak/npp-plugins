@@ -44,6 +44,11 @@ extern HIMAGELIST ghImgList;
 #define TCN_TABDROPPEDOUTSIDE (TCN_FIRST - 11)
 #define TCN_TABDELETE (TCN_FIRST - 12)
 
+#define IDR_WINDOWS_MENU 11000
+#define IDM_WINDOW_WINDOWS   (IDR_WINDOWS_MENU + 1)
+#define IDM_WINDOW_MRU_FIRST (IDR_WINDOWS_MENU + 20)
+#define IDM_WINDOW_MRU_LIMIT (IDR_WINDOWS_MENU + 29)
+
 const char UNTITLED_STR[] = "new";
 
 #define	DOCKABLE_WNDMGR_INDEX	0
@@ -104,6 +109,10 @@ typedef struct tMgrProp {
 	tWndProp	propSec;
 	BOOL		debug;
 } tMgrProp;
+
+
+/* spliter size */
+#define SPLITTER_SIZE		4
 
 /* timer notification */
 #define	WMXT_UPDATESTATE	10001
