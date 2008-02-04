@@ -429,100 +429,140 @@ bool FileList::OnDrop(FORMATETC* pFmtEtc, STGMEDIUM& medium, DWORD *pdwEffect)
 /******************************************************************************************
  *	Test if tab context menu was triggered and did his work (multi line select)
  */
-BOOL FileList::isRBtnTrigg(WPARAM wParam, LPARAM lParam)
+BOOL FileList::isRBtnTrigg(UINT Message, WPARAM wParam, LPARAM lParam)
 {
-	/* if lParam is zero this might be Notepad++ IDM_ messages */
-	if ((lParam == 0) && (_isRBtnTriggered == TRUE))
+	switch (Message)
 	{
-		_isRBtnTriggered = FALSE;
-
-		switch (wParam)
+		case NPPM_SWITCHTOFILE:
 		{
-			case IDM_FILE_CLOSEALL_BUT_CURRENT:
+			/* when message was switch to another document, reset status */
+			_isRBtnTriggered = FALSE;
+			break;
+		}
+		case WM_NOTIFY:
+		{
+			SCNotification *notifyCode = (SCNotification *)lParam;
+
+			switch (notifyCode->nmhdr.code)
 			{
-				vector<INT>		vPos;
-				for (INT i = 0; i < _vFileList.size(); i++) {
-					if (ListView_GetItemState(_hSelf, i, LVIS_SELECTED) != LVIS_SELECTED) {
-						vPos.push_back(_vFileList[i].iTabPos);
-					}
-				}
-				if (vPos.size() == 0) {
-					if (NLMessageBox(_hInst, _nppData._nppHandle, "MsgBox NotPossible", MB_OK) == FALSE)
-						::MessageBox(_hSelf, "Not possible", "Window Manager", MB_OK | MB_ICONEXCLAMATION);
-				} else {
-					INT offset = 0;
-					for (i = 0; i < vPos.size(); i++) {
-						::SendMessage(_nppData._nppHandle, NPPM_ACTIVATEDOC, _iView, (LPARAM)vPos[i] - offset);
-						::SendMessage(_nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, lParam);
-						offset++;
-					}
-				}
-				break;
-			}
-			case IDM_EDIT_FULLPATHTOCLIP :
-			case IDM_EDIT_CURRENTDIRTOCLIP :
-			case IDM_EDIT_FILENAMETOCLIP :
-			{
-				UINT	size	= 1;
-				HLOCAL	hLoc	= ::LocalAlloc(LHND, size);
-				if (hLoc == NULL)
+				case TCN_TABDROPPED:
+				case TCN_TABDROPPEDOUTSIDE:
+				case TCN_SELCHANGE:
+					_isRBtnTriggered = FALSE;
 					break;
-
-				LPSTR	pStr	= NULL;
-				LPSTR	pStrLoc	= (LPSTR)::GlobalLock(hLoc);
-				pStrLoc[0] = 0;
-
-				for (INT i = 0; i < _vFileList.size(); i++) {
-					if (ListView_GetItemState(_hSelf, i, LVIS_SELECTED) == LVIS_SELECTED) {
-						if (wParam == IDM_EDIT_FULLPATHTOCLIP) {
-							size += strlen(_vFileList[i].szCompletePath) + 1;
-							pStr = _vFileList[i].szCompletePath;
-						} else if (wParam == IDM_EDIT_CURRENTDIRTOCLIP) {
-							size += strlen(_vFileList[i].szPath) + 1;
-							pStr = _vFileList[i].szPath;
-						} else {
-							size += strlen(_vFileList[i].szName) + 1;
-							pStr = _vFileList[i].szName;
-						}
-						hLoc = ::LocalReAlloc(hLoc, size, LHND);
-						if (hLoc == NULL)
-							break;
-						pStrLoc	= (LPSTR)::GlobalLock(hLoc);
-						strcat(pStrLoc, pStr);
-						strcat(pStrLoc, "\n");
-					}
-				}
-				Str2CB(pStrLoc);
-				::LocalUnlock(hLoc); 
-				::LocalFree(hLoc);
-				break;
+				default:
+					break;
 			}
-			default:
+			break;
+		}
+		case NPPM_MENUCOMMAND:
+		{
+			if ((lParam >= IDM_WINDOW_MRU_FIRST) && (lParam <= IDM_WINDOW_MRU_LIMIT)) {
+				_isRBtnTriggered = FALSE;
+			}
+			break;
+		}
+		case WM_COMMAND:
+		{
+			if (lParam == 0)
 			{
-				vector<INT>		vPos;
+				if ((wParam >= IDM_WINDOW_MRU_FIRST) && (wParam <= IDM_WINDOW_MRU_LIMIT)) {
+					_isRBtnTriggered = FALSE;
+				}
 
-				for (INT i = 0; i < _vFileList.size(); i++) {
-					if (ListView_GetItemState(_hSelf, i, LVIS_SELECTED) == LVIS_SELECTED) {
-						vPos.push_back(_vFileList[i].iTabPos);
-						if (wParam == IDM_EDIT_SETREADONLY) {
-							ChangeFileState(_iView, _vFileList[i].iTabPos, FST_READONLY);
-						} else if (wParam == IDM_EDIT_CLEARREADONLY) {
-							ChangeFileState(_iView, _vFileList[i].iTabPos, FST_SAVED);
+				if (_isRBtnTriggered == TRUE) {
+					_isRBtnTriggered = FALSE;
+
+					switch (wParam)
+					{
+						case IDM_FILE_CLOSEALL_BUT_CURRENT:
+						{
+							vector<INT>		vPos;
+							for (INT i = 0; i < _vFileList.size(); i++) {
+								if (ListView_GetItemState(_hSelf, i, LVIS_SELECTED) != LVIS_SELECTED) {
+									vPos.push_back(_vFileList[i].iTabPos);
+								}
+							}
+							if (vPos.size() == 0) {
+								if (NLMessageBox(_hInst, _nppData._nppHandle, "MsgBox NotPossible", MB_OK) == FALSE)
+									::MessageBox(_hSelf, "Not possible", "Window Manager", MB_OK | MB_ICONEXCLAMATION);
+							} else {
+								INT offset = 0;
+								for (i = 0; i < vPos.size(); i++) {
+									::SendMessage(_nppData._nppHandle, NPPM_ACTIVATEDOC, _iView, (LPARAM)vPos[i] - offset);
+									::SendMessage(_nppData._nppHandle, WM_COMMAND, IDM_FILE_CLOSE, lParam);
+									offset++;
+								}
+							}
+							break;
+						}
+						case IDM_EDIT_FULLPATHTOCLIP :
+						case IDM_EDIT_CURRENTDIRTOCLIP :
+						case IDM_EDIT_FILENAMETOCLIP :
+						{
+							UINT	size	= 1;
+							HLOCAL	hLoc	= ::LocalAlloc(LHND, size);
+							if (hLoc == NULL)
+								break;
+
+							LPSTR	pStr	= NULL;
+							LPSTR	pStrLoc	= (LPSTR)::GlobalLock(hLoc);
+							pStrLoc[0] = 0;
+
+							for (INT i = 0; i < _vFileList.size(); i++) {
+								if (ListView_GetItemState(_hSelf, i, LVIS_SELECTED) == LVIS_SELECTED) {
+									if (wParam == IDM_EDIT_FULLPATHTOCLIP) {
+										size += strlen(_vFileList[i].szCompletePath) + 1;
+										pStr = _vFileList[i].szCompletePath;
+									} else if (wParam == IDM_EDIT_CURRENTDIRTOCLIP) {
+										size += strlen(_vFileList[i].szPath) + 1;
+										pStr = _vFileList[i].szPath;
+									} else {
+										size += strlen(_vFileList[i].szName) + 1;
+										pStr = _vFileList[i].szName;
+									}
+									hLoc = ::LocalReAlloc(hLoc, size, LHND);
+									if (hLoc == NULL)
+										break;
+									pStrLoc	= (LPSTR)::GlobalLock(hLoc);
+									strcat(pStrLoc, pStr);
+									strcat(pStrLoc, "\n");
+								}
+							}
+							Str2CB(pStrLoc);
+							::LocalUnlock(hLoc); 
+							::LocalFree(hLoc);
+							break;
+						}
+						default:
+						{
+							vector<INT>		vPos;
+
+							for (INT i = 0; i < _vFileList.size(); i++) {
+								if (ListView_GetItemState(_hSelf, i, LVIS_SELECTED) == LVIS_SELECTED) {
+									vPos.push_back(_vFileList[i].iTabPos);
+									if (wParam == IDM_EDIT_SETREADONLY) {
+										ChangeFileState(_iView, _vFileList[i].iTabPos, FST_READONLY);
+									} else if (wParam == IDM_EDIT_CLEARREADONLY) {
+										ChangeFileState(_iView, _vFileList[i].iTabPos, FST_SAVED);
+									}
+								}
+							}
+							INT offset = 0;
+							for (i = 0; i < vPos.size(); i++) {
+								::SendMessage(_nppData._nppHandle, NPPM_ACTIVATEDOC, _iView, (LPARAM)vPos[i] - offset);
+								::SendMessage(_nppData._nppHandle, WM_COMMAND, wParam, lParam);
+								if ((wParam == IDM_DOC_GOTO_ANOTHER_VIEW) || (wParam == IDM_FILE_CLOSE)) {
+									offset++;
+								}
+							}
+							break;
 						}
 					}
+					return TRUE;
 				}
-				INT offset = 0;
-				for (i = 0; i < vPos.size(); i++) {
-					::SendMessage(_nppData._nppHandle, NPPM_ACTIVATEDOC, _iView, (LPARAM)vPos[i] - offset);
-					::SendMessage(_nppData._nppHandle, WM_COMMAND, wParam, lParam);
-					if ((wParam == IDM_DOC_GOTO_ANOTHER_VIEW) || (wParam == IDM_FILE_CLOSE)) {
-						offset++;
-					}
-				}
-				break;
 			}
 		}
-		return TRUE;
 	}
 	return FALSE;
 }

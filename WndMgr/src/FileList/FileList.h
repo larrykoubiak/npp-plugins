@@ -66,7 +66,7 @@ public:
 		SortAndMarkList();
 	}
 
-	BOOL isRBtnTrigg(WPARAM wParam, LPARAM lParam);
+	BOOL isRBtnTrigg(UINT Message, WPARAM wParam, LPARAM lParam);
 
 public:
 
