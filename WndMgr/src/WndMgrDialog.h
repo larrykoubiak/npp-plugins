@@ -50,9 +50,9 @@ public:
 		::SetTimer(_hSelf, WMXT_UPDATESTATE, msec, NULL);
 	};
 
-	BOOL isFileListRBtnTrigg(WPARAM wParam, LPARAM lParam){
-		if ((_FileList1.isRBtnTrigg(wParam, lParam) == TRUE) ||
-			(_FileList2.isRBtnTrigg(wParam, lParam) == TRUE))
+	BOOL isFileListRBtnTrigg(UINT Message, WPARAM wParam, LPARAM lParam){
+		if ((_FileList1.isRBtnTrigg(Message, wParam, lParam) == TRUE) ||
+			(_FileList2.isRBtnTrigg(Message, wParam, lParam) == TRUE))
 			return TRUE;
 		return FALSE;
 	};
