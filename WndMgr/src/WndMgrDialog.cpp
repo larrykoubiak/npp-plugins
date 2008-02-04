@@ -120,16 +120,6 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 					}
 				}
 
-				if (splitterPos) {
-					/* set splitter */
-					getClientRect(rc);
-					rc.top	   = (splitterPos);
-					rc.bottom  = 6;
-					::SetWindowPos(_hSplitterCtrl, NULL, rc.left, rc.top, rc.right, rc.bottom, SWP_NOZORDER | SWP_SHOWWINDOW);
-				} else {
-					::ShowWindow(_hSplitterCtrl, SW_HIDE);
-				}
-
 				if (_selTabMain != -1) {
 					/* set position of list control 1 */
 					getClientRect(rc);
@@ -142,11 +132,21 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 				if (_selTabSub != -1) {
 					/* set position of list control 2 */
 					getClientRect(rc);
-					rc.top	   = (splitterPos ? (splitterPos + 6) : rc.top);
-					rc.bottom -= (splitterPos ? (splitterPos + 6) : 0);
+					rc.top	   = (splitterPos ? (splitterPos + SPLITTER_SIZE) : rc.top);
+					rc.bottom -= (splitterPos ? (splitterPos + SPLITTER_SIZE) : 0);
 					::SetWindowPos(hList2Ctrl, NULL, rc.left, rc.top, rc.right, rc.bottom, SWP_NOZORDER | SWP_SHOWWINDOW);
 				} else {
 					::ShowWindow(hList2Ctrl, SW_HIDE);
+				}
+
+				if (splitterPos) {
+					/* set splitter */
+					getClientRect(rc);
+					rc.top	   = splitterPos;
+					rc.bottom  = SPLITTER_SIZE;
+					::SetWindowPos(_hSplitterCtrl, NULL, rc.left, rc.top, rc.right, rc.bottom, SWP_NOZORDER | SWP_SHOWWINDOW);
+				} else {
+					::ShowWindow(_hSplitterCtrl, SW_HIDE);
 				}
 			}
 			else
@@ -171,16 +171,6 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 					}
 				}
 
-				if (splitterPos) {
-					/* set splitter */
-					getClientRect(rc);
-					rc.left		 = (splitterPos);
-					rc.right     = 6;
-					::SetWindowPos(_hSplitterCtrl, NULL, rc.left, rc.top, rc.right, rc.bottom, SWP_NOZORDER | SWP_SHOWWINDOW);
-				} else {
-					::ShowWindow(_hSplitterCtrl, SW_HIDE);
-				}
-
 				if (_selTabMain != -1) {
 					/* set position of list control 1 */
 					getClientRect(rc);
@@ -193,10 +183,23 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 				if (_selTabSub != -1) {
 					/* set position of list control 2 */
 					getClientRect(rc);
-					rc.left	   = (splitterPos ? (splitterPos + 6) : rc.left);
+					if (splitterPos) {
+						rc.left	    = (splitterPos + SPLITTER_SIZE);
+						rc.right   -= (splitterPos + SPLITTER_SIZE);
+					}
 					::SetWindowPos(hList2Ctrl, NULL, rc.left, rc.top, rc.right, rc.bottom, SWP_NOZORDER | SWP_SHOWWINDOW);
 				} else {
 					::ShowWindow(hList2Ctrl, SW_HIDE);
+				}
+
+				if (splitterPos) {
+					/* set splitter */
+					getClientRect(rc);
+					rc.left		 = splitterPos;
+					rc.right     = SPLITTER_SIZE;
+					::SetWindowPos(_hSplitterCtrl, NULL, rc.left, rc.top, rc.right, rc.bottom, SWP_NOZORDER | SWP_SHOWWINDOW);
+				} else {
+					::ShowWindow(_hSplitterCtrl, SW_HIDE);
 				}
 			}
 			break;
