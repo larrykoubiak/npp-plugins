@@ -2,6 +2,14 @@
 Change-log for WindowManager.dll
 
 ------------------------------------------------------------------------------------
+08/02/04  v1.1.1 :
+------------------------------------------------------------------------------------
+    Fix: After canceling ContextMenu updating of document list works incorrect
+	Fix: After 'Save all' icon states were incorrect
+	Fix: Position fix for second list when WM is docked on top/bottom
+    Fix: If config folder of Notepad++ doesn't exists it will be created now by WM
+
+------------------------------------------------------------------------------------
 08/01/29  v1.1 :
 ------------------------------------------------------------------------------------
     New: Three state column sorting implemented
