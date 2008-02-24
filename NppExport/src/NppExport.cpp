@@ -331,10 +331,12 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 
 	int len = end - start;
 	int tabSize = (int) SendMessage(hScintilla, SCI_GETTABWIDTH, 0, 0);
+	int codePage = (int) SendMessage(hScintilla, SCI_GETCODEPAGE, 0, 0);
 
 	csd->hScintilla = hScintilla;
 	csd->nrChars = len;
 	csd->tabSize = tabSize;
+	csd->currentCodePage = codePage;
 
 	csd->dataBuffer = new char[csd->nrChars * 2 + 2];
 	TextRange tr;
@@ -349,6 +351,14 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	csd->nrStyleSwitches = 0, csd->nrUsedStyles = 1;	//Default always
 	csd->totalFontStringLength = 0;
 	int prevStyle = -1, currentStyle;
+
+	//Mask the styles so any indicators get ignored, else overflow possible
+	int bits = (int)SendMessage(hScintilla, SCI_GETSTYLEBITS, 0, 0);
+	unsigned char mask = 0xFF >> (8-bits);
+	for(int i = 0; i < len - 1; i++) {
+		int offset = i*2+1;
+		csd->dataBuffer[offset] &= mask;
+	}
 
 	for(int i = 0; i < STYLE_MAX; i++) {
 		csd->usedStyles[i] = false;
@@ -383,6 +393,31 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 			csd->usedStyles[currentStyle] = true;
 		}
 	}
+
+	//For retrieving fontsize for tabs
+	HDC scintDC = GetDC(hScintilla);
+	
+	//font magic
+	int pplix = GetDeviceCaps(scintDC, LOGPIXELSX);
+	int ppliy = GetDeviceCaps(scintDC, LOGPIXELSY);
+	int nHeight = -MulDiv(csd->styles[STYLE_DEFAULT].size, ppliy, 72);
+
+	HFONT font = CreateFont(nHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+							OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, 
+							csd->styles[STYLE_DEFAULT].fontString);
+	HGDIOBJ old = SelectObject(scintDC, font);
+
+	SIZE size;
+	size.cx = 8;	//fallback, 8 pix default
+	GetTextExtentPoint32(scintDC, " ", 1, &size);
+	int twips = size.cx * (1440 / pplix);
+
+	SelectObject(scintDC, old);
+	DeleteObject(font);
+	ReleaseDC(hScintilla, scintDC);
+
+	//We now have the amount of twips per space in the default font
+	csd->twipsPerSpace = twips;
 }
 
 void deinitScintillaData(CurrentScintillaData * csd) {

@@ -25,6 +25,8 @@ bool HTMLExporter::exportData(ExportData * ed) {
 	totalBytesNeeded += EXPORT_SIZE_HTML_STATIC + EXPORT_SIZE_HTML_STYLE * (ed->csd->nrUsedStyles-1) + ed->csd->totalFontStringLength + EXPORT_SIZE_HTML_SWITCH * ed->csd->nrStyleSwitches;
 	if (addHeader)
 		totalBytesNeeded += EXPORT_SIZE_HTML_CLIPBOARD;
+	if (ed->csd->currentCodePage == SC_CP_UTF8)
+		totalBytesNeeded += EXPORT_SIZE_HTML_UTF8;
 	int startHTML = EXPORT_SIZE_HTML_CLIPBOARD, endHTML = 0, startFragment = 0, endFragment = 0;
 
 	for(int i = 0; i < ed->csd->nrChars; i++) {
@@ -66,7 +68,13 @@ bool HTMLExporter::exportData(ExportData * ed) {
 
 	//begin building context
 
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<html>\r\n<head>\r\n<title>Exported from Notepad++</title>\r\n<style type=\"text/css\">\r\n");
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<html>\r\n<head>\r\n");
+
+	if (ed->csd->currentCodePage == SC_CP_UTF8) {
+		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<META http-equiv=Content-Type content=\"text/html; charset=UTF-8\">\r\n");
+	}
+
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<title>Exported from Notepad++</title>\r\n<style type=\"text/css\">\r\n");
 
 	StyleData * currentStyle, * defaultStyle;
 	defaultStyle = (ed->csd->styles)+STYLE_DEFAULT;
@@ -85,7 +93,7 @@ bool HTMLExporter::exportData(ExportData * ed) {
 
 		currentStyle = (ed->csd->styles)+i;
 		if (ed->csd->usedStyles[i] == true) {
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, ".SpanClass%d {\r\n", i);
+			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, ".sc%d {\r\n", i);
 			if (strcmpi(currentStyle->fontString, defaultStyle->fontString))
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-family: '%s';\r\n", currentStyle->fontString);
 			if (currentStyle->size != defaultStyle->size)
@@ -114,7 +122,7 @@ bool HTMLExporter::exportData(ExportData * ed) {
 
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "</style>\r\n</head>\r\n");
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<body bgcolor=\"#%02X%02X%02X\">\r\n", (defaultStyle->bgColor>>0)&0xFF, (defaultStyle->bgColor>>8)&0xFF, (defaultStyle->bgColor>>16)&0xFF);
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<span>\r\n");
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, /*"<span>"*/"<pre>\r\n");
 
 	//end building context
 
@@ -124,15 +132,15 @@ bool HTMLExporter::exportData(ExportData * ed) {
 	//end StartFragment
 
 //-------Dump text to HTML
-	char * tabBuffer = new char[ed->csd->tabSize * 6 + 1];
+	char * tabBuffer = new char[ed->csd->tabSize + 1];
 	tabBuffer[0] = 0;
 	for(int i = 0; i < ed->csd->tabSize; i++) {
-		strcat(tabBuffer, "&nbsp;");
+		strcat(tabBuffer, " ");
 	}
 
 	int nrCharsSinceLinebreak = -1, nrTabCharsToSkip = 0;
 	int lastStyle = -1;
-	char currentChar;
+	unsigned char currentChar;
 	bool openSpan = false;
 
 	for(int i = 0; i < ed->csd->nrChars; i++) {
@@ -142,7 +150,7 @@ bool HTMLExporter::exportData(ExportData * ed) {
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "</span>");
 			}
 			lastStyle = buffer[i*2+1];
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<span class=\"SpanClass%d\">", lastStyle);
+			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<span class=\"sc%d\">", lastStyle);
 			openSpan = true;
 		}
 
@@ -154,7 +162,7 @@ bool HTMLExporter::exportData(ExportData * ed) {
 				if (buffer[(i*2)+2] == '\n')
 					break;
 			case '\n':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<br/>\r\n");
+				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, /*"<br/>"*/"\r\n");
 				nrCharsSinceLinebreak = -1;
 				break;
 			case '<':
@@ -163,9 +171,9 @@ bool HTMLExporter::exportData(ExportData * ed) {
 			case '>':
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "&gt;");
 				break;
-			case ' ':
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "&nbsp;");
-				break;
+			//case ' ':
+			//	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "&nbsp;");
+			//	break;
 			case '\t':
 				nrTabCharsToSkip = nrCharsSinceLinebreak%(ed->csd->tabSize);
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "%s", tabBuffer + (nrTabCharsToSkip * 6));
@@ -191,7 +199,7 @@ bool HTMLExporter::exportData(ExportData * ed) {
 	//end EndFragment
 
 	//add closing context
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\r\n</span>\r\n</body>\r\n</html>\r\n");
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, /*"\r\n</span>\r\n"*/"</pre></body>\r\n</html>\r\n");
 	endHTML = currentBufferOffset;
 
 	//if doing CF_HTML, fill in header data

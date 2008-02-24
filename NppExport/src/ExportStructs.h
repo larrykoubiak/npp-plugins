@@ -25,6 +25,8 @@ struct CurrentScintillaData {
 	int nrUsedStyles;
 	int nrStyleSwitches;
 	int totalFontStringLength;
+	int currentCodePage;
+	int twipsPerSpace;
 };
 
 struct ExportData {

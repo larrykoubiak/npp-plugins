@@ -18,11 +18,17 @@ RTFExporter::~RTFExporter(void) {
 bool RTFExporter::exportData(ExportData * ed) {
 	//estimate buffer size needed
 	char * buffer = ed->csd->dataBuffer;
+	bool isUnicode = (ed->csd->currentCodePage == SC_CP_UTF8);
+
 	int totalBytesNeeded = 1;	//zero terminator
 	
 	totalBytesNeeded += EXPORT_SIZE_RTF_STATIC + EXPORT_SIZE_RTF_STYLE * ed->csd->nrUsedStyles + ed->csd->totalFontStringLength + EXPORT_SIZE_RTF_SWITCH * ed->csd->nrStyleSwitches;
 
+	int maxConsecTabs = 1;
+	int curConsecTabs = 1;
+	unsigned char testChar = 0;
 	for(int i = 0; i < ed->csd->nrChars; i++) {
+		testChar = buffer[(i*2)];
 		switch(buffer[(i*2)]) {
 			case '{':
 				totalBytesNeeded += 2;	// '\{'
@@ -34,7 +40,12 @@ bool RTFExporter::exportData(ExportData * ed) {
 				totalBytesNeeded += 2;	// '\\'
 				break;
 			case '\t':
-				totalBytesNeeded += ed->csd->tabSize;
+				if (buffer[((i+1)*2)] == '\t') {
+					curConsecTabs++;
+					if (curConsecTabs == maxConsecTabs)
+						maxConsecTabs++;
+				}
+				totalBytesNeeded += 5;	// '\tab '
 				break;
 			case '\r':
 				if (buffer[(i*2)+2] == '\n')
@@ -43,17 +54,36 @@ bool RTFExporter::exportData(ExportData * ed) {
 				totalBytesNeeded += 6;	// '\par\r\n'
 				break;
 			default:
-				totalBytesNeeded += 1; //	'char'
+				if (testChar < 0x80 || !isUnicode)
+					totalBytesNeeded += 1;	// 'char'
+				else {
+					totalBytesNeeded += 8;	// '\u#####?
+					i++;
+					if (testChar >= 0xE0)
+						i++;
+				}
+
 				break;
 		}
 	}
+
+	maxConsecTabs = 32;
+	int txBytes = maxConsecTabs * 8;	// '\tx#####'
+	totalBytesNeeded += txBytes;
 
 	int currentBufferOffset = 0;
 	HGLOBAL hRTFBuffer = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, totalBytesNeeded);
 	char * clipbuffer = (char *)GlobalLock(hRTFBuffer);
 	clipbuffer[0] = 0;
 
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\rtf1\\ansi\\deff0\r\n\r\n");
+	int txSize = ed->csd->tabSize * ed->csd->twipsPerSpace;
+
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\rtf1\\ansi\\deff0");//\\uc0");
+	for (int i = 0; i < maxConsecTabs; i++) {
+		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\tx%d", txSize*(i+1));
+	}
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\r\n\r\n");
+
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\fonttbl\r\n");
 
 	StyleData * currentStyle;
@@ -90,16 +120,11 @@ bool RTFExporter::exportData(ExportData * ed) {
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n\r\n");	//colortbl
 
 //-------Dump text to RTF
-	char * tabBuffer = new char[ed->csd->tabSize+1];
-	tabBuffer[ed->csd->tabSize] = 0;
-	for(int i = 0; i < ed->csd->tabSize; i++)
-		tabBuffer[i] = ' ';
-
-	int nrCharsSinceLinebreak = -1, nrTabCharsToSkip = 0;
 	int lastStyle = -1;
 	int prevStyle = STYLE_DEFAULT;
-	char currentChar;
+	unsigned char currentChar;
 	StyleData * styles = ed->csd->styles;
+	utf16 unicodeValue;
 
 	for(int i = 0; i < ed->csd->nrChars; i++) {
 
@@ -109,33 +134,32 @@ bool RTFExporter::exportData(ExportData * ed) {
 				prevStyle = lastStyle;
 			lastStyle = buffer[i*2+1];
 			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\f%d\\fs%d\\cb%d\\cf%d", styles[lastStyle].fontIndex, styles[lastStyle].size * 2, styles[lastStyle].bgClrIndex, styles[lastStyle].fgClrIndex);
-			//if (styles[lastStyle].bold != styles[prevStyle].bold) {
+			if (styles[lastStyle].bold != styles[prevStyle].bold) {
 				if (styles[lastStyle].bold) {
 					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\b");
 				} else {
 					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\b0");
 				}
-			//}
-			//if (styles[lastStyle].italic != styles[prevStyle].italic) {
+			}
+			if (styles[lastStyle].italic != styles[prevStyle].italic) {
 				if (styles[lastStyle].underlined) {
 					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\i");
 				} else {
 					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\i0");
 				}
-			//}
-			//if (styles[lastStyle].underlined != styles[prevStyle].underlined) {
+			}
+			if (styles[lastStyle].underlined != styles[prevStyle].underlined) {
 				if (styles[lastStyle].underlined) {
 					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\ul");
 				} else {
 					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\ul0");
 				}
-			//}
+			}
 			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, " ");
 		}
 
 		//print character, parse special ones
 		currentChar = buffer[(i*2)];
-		nrCharsSinceLinebreak++;
 		switch(currentChar) {
 			case '{':
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\{");
@@ -147,26 +171,39 @@ bool RTFExporter::exportData(ExportData * ed) {
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\\\");
 				break;
 			case '\t':
-				nrTabCharsToSkip = nrCharsSinceLinebreak%(ed->csd->tabSize);
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, tabBuffer + (nrTabCharsToSkip));
-				nrCharsSinceLinebreak += ed->csd->tabSize - nrTabCharsToSkip - 1;
+				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\tab ");
 				break;
 			case '\r':
 				if (buffer[(i*2)+2] == '\n')
 					break;
 			case '\n':
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\par\r\n");
-				nrCharsSinceLinebreak = -1;
 				break;
 			default:
-				if (currentChar < 20)	//ignore control characters
+				if (currentChar < 0x20)	//ignore control characters
 					break;
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "%c", currentChar);
+				if (currentChar > 0x7F && isUnicode) {	//this may be some UTF-8 character, so parse it as such
+					unicodeValue.value = 0;
+
+					if (currentChar < 0xE0) {
+						unicodeValue.value  = ((0x1F & currentChar) << 6);
+						i++; currentChar = buffer[(i*2)];
+						unicodeValue.value |=  (0x3F & currentChar);
+					} else {
+						unicodeValue.value  = ((0xF & currentChar) << 12);
+						i++; currentChar = buffer[(i*2)];
+						unicodeValue.value |= ((0x3F & currentChar) << 6);
+						i++; currentChar = buffer[(i*2)];
+						unicodeValue.value |=  (0x3F & currentChar);
+					}
+
+					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\u%d?", unicodeValue.value);	//signed values
+				} else {
+					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "%c", currentChar);
+				}
 				break;
 		}
 	}
-
-	delete [] tabBuffer;
 
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n");	//rtf/ansi
 
