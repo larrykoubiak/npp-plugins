@@ -24,8 +24,6 @@ bool RTFExporter::exportData(ExportData * ed) {
 	
 	totalBytesNeeded += EXPORT_SIZE_RTF_STATIC + EXPORT_SIZE_RTF_STYLE * ed->csd->nrUsedStyles + ed->csd->totalFontStringLength + EXPORT_SIZE_RTF_SWITCH * ed->csd->nrStyleSwitches;
 
-	int maxConsecTabs = 1;
-	int curConsecTabs = 1;
 	unsigned char testChar = 0;
 	for(int i = 0; i < ed->csd->nrChars; i++) {
 		testChar = buffer[(i*2)];
@@ -40,11 +38,6 @@ bool RTFExporter::exportData(ExportData * ed) {
 				totalBytesNeeded += 2;	// '\\'
 				break;
 			case '\t':
-				if (buffer[((i+1)*2)] == '\t') {
-					curConsecTabs++;
-					if (curConsecTabs == maxConsecTabs)
-						maxConsecTabs++;
-				}
 				totalBytesNeeded += 5;	// '\tab '
 				break;
 			case '\r':
@@ -67,8 +60,7 @@ bool RTFExporter::exportData(ExportData * ed) {
 		}
 	}
 
-	maxConsecTabs = 32;
-	int txBytes = maxConsecTabs * 8;	// '\tx#####'
+	int txBytes = 12;	// '\deftab#####'
 	totalBytesNeeded += txBytes;
 
 	int currentBufferOffset = 0;
@@ -78,12 +70,7 @@ bool RTFExporter::exportData(ExportData * ed) {
 
 	int txSize = ed->csd->tabSize * ed->csd->twipsPerSpace;
 
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\rtf1\\ansi\\deff0");//\\uc0");
-	for (int i = 0; i < maxConsecTabs; i++) {
-		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\tx%d", txSize*(i+1));
-	}
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\r\n\r\n");
-
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\rtf1\\ansi\\deff0\\deftab%u\r\n\r\n", txSize);
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\fonttbl\r\n");
 
 	StyleData * currentStyle;

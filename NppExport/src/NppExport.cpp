@@ -30,31 +30,31 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			ZeroMemory(funcItem, sizeof(FuncItem) * nbFunc);
 
 			funcItem[0]._pFunc = &doExportRTF;
-			strncpy(funcItem[0]._itemName, "&Export to RTF", 64);			//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[0]._itemName, "&Export to RTF", 64);			//Copy in the functionname, no more than 64 chars
 			funcItem[0]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[0]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[0]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
 			funcItem[1]._pFunc = &doExportHTML;
-			strncpy(funcItem[1]._itemName, "&Export to HTML", 64);			//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[1]._itemName, "&Export to HTML", 64);			//Copy in the functionname, no more than 64 chars
 			funcItem[1]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[1]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[1]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
 			funcItem[2]._pFunc = &doClipboardRTF;
-			strncpy(funcItem[2]._itemName, "&Copy RTF to clipboard", 64);	//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[2]._itemName, "&Copy RTF to clipboard", 64);	//Copy in the functionname, no more than 64 chars
 			funcItem[2]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[2]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[2]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
 			funcItem[3]._pFunc = &doClipboardHTML;
-			strncpy(funcItem[3]._itemName, "&Copy HTML to clipboard", 64);	//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[3]._itemName, "&Copy HTML to clipboard", 64);	//Copy in the functionname, no more than 64 chars
 			funcItem[3]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[3]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[3]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
 			funcItem[4]._pFunc = &doClipboardAll;
-			strncpy(funcItem[4]._itemName, "&Copy all formats to clipboard", 64);	//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[4]._itemName, "&Copy all formats to clipboard", 64);	//Copy in the functionname, no more than 64 chars
 			funcItem[4]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[4]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[4]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
@@ -183,14 +183,16 @@ void doExportRTF() {
 	fillScintillaData(&mainCSD, 0 , -1);
 
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM) filename);
-	strcat(filename, ".rtf");
+	lstrcat(filename, ".rtf");
 	if (saveFile(filename, MAX_PATH, "RTF file (*.rtf)\0*.rtf\0All files (*.*)\0*.*\0")) {
-		FILE * output = fopen(filename, "wb");
-		if (!output) {
+		//FILE * output = fopen(filename, "wb");
+		HANDLE hFileOut = CreateFile(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (!hFileOut) {
 			return;
 		}
-		exportRTF(false, output);
-		fclose(output);
+		exportRTF(false, hFileOut);
+		//fclose(output);
+		CloseHandle(hFileOut);
 	}
 }
 
@@ -199,14 +201,16 @@ void doExportHTML() {
 	fillScintillaData(&mainCSD, 0 , -1);
 
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM) filename);
-	strcat(filename, ".html");
+	lstrcat(filename, ".html");
 	if (saveFile(filename, MAX_PATH, "HTML file (*.html)\0*.html\0All files (*.*)\0*.*\0")) {
-		FILE * output = fopen(filename, "wb");
-		if (!output) {
+		//FILE * output = fopen(filename, "wb");
+		HANDLE hFileOut = CreateFile(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (!hFileOut) {
 			return;
 		}
-		exportHTML(false, output);
-		fclose(output);
+		exportHTML(false, hFileOut);
+		//fclose(output);
+		CloseHandle(hFileOut);
 	}
 }
 
@@ -373,7 +377,7 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	csd->styles[STYLE_DEFAULT].underlined =	(int)SendMessage(hScintilla, SCI_STYLEGETUNDERLINE, STYLE_DEFAULT, 0);
 	csd->styles[STYLE_DEFAULT].fgColor =	(int)SendMessage(hScintilla, SCI_STYLEGETFORE,		STYLE_DEFAULT, 0);
 	csd->styles[STYLE_DEFAULT].bgColor =	(int)SendMessage(hScintilla, SCI_STYLEGETBACK,		STYLE_DEFAULT, 0);
-
+	csd->styles[STYLE_DEFAULT].eolExtend =(bool)(SendMessage(hScintilla, SCI_STYLEGETEOLFILLED,	STYLE_DEFAULT, 0) != 0);
 	for(int i = 0; i < len - 1; i++) {
 		currentStyle = csd->dataBuffer[i*2+1];
 		if (currentStyle != prevStyle) {
@@ -388,8 +392,9 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 			csd->styles[currentStyle].bold =		(int)SendMessage(hScintilla, SCI_STYLEGETBOLD,		currentStyle, 0);
 			csd->styles[currentStyle].italic =		(int)SendMessage(hScintilla, SCI_STYLEGETITALIC,	currentStyle, 0);
 			csd->styles[currentStyle].underlined =	(int)SendMessage(hScintilla, SCI_STYLEGETUNDERLINE, currentStyle, 0);
-			csd->styles[currentStyle].fgColor =	(int)SendMessage(hScintilla, SCI_STYLEGETFORE,		currentStyle, 0);
-			csd->styles[currentStyle].bgColor =	(int)SendMessage(hScintilla, SCI_STYLEGETBACK,		currentStyle, 0);
+			csd->styles[currentStyle].fgColor =		(int)SendMessage(hScintilla, SCI_STYLEGETFORE,		currentStyle, 0);
+			csd->styles[currentStyle].bgColor =		(int)SendMessage(hScintilla, SCI_STYLEGETBACK,		currentStyle, 0);
+			csd->styles[currentStyle].eolExtend = (bool)(SendMessage(hScintilla, SCI_STYLEGETEOLFILLED,	currentStyle, 0) != 0);
 			csd->usedStyles[currentStyle] = true;
 		}
 	}
@@ -427,7 +432,7 @@ void deinitScintillaData(CurrentScintillaData * csd) {
 }
 
 //Export handlers
-void exportHTML(bool isClipboard, FILE * exportFile) {
+void exportHTML(bool isClipboard, HANDLE exportFile) {
 
 	HTMLExporter htmlexp;
 	ExportData ed;
@@ -441,7 +446,9 @@ void exportHTML(bool isClipboard, FILE * exportFile) {
 
 	if (!isClipboard) {
 		char * buffer = (char *)GlobalLock(ed.hBuffer);
-		if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
+		//if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
+		DWORD result = 0;
+		if (WriteFile(exportFile, buffer, ed.bufferSize, &result, NULL) != TRUE) {
 			err("Error writing data to file");
 		}
 		GlobalUnlock(ed.hBuffer);
@@ -470,7 +477,7 @@ void exportHTML(bool isClipboard, FILE * exportFile) {
 	}
 }
 
-void exportRTF(bool isClipboard, FILE * exportFile) {
+void exportRTF(bool isClipboard, HANDLE exportFile) {
 
 	RTFExporter rtfexp;
 	ExportData ed;
@@ -484,7 +491,9 @@ void exportRTF(bool isClipboard, FILE * exportFile) {
 
 	if (!isClipboard) {
 		char * buffer = (char *)GlobalLock(ed.hBuffer);
-		if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
+		//if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
+		DWORD result = 0;
+		if (WriteFile(exportFile, buffer, ed.bufferSize, &result, NULL) != TRUE) {
 			err("Error writing data to file");
 		}
 		GlobalUnlock(ed.hBuffer);

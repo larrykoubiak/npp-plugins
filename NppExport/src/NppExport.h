@@ -57,8 +57,8 @@ void deinitScintillaData(CurrentScintillaData * csd);
 
 BOOL saveFile(char * filebuffer, int buffersize, const char * filters);
 
-void exportHTML(bool isClipboard, FILE * exportFile);
-void exportRTF(bool isClipboard, FILE * exportFile);
+void exportHTML(bool isClipboard, HANDLE exportFile);
+void exportRTF(bool isClipboard, HANDLE exportFile);
 
 void err(const char * msg) {
 	MessageBox(nppData._nppHandle, msg, "Error", MB_OK);

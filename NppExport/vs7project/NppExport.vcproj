@@ -70,10 +70,14 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				Optimization="3"
+				GlobalOptimizations="TRUE"
 				FavorSizeOrSpeed="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories=".\..\src\Notepad_specific"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPPLUGIN_EXPORTS"
+				StringPooling="TRUE"
+				ExceptionHandling="FALSE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="3"
@@ -84,10 +88,12 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				IgnoreImportLibrary="FALSE"
 				AdditionalOptions="shlwapi.lib comctl32.lib"
+				AdditionalDependencies="..\src\Libs\LIBCTINY.LIB"
 				OutputFile="$(OutDir)/../NppExport.dll"
 				LinkIncremental="1"
-				IgnoreAllDefaultLibraries="FALSE"
+				IgnoreAllDefaultLibraries="TRUE"
 				GenerateDebugInformation="FALSE"
 				SubSystem="2"
 				OptimizeReferences="2"

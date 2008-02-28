@@ -13,6 +13,7 @@ struct StyleData {
 	int bgColor;
 	int fgClrIndex;
 	int bgClrIndex;
+	bool eolExtend;
 };
 
 struct CurrentScintillaData {
