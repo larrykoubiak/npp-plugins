@@ -27,7 +27,7 @@ bool RTFExporter::exportData(ExportData * ed) {
 	unsigned char testChar = 0;
 	for(int i = 0; i < ed->csd->nrChars; i++) {
 		testChar = buffer[(i*2)];
-		switch(buffer[(i*2)]) {
+		switch(testChar) {
 			case '{':
 				totalBytesNeeded += 2;	// '\{'
 				break;
@@ -41,7 +41,7 @@ bool RTFExporter::exportData(ExportData * ed) {
 				totalBytesNeeded += 5;	// '\tab '
 				break;
 			case '\r':
-				if (buffer[(i*2)+2] == '\n')
+				if (buffer[(i+1)*2] == '\n')
 					break;
 			case '\n':
 				totalBytesNeeded += 6;	// '\par\r\n'
@@ -60,9 +60,6 @@ bool RTFExporter::exportData(ExportData * ed) {
 		}
 	}
 
-	int txBytes = 12;	// '\deftab#####'
-	totalBytesNeeded += txBytes;
-
 	int currentBufferOffset = 0;
 	HGLOBAL hRTFBuffer = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, totalBytesNeeded);
 	char * clipbuffer = (char *)GlobalLock(hRTFBuffer);
@@ -76,11 +73,20 @@ bool RTFExporter::exportData(ExportData * ed) {
 	StyleData * currentStyle;
 
 	int currentFontIndex = 0;
-	for(int i = 0; i < STYLE_MAX; i++) {
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\f%03d %s;}\r\n", currentFontIndex, (ed->csd->styles+STYLE_DEFAULT)->fontString);
+	currentFontIndex++;
+
+	for(int i = 0; i < NRSTYLES; i++) {
+		if (i == STYLE_DEFAULT)
+			continue;
 		if (ed->csd->usedStyles[i] == true) {
 			currentStyle = (ed->csd->styles)+i;
 			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\f%03d %s;}\r\n", currentFontIndex, currentStyle->fontString);
-			currentStyle->fontIndex = currentFontIndex;
+			if ( !strcmp(currentStyle->fontString, (ed->csd->styles+STYLE_DEFAULT)->fontString) ) {
+				currentStyle->fontIndex = (ed->csd->styles+STYLE_DEFAULT)->fontIndex;
+			} else {
+				currentStyle->fontIndex = currentFontIndex;
+			}
 			currentFontIndex++;
 		}
 	}
@@ -90,7 +96,7 @@ bool RTFExporter::exportData(ExportData * ed) {
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "{\\colortbl\r\n");
 
 	int currentColorIndex = 0;
-	for(int i = 0; i < STYLE_MAX; i++) {
+	for(int i = 0; i < NRSTYLES; i++) {
 		if (ed->csd->usedStyles[i] == true) {
 			currentStyle = (ed->csd->styles)+i;
 
@@ -109,18 +115,38 @@ bool RTFExporter::exportData(ExportData * ed) {
 //-------Dump text to RTF
 	int lastStyle = -1;
 	int prevStyle = STYLE_DEFAULT;
+	int bufferStyle = STYLE_DEFAULT;
 	unsigned char currentChar;
 	StyleData * styles = ed->csd->styles;
 	utf16 unicodeValue;
 
-	for(int i = 0; i < ed->csd->nrChars; i++) {
+	//print default style information
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\f%d\\fs%d\\cb%d\\cf%d ", styles[STYLE_DEFAULT].fontIndex, styles[STYLE_DEFAULT].size * 2, styles[STYLE_DEFAULT].bgClrIndex, styles[STYLE_DEFAULT].fgClrIndex);
 
-		//print new span object if style changes
-		if (buffer[i*2+1] != lastStyle) {
+	for(int i = 0; i < ed->csd->nrChars; i++) {
+		currentChar = buffer[(i*2)];
+		bufferStyle = buffer[(i*2)+1];
+
+		//print new style info if style changes
+		if (lastStyle != bufferStyle) {
 			if (lastStyle != -1)
 				prevStyle = lastStyle;
-			lastStyle = buffer[i*2+1];
-			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\f%d\\fs%d\\cb%d\\cf%d", styles[lastStyle].fontIndex, styles[lastStyle].size * 2, styles[lastStyle].bgClrIndex, styles[lastStyle].fgClrIndex);
+			lastStyle = bufferStyle;
+			//currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\f%d\\fs%d\\cb%d\\cf%d", styles[lastStyle].fontIndex, styles[lastStyle].size * 2, styles[lastStyle].bgClrIndex, styles[lastStyle].fgClrIndex);
+			
+			if (styles[lastStyle].fontIndex != styles[prevStyle].fontIndex) {
+				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\f%d", styles[lastStyle].fontIndex);
+			}
+			if (styles[lastStyle].size != styles[prevStyle].size) {
+				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\fs%d", styles[lastStyle].size * 2);
+			}
+			if (styles[lastStyle].bgClrIndex != styles[prevStyle].bgClrIndex) {
+				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\cb%d", styles[lastStyle].bgClrIndex);
+			}
+			if (styles[lastStyle].fgClrIndex != styles[prevStyle].fgClrIndex) {
+				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\cf%d", styles[lastStyle].fgClrIndex);
+			}
+			///////////////////////
 			if (styles[lastStyle].bold != styles[prevStyle].bold) {
 				if (styles[lastStyle].bold) {
 					currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\b");
@@ -146,7 +172,6 @@ bool RTFExporter::exportData(ExportData * ed) {
 		}
 
 		//print character, parse special ones
-		currentChar = buffer[(i*2)];
 		switch(currentChar) {
 			case '{':
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\{");
@@ -193,6 +218,10 @@ bool RTFExporter::exportData(ExportData * ed) {
 	}
 
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n");	//rtf/ansi
+
+	//char text[500];
+	//sprintf(text, "RTF: of %d allocated, %d was used", totalBytesNeeded, currentBufferOffset);
+	//MessageBox(NULL, (text), NULL, MB_OK);
 
 	GlobalUnlock(hRTFBuffer);
 	ed->hBuffer = hRTFBuffer;

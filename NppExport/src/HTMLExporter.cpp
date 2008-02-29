@@ -75,7 +75,18 @@ bool HTMLExporter::exportData(ExportData * ed) {
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, 
 	"<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/1999/REC-html401-19991224/strict.dtd\">"
 	"\r\n");
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<html>\r\n<head>\r\n");
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<html>\r\n");
+
+	//HACK!, this shouldn't belong here at <head>, but some programs refuse to read the CSS data provided, resulting in ugly text
+	//Even still it sometimes gets ignored
+	//add StartFragment if doing CF_HTML
+	if (addHeader) {
+		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<!--StartFragment-->\r\n");
+	}
+	startFragment = currentBufferOffset;
+	//end StartFragment
+
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<head>\r\n");
 
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<META http-equiv=Content-Type content=\"text/html; charset=");
 	if (ed->csd->currentCodePage == SC_CP_UTF8) {
@@ -86,13 +97,6 @@ bool HTMLExporter::exportData(ExportData * ed) {
 	}
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\">\r\n");
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<title>Exported from Notepad++</title>\r\n");
-
-	//add StartFragment if doing CF_HTML, include css data
-	if (addHeader) {
-		currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<!--StartFragment-->\r\n");
-	}
-	startFragment = currentBufferOffset;
-	//end StartFragment
 
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<style type=\"text/css\">\r\n");
 
@@ -107,16 +111,7 @@ bool HTMLExporter::exportData(ExportData * ed) {
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tcolor: #%02X%02X%02X;\r\n", (defaultStyle->fgColor>>0)&0xFF, (defaultStyle->fgColor>>8)&0xFF, (defaultStyle->fgColor>>16)&0xFF);
 	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "}\r\n");
 
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, 
-		".code {\r\n"
-		"\tfloat: left;\r\n"
-		"\twhite-space: pre;\r\n"
-		"\tbackground: #%02X%02X%02X;\r\n"
-		"\tline-height: 1;\r\n}\r\n",
-		(defaultStyle->bgColor>>0)&0xFF, (defaultStyle->bgColor>>8)&0xFF, (defaultStyle->bgColor>>16)&0xFF
-		);
-
-	for(int i = 0; i < STYLE_MAX; i++) {
+	for(int i = 0; i < NRSTYLES; i++) {
 		if (i == STYLE_DEFAULT)
 			continue;
 
@@ -161,7 +156,17 @@ bool HTMLExporter::exportData(ExportData * ed) {
 	startFragment = currentBufferOffset;
 	//end StartFragment
 */
-	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<div class=\"code\">");
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "<div style=\"");
+
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, 
+		"float: left; "
+		"white-space: pre; "
+		"line-height: 1; "
+		"background: #%02X%02X%02X; ",
+		(defaultStyle->bgColor>>0)&0xFF, (defaultStyle->bgColor>>8)&0xFF, (defaultStyle->bgColor>>16)&0xFF
+		);
+
+	currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\">");
 
 //-------Dump text to HTML
 	char * tabBuffer = new char[ed->csd->tabSize + 1];
@@ -251,6 +256,10 @@ bool HTMLExporter::exportData(ExportData * ed) {
 		memcpy(clipbuffer + 93, number, 10);
 	}
 	//end header
+
+	//char text[500];
+	//sprintf(text, "HTML: of %d allocated, %d was used", totalBytesNeeded, currentBufferOffset);
+	//MessageBox(NULL, (text), NULL, MB_OK);
 
 	GlobalUnlock(hHTMLBuffer);
 	ed->hBuffer = hHTMLBuffer;

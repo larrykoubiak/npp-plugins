@@ -302,15 +302,17 @@ BOOL saveFile(char * filebuffer, int buffersize, const char * filters) {
 }
 
 void initScintillaData(CurrentScintillaData * csd) {
-	csd->styles = new StyleData[STYLE_MAX];
+	csd->styles = new StyleData[NRSTYLES];
 	csd->dataBuffer = NULL;
 }
 
 void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	bool doColourise = true;
 
-	if (csd->dataBuffer)
+	if (csd->dataBuffer) {
 		delete [] csd->dataBuffer;
+		csd->dataBuffer = 0;
+	}
 
 	int currentEdit = 0;
 	SendMessage(nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit);
@@ -343,6 +345,7 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	csd->currentCodePage = codePage;
 
 	csd->dataBuffer = new char[csd->nrChars * 2 + 2];
+
 	TextRange tr;
 	tr.lpstrText = csd->dataBuffer;
 	tr.chrg.cpMin = start;
@@ -351,7 +354,7 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	if (doColourise)
 		SendMessage(hScintilla, SCI_COLOURISE, start, (LPARAM)end);	//colourise doc so stylers are set
 	SendMessage(hScintilla, SCI_GETSTYLEDTEXT, 0, (LPARAM)&tr);
-	
+
 	csd->nrStyleSwitches = 0, csd->nrUsedStyles = 1;	//Default always
 	csd->totalFontStringLength = 0;
 	int prevStyle = -1, currentStyle;
@@ -359,12 +362,11 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	//Mask the styles so any indicators get ignored, else overflow possible
 	int bits = (int)SendMessage(hScintilla, SCI_GETSTYLEBITS, 0, 0);
 	unsigned char mask = 0xFF >> (8-bits);
-	for(int i = 0; i < len - 1; i++) {
-		int offset = i*2+1;
-		csd->dataBuffer[offset] &= mask;
+	for(int i = 0; i < len; i++) {
+		csd->dataBuffer[i*2+1] &= mask;
 	}
 
-	for(int i = 0; i < STYLE_MAX; i++) {
+	for(int i = 0; i < NRSTYLES; i++) {
 		csd->usedStyles[i] = false;
 	}
 
@@ -378,7 +380,7 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	csd->styles[STYLE_DEFAULT].fgColor =	(int)SendMessage(hScintilla, SCI_STYLEGETFORE,		STYLE_DEFAULT, 0);
 	csd->styles[STYLE_DEFAULT].bgColor =	(int)SendMessage(hScintilla, SCI_STYLEGETBACK,		STYLE_DEFAULT, 0);
 	csd->styles[STYLE_DEFAULT].eolExtend =(bool)(SendMessage(hScintilla, SCI_STYLEGETEOLFILLED,	STYLE_DEFAULT, 0) != 0);
-	for(int i = 0; i < len - 1; i++) {
+	for(int i = 0; i < len; i++) {
 		currentStyle = csd->dataBuffer[i*2+1];
 		if (currentStyle != prevStyle) {
 			prevStyle = currentStyle;
@@ -439,6 +441,7 @@ void exportHTML(bool isClipboard, HANDLE exportFile) {
 
 	ed.isClipboard = isClipboard;
 	ed.csd = &mainCSD;
+
 	htmlexp.exportData(&ed);
 
 	if (!ed.hBuffer)
@@ -484,6 +487,7 @@ void exportRTF(bool isClipboard, HANDLE exportFile) {
 
 	ed.isClipboard = isClipboard;
 	ed.csd = &mainCSD;
+
 	rtfexp.exportData(&ed);
 
 	if (!ed.hBuffer)
