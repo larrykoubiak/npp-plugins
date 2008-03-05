@@ -141,7 +141,8 @@ bool RTFExporter::exportData(ExportData * ed) {
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\fs%d", styles[lastStyle].size * 2);
 			}
 			if (styles[lastStyle].bgClrIndex != styles[prevStyle].bgClrIndex) {
-				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\cb%d", styles[lastStyle].bgClrIndex);
+				//currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\cb%d", styles[lastStyle].bgClrIndex);
+				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\highlight%d", styles[lastStyle].bgClrIndex);
 			}
 			if (styles[lastStyle].fgClrIndex != styles[prevStyle].fgClrIndex) {
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\\cf%d", styles[lastStyle].fgClrIndex);
