@@ -27,6 +27,10 @@ Known Limitations/Bugs
 
 Revision History
 ----------------
+version 1.4.1 (2nd Feb 2008)
+- Shift-middle-click also implements cycle through clipboard items when "Show Paste List" is unchecked (contributed by Bahman)
+- Added version info that can be seen from the dll properties
+
 version 1.4.0beta (26th Jan 2008)
 - Patch contributed by Jens Lorenz
 - Settings are saved to file, and restored upon loading of Notepad++

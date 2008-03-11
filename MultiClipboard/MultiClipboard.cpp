@@ -19,7 +19,9 @@
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <atlbase.h>
+// *PATCH* --------------------------------------------------------------------
+//#include <atlbase.h> // mingw32-unfriendly, see loadSettings() [080203 BN]
+// -------------------------------------------------------------------- *PATCH*
 #include <shellapi.h>
 #include <shlwapi.h>
 #include <shlobj.h>
@@ -65,10 +67,10 @@ FuncItem funcItem[MCP_NUM_FUNC_ITEM];
 
 
 // *PATCH* --------------------------------------------------------------------
-//// quick & dirty "debugger"
+//quick & dirty "debugger"
 //#include <stdio.h>
 //char dbug[512];
-//#define DBUG(...) do{sprintf(dbug,__VA_ARGS__);MessageBox(NULL,dbug,"DBUG", MB_OK );}while(0)
+//#define DBUG(...) do{bool b=bEnableAutoCopySelection;bEnableAutoCopySelection = false;sprintf(dbug,__VA_ARGS__);MessageBox(NULL,dbug,"DBUG", MB_OK );bEnableAutoCopySelection=b;}while(0)
 // -------------------------------------------------------------------- *PATCH*
 
 // Settings for Multi-Clipboard plugin
@@ -261,11 +263,11 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam
 		}
 		case WM_ACTIVATE:
 		{
-			if ( ( bDoMCCycle ) && 
+			if ( ( bDoMCCycle ) &&
 				( ( LOWORD(wParam) == WA_ACTIVE ) || ( LOWORD(wParam) == WA_CLICKACTIVE ) ))
 			{
 				bDoMCCycle = false;
-				bIsShiftUp = true;	
+				bIsShiftUp = true;
 				bIsCtrlUp = true;
 				SetTimer( nppData._nppHandle, TIMER_ID, 500, onAutoCopyTimer );
 			}
@@ -283,14 +285,21 @@ void loadSettings(void)
 	::SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM)configPath);
 
 	/* Test if config path exist */
-	if (PathFileExists(configPath) == FALSE)
+// *PATCH* --------------------------------------------------------------------
+//	if (PathFileExists(configPath) == FALSE)
+   // (equivalent to above but without atlbase.h dependency) [080203 BN]
+	if (::GetFileAttributes(configPath) == 0xffffffff)
+// -------------------------------------------------------------------- *PATCH*
 	{
 		::CreateDirectory(configPath, NULL);
 	}
 
 	strcpy(iniFilePath, configPath);
 	strcat(iniFilePath, MULT_CLIP_INI);
-	if (PathFileExists(iniFilePath) == FALSE)
+// *PATCH* --------------------------------------------------------------------
+//	if (PathFileExists(iniFilePath) == FALSE)
+	if (::GetFileAttributes(iniFilePath) == 0xffffffff)
+// -------------------------------------------------------------------- *PATCH*
 	{
 		::CloseHandle(::CreateFile(iniFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL));
 	}
@@ -354,12 +363,21 @@ void pasteClipboardItemCycle( HWND hCurrScintilla )
 			bIsShiftUp = false;
 			bIsCtrlUp = false;
 			bDoMCCycle = true;
-			iCurCyclePos = 0;
+// *PATCH* --------------------------------------------------------------------
+			iCurCyclePos = -1; // see below [080212 BN]
+// -------------------------------------------------------------------- *PATCH*
 			::KillTimer( nppData._nppHandle, TIMER_ID );
 		}
 
-		if ( iCurCyclePos >= size )
+// *PATCH* --------------------------------------------------------------------
+//		if ( iCurCyclePos >= size )
+
+		// increment iCurCyclePos before, not after, cycling
+		// so it's correct when pasteClipboardItemCycle() exits [080212 BN]
+      if ( ++iCurCyclePos >= size )
+// -------------------------------------------------------------------- *PATCH*
 			iCurCyclePos = 0;
+
 
 		std::vector< std::string >::iterator iter = copyTextList.begin();
 		std::advance( iter, iCurCyclePos );	// Move the iterator to the correct text
@@ -373,7 +391,13 @@ void pasteClipboardItemCycle( HWND hCurrScintilla )
 		// Select replaced text
 		::SendMessage( hCurrScintilla, SCI_SETSEL, iCurPos, (LPARAM) (iCurPos + iter->size()) );
 
-		iCurCyclePos++;
+// *PATCH* --------------------------------------------------------------------
+      // keep selection positions up-to-date [080203 BN]
+      prevSelStart = iCurPos;
+      prevSelEnd = iCurPos + iter->size();
+
+//		iCurCyclePos++; // see above [080212 BN]
+// -------------------------------------------------------------------- *PATCH*
 	}
 }
 
@@ -405,19 +429,19 @@ void multiClipboardPaste()
 		}
 
 		// Popup the menu
-		// *PATCH* --------------------------------------------------------------------
-		// block middle-clicking while the popup is active,
+// *PATCH* --------------------------------------------------------------------
+		// disable middle-clicking while the popup is active,
 		bool mClickState = bEnableMiddleClickPaste;
 		bEnableMiddleClickPaste = false;
-		// -------------------------------------------------------------------- *PATCH*
-    
+// -------------------------------------------------------------------- *PATCH*
+
 		int id = ::TrackPopupMenu( hPasteMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RETURNCMD | TPM_LEFTBUTTON,
 			pt.x, pt.y, 0, nppData._nppHandle, 0 );
-   
-		// *PATCH* --------------------------------------------------------------------
-		// ...and restore 
+
+// *PATCH* --------------------------------------------------------------------
+		// ...and restore
 		bEnableMiddleClickPaste = mClickState;
-		// -------------------------------------------------------------------- *PATCH*
+// -------------------------------------------------------------------- *PATCH*
 
 		pasteClipboardItem( id, hCurrScintilla );
 	}
@@ -431,18 +455,14 @@ void multiClipboardPaste()
 
 // new globals
 
-bool autoPasteOver = true;      // Replace active selection on paste command
-bool strictPasteOver = true;    // ...but only if selection itself is clicked
-bool syncSysClipboard = true;   // Sync internal and system copy/paste states
-
-std::string snips[2]; int last = 0, lastlast = 1;
-bool overlap = false;           // Whether current and previous selections overlap the 
+bool bAutoPasteOver = true;      // Replace active selection on paste command
+bool bIsCycleSelection = false;  // Whether active selection is due to cycling [080203 BN]
 
 // a class to encapsulate selection-related stuff
 struct selection
 {
    int start, end;
-   
+
    selection( HWND hCurrScintilla=0 )
    {
       if( ! hCurrScintilla )
@@ -451,7 +471,7 @@ struct selection
       start = ::SendMessage( hCurrScintilla, SCI_GETSELECTIONSTART, 0, 0 );
       end   = ::SendMessage( hCurrScintilla, SCI_GETSELECTIONEND  , 0, 0 );
    }
-   
+
    bool isActive() { return start != end; }
    bool hit( int hitPt ) { return hitPt >= start && hitPt <= end; }
    bool overlaps( const selection &other )
@@ -462,40 +482,27 @@ struct selection
 
 // new functions
 
-void sysPop( std::string &txt )
+bool sysPop( std::string &txt )
 {
    // read the system clipboard
-   if ( ::IsClipboardFormatAvailable( CF_TEXT ) && ::OpenClipboard( nppData._nppHandle ) ) 
+   if ( ::IsClipboardFormatAvailable( CF_TEXT )
+      && ::OpenClipboard( nppData._nppHandle ) )
    {
    	HANDLE hData = ::GetClipboardData( CF_TEXT );
    	char * buffer = (char*)::GlobalLock( hData );
    	txt = buffer;
    	::GlobalUnlock( hData );
    	::CloseClipboard();
+      return true;
    }
-   else
-      txt = "";
+
+   txt = "";
+   return false;
 }
 
 
-void sysPush( std::string &txt, bool save=true )
+void sysPush( std::string &txt )
 {
-   // Maintain a mini-stack in case of a future undo...
-   if( save )
-   {
-      // Except for overlaps (which just rewrite the top slot)
-      if( ! overlap )
-      {
-         // shift the stack up, and
-         lastlast = last;
-         last = ! last;
-      }
-      // insert the system clipboard's current contents.
-      sysPop( snips[last] );
-
-//DBUG("lastlast[%d]=%s\nlast[%d]=%s",lastlast,snips[lastlast].c_str(),last,snips[last].c_str());
-   }
-
    // Load a copy of the snippet onto the system clipboard
    if( ::OpenClipboard( nppData._nppHandle ) )
 	{
@@ -511,41 +518,56 @@ void sysPush( std::string &txt, bool save=true )
 	}
 }
 
-
+// Restores system clipboard only if its contents aren't newer, and removes the
+// top list item only if the active selection isn't due to cycling [080203 BN]
 void autoCopyUndo()
 {
-	// unlist
-	copyTextList.erase(copyTextList.begin());
-	recreateCopyMenu();
-   
-	// revert our mini-stack
-	last = lastlast;
-   
-	if( syncSysClipboard )
-		// restore the system clipboard
-		sysPush( snips[last], false );
+   std::string clip;
+   sysPop( clip );
+
+   // we'll need to restore the system clipboard...
+   bool sysRestore =
+      // ...only if its contents still match the list-front, i.e. the user
+      // hasn't copied something new outside npp since our last autocopy,
+      ( clip == copyTextList.front()
+      // ...and only if there's anything left after this undo.
+      && copyTextList.size() > 1 );
+
+
+	// if we were just cycling
+   if( bIsCycleSelection )
+      // then the active selection hasn't been autocopied
+      bIsCycleSelection = false;
+   else
+      // otherwise the top item is an autocopy, so unlist it
+      copyTextList.erase( copyTextList.begin() );
+
+   if( sysRestore )
+      sysPush( copyTextList.front() );
+
+   recreateCopyMenu();
 }
 
 
-// lifted straight out of pasteClipboardItem()
+// lifted straight out of onCopyText() [080203 BN]
 void enlist( std::string &txt )
-{ 
-	// Find if the text already exists in the list
+{
 	std::vector< std::string >::iterator iter =
       std::find( copyTextList.begin(), copyTextList.end(), txt );
-	
+
    if ( iter != copyTextList.end() )
 	{
 		copyTextList.erase( iter );
 	}
 
-    // Add text to the front of the list
+   // Add text to the front of the list
 	copyTextList.insert( copyTextList.begin(), txt );
-    while ( copyTextList.size() > MAX_LIST_SIZE )
-    {
-        // Trim list from the back until the size is correct
-        copyTextList.pop_back();
-    }
+
+   while ( copyTextList.size() > MAX_LIST_SIZE )
+   {
+      // Trim list from the back until the size is correct
+      copyTextList.pop_back();
+   }
 
 	recreateCopyMenu();
 }
@@ -560,7 +582,7 @@ void paste( int method=npp, int clickPt=-1 )
 {
    bool pasteover = false;
    std::string snippet;
-   
+
    // Get current scintilla editor
    HWND hCurrScintilla = getCurrentScintillaHwnd();
    // and its selection extents
@@ -570,55 +592,46 @@ void paste( int method=npp, int clickPt=-1 )
    if( clickPt == -1 )
       // ...let's pretend we clicked within the current area.
       clickPt = sel.end;
-   
-   // If we have an active selection now,
-   if ( autoPasteOver && sel.isActive() )   
+
+   // If we have an active selection now
+   // and the click was within the selected area
+   if ( bAutoPasteOver && sel.isActive() && sel.hit( clickPt ) )
    {
-      // ...and the click was within the selected area (strict rule)
-      if( ( strictPasteOver && sel.hit( clickPt ) )
-         // ...or just anywhere (loose rule)
-          || ! strictPasteOver )
+      // ...then the selection is our paste target and not a snippet.
+      pasteover = true;
+
+      // It's already on the list if autocopy is on
+      // (and assuming the list wasn't just cleared), so
+      if( bEnableAutoCopySelection && copyTextList.size() )
       {
-         // ...then the selection is our paste target and not a snippet.
-         pasteover = true;
-         
-         // It's already on the list if autocopy is on, so
-         if( bEnableAutoCopySelection && copyTextList.size() )
-         {
-//DBUG("lastlast=%s\nlast=%s",snips[lastlast].c_str(),snips[last].c_str());
-            // unlist it
-            autoCopyUndo();
-            // and use the previous snippet
-            snippet = snips[last];
-         }
-      }
-   }
-   
-   // if no snippet yet, get it from the system clipboard
-   if( snippet.empty() )
-   {
-      sysPop( snippet );
-      
-     // and put it onto the list if its source is external
-      if( syncSysClipboard &&
-         ( copyTextList.size() == 0 || snippet != copyTextList.front() ) )
-      {
-//DBUG("enlist %s",snippet.c_str());
-          enlist( snippet );
+         // unlist it if required.
+         autoCopyUndo();
       }
    }
 
-   if( method == self )
+   // The right snippet (if any) should now be on the system clipboard,
+   // so get it
+   if( sysPop( snippet ) )
    {
-      // if not replacing an active selection, move cursor to clickpoint
-      if( ! pasteover )
-         ::SendMessage( hCurrScintilla, SCI_GOTOPOS, clickPt, 0 );
-      // paste
-      ::SendMessage( hCurrScintilla, SCI_REPLACESEL, 0, (LPARAM) snippet.c_str() );
+     // and put it onto the list if its source is external
+      if( ( copyTextList.size() == 0 || snippet != copyTextList.front() ) )
+      {
+         enlist( snippet );
+      }
+
+      if( method == self )
+      {
+         // if not replacing an active selection, move cursor to clickpoint
+         if( ! pasteover )
+            ::SendMessage( hCurrScintilla, SCI_GOTOPOS, clickPt, 0 );
+         // paste
+         ::SendMessage( hCurrScintilla, SCI_REPLACESEL, 0, (LPARAM) snippet.c_str() );
+      }
    }
 }
 
 // -------------------------------------------------------------------- *PATCH*
+
 
 // The subclassed windows procedure for npp
 LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
@@ -660,9 +673,9 @@ LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, L
 	else if ( msg == WM_MBUTTONDOWN )
 	{
 // *PATCH* --------------------------------------------------------------------
-//		if ( bEnableMiddleClickPaste && copyTextList.size() > 0 )	// Make sure there is some text to paste
-		if ( bEnableMiddleClickPaste && !bDoMCCycle && 
-			( syncSysClipboard ? ::IsClipboardFormatAvailable( CF_TEXT ) : ( copyTextList.size() > 0 ) ) )
+// integrates cycling now [080203 BN]
+		if ( bEnableMiddleClickPaste && /*!bDoMCCycle && */
+         ( ::IsClipboardFormatAvailable( CF_TEXT ) || copyTextList.size() ) )
 // -------------------------------------------------------------------- *PATCH*
 		{
 			// Get current scintilla editor
@@ -679,16 +692,21 @@ LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, L
 			if ( !bEnableAutoCopySelection )
 				onCopyText();
 
-			if ( MK_SHIFT & wp )	// if Shift key is pressed
+			if ( MK_SHIFT & wp )	// if Shift key is the
 			{
-				bool bOldState = bShowPasteList;
-				bShowPasteList = true;  // Enable display of menu
+// *PATCH* --------------------------------------------------------------------
+// this interferes with cycling [080203 BN]
+//				bool bOldState = bShowPasteList;
+//				bShowPasteList = true;  // Enable display of menu
+// -------------------------------------------------------------------- *PATCH*
 				useMouseCoords = true;	// Display menu at the mouse position
 
 				// Pop up multipaste menu
 				multiClipboardPaste();
 
-				bShowPasteList = bOldState;  // restore old setting
+// *PATCH* --------------------------------------------------------------------
+//				bShowPasteList = bOldState;  // restore old setting
+// -------------------------------------------------------------------- *PATCH*
 				useMouseCoords = false;	// Unset this so that next time menu can be displayed at the right position
 			}
 			else
@@ -712,14 +730,23 @@ LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, L
 				bIsCtrlUp = true;
 			}
 			if ( bIsShiftUp || bIsCtrlUp ) {
-				// Move the selected item to the front of the list
-				if ( iCurCyclePos >= copyTextList.size() )
-					rearangeList( --iCurCyclePos, hwnd );
-				else
-					rearangeList( iCurCyclePos, hwnd );
+// *PATCH* --------------------------------------------------------------------
+//				// Move the selected item to the front of the list
+//				if ( iCurCyclePos >= copyTextList.size() )
+//					rearangeList( --iCurCyclePos, hwnd );
+//				else
+//					rearangeList( iCurCyclePos, hwnd );
+
+            // see pasteClipboardItemCycle [080212 BN]
+            rearangeList( iCurCyclePos, hwnd );
+// -------------------------------------------------------------------- *PATCH*
 				SendMessage( hwnd, SCI_ENDUNDOACTION, 0, 0 );
 				SetTimer( nppData._nppHandle, TIMER_ID, 500, onAutoCopyTimer );
 				bDoMCCycle = false;
+// *PATCH* --------------------------------------------------------------------
+            // lets autoCopyUndo() know the active selection wasn't autocopied
+            bIsCycleSelection = true;
+// -------------------------------------------------------------------- *PATCH*
 			}
 		}
 	}
@@ -757,8 +784,11 @@ void rearangeList( int posBringToTop, HWND hCurrScintilla )
 		recreateCopyMenu();
 
 		// Reset auto copy selection pointers
-		prevSelStart = -1;
-		prevSelEnd = -1;
+// *PATCH* --------------------------------------------------------------------
+// LoonyChewy: is this reset necessary? [080203 BN]
+//		prevSelStart = -1;
+//		prevSelEnd = -1;
+// -------------------------------------------------------------------- *PATCH*
 	}
 }
 
@@ -864,13 +894,10 @@ void onCopyText()
     }
 
 	recreateCopyMenu();
-   
+
 // *PATCH* --------------------------------------------------------------------
-//   if( syncSysClipboard )
-//   {
-      // push snippet onto system clipboard to keep things in sync
-      sysPush( selectedText );
-//   }
+   // push snippet onto system clipboard to keep things in sync
+   sysPush( selectedText );
 // -------------------------------------------------------------------- *PATCH*
 }
 
@@ -1117,23 +1144,20 @@ VOID CALLBACK onAutoCopyTimer( HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 	currSelEnd   = ::SendMessage( hCurrScintilla, SCI_GETSELECTIONEND  , 0, 0 );
 
 // *PATCH* --------------------------------------------------------------------
-// (the return statement below prevents prevSel from always being up-to-date)
+	if ( currSelStart == currSelEnd )
+	{
+		// No text is selected, so we couldn't have just been cycling [080203 BN]
+      bIsCycleSelection = false;
+	}
 
-//	if ( currSelStart == currSelEnd )
-//	{
-//		// Selection start and start are the same, no text is selected
-//		return;
-//	}
-   
-   if ( ( currSelStart != currSelEnd )
-      && ! ( currSelStart == prevSelStart && currSelEnd == prevSelEnd ) )
+   else if ( ! ( currSelStart == prevSelStart && currSelEnd == prevSelEnd ) )
    {
 		if ( isSelectionOverlapping( prevSelStart, prevSelEnd, currSelStart, currSelEnd ) )
 // -------------------------------------------------------------------- *PATCH*
    		{
    			if ( !copyTextList.empty() )
    			{
-				copyTextList.erase( copyTextList.begin() );
+               copyTextList.erase( copyTextList.begin() );
    			}
 		}
 
@@ -1144,7 +1168,7 @@ VOID CALLBACK onAutoCopyTimer( HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
    		// Send WM_COMMAND to Notepad++ and consequently to windows clipboard
 		::SendMessage( hwnd, WM_COMMAND, IDM_EDIT_COPY, 0 );
    }
-   
+
 	// Save selection position
 	prevSelStart = currSelStart;
 	prevSelEnd   = currSelEnd;

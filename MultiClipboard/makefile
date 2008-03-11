@@ -19,7 +19,7 @@
 CPP = g++
 CC = gcc
 
-#UserDefineDialog_res.o 
+RES = MultiClipboard_res.o 
 OBJS = MultiClipboard.o
 
 #
@@ -37,8 +37,11 @@ LDFLAGS = -export-dynamic,-Wl,
 
 ALL: $(DLL)
 
-$(DLL):	$(OBJS)
+$(DLL):	$(OBJS) $(RES)
 	$(CC) -shared -o $@ $(LDFLAGS) $< -lshlwapi
+
+MultiClipboard_res.o: MultiClipboard.rc
+	windres -o MultiClipboard.res MultiClipboard.rc
 
 
 MultiClipboard.o : PluginInterface.h Scintilla.h MultiClipboard.cpp

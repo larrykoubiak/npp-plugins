@@ -208,6 +208,10 @@
 				RelativePath="MultiClipboard.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\MultiClipboard.rc"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -215,6 +219,10 @@
 			>
 			<File
 				RelativePath=".\PluginInterface.h"
+				>
+			</File>
+			<File
+				RelativePath=".\resource.h"
 				>
 			</File>
 			<File
