@@ -1498,32 +1498,7 @@ void EnsureLeadingBackslash(CUTL_BUFFER& directory) {
 }
 
 BOOL AttributesMatch(DWORD targetAttributes, DWORD fileAttributes) { 
-/*
-   // Calculamos los atributos que se nos piden 
-   DWORD targetAttributesNewAPI;
-
-   if (targetAttributes & _A_NORMAL) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_NORMAL;
-   if (targetAttributes & _A_ARCH) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_ARCHIVE;
-   if (targetAttributes & _A_HIDDEN) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_HIDDEN;
-   if (targetAttributes & _A_RDONLY) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_READONLY;
-   if (targetAttributes & _A_SUBDIR) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_DIRECTORY;
-   if (targetAttributes & _A_SYSTEM) 
-      targetAttributesNewAPI |= FILE_ATTRIBUTE_SYSTEM;
-
-   if (targetAttributesNewAPI == FILE_ATTRIBUTE_NORMAL)
-      return (!(FILE_ATTRIBUTE_DIRECTORY & targetAttributesNewAPI));
-   else
-      return ((targetAttributesNewAPI & fileAttributes) && ((FILE_ATTRIBUTE_DIRECTORY & targetAttributesNewAPI) == (FILE_ATTRIBUTE_DIRECTORY & fileAttributes)));
-*/
-   if (targetAttributes == _A_NORMAL)
-      return (!(_A_SUBDIR & fileAttributes));
-   else
-      return ((targetAttributes & fileAttributes) && ((_A_SUBDIR & targetAttributes) == (_A_SUBDIR & fileAttributes)));
+	return ((_A_SUBDIR & targetAttributes) == (_A_SUBDIR & fileAttributes));
 }
 
 
