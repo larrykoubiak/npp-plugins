@@ -2,11 +2,21 @@ unit NppSimpleObjects;
 
 interface
   uses
-    Classes,
+    Classes, TypInfo, ObjAuto, ObjComAuto,
     NppPluginInterface, NppPluginConstants;
 
   type
 
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+  TAutoObjectDispatch = class(TObjectDispatch)
+  protected
+    function GetObjectDispatch(Obj: TObject): TObjectDispatch; override;
+    function GetMethodInfo(const AName: ShortString; var AInstance: TObject): PMethodInfoHeader; override;
+    function GetPropInfo(const AName: string; var AInstance: TObject; var CompIndex: Integer): PPropInfo; override;
+  end;
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////
+{$METHODINFO ON}
     TActiveDocument = class;
     { -------------------------------------------------------------------------------------------- }
     TTextRange = class
@@ -75,6 +85,7 @@ interface
         property Length: integer        read GetLength        write SetLength;
         property Text: WideString       read GetText          write SetText;
     end;
+{$METHODINFO OFF}
     { -------------------------------------------------------------------------------------------- }
     TTextRangeMark = class
       private
@@ -88,6 +99,7 @@ interface
     end;
 
     { -------------------------------------------------------------------------------------------- }
+{$METHODINFO ON}
     TWindowedObject = class
       protected
         FWindowHandle: THandle;
@@ -220,6 +232,7 @@ interface
 
         property ActiveDocument: TActiveDocument  read GetDocument;
     end;
+{$METHODINFO OFF}
 
     function GetApplication(ANPPData: PNPPData = nil): TApplication;
 
@@ -1233,30 +1246,30 @@ end;
 function TActiveDocument.AdjustFromCodePage(AText: string): WideString;
 var
   CP: integer;
-  RetVal: integer;
+  ReqSize: integer;
 begin
   CP := SendMessage(SCI_GETCODEPAGE);
   if CP = 0 then begin
     Result := AText;
   end else begin
-    RetVal := MultiByteToWideChar(CP, 0, PChar(AText), System.Length(AText), nil, 0);
-    Result := StringOfChar(WideChar(#0), RetVal + 1);
-    SetLength(Result, MultiByteToWideChar(CP, 0, PChar(AText), System.Length(AText), PWChar(Result), RetVal + 1));
+    ReqSize := MultiByteToWideChar(CP, 0, PChar(AText), System.Length(AText), nil, 0);
+    Result := StringOfChar(WideChar(#0), ReqSize + 1);
+    SetLength(Result, MultiByteToWideChar(CP, 0, PChar(AText), System.Length(AText), PWChar(Result), ReqSize + 1));
   end;
 end;
 { ------------------------------------------------------------------------------------------------ }
 function TActiveDocument.AdjustToCodePage(AText: WideString): string;
 var
   CP: integer;
-  RetVal: integer;
+  ReqSize: integer;
 begin
   CP := SendMessage(SCI_GETCODEPAGE);
   if CP = 0 then begin
     Result := AText;
   end else begin
-    RetVal := WideCharToMultiByte(CP, 0, PWChar(AText), System.Length(AText), nil, 0, nil, nil);
-    Result := StringOfChar(#0, RetVal + 1);
-    SetLength(Result, WideCharToMultiByte(CP, 0, PWChar(AText), System.Length(AText), PChar(Result), RetVal + 1, nil, nil));
+    ReqSize := WideCharToMultiByte(CP, 0, PWChar(AText), System.Length(AText), nil, 0, nil, nil);
+    Result := StringOfChar(#0, ReqSize + 1);
+    SetLength(Result, WideCharToMultiByte(CP, 0, PWChar(AText), System.Length(AText), PChar(Result), ReqSize + 1, nil, nil));
   end;
 end;
 
@@ -1543,6 +1556,28 @@ begin
 
   inherited;
 end;
+
+{ ================================================================================================ }
+{ TAutoObjectDispatch }
+
+function TAutoObjectDispatch.GetMethodInfo(const AName: ShortString; var AInstance: TObject): PMethodInfoHeader;
+begin
+  Result := inherited GetMethodInfo(AName, AInstance);
+end;
+
+{ ------------------------------------------------------------------------------------------------ }
+function TAutoObjectDispatch.GetObjectDispatch(Obj: TObject): TObjectDispatch;
+begin
+  Result := TAutoObjectDispatch.Create(Obj, True);
+end;
+
+{ ------------------------------------------------------------------------------------------------ }
+function TAutoObjectDispatch.GetPropInfo(const AName: string; var AInstance: TObject;
+  var CompIndex: Integer): PPropInfo;
+begin
+  Result := inherited GetPropInfo(AName, AInstance, CompIndex);
+end;
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 initialization

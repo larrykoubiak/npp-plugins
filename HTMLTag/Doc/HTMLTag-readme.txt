@@ -1,4 +1,4 @@
-[About]
+﻿[About]
 HTMLTag plug-in for Notepad++
 Written by vor0nwe (Martijn Coppoolse) - http://martijn.coppoolse.com/software/
  using Delphi 2006
@@ -8,7 +8,7 @@ Part of the Npp-plugins project - http://sourceforge.net/projects/npp-plugins/
 [Introduction]
 This plug-in provides two core functions to Notepad++:
 - HTML and XML tag matching, like the built-in brace matching (Ctrl+B / Shift+Ctrl+B)
-- HTML entity encoding/decoding (example: � to &eacute;)
+- HTML entity encoding/decoding (example: é to &eacute;)
 
 It originated in these requests on the Plugin Development forum on SourceForge.net:
 - http://sourceforge.net/forum/message.php?msg_id=4284078
@@ -42,6 +42,9 @@ HTMLTag-readme.txt		The file you're reading now.
 
 
 [History]
+- 0.2.1 - 2008-02-22 21:07
+  * Fixed: matching in XML files was case-inconsistent
+  * Fixed: matching end tag did not take special characters in tag name into account
 - 0.2 - 2007-10-20 20:10
   * Tag detection is now case-sensitive in XML files 
   * Added entity encoding/decoding
@@ -52,5 +55,4 @@ HTMLTag-readme.txt		The file you're reading now.
 
 [To do]
 * Make it play nice with PHP & ASP tags (either highlight those separately or ignore them) 
-* Write up a little readme, include that in the distribution zip, and post it on some web page 
 * Make it behave like bracket highlighting (a.k.a. "live" highlighting)

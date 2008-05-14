@@ -34,6 +34,7 @@ var
   EndIndex: integer;
   InnerLevel: integer;
   ClosureFound: boolean;
+  ExtraChar: char;
 begin
   ATagName := '';
 
@@ -81,6 +82,7 @@ begin
   StartIndex := 0;
   EndIndex := 0;
   ATagName := Result.Text;
+  ExtraChar := #0;
   for i := 2 to Length(ATagName) - 1 do begin
     if StartIndex = 0 then begin
       case ATagName[i] of
@@ -93,7 +95,7 @@ begin
         end;
       end;
     end else if EndIndex = 0 then begin
-      if not (ATagName[i] in ['0'..'9', 'A'..'Z', 'a'..'z']) then begin
+      if not (ATagName[i] in ['0'..'9', 'A'..'Z', 'a'..'z', '-', '_', '.', ':', ExtraChar]) then begin
         EndIndex := i - 1;
         if AClosing = True then begin
           break;
@@ -204,7 +206,8 @@ begin
             Tags.AddObject(TagName, Tag);
             DisposeOfTag := False;
             Direction := dirBackward;
-          end else if SameText(Copy(TagName, 2), Copy(Tags.Strings[0], 2)) then begin
+          end else if (IsXML and SameStr(Copy(TagName, 2), Copy(Tags.Strings[0], 2)))
+                      or ((not IsXML) and SameText(Copy(TagName, 2), Copy(Tags.Strings[0], 2))) then begin
             if Direction = dirBackward then begin
               Tags.AddObject(TagName, Tag);
               DisposeOfTag := False;
