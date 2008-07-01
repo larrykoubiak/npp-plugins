@@ -22,7 +22,7 @@
 #include <algorithm>
 #include <commctrl.h>
 
-#include "PluginInterface.h"
+#include "Hex.h"
 #include "MultiTypeCombo.h"
 
 #include "HexResource.h"
@@ -51,6 +51,7 @@ public:
 		_isMatchCase	= FALSE;
 		_isWrap			= TRUE;
 		_isInSel		= FALSE;
+		_hSCI			= NULL;
 	};
     
     void init(HINSTANCE hInst, NppData nppData)
@@ -62,8 +63,8 @@ public:
 	void display(bool toShow = true);
 
    	void doDialog(HWND hParent, BOOL findReplace);
-	void findNext(HWND hParent);
-	void findPrev(HWND hParent);
+	void findNext(HWND hParent, BOOL isVolatile = FALSE);
+	void findPrev(HWND hParent, BOOL isVolatile = FALSE);
 	BOOL isFindReplace(void)
 	{
 		return _findReplace;
@@ -79,9 +80,10 @@ protected :
 private:
     void initDialog(void);
 	void updateDialog(void);
-	void onFind(void);
+	void onFind(BOOL isVolatile);
 	void onReplace(void);
 	void changeCoding(void);
+	void getSelText(tComboInfo* info);
 	void processAll(UINT process);
 	BOOL processFindReplace(BOOL find = TRUE);
 
