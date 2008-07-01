@@ -19,10 +19,13 @@
 #define OPTION_DEFINE_H
 
 #include "StaticDialog.h"
-#include "PluginInterface.h"
+#include "Hex.h"
 #include "HexResource.h"
+#include "ColorCombo.h"
+#include <vector>
+#include <string>
 
-
+using namespace std;
 
 class OptionDlg : public StaticDialog
 {
@@ -52,6 +55,14 @@ private:
 	/* Handles */
 	NppData			_nppData;
     HWND			_HSource;
+
+	ColorCombo		_ColCmbRegTxt;
+	ColorCombo		_ColCmbRegBk;
+	ColorCombo		_ColCmbSelTxt;
+	ColorCombo		_ColCmbSelBk;
+	ColorCombo		_ColCmbDiffTxt;
+	ColorCombo		_ColCmbDiffBk;
+	ColorCombo		_ColCmbBkMk;
 
 	tProp*			_pProp;
 };
