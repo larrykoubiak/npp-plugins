@@ -19,7 +19,7 @@
 #define GOTO_DEFINE_H
 
 #include "StaticDialog.h"
-#include "PluginInterface.h"
+#include "Hex.h"
 #include "HexResource.h"
 
 
@@ -28,7 +28,7 @@ class GotoDlg : public StaticDialog
 {
 
 public:
-	GotoDlg() : StaticDialog() {};
+	GotoDlg() : StaticDialog(), _isOff(FALSE) {};
     
     void init(HINSTANCE hInst, NppData nppData, char* iniFilePath)
 	{
@@ -45,7 +45,7 @@ public:
 protected :
 	virtual BOOL CALLBACK run_dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
-	void onCombo(void);
+	void calcAddress(void);
     void UpdateDialog(void);
 
 	/* Subclassing list */
@@ -67,6 +67,7 @@ private:
 	char*			_iniFilePath;
 
 	BOOL			_isHex;
+	BOOL			_isOff;
 };
 
 

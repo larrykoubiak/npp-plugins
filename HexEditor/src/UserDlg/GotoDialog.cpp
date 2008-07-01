@@ -53,6 +53,11 @@ BOOL CALLBACK GotoDlg::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 			_hDefaultEditProc = reinterpret_cast<WNDPROC>(::SetWindowLong(_hLineEdit, GWL_WNDPROC, reinterpret_cast<LONG>(wndEditProc)));
 
 			::SendDlgItemMessage(_hSelf, IDC_CHECK_HEX, BM_SETCHECK, (_isHex == TRUE)?BST_CHECKED:BST_UNCHECKED, 0);
+			::SendDlgItemMessage(_hSelf, IDC_RADIO_ADDRESS, BM_SETCHECK, BST_CHECKED, 0);
+
+			/* change language */
+			NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, "Goto");
+
 			break;
 		}
 		case WM_ACTIVATE :
@@ -69,19 +74,42 @@ BOOL CALLBACK GotoDlg::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 					break;
 				case IDOK:
 				{
-					char	text[16];
+					CHAR	text[16];
+					UINT	iPos = 0;
+					UINT	iMax = 0;
 
 					if (_isHex == TRUE)
 					{
-						tHexProp	prop;
-						::SendMessage(_hParentHandle, HEXM_GETSETTINGS, 0, (LPARAM) &prop);
+						if (_isOff == TRUE) {
+							::SendMessage(_hParentHandle, HEXM_GETPOS, 0, (LPARAM)&iPos);
+						}
+
 						::GetWindowText(_hLineEdit, text, 16);
-						::SendMessage(_hParentHandle, HEXM_SETCURLINE, 0, (LPARAM)ASCIIConvert(text) / (prop.columns * prop.bits));
+						iPos += ASCIIConvert(text);
+
+						::SendMessage(_hParentHandle, HEXM_GETLENGTH, 0, (LPARAM)&iMax);
+						iMax--;
+
+						if (iPos > iMax) {
+							iPos = iMax;
+						}
+						::SendMessage(_hParentHandle, HEXM_SETSEL, iPos, (LPARAM)iPos);
 					}
 					else
 					{
+						if (_isOff == TRUE) {
+							::SendMessage(_hParentHandle, HEXM_GETCURLINE, 0, (LPARAM)&iPos);
+						}
+
 						::GetWindowText(_hLineEdit, text, 16);
-						::SendMessage(_hParentHandle, HEXM_SETCURLINE, 0, (LPARAM)atoi(text)-1);
+						iPos += atoi(text);
+
+						::SendMessage(_hParentHandle, HEXM_GETLINECNT, 0, (LPARAM)&iMax);
+
+						if (iPos > iMax) {
+							iPos = iMax;
+						}
+						::SendMessage(_hParentHandle, HEXM_SETCURLINE, 0, (LPARAM)iPos);
 					}
 					display(false);
 					break;
@@ -90,8 +118,14 @@ BOOL CALLBACK GotoDlg::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 				{
 					if (HIWORD(wParam) == BN_CLICKED)
 					{
-						onCombo();
+						calcAddress();
 					}
+					break;
+				}
+				case IDC_RADIO_ADDRESS:
+				case IDC_RADIO_OFFSET:
+				{
+					calcAddress();
 					break;
 				}
 				default:
@@ -143,15 +177,16 @@ LRESULT GotoDlg::runProcEdit(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 }
 
 
-void GotoDlg::onCombo(void)
+void GotoDlg::calcAddress(void)
 {
-	UINT		newLine		= 0;
-	tHexProp	prop		= {0};
-	char		text[16];
-	char		temp[16];
+	UINT		newPos		= 0;
+	tHexProp	prop;
+	char		text[17];
+	char		temp[17];
 
-	/* get new state */
+	/* get new states */
 	_isHex = (::SendDlgItemMessage(_hSelf, IDC_CHECK_HEX, BM_GETCHECK, 0, 0) == BST_CHECKED)? TRUE:FALSE;
+	_isOff = (::SendDlgItemMessage(_hSelf, IDC_RADIO_OFFSET, BM_GETCHECK, 0, 0) == BST_CHECKED)? TRUE:FALSE;
 
 	/* update also min and max */
 	UpdateDialog();
@@ -159,23 +194,41 @@ void GotoDlg::onCombo(void)
 	/* change user input */
 	::SendMessage(_hParentHandle, HEXM_GETSETTINGS, 0, (LPARAM)&prop);
 
-	::GetWindowText(_hLineEdit, temp, 16);
+	::GetWindowText(_hLineEdit, temp, 17);
 
 	if (strlen(temp) != 0)
 	{
-		if (_isHex == TRUE)
+		if (_isOff == TRUE)
 		{
-			newLine = atoi(temp);
-			newLine *= prop.columns * prop.bits;
-			itoa(newLine, text, 16);
-			::SetWindowText(_hLineEdit, text);
+			if (_isHex == TRUE)
+			{
+				newPos = atoi(temp) * prop.columns * prop.bits;
+				sprintf(text, "%x", newPos);
+				::SetWindowText(_hLineEdit, text);
+			}
+			else
+			{
+				newPos = ASCIIConvert(temp);
+				newPos /= (prop.columns * prop.bits);
+				sprintf(text, "%d", newPos);
+				::SetWindowText(_hLineEdit, text);
+			}
 		}
 		else
 		{
-			newLine = ASCIIConvert(temp);
-			newLine /= (prop.columns * prop.bits);
-			itoa(newLine, text, 10);
-			::SetWindowText(_hLineEdit, text);
+			if (_isHex == TRUE)
+			{
+				newPos = atoi(temp) * prop.columns * prop.bits;
+				sprintf(text, "%x", newPos);
+				::SetWindowText(_hLineEdit, text);
+			}
+			else
+			{
+				newPos = ASCIIConvert(temp);
+				newPos /= (prop.columns * prop.bits);
+				sprintf(text, "%d", newPos);
+				::SetWindowText(_hLineEdit, text);
+			}
 		}
 	}
 }
@@ -183,29 +236,47 @@ void GotoDlg::onCombo(void)
 
 void GotoDlg::UpdateDialog(void)
 {
-	UINT		curLine		= 0;
-	UINT		maxLine		= 0;
-	tHexProp	prop		= {0};
-	char		text[16];
+	tHexProp	prop;
+	char		text[17];
 
-	::SendMessage(_hParentHandle, HEXM_GETCURLINE, 0, (LPARAM)&curLine);
-	::SendMessage(_hParentHandle, HEXM_GETLINECNT, 0, (LPARAM)&maxLine);
 	::SendMessage(_hParentHandle, HEXM_GETSETTINGS, 0, (LPARAM)&prop);
 
 	if (_isHex == TRUE)
 	{
+		UINT		curPos		= 0;
+		UINT		maxPos		= 0;
+		::SendMessage(_hParentHandle, HEXM_GETPOS, 0, (LPARAM)&curPos);
+		::SendMessage(_hParentHandle, HEXM_GETLENGTH, 0, (LPARAM)&maxPos);
+		maxPos--;
+
 		/* set current line info */
-		itoa(curLine * prop.columns * prop.bits, text, 16);
+		sprintf(text, "%08X", curPos);
 		::SetDlgItemText(_hSelf, IDC_CURRLINE, text);
 
-		/* set max line info */
-		itoa((maxLine-1) * prop.columns * prop.bits, text, 16);
+		/* set max possible position */
+		if (_isOff == TRUE) {
+			sprintf(text, "%08X", maxPos - curPos);
+		} else {
+			sprintf(text, "%08X", maxPos);
+		}
 		::SetDlgItemText(_hSelf, IDC_LASTLINE, text);
 	}
 	else
 	{
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_CURRLINE), itoa(curLine+1, text, 10));
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_LASTLINE), itoa(maxLine, text, 10));
+		UINT		curLine		= 0;
+		UINT		maxLine		= 0;
+		::SendMessage(_hParentHandle, HEXM_GETCURLINE, 0, (LPARAM)&curLine);
+		::SendMessage(_hParentHandle, HEXM_GETLINECNT, 0, (LPARAM)&maxLine);
+
+		/* set current line info */
+		::SetWindowText(::GetDlgItem(_hSelf, IDC_CURRLINE), itoa(curLine, text, 10));
+
+		/* set max possible position */
+		if (_isOff == TRUE) {
+			::SetWindowText(::GetDlgItem(_hSelf, IDC_LASTLINE), itoa(maxLine - curLine, text, 10));
+		} else {
+			::SetWindowText(::GetDlgItem(_hSelf, IDC_LASTLINE), itoa(maxLine, text, 10));
+		}
 	}
 }
 
