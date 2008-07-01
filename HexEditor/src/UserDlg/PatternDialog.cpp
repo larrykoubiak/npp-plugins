@@ -25,8 +25,11 @@ extern char	hexMask[256][3];
 
 void PatternDlg::patternReplace(HWND hHexEdit)
 {
+	if (NLGetText(_hInst, _hParent, "Pattern Replace", _txtCaption, sizeof(_txtCaption)) == 0) {
+		strcpy(_txtCaption, "Pattern Replace");
+	}
+
 	doDialog(hHexEdit);
-	::SetWindowText(_hSelf, "Replace pattern");
 	::ShowWindow(::GetDlgItem(_hSelf, IDC_STATIC_COUNT), SW_HIDE);
 	::ShowWindow(::GetDlgItem(_hSelf, IDC_EDIT_COUNT), SW_HIDE);
 	::ShowWindow(::GetDlgItem(_hSelf, IDC_STATIC_COL), SW_HIDE);
@@ -38,8 +41,11 @@ void PatternDlg::patternReplace(HWND hHexEdit)
 
 void PatternDlg::insertColumns(HWND hHexEdit)
 {
+	if (NLGetText(_hInst, _hParent, "Insert Columns", _txtCaption, sizeof(_txtCaption)) == 0) {
+		strcpy(_txtCaption, "Insert Columns");
+	}
+
 	doDialog(hHexEdit);
-	::SetWindowText(_hSelf, "Insert columns");
 	::ShowWindow(::GetDlgItem(_hSelf, IDC_STATIC_COUNT), SW_SHOW);
 	::ShowWindow(::GetDlgItem(_hSelf, IDC_EDIT_COUNT), SW_SHOW);
 	::ShowWindow(::GetDlgItem(_hSelf, IDC_STATIC_COL), SW_SHOW);
@@ -70,8 +76,12 @@ BOOL CALLBACK PatternDlg::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LP
 		case WM_INITDIALOG:
 		{
 			_pCombo = new MultiTypeCombo;
-			_pCombo->init(::GetDlgItem(_hSelf, IDC_COMBO_PATTERN));
+			_pCombo->init(_hParent, ::GetDlgItem(_hSelf, IDC_COMBO_PATTERN));
 			_pCombo->setCodingType(HEX_CODE_HEX);
+
+			 /* change language */
+			NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, "Pattern");
+			::SetWindowText(_hSelf, _txtCaption);
 			break;
 		}
 		case WM_COMMAND : 
@@ -124,7 +134,8 @@ BOOL PatternDlg::onInsert(void)
 	_pCombo->getText(&_pattern);
 	if (_pattern.length == 0)
 	{
-		::MessageBox(_hSelf, "Pattern not set!", "HexEdit", MB_OK);
+		if (NLMessageBox(_hInst, _hParent, "MsgBox PatNotSet", MB_OK) == FALSE)
+			::MessageBox(_hParent, "Pattern is not set!", "Hex-Editor", MB_OK);
 		return FALSE;
 	}
 
@@ -133,7 +144,7 @@ BOOL PatternDlg::onInsert(void)
 	INT			count = 0;
 	INT			lines = 0;
 	INT			pos   = 0;
-	char		buffer[128];
+	char		buffer[MAX_PATH];
 
 	/* copy data into scintilla handle (encoded if necessary) */
 	hSCI = (HWND)::SendMessage(_hParent, NPPM_CREATESCINTILLAHANDLE, 0, (LPARAM)_hSelf);
@@ -148,7 +159,8 @@ BOOL PatternDlg::onInsert(void)
 	count = atoi(buffer);
 	if ((count == 0) || ((count + prop.columns) > (128 / prop.bits)))
 	{
-		::MessageBox(_hSelf, "Max column count can be 1 till 128 bytes in a row.", "HexEdit", MB_OK|MB_ICONERROR);
+		if (NLMessageBox(_hInst, _hParent, "MsgBox MaxColCnt", MB_OK|MB_ICONERROR) == FALSE)
+			::MessageBox(_hParent, "Maximum of 128 bytes can be shown in a row.", "Hex-Editor", MB_OK|MB_ICONERROR);
 		return FALSE;
 	}
 
@@ -157,8 +169,14 @@ BOOL PatternDlg::onInsert(void)
 	pos = atoi(buffer);
 	if (pos > prop.columns)
 	{
-		sprintf(buffer, "Only column position between 0 and %d possible.\n", prop.columns);
-		::MessageBox(_hSelf, buffer, "HexEdit", MB_OK|MB_ICONERROR);
+		CHAR	txtMsgBox[MAX_PATH];
+
+		if (NLGetText(_hInst, _hParent, "Pos Between", buffer, sizeof(buffer)) == 0) {
+			sprintf(txtMsgBox, "Only column position between 0 and %d possible.", prop.columns);
+		} else {
+			sprintf(txtMsgBox, buffer, prop.columns);
+		}
+		::MessageBox(_hParent, txtMsgBox, "Hex-Editor", MB_OK|MB_ICONERROR);
 		return FALSE;
 	}
 	else
@@ -183,12 +201,16 @@ BOOL PatternDlg::onInsert(void)
 		memcpy(&pattern[i*_pattern.length], _pattern.text, _pattern.length);
 	}
 
+	/* extend column width of target */
+	::SendMessage(_hParentHandle, HEXM_SETCOLUMNCNT, 0, count + prop.columns);
+
 	/* set pattern in columns */
 	cntPat = 0;
 	for (i = 0; i < lines; i++)
 	{
 		ScintillaMsg(hSCI, SCI_SETCURRENTPOS, pos);
 		ScintillaMsg(hSCI, SCI_ADDTEXT, prop.bits * count, (LPARAM)&pattern[cntPat]);
+		::SendMessage(_hParentHandle, HEXM_UPDATEBKMK, pos, (LPARAM)prop.bits * count);
 		pos += (count + prop.columns) * prop.bits;
 		cntPat += prop.bits * count;
 		if (cntPat >= patSize)
@@ -198,11 +220,8 @@ BOOL PatternDlg::onInsert(void)
 	/* copy modified text back */
 	LittleEndianChange(getCurrentHScintilla(), hSCI);
 
-	/* extend column width */
-	::SendMessage(_hParentHandle, HEXM_SETCOLUMNCNT, 0, count + prop.columns);
-
 	/* free allocated space */
-	::SendMessage(hSCI, SCI_UNDO, 0, 0);
+	CleanScintillaBuf(hSCI);
 	::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 	delete [] pattern;
 
@@ -226,7 +245,8 @@ BOOL PatternDlg::onReplace(void)
 	::SendMessage(_hParentHandle, HEXM_GETSEL, (WPARAM)&posBeg, (LPARAM)&posEnd);
 	if (posBeg == posEnd)
 	{
-		::MessageBox(_hSelf, "Select something in the text!", "HexEdit", MB_OK);
+		if (NLMessageBox(_hInst, _hParent, "MsgBox SelectSomething", MB_OK) == FALSE)
+			::MessageBox(_hParent, "Select something in the text!", "Hex-Editor", MB_OK);
 		return FALSE;
 	}
 
@@ -234,7 +254,8 @@ BOOL PatternDlg::onReplace(void)
 	_pCombo->getText(&_pattern);
 	if (_pattern.length == 0)
 	{
-		::MessageBox(_hSelf, "Pattern is not set correctly!", "HexEdit", MB_OK);
+		if (NLMessageBox(_hInst, _hParent, "MsgBox PatNotSet", MB_OK) == FALSE)
+			::MessageBox(_hParent, "Pattern is not set!", "Hex-Editor", MB_OK);
 		return FALSE;
 	}
 
@@ -287,7 +308,7 @@ BOOL PatternDlg::onReplace(void)
 			LITTLE_REPLEACE_ERROR;
 
 			/* free allocated space */
-			::SendMessage(hSCI, SCI_UNDO, 0, 0);
+			CleanScintillaBuf(hSCI);
 			::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 
 			return FALSE;
@@ -334,7 +355,7 @@ BOOL PatternDlg::onReplace(void)
 				LITTLE_REPLEACE_ERROR;
 				
 				/* free allocated space */
-				::SendMessage(hSCI, SCI_UNDO, 0, 0);
+				CleanScintillaBuf(hSCI);
 				::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 				delete [] pattern;
 
@@ -353,7 +374,7 @@ BOOL PatternDlg::onReplace(void)
 	::SendMessage(_hParentHandle, HEXM_SETPOS, 0, posEnd - prop.bits * prop.columns);
 	
 	/* free allocated space */
-	::SendMessage(hSCI, SCI_UNDO, 0, 0);
+	CleanScintillaBuf(hSCI);
 	::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 
 	/* add text to combo ;) */

@@ -18,7 +18,7 @@
 #ifndef PATTERN_DEFINE_H
 #define PATTERN_DEFINE_H
 
-#include "PluginInterface.h"
+#include "Hex.h"
 #include "HexResource.h"
 #include "StaticDialog.h"
 #include "MultiTypeCombo.h"
@@ -64,7 +64,6 @@ protected :
 private:
 	/* Handles */
 	NppData				_nppData;
-    HWND				_HSource;
 	HWND				_hParentHandle;
 	WNDPROC				_hDefaultEditProc;
 
@@ -72,6 +71,7 @@ private:
 	MultiTypeCombo*		_pCombo;
 
 	BOOL				_isReplace;
+	TCHAR				_txtCaption[64];
 };
 
 
