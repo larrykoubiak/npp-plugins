@@ -41,12 +41,12 @@ struct DLGTEMPLATEEX {
 class StaticDialog : public Window
 {
 public :
-	StaticDialog() : Window() {};
+	StaticDialog() : Window(), _isModeles(false) {};
 	~StaticDialog(){
 		if (isCreated())
 			destroy();
 	};
-	virtual void create(int dialogID, bool isRTL = false);
+	virtual void create(int dialogID, bool isRTL = false, bool isModeles = true);
 
     virtual bool isCreated() const {
 		return (_hSelf != NULL);
@@ -54,7 +54,9 @@ public :
 
 	void goToCenter();
     void destroy() {
-		::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)_hSelf);
+		if (_isModeles) {
+			::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)_hSelf);
+		}
 		::DestroyWindow(_hSelf);
 	};
 
@@ -65,6 +67,8 @@ protected :
 
     void alignWith(HWND handle, HWND handle2Align, PosAlign pos, POINT & point);
 	HGLOBAL makeRTLResource(int dialogID, DLGTEMPLATE **ppMyDlgTemplate);
+
+	bool		_isModeles;
 };
 
 #endif //STATIC_DIALOG_H
