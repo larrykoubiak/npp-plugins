@@ -20,7 +20,7 @@
 #define COLUMN_DIALOG_H
 
 #include "StaticDialog.h"
-#include "PluginInterface.h"
+#include "Hex.h"
 #include "HEXResource.h"
 
 
@@ -37,7 +37,8 @@ public:
 		Window::init(hInst, nppData._nppHandle);
 	};
 
-   	UINT doDialog(UINT column);
+   	UINT doDialogColumn(UINT column);
+   	UINT doDialogAddWidth(UINT column);
 
     virtual void destroy() {};
 
@@ -50,7 +51,9 @@ private:
 	NppData			_nppData;
     HWND			_HSource;
 
+	BOOL			_isColumn;
 	UINT			_column;
+	UINT			_width;
 };
 
 
