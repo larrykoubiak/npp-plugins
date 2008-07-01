@@ -15,22 +15,14 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-#include "PluginInterface.h"
 #include "HEXDialog.h"
-#include "ColumnDialog.h"
 #include "HEXResource.h"
+#include "ColumnDialog.h"
 #include "Scintilla.h"
 #include "resource.h"
 
 #include <windows.h>
 #include <commctrl.h>
-
-
-#define FACTOR			((_pCurProp->isBin == TRUE)?8:2)
-#define	SUBITEM_LENGTH	(_pCurProp->bits * FACTOR)
-#define FULL_SUBITEM	((_pCurProp->cursorItem * VIEW_ROW + (_pCurProp->cursorSubItem * _pCurProp->bits)) <= _currLength)
-#define SELECTION_COLOR	(::CreateSolidBrush(RGB(0x88,0x88,0xff)))
-#define DUMP_FIELD		(_pCurProp->columns + 1)
 
 
 extern char	hexMask[256][3];
@@ -41,13 +33,24 @@ HexEdit::HexEdit(void)
 {
 	_hListCtrl			= NULL;
 	_pCurProp			= NULL;
-	_hDefaultParentProc	= NULL;
-	_iFontSize			= 16;
 	_isCurOn			= FALSE;
 	_openDoc			= -1;
+	_lastOpenHex		= -1;
 	_isLBtnDown			= FALSE;
 	_isRBtnDown			= FALSE;
 	_isWheel			= FALSE;
+	_iUnReCnt			= 0;
+	_uUnReCode			= 0;
+	_iOldHorDiff		= 0;
+	_iOldVerDiff		= 0;
+	_oldAnchorItem		= 0;
+	_oldAnchorSubItem	= 0;
+	_oldAnchorCurPos	= 0;
+	_oldCursorItem		= 0;
+	_oldCursorSubItem	= 0;
+	_oldCursorCurPos	= 0;
+	_uFirstVisSubItem	= 0;
+	_uLastVisSubItem	= 0;
 }
 
 HexEdit::~HexEdit(void)
@@ -63,11 +66,9 @@ void HexEdit::init(HINSTANCE hInst, NppData nppData, LPCTSTR iniFilePath)
 
     if (!isCreated())
 	{
-        create(IDD_HEX_DLG);
-//		::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_hSelf);
+		create(IDD_HEX_DLG, false, false);
 	}
 }
-
 
 BOOL CALLBACK HexEdit::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
@@ -76,11 +77,12 @@ BOOL CALLBACK HexEdit::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 		case WM_INITDIALOG:
 		{
 			_hListCtrl	= ::GetDlgItem(_hSelf, IDC_HEX_LIST);
-			SetFontSize(_iFontSize);
+			_fontSize	= getFontSizeElem();
+			SetFont();
 
 			/* intial subclassing for key mapping */
-			::SetWindowLong(_hListCtrl, GWL_USERDATA, reinterpret_cast<LONG>(this));
-			_hDefaultListProc = reinterpret_cast<WNDPROC>(::SetWindowLong(_hListCtrl, GWL_WNDPROC, reinterpret_cast<LONG>(wndListProc)));
+			::SetWindowLong(_hListCtrl, GWL_USERDATA, (LONG)(void *)this);
+			_hDefaultListProc = (WNDPROC)(void *)(::SetWindowLong(_hListCtrl, GWL_WNDPROC, (LONG)(void *)wndListProc));
 			ListView_SetExtendedListViewStyleEx(_hListCtrl, LVS_EX_ONECLICKACTIVATE, LVS_EX_ONECLICKACTIVATE);
 			break;
 		}
@@ -94,18 +96,15 @@ BOOL CALLBACK HexEdit::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 				if (_pCurProp->isVisible == TRUE)
 				{
 					/* set cursor timer */
-					_isCurOn = TRUE;
-					::SetTimer(_hListCtrl, IDC_HEX_CURSORTIMER, 500, cursorFunc);
+					RestartCursor();
 					::SetFocus(_hListCtrl);
 				}
-
 				/* check menu and tb icon */
 				checkMenu(_pCurProp->isVisible);
 			}
 			else
 			{
-				::KillTimer(_hListCtrl, IDC_HEX_CURSORTIMER);
-				_isCurOn = FALSE;
+				DisableCursor();
 			}
 			ListView_RedrawItems(_hListCtrl, _pCurProp->cursorItem, _pCurProp->cursorItem);
 			break;
@@ -126,134 +125,149 @@ BOOL CALLBACK HexEdit::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 		}
 		case WM_NOTIFY:
 		{
-			switch (((LPNMHDR)lParam)->code)
+			if (((LPNMHDR)lParam)->hwndFrom == _hListCtrl)
 			{
-				case LVN_GETDISPINFO:
+				switch (((LPNMHDR)lParam)->code)
 				{
-					static char text[129] = "\0";
-					LV_ITEM &lvItem = reinterpret_cast<LV_DISPINFO*>((LV_DISPINFO FAR *)lParam)->item;
-
-					if (lvItem.mask & LVIF_TEXT)
+					case LVN_GETDISPINFO:
 					{
-						ReadArrayToList(text, lvItem.iItem ,lvItem.iSubItem);
-						lvItem.pszText = text;
-					}
-					return TRUE;
-				}
-				case NM_CUSTOMDRAW:
-				{
-					LPNMLVCUSTOMDRAW lpCD = (LPNMLVCUSTOMDRAW)lParam;
+						static char text[129] = "\0";
+						LV_ITEM &lvItem = reinterpret_cast<LV_DISPINFO*>((LV_DISPINFO FAR *)lParam)->item;
 
-					switch (lpCD->nmcd.dwDrawStage)
-					{
-						case CDDS_PREPAINT:
-							SetWindowLong(_hSelf, DWL_MSGRESULT, (LONG)(CDRF_NOTIFYITEMDRAW));
-							return TRUE;
-
-						case CDDS_ITEMPREPAINT:
-							SetWindowLong(_hSelf, DWL_MSGRESULT, (LONG)(CDRF_NOTIFYSUBITEMDRAW));
-							return TRUE;
-
-						case CDDS_ITEMPREPAINT | CDDS_SUBITEM:
+						if (lvItem.mask & LVIF_TEXT)
 						{
-							UINT	iItem	 = _pCurProp->anchorItem;
-
-							if ((_pCurProp->isSel == FALSE) && (lpCD->nmcd.dwItemSpec == iItem))
-							{
-								UINT	iSubItem = _pCurProp->anchorSubItem;
-
-								if ((lpCD->iSubItem >= 1) && (lpCD->iSubItem <= _pCurProp->columns))
-								{
-									/* draw text */
-									DrawItemText(lpCD->nmcd.hdc, (DWORD)lpCD->nmcd.dwItemSpec, lpCD->iSubItem);
-									SetWindowLong(_hSelf, DWL_MSGRESULT, (LONG)(CDRF_SKIPDEFAULT));
-									return TRUE;
-								}
-								if (lpCD->iSubItem == DUMP_FIELD)
-								{
-									/* draw text */
-									DrawDumpText(lpCD->nmcd.hdc, (DWORD)lpCD->nmcd.dwItemSpec, lpCD->iSubItem);
-									SetWindowLong(_hSelf, DWL_MSGRESULT, (LONG)(CDRF_SKIPDEFAULT));
-									return TRUE;
-								}
-							}
-							else if (_pCurProp->isSel == TRUE)
-							{
-								UINT	firstItem	= 0;
-								UINT	lastItem	= 0;
-
-								if (_pCurProp->anchorItem <= _pCurProp->cursorItem)
-								{
-									firstItem	= _pCurProp->anchorItem;
-									lastItem	= _pCurProp->cursorItem;
-								}
-								else
-								{
-									firstItem	= _pCurProp->cursorItem;
-									lastItem	= _pCurProp->anchorItem;
-								}
-
-								if ((lpCD->iSubItem >= 1) && (lpCD->iSubItem <= _pCurProp->columns) &&
-									(lpCD->nmcd.dwItemSpec >= firstItem) && (lpCD->nmcd.dwItemSpec <= lastItem))
-								{
-									/* draw text */
-									DrawItemText(lpCD->nmcd.hdc, (DWORD)lpCD->nmcd.dwItemSpec, lpCD->iSubItem);
-									SetWindowLong(_hSelf, DWL_MSGRESULT, (LONG)(CDRF_SKIPDEFAULT));
-									return TRUE;
-								}
-								if ((lpCD->iSubItem == DUMP_FIELD) && 
-									(lpCD->nmcd.dwItemSpec >= firstItem) && (lpCD->nmcd.dwItemSpec <= lastItem))
-								{
-									/* draw text */
-									DrawDumpText(lpCD->nmcd.hdc, (DWORD)lpCD->nmcd.dwItemSpec, lpCD->iSubItem);
-									SetWindowLong(_hSelf, DWL_MSGRESULT, (LONG)(CDRF_SKIPDEFAULT));
-									return TRUE;
-								}
-							}
-							return TRUE;
+							ReadArrayToList(text, lvItem.iItem ,lvItem.iSubItem);
+							lvItem.pszText = text;
 						}
-						default:
-							return FALSE;
+						return TRUE;
 					}
-					break;
-				}
-				default:
-					break;
-			}
-			break;
-		}
-		case WM_TIMER:
-		{
-			switch (wParam)
-			{
-				case IDC_HEX_REDOUNDO:
-				{
-					/* stop timer */
-					::KillTimer(_hSelf, IDC_HEX_REDOUNDO);
+					case NM_CUSTOMDRAW:
+					{
+						RECT	rc			= {0};
+						RECT	rcSubItem	= {0};
+						LPNMLVCUSTOMDRAW lpCD = (LPNMLVCUSTOMDRAW)lParam;
 
-					/* set cursor position */
-					SetPosition(_posRedoUndo);
-					break;
-				}
-				case IDC_HEX_PASTE:
-				{
-					/* stop timer */
-					::KillTimer(_hSelf, IDC_HEX_PASTE);
+						switch (lpCD->nmcd.dwDrawStage)
+						{
+							case CDDS_PREPAINT:
+								/* delete previous memory dc rect */
+								::ZeroMemory(&_rcMemDc, sizeof(RECT));
 
-					SetPosition(ScintillaMsg(SCI_GETCURRENTPOS));
-					break;
+								/* get window rect */
+								::GetWindowRect(_hListCtrl, &rc);
+
+								/* get background brush */
+								_hBkBrush  = ::CreateSolidBrush(getColor(HEX_COLOR_REG_BK));
+
+								/* create memory DC for flicker free paint */
+								_hMemDc		= ::CreateCompatibleDC(lpCD->nmcd.hdc);
+								_hBmp		= ::CreateCompatibleBitmap(lpCD->nmcd.hdc, rc.right - rc.left, rc.bottom - rc.top);
+								_hOldBmp	= (HBITMAP)::SelectObject(_hMemDc, _hBmp);
+								_hOldFont	= (HFONT)::SelectObject(_hMemDc, _hFont);
+
+								/* get first and last visible sub items */
+								::GetClientRect(_hListCtrl, &rc);
+								for (UINT uSubItem = 1; uSubItem <= DUMP_FIELD; uSubItem++) {
+									ListView_GetSubItemRect(_hListCtrl, lpCD->nmcd.dwItemSpec, uSubItem, LVIR_BOUNDS, &rcSubItem);
+									if ((rc.left <= rcSubItem.right) && (rc.right >= rcSubItem.left)) {
+										if (_uFirstVisSubItem == 0) {
+											_uFirstVisSubItem = uSubItem;
+										}
+										_uLastVisSubItem = uSubItem;
+									}
+								}
+
+								SetWindowLongW(hwnd, DWL_MSGRESULT, (LONG)(CDRF_NOTIFYITEMDRAW|CDRF_NOTIFYPOSTPAINT));
+								return TRUE;
+
+							case CDDS_ITEMPREPAINT:
+								/* calculate new drawing context size for blitting */
+								ListView_GetItemRect(_hListCtrl, lpCD->nmcd.dwItemSpec, &rc, LVIR_BOUNDS);
+								if (_rcMemDc.bottom == 0) {
+
+									/* set initial mem rect */
+									_rcMemDc = rc;
+
+									/* calculate header position */
+									RECT	rcHeader	= {0};
+									::GetWindowRect(_hHeader, &rcHeader);
+									ScreenToClient(_hHeader, &rcHeader);
+
+									/* if item rect top is within the header recalculate top */
+									if (rcHeader.bottom > rc.top) {
+										_rcMemDc.top = rcHeader.bottom;
+									}
+								} else {
+									_rcMemDc.bottom = rc.bottom;
+								}
+
+								/* draw background */
+								::SetBkMode(_hMemDc, TRANSPARENT);
+								::FillRect(_hMemDc, &rc, _hBkBrush);
+
+								/* draw first element */
+								DrawAddressText(_hMemDc, (DWORD)lpCD->nmcd.dwItemSpec);
+
+								/* draw other elements */
+								for (UINT uSubItem = _uFirstVisSubItem; uSubItem <= _uLastVisSubItem; uSubItem++) {
+									if (uSubItem == DUMP_FIELD) {
+										DrawDumpText(_hMemDc, (DWORD)lpCD->nmcd.dwItemSpec, uSubItem);
+									} else {
+										DrawItemText(_hMemDc, (DWORD)lpCD->nmcd.dwItemSpec, uSubItem);
+									}
+								}
+
+								SetWindowLong(hwnd, DWL_MSGRESULT, (LONG)(CDRF_SKIPDEFAULT));
+								return TRUE;
+
+							case CDDS_POSTPAINT:
+							{
+								::BitBlt(lpCD->nmcd.hdc, _rcMemDc.left, _rcMemDc.top, _rcMemDc.right - _rcMemDc.left, _rcMemDc.bottom - _rcMemDc.top, 
+									_hMemDc, _rcMemDc.left, _rcMemDc.top, SRCCOPY);
+
+								/* destroy background brush */
+								::DeleteObject(_hBkBrush);
+
+								/* destroy memory DC */
+								::SelectObject(_hMemDc, _hOldFont);
+								::SelectObject(_hMemDc, _hOldBmp);
+								::DeleteObject(_hBmp);
+								::DeleteDC(_hMemDc);
+
+								/* reset the boundary */
+								_uFirstVisSubItem = 0;
+								_uLastVisSubItem = 0;
+
+								SetWindowLong(hwnd, DWL_MSGRESULT, (LONG)(CDRF_SKIPDEFAULT));
+								return TRUE;
+							}
+							default:
+								return FALSE;
+						}
+						break;
+					}
+					default:
+						break;
 				}
 			}
 			break;
 		}
 		case WM_DESTROY :
 		{
+			for (size_t i = 0; i < _hexProp.size(); i++) {
+				delete [] _hexProp[i].pCompareData;
+			}
 			_hexProp.clear();
 			break;
 		}
 		case HEXM_SETSEL :
 		{
-			SetSelection((INT)wParam, (INT)lParam);
+			SetSelection((INT)wParam, (INT)lParam, HEX_SEL_NORM, (((INT)lParam) % VIEW_ROW == 0) && ((INT)wParam != (INT)lParam));
+			if (_pCurProp->editType == HEX_EDIT_HEX) {
+				EnsureVisible(_pCurProp->cursorItem, _pCurProp->cursorSubItem);
+			} else {
+				EnsureVisible(_pCurProp->cursorItem, DUMP_FIELD);
+			}
 			break;
 		}
 		case HEXM_GETSEL :
@@ -302,7 +316,17 @@ BOOL CALLBACK HexEdit::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 		{
 			*((UINT*)lParam) = GetItemCount();
 			break;
-		}		
+		}
+		case HEXM_UPDATEBKMK:
+		{
+			UpdateBookmarks(wParam, (INT)lParam);
+			break;
+		}
+		case HEXM_GETLENGTH:
+		{
+			*((UINT*)lParam) = _SciWrp.execute(SCI_GETLENGTH);
+			break;
+		}
 		default:
 			break;
 	}
@@ -317,46 +341,26 @@ LRESULT HexEdit::runProcParent(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lP
 		switch (Message)
 		{
 			case WM_SIZE:
-			case WM_SIZING:
-			case WM_MOVING:
-			case WM_ENTERSIZEMOVE:
-			case WM_EXITSIZEMOVE:
 			{
 				MoveView();
 				break;
 			}
-			case WM_MOUSEWHEEL:
-			{
-				if (_pCurProp->isVisible == TRUE)
-				{
-					if (wParam & MK_CONTROL)
-					{
-						if ((short)HIWORD(wParam) >= WHEEL_DELTA)
-						{
-							ZoomIn();
-						}
-						else
-						{
-							ZoomOut();
-						}
-						return FALSE;
-					}
-					else
-					{
-						::SendMessage(_hListCtrl, Message, wParam, lParam);
-					}
-				}
-				break;
-			}
-			case WM_CHAR:
+			case WM_KEYUP:
 			case WM_KEYDOWN:
+			case WM_SYSKEYUP:
 			case WM_SYSKEYDOWN:
 			{
-				if (_pCurProp->isVisible == TRUE)
-				{
+				if (_pCurProp->isVisible == TRUE) {
 					::SetFocus(_hListCtrl);
 					::SendMessage(_hListCtrl, Message, wParam, lParam);
 					return FALSE;
+				}
+				break;
+			}
+			case SCI_TAB:
+			{
+				if (TabMessage() == TRUE) {
+					return TRUE;
 				}
 				break;
 			}
@@ -374,7 +378,7 @@ LRESULT HexEdit::runProcParent(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lP
 		}
 	}
 
-	return ::CallWindowProc(_hDefaultParentProc, hwnd, Message, wParam, lParam);
+	return _SciWrp.SciCallWndProc(_SciWrp.OrigSciWndProc, hwnd, Message, wParam, lParam);
 }
 
 
@@ -401,6 +405,12 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 
 				/* check menu and tb icon */
 				checkMenu(_pCurProp->isVisible);
+				RestartCursor();
+				break;
+			}
+			case WM_KILLFOCUS:
+			{
+				DisableCursor();
 				break;
 			}
 			case WM_LBUTTONDOWN:
@@ -412,33 +422,39 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 				info.pt.y = HIWORD(lParam);
 				ListView_SubItemHitTest(_hListCtrl, &info);
 
-				if (info.iSubItem == 0)
-					return FALSE;
-
-				/* change edit type */
-				_pCurProp->editType = (info.iSubItem == (_pCurProp->columns+1))? HEX_EDIT_ASCII : HEX_EDIT_HEX;
-
-				if (!0x80 & ::GetKeyState(VK_SHIFT))
-				{
-					/* keep sure that selection is off */
-					_pCurProp->isSel	= FALSE;
+				/* if it's not within scope break */
+				if ((info.iItem == -1) || (info.iSubItem == -1)) {
+					break;
 				}
 
-				/* goto position in parent view */
-				if (_pCurProp->editType == HEX_EDIT_HEX)
+				if (info.iSubItem == 0)
 				{
-					OnMouseClickItem(wParam, lParam);
+					ToggleBookmark(info.iItem);
+					return TRUE;
 				}
 				else
 				{
-					OnMouseClickDump(wParam, lParam);
-				}
-				InvalidateNotepad();
+					/* change edit type */
+					_pCurProp->editType = (info.iSubItem == DUMP_FIELD)? HEX_EDIT_ASCII : HEX_EDIT_HEX;
 
-				/* store last position */
-				_x = LOWORD(lParam);
-				_y = HIWORD(lParam);
-				_isLBtnDown = TRUE;
+					/* keep sure that selection is off */
+					if (!0x80 & ::GetKeyState(VK_SHIFT)) {
+						_pCurProp->isSel	= FALSE;
+					}
+
+					/* goto position in parent view */
+					if (_pCurProp->editType == HEX_EDIT_HEX) {
+						OnMouseClickItem(wParam, lParam);
+					} else {
+						OnMouseClickDump(wParam, lParam);
+					}
+					UpdateListChanges();
+
+					/* store last position */
+					_x = LOWORD(lParam);
+					_y = HIWORD(lParam);
+					_isLBtnDown = TRUE;
+				}
 				break;
 			}
 			case WM_LBUTTONUP:
@@ -468,13 +484,35 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 				_isWheel	= FALSE;
 				break;
 			}
-			case WM_MOUSEWHEEL:
+			case WM_MBUTTONDOWN:
 			{
-				if (_isRBtnDown == TRUE)
+				if ((_pCurProp->isVisible == TRUE) && (wParam & MK_CONTROL))
 				{
-					_isWheel = TRUE;
+					ZoomRestore();
 					return TRUE;
 				}
+				break;
+			}
+			case WM_MOUSEWHEEL:
+			{
+				if (_pCurProp->isVisible == TRUE)
+				{
+       				if (_isRBtnDown == TRUE)
+       				{
+       					_isWheel = TRUE;
+   						::SendMessage(_hParent, Message, wParam, lParam);
+   						return TRUE;
+   					}
+   					else if (wParam & MK_CONTROL)
+   					{
+   						if ((short)HIWORD(wParam) >= WHEEL_DELTA) {
+   							ZoomIn();
+   						} else {
+   							ZoomOut();
+   						}
+   						return TRUE;
+   					}
+   				}
 				break;
 			}
 			case WM_MOUSEMOVE:
@@ -512,7 +550,7 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 					ListView_SubItemHitTest(_hListCtrl, &info);
 
 					/* test if last row is empty */
-					if ((_currLength == ((ListView_GetItemCount(_hListCtrl) - 1) * VIEW_ROW)) &&
+					if ((_currLength == ((GetItemCount()) * VIEW_ROW)) &&
 						((info.iItem + 1) == ListView_GetItemCount(_hListCtrl)))
 						return FALSE;
 
@@ -521,6 +559,7 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 
 					if (info.iSubItem <= 0)
 						return FALSE;
+
 
 					if (info.iSubItem == DUMP_FIELD)
 					{
@@ -564,38 +603,21 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 						}
 					}
 
-					/* update list only on changes (prevent flickering) */
-					if ((_oldPaintItem != _pCurProp->cursorItem) || (_oldPaintSubItem != _pCurProp->cursorSubItem) ||
-						(_oldPaintCurPos != _pCurProp->cursorPos))
-					{
-						ListView_Update(_hListCtrl, 0);
-						_oldPaintItem	 = _pCurProp->cursorItem;
-						_oldPaintSubItem = _pCurProp->cursorSubItem;
-						_oldPaintCurPos  = _pCurProp->cursorPos;
-
-						/* select also in parent view */
-						ScintillaMsg(SCI_SETSEL, _pCurProp->anchorItem * VIEW_ROW + _pCurProp->anchorPos,
-												 _pCurProp->cursorItem * VIEW_ROW + _pCurProp->cursorPos);
-						InvalidateNotepad();
-						return TRUE;
-					}
+					UpdateListChanges();
 				}
 				break;
 			}
 			case WM_SYSKEYDOWN:
-				// ::CallWindowProc(_hDefaultListProc, hwnd, Message, wParam, lParam);
 			case WM_KEYDOWN:
 			{
-				LPARAM	ret = 0;
-
-				if (_pCurProp->editType == HEX_EDIT_HEX)
-				{
-					return OnKeyDownItem(wParam, lParam);
+				if (_pCurProp->editType == HEX_EDIT_HEX) {
+					if (OnKeyDownItem(wParam, lParam) == FALSE)
+						return FALSE;
+				} else {
+					if (OnKeyDownDump(wParam, lParam) == FALSE)
+						return FALSE;
 				}
-				else
-				{
-					return OnKeyDownDump(wParam, lParam);
-				}
+				break;
 			}
 			case WM_CHAR:
 			{
@@ -605,42 +627,63 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 					{
 						case 0x01:
 							SetSelection(0, _currLength);
-							break;
+							return FALSE;
 						case 0x18:
 							Cut();
-							break;
+							return FALSE;
 						case 0x03:
 							Copy();
-							break;
+							return FALSE;
 						case 0x16:
 							Paste();
-							break;
+							return FALSE;
 						case 0x19:
 							::SendMessage(_hParent, WM_COMMAND, IDM_EDIT_REDO, 0);
-							break;
+							return FALSE;
 						case 0x1A:
 							::SendMessage(_hParent, WM_COMMAND, IDM_EDIT_UNDO, 0);
-							break;
+							return FALSE;
 						default:
 							break;
 					}
 				}
-				else
+				else if (wParam != VK_TAB)
 				{
-					if (_pCurProp->editType == HEX_EDIT_HEX)
-					{
-						return OnCharItem(wParam, lParam);
-					}
-					else
-					{
-						OnCharDump(wParam, lParam);
+					if (_pCurProp->editType == HEX_EDIT_HEX) {
+						if (OnCharItem(wParam, lParam) == FALSE)
+							return FALSE;
+					} else {
+						if (OnCharDump(wParam, lParam) == FALSE)
+							return FALSE;
 					}
 				}
+				break;
+			}
+			case WM_DROPFILES:
+			{
+				HDROP hDrop	= (HDROP)wParam;
+
+				::SetFocus(_hParentHandle);
+
+				INT filesDropped = ::DragQueryFile(hDrop, 0xffffffff, NULL, 0);
+				for (INT i = 0 ; i < filesDropped ; ++i)
+				{
+					CHAR pszFilePath[MAX_PATH];
+					::DragQueryFile(hDrop, i, pszFilePath, MAX_PATH);
+					::SendMessage(_hParent, NPPM_DOOPEN, 0, (LPARAM)pszFilePath);
+				}
+				::DragFinish(hDrop);
+
+				if (::IsIconic(_hParent))
+				{
+					::ShowWindow(_hParent, SW_RESTORE);
+				}
+				::SetForegroundWindow(_hParent);
 				return TRUE;
 			}
 			case WM_ERASEBKGND:
 			{
-				HBRUSH	hbrush	= ::CreateSolidBrush(RGB(0xFF,0xFF,0xFF));
+				HBRUSH	hbrush	= ::CreateSolidBrush(getColor(HEX_COLOR_REG_BK));
 
 				/* get the not used space */
 				UINT	right;
@@ -670,36 +713,6 @@ LRESULT HexEdit::runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPar
 				::DeleteObject(hbrush);
 				return FALSE;
 			}
-			case WM_GETDLGCODE:
-			{
-				MSG		*msg = (MSG*)lParam;
-
-				if (msg != NULL)
-				{
-					if ((msg->message == WM_KEYDOWN) && (msg->wParam == VK_TAB))
-					{
-						if (0x80 & GetKeyState(VK_CONTROL))
-						{
-							if (0x80 & GetKeyState(VK_SHIFT))
-							{
-								::SendMessage(_hParent, WM_COMMAND, IDC_PREV_DOC, 0);
-							}
-							else
-							{
-								::SendMessage(_hParent, WM_COMMAND, IDC_NEXT_DOC, 0);
-							}
-						}
-						else
-						{
-							UINT pos = GetCurrentPos();
-							_pCurProp->editType = ((_pCurProp->editType == HEX_EDIT_ASCII)?HEX_EDIT_HEX:HEX_EDIT_ASCII);
-							SetPosition(pos);
-						}
-						return TRUE;
-					}
-				}
-				break;
-			}
 			default:
 				break;
 		}
@@ -720,13 +733,11 @@ void HexEdit::UpdateDocs(const char** pFiles, UINT numFiles, INT openDoc)
 	for (size_t i = 0; i < numFiles; i++)
 	{
 		BOOL isCopy = FALSE;
-
-		for (size_t j = 0; j < _hexProp.size(); j++)
-		{
-			if (strcmp(pFiles[i], _hexProp[j].pszFileName) == 0)
-			{
+		for (size_t j = 0; j < _hexProp.size(); j++) {
+			if (stricmp(pFiles[i], _hexProp[j].pszFileName) == 0) {
 				tmpList.push_back(_hexProp[j]);
 				isCopy = TRUE;
+				break;
 			}
 		}
 
@@ -737,15 +748,28 @@ void HexEdit::UpdateDocs(const char** pFiles, UINT numFiles, INT openDoc)
 
 			strcpy(prop.pszFileName, pFiles[i]);
 			prop.isModified		= FALSE;
-			prop.firstVisRow	= 0;
-			prop.editType		= HEX_EDIT_HEX;
-			prop.isSel			= FALSE;
-			prop.selection		= HEX_SEL_NORM;
 
 			/* test if extension of file is registered */
 			prop.isVisible		= IsExtensionRegistered(pFiles[i]);
 
 			tmpList.push_back(prop);
+		}
+	}
+
+	/* delete possible allocated compare buffer */
+	if (numFiles < _hexProp.size())
+	{
+		for (size_t i = 0; i < _hexProp.size(); i++) {
+			BOOL isCopy = FALSE;
+			for (size_t j = 0; j < numFiles; j++) {
+				if (stricmp(_hexProp[i].pszFileName, tmpList[j].pszFileName) == 0) {
+					isCopy = TRUE;
+					break;
+				}
+			}
+			if (isCopy == FALSE) {
+				delete [] _hexProp[i].pCompareData;
+			}
 		}
 	}
 
@@ -761,29 +785,32 @@ void HexEdit::UpdateDocs(const char** pFiles, UINT numFiles, INT openDoc)
 		{
 			/* set the current file attributes */
 			_pCurProp = &_hexProp[_openDoc];
+			if ((_lastOpenHex != _openDoc) && (_pCurProp->isVisible == TRUE)) {
+				UpdateHeader(TRUE);
+			}
+			doDialog();
+
+			/* init open last open hex */
+			if (_lastOpenHex == -1) {
+				_lastOpenHex = _openDoc;
+			}
 		}
 		else
 		{
-			/* hide hex editor */
-			::KillTimer(_hListCtrl, IDC_HEX_CURSORTIMER);
-			display(false);
-
+			doDialog();
 			_pCurProp = NULL;
 		}
 	}
-	else if (tmpList.size() != 0)
+	else if ((tmpList.size() != 0) && (openDoc != -1))
 	{
 		/* set the current file attributes */
 		_pCurProp = &_hexProp[openDoc];
+		doDialog();
 	}
 	else
 	{
 		_pCurProp = NULL;
 	}
-
-	/* update views */
-	if (openDoc != -1)
-		doDialog();
 }
 
 
@@ -800,7 +827,7 @@ void HexEdit::doDialog(BOOL toggle)
 		_pCurProp->isVisible ^= TRUE;
 
 		/* get modification state */
-		BOOL isModified = (BOOL)ScintillaMsg(SCI_GETMODIFY);
+		BOOL isModified = (BOOL)_SciWrp.execute(SCI_GETMODIFY);
 		BOOL isModifiedBefore = _pCurProp->isModified;
 
 		if (_pCurProp->isVisible == TRUE)
@@ -813,27 +840,131 @@ void HexEdit::doDialog(BOOL toggle)
 			_pCurProp->isLittle			= prop.isLittle;
 			_pCurProp->isSel			= FALSE;
 			_pCurProp->anchorItem		= 0;
-			_pCurProp->anchorSubItem	= 0;
+			_pCurProp->anchorSubItem	= 1;
 			_pCurProp->anchorPos		= 0;
 			_pCurProp->cursorItem		= 0;
 			_pCurProp->cursorSubItem	= 1;
 			_pCurProp->cursorPos		= 0;
+			_pCurProp->editType			= HEX_EDIT_HEX;
 
-			::SendMessage(_nppData._nppHandle, NPPM_DECODE_SCI, currentSC, 0);
+			if ((_pCurProp->isLittle == FALSE) || (_pCurProp->bits == HEX_BYTE))
+			{
+				/* start convert and select items */
+				UINT	selStart		= _SciWrp.execute(SCI_GETSELECTIONSTART);
+				UINT	selEnd			= _SciWrp.execute(SCI_GETSELECTIONEND);
+
+				eNppCoding	encoding	= GetNppEncoding();
+
+				switch (GetNppEncoding())
+				{
+					case HEX_CODE_NPP_UTF8_BOM:
+					{
+						::SendMessage(_nppData._nppHandle, NPPM_DECODESCI, currentSC, 0);
+						_currLength = (UINT)_SciWrp.execute(SCI_GETLENGTH, 0, 0);
+						SetSelection(selStart+3, selEnd+3, HEX_SEL_NORM, (selEnd+3) % VIEW_ROW == 0);
+						break;
+					}
+					case HEX_CODE_NPP_USCBE:
+					case HEX_CODE_NPP_USCLE:
+					{
+						UINT	posStart	= 2;
+						UINT	posEnd		= 2;
+						UINT	curPos		= 0;
+
+						while ((curPos <= selStart) || (curPos <= selEnd)) {
+							BYTE byte = (BYTE)_SciWrp.execute(SCI_GETCHARAT, curPos);
+							if ((byte & 0x80) == 0) curPos++;
+							else if ((byte & 0xF8) == 0xF0) curPos+=4;
+							else if ((byte & 0xF0) == 0xE0) curPos+=3;
+							else if ((byte & 0xE0) == 0xC0) curPos+=2;
+							if (curPos <= selStart) posStart += 2;
+							if (curPos <= selEnd) posEnd += 2;
+						}
+						::SendMessage(_nppData._nppHandle, NPPM_DECODESCI, currentSC, 0);
+						SetSelection(posStart, posEnd, HEX_SEL_NORM, posEnd % VIEW_ROW == 0);
+						break;
+					}
+					case HEX_CODE_NPP_ASCI:
+					case HEX_CODE_NPP_UTF8:
+					default:
+					{
+						_currLength = (UINT)_SciWrp.execute(SCI_GETLENGTH, 0, 0);
+						SetSelection(selStart, selEnd, HEX_SEL_NORM, selEnd % VIEW_ROW == 0);
+						break;
+					}
+				}
+				
+				_pCurProp->firstVisRow = _pCurProp->cursorItem;
+			}
+			else
+			{
+				::SendMessage(_nppData._nppHandle, NPPM_DECODESCI, currentSC, 0);
+			}
+
+			/* unset current selection in scintilla*/
+			_SciWrp.execute(SCI_SETSEL, GetCurrentPos(), GetCurrentPos());
 		}
 		else
-			::SendMessage(_nppData._nppHandle, NPPM_ENCODE_SCI, currentSC, 0);
+		{
+			UniMode	um	= (UniMode)::SendMessage(_nppData._nppHandle, NPPM_ENCODESCI, currentSC, 0);
+
+			if ((_pCurProp->isLittle == FALSE) || (_pCurProp->bits == HEX_BYTE))
+			{
+				INT	selStart	= GetAnchor();
+				INT	selEnd		= GetCurrentPos();
+
+				switch (um)
+				{
+					case uniUTF8:
+					{
+						_SciWrp.execute(SCI_SETSEL, 
+							_SciWrp.execute(SCI_POSITIONBEFORE, _SciWrp.execute(SCI_POSITIONAFTER, selStart-3)),
+							_SciWrp.execute(SCI_POSITIONAFTER, _SciWrp.execute(SCI_POSITIONBEFORE, selEnd-3)));
+						break;
+					}
+					case uni16BE:
+					case uni16LE:
+					{
+						UINT	posStart	= 0;
+						UINT	posEnd		= 0;
+						UINT	curPos		= 0;
+						UINT	addPos		= 0;
+
+						selStart = selStart/2 - 1;
+						selEnd	 = selEnd/2 - 1;
+
+						while ((selStart > 0) || (selEnd > 0)) {
+							BYTE byte = (BYTE)_SciWrp.execute(SCI_GETCHARAT, curPos);
+							if ((byte & 0x80) == 0) curPos++, addPos=1;
+							else if ((byte & 0xF8) == 0xF0) curPos+=4, addPos=4;
+							else if ((byte & 0xF0) == 0xE0) curPos+=3, addPos=3;
+							else if ((byte & 0xE0) == 0xC0) curPos+=2, addPos=2;
+							if (selStart > 0) posStart += addPos, selStart--;
+							if (selEnd > 0) posEnd += addPos, selEnd--;
+						}
+						_SciWrp.execute(SCI_SETSEL, posStart, posEnd);
+						break;
+					}
+					case uni8Bit:
+					case uniCookie:
+					default:
+					{
+						_SciWrp.execute(SCI_SETSEL, selStart, selEnd);
+						break;
+					}
+				}
+			}
+		}
 		
-		if ((isModified == FALSE) && (isModifiedBefore == FALSE))
-			ScintillaMsg(SCI_SETSAVEPOINT);
-		else
+		if ((isModified == FALSE) && (isModifiedBefore == FALSE)) {
+			_SciWrp.execute(SCI_SETSAVEPOINT);
+		} else {
 			_pCurProp->isModified = TRUE;
+		}
 
-		InvalidateNotepad();
+		/* update the header */
+		UpdateHeader(_pCurProp->isVisible);
 	}
-
-	/* update the header */
-	UpdateHeader();
 
 	/* set window position and display informations */
 	MoveView();
@@ -847,8 +978,17 @@ void HexEdit::doDialog(BOOL toggle)
 	/* check menu and tb icon */
 	checkMenu(_pCurProp->isVisible);
 
-	/* show or hide window */
+	/* view/hide the editor */
 	display(_pCurProp->isVisible == TRUE);
+
+	/* set possible hidden subitem in focus */
+	if ((_lastOpenHex != _openDoc) && (_pCurProp->isVisible == TRUE)) {
+		SetLineVis(_pCurProp->firstVisRow, HEX_LINE_FIRST);
+		EnsureVisible(_pCurProp->cursorItem, 
+			_pCurProp->editType == HEX_EDIT_ASCII ? DUMP_FIELD:_pCurProp->cursorSubItem);
+		InvalidateNotepad();
+		_lastOpenHex = _openDoc;
+	}
 }
 
 
@@ -863,11 +1003,23 @@ void HexEdit::MoveView(void)
 		
 		::GetWindowRect(_hParentHandle, &rc);
 		ScreenToClient(_nppData._nppHandle, &rc);
-		::SetWindowPos(_hSelf, _hParentHandle, rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, 0L);
-		::ShowWindow(_hParentHandle, SW_HIDE);
 
-		/* Update header */
-		::RedrawWindow(_hListCtrl, NULL, NULL, RDW_INVALIDATE);
+		INT	iNewHorDiff = rc.right - rc.left;
+		INT	iNewVerDiff = rc.bottom - rc.top;
+
+		::SetWindowPos(_hSelf, NULL, rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, FALSE);
+		if (!isVisible()) {
+			::ShowWindow(_hSelf, SW_SHOW);
+			::ShowWindow(_hParentHandle, SW_HIDE);
+			::RedrawWindow(_hListCtrl, NULL, NULL, RDW_INVALIDATE);
+			_hHeader	= ListView_GetHeader(_hListCtrl);
+		}
+		else if ((abs(iNewHorDiff - _iOldHorDiff) > 50) ||
+			(abs(iNewVerDiff - _iOldVerDiff) > 50)) {
+			::RedrawWindow(_hListCtrl, NULL, NULL, RDW_INVALIDATE);
+		}
+		_iOldHorDiff = iNewHorDiff;
+		_iOldVerDiff = iNewVerDiff;
 	}
 	else if ((_openDoc == -1) && (_hParentHandle == _nppData._scintillaSecondHandle))
 	{
@@ -882,46 +1034,51 @@ void HexEdit::MoveView(void)
 }
 
 
-void HexEdit::UpdateHeader(void)
+void HexEdit::UpdateHeader(BOOL isFirstTime)
 {
 	if (_pCurProp == NULL)
 		return;
 
-	if (_pCurProp->isVisible)
+	if ((_pCurProp->isVisible) && (1))
 	{
-		_currLength = (UINT)::SendMessage(_hParentHandle, SCI_GETLENGTH, 0, 0);
+		_currLength = (UINT)_SciWrp.execute(SCI_GETLENGTH, 0, 0);
 
 		/* get current font width */
 		SIZE	size;
 		HDC		hDc = ::GetDC(_hListCtrl);
         SelectObject(hDc, _hFont);
         GetTextExtentPoint32(hDc, "0", 1, &size);
-		::ReleaseDC(_hSelf, hDc);
+		::ReleaseDC(_hListCtrl, hDc);
 		
 		/* update header now */
-		UINT	fontWidth = size.cx;
-		char	temp[16];
-		temp[0] = '+';
+		CHAR	temp[16];
 
 		while (ListView_DeleteColumn(_hListCtrl, 0));
 
-		LVCOLUMN ColSetupTermin = {LVCF_FMT | LVCF_WIDTH | LVCF_TEXT, LVCFMT_LEFT, (fontWidth<<4) + 20, "Address", 7, 0};
+		LVCOLUMN ColSetupTermin = {LVCF_FMT | LVCF_WIDTH | LVCF_TEXT, LVCFMT_LEFT, 
+			(INT)((FLOAT)size.cx * ((FLOAT)_pCurProp->addWidth + 2.5f)), "Address", 7, 0};
+		if (_pCurProp->addWidth < 8)
+			ColSetupTermin.pszText = "Add";
 		ListView_InsertColumn(_hListCtrl, 0, &ColSetupTermin);
 
 		for (SHORT i = 0; i < _pCurProp->columns; i++)
 		{
-			itoa(i * _pCurProp->bits, &temp[1], 16);
+			if (getCLM()) {
+				sprintf(temp, "%X", i * _pCurProp->bits);
+			} else {
+				sprintf(temp, "%x", i * _pCurProp->bits);
+			}
 			ColSetupTermin.mask			= LVCF_TEXT | LVCF_FMT | LVCF_WIDTH;
 			ColSetupTermin.fmt			= LVCFMT_CENTER;
 			ColSetupTermin.pszText		= temp;
 			ColSetupTermin.cchTextMax	= 6;
-			ColSetupTermin.cx			= ((_pCurProp->isBin)? fontWidth<<3:fontWidth<<1) * _pCurProp->bits + 20;
+			ColSetupTermin.cx			= size.cx * (((_pCurProp->isBin)?8:2) * _pCurProp->bits + 1);
 			ListView_InsertColumn(_hListCtrl, i + 1, &ColSetupTermin);
 		}
 		
 		ColSetupTermin.mask			= LVCF_FMT | LVCF_WIDTH | LVCF_TEXT;
 		ColSetupTermin.fmt			= LVCFMT_LEFT;
-		ColSetupTermin.cx			= fontWidth * _pCurProp->columns * _pCurProp->bits + 20;
+		ColSetupTermin.cx			= size.cx * (_pCurProp->columns * _pCurProp->bits + 1);
 		ColSetupTermin.pszText		= "Dump";
 		ColSetupTermin.cchTextMax	= 4;
 		ListView_InsertColumn(_hListCtrl, _pCurProp->columns + 2, &ColSetupTermin);
@@ -939,7 +1096,7 @@ void HexEdit::UpdateHeader(void)
 		}
 
 		/* set list view to old position */
-		SetLineVis(_pCurProp->firstVisRow, HEX_LINE_FIRST);
+		SetLineVis(_pCurProp->firstVisRow, isFirstTime ? HEX_LINE_MIDDLE : HEX_LINE_FIRST);
 	}
 }
 
@@ -1029,7 +1186,7 @@ void HexEdit::Copy(void)
 		}
 
 		/* destory scintilla handle */
-		::SendMessage(hSCI, SCI_UNDO, 0, 0);
+		CleanScintillaBuf(hSCI);
 		::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 		
 		/* convert to hex if usefull */
@@ -1038,13 +1195,13 @@ void HexEdit::Copy(void)
 			tClipboard	data = clipboard;
 			ChangeClipboardDataToHex(&data);
 			/* store selected text in scintilla clipboard */
-			::SendMessage(_hParentHandle, SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
+			_SciWrp.execute(SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
 			delete [] data.text;
 		}
 		else
 		{
 			/* store selected text in scintilla clipboard */
-			::SendMessage(_hParentHandle, SCI_COPYTEXT, clipboard.length+1, (LPARAM)clipboard.text);
+			_SciWrp.execute(SCI_COPYTEXT, clipboard.length+1, (LPARAM)clipboard.text);
 		}
 
 		/* delete old text and store to clipboard */
@@ -1067,87 +1224,87 @@ void HexEdit::Cut(void)
 		INT			posEnd;
 		tClipboard	clipboard;
 
-
-		ScintillaMsg(SCI_BEGINUNDOACTION);
-
 		/* store selection */
 		clipboard.selection = _pCurProp->selection;
 
 		/* copy data into scintilla handle (encoded if necessary) */
-		hSCI = (HWND)::SendMessage(_hParent, NPPM_CREATESCINTILLAHANDLE, 0, (LPARAM)_hSelf);
+		hSCI = (HWND)::SendMessage(_hParent, NPPM_CREATESCINTILLAHANDLE, 0, NULL);
 		LittleEndianChange(hSCI, _hParentHandle);
-		
+
+		_SciWrp.execute(SCI_BEGINUNDOACTION);
+
 		/* get text */
 		switch (_pCurProp->selection)
 		{
-			case HEX_SEL_NORM:
-			{
-				GetSelection(&posBeg, &posEnd);
-				clipboard.length = CalcStride(posBeg, posEnd);
-				clipboard.text = (char*)new char[clipboard.length+1];
-				::SendMessage(hSCI, SCI_SETSEL, posBeg, posEnd);
-				::SendMessage(hSCI, SCI_GETSELTEXT, 0, (LPARAM)clipboard.text);
-				ScintillaMsg(SCI_TARGETFROMSELECTION);
-				ScintillaMsg(SCI_REPLACETARGET, 0, NULL);
-				SetPosition(posBeg > posEnd ? posEnd:posBeg);
-				break;
-			}
 			case HEX_SEL_BLOCK:
 			{
 				/* get columns and count */
 				UINT	first	= _pCurProp->anchorItem;
 				UINT	last	= _pCurProp->cursorItem;
 				
-				if (_pCurProp->anchorItem == _pCurProp->cursorItem)
+				/* if anchor = cursor row goto HEX_SEL_NORM */
+				if (_pCurProp->anchorItem != _pCurProp->cursorItem)
 				{
-					GetSelection(&posBeg, &posEnd);
-					clipboard.length = CalcStride(posBeg, posEnd);
-					clipboard.text = (char*)new char[clipboard.length+1];
-					::SendMessage(hSCI, SCI_SETSEL, posBeg, posEnd);
-					::SendMessage(hSCI, SCI_GETSELTEXT, 0, (LPARAM)clipboard.text);
-					ScintillaMsg(SCI_TARGETFROMSELECTION);
-					ScintillaMsg(SCI_REPLACETARGET, 0, NULL);
-					SetPosition(posBeg > posEnd ? posEnd:posBeg);
+					if (_pCurProp->anchorItem > _pCurProp->cursorItem)
+					{
+						first = _pCurProp->cursorItem;
+						last  = _pCurProp->anchorItem;
+					}
+				
+					/* get item count */
+					clipboard.items = last - first + 1;
+
+					/* get stride */
+					if (_pCurProp->anchorPos > _pCurProp->cursorPos)
+					{
+						posBeg = first * VIEW_ROW + _pCurProp->cursorPos;
+						clipboard.stride = _pCurProp->anchorPos - _pCurProp->cursorPos;
+					}
+					else
+					{
+						posBeg = first * VIEW_ROW + _pCurProp->anchorPos;
+						clipboard.stride = _pCurProp->cursorPos - _pCurProp->anchorPos;
+					}
+
+					/* get text */
+					clipboard.length = clipboard.stride*(last-first+1);
+					clipboard.text = (LPSTR)new CHAR[clipboard.length+1];
+
+					INT	tempBeg = posBeg;
+					posEnd = posBeg + clipboard.stride;
+					for (UINT i = 0; i < clipboard.items; i++)
+					{
+						::SendMessage(hSCI, SCI_SETSEL, posBeg, posBeg + clipboard.stride);
+						::SendMessage(hSCI, SCI_GETSELTEXT, 0, (LPARAM)&clipboard.text[i*clipboard.stride]);
+						::SendMessage(hSCI, SCI_TARGETFROMSELECTION, 0, 0);
+						::SendMessage(hSCI, SCI_REPLACETARGET, 0, NULL);
+						_SciWrp.execute(SCI_SETSEL, posBeg, posBeg + clipboard.stride);
+						_SciWrp.execute(SCI_TARGETFROMSELECTION);
+						_SciWrp.execute(SCI_REPLACETARGET, 0, NULL);
+						UpdateBookmarks(posBeg, -clipboard.stride);
+						posBeg += VIEW_ROW - clipboard.stride;
+					}
+					SetPosition(tempBeg);
 					break;
 				}
-				else if (_pCurProp->anchorItem > _pCurProp->cursorItem)
-				{
-					first = _pCurProp->cursorItem;
-					last  = _pCurProp->anchorItem;
+			}
+			case HEX_SEL_NORM:
+			{
+				GetSelection(&posBeg, &posEnd);
+				clipboard.length = CalcStride(posBeg, posEnd);
+				clipboard.text = (LPSTR)new CHAR[clipboard.length+1];
+				::SendMessage(hSCI, SCI_SETSEL, posBeg, posEnd);
+				::SendMessage(hSCI, SCI_GETSELTEXT, 0, (LPARAM)clipboard.text);
+				_SciWrp.execute(SCI_SETSEL, posBeg, posEnd);
+				_SciWrp.execute(SCI_TARGETFROMSELECTION);
+				_SciWrp.execute(SCI_REPLACETARGET, 0, NULL);
+				if (posBeg <= posEnd) {
+					SetPosition(posBeg);
+					UpdateBookmarks(posBeg, -clipboard.length);
+				} else {
+					SetPosition(posEnd);
+					UpdateBookmarks(posEnd, -clipboard.length);
 				}
-				
-				/* get item count */
-				clipboard.items = last - first + 1;
-
-				/* get stride */
-				if (_pCurProp->anchorPos > _pCurProp->cursorPos)
-				{
-					posBeg = first * VIEW_ROW + _pCurProp->cursorPos;
-					clipboard.stride = _pCurProp->anchorPos - _pCurProp->cursorPos;
-				}
-				else
-				{
-					posBeg = first * VIEW_ROW + _pCurProp->anchorPos;
-					clipboard.stride = _pCurProp->cursorPos - _pCurProp->anchorPos;
-				}
-
-				/* get text */
-				clipboard.length = clipboard.stride*(last-first+1);
-				clipboard.text = (char*)new char[clipboard.length+1];
-
-				INT	tempBeg = posBeg;
-				posEnd = posBeg + clipboard.stride;
-				for (UINT i = 0; i < clipboard.items; i++)
-				{
-					::SendMessage(hSCI, SCI_SETSEL, posBeg, posBeg + clipboard.stride);
-					::SendMessage(hSCI, SCI_GETSELTEXT, 0, (LPARAM)&clipboard.text[i*clipboard.stride]);
-					::SendMessage(hSCI, SCI_TARGETFROMSELECTION, 0, 0);
-					::SendMessage(hSCI, SCI_REPLACETARGET, 0, NULL);
-					ScintillaMsg(SCI_TARGETFROMSELECTION);
-					ScintillaMsg(SCI_REPLACETARGET, 0, NULL);
-					posBeg += VIEW_ROW - clipboard.stride;
-				}
-				SetPosition(tempBeg);
 				break;
 			}
 			default:
@@ -1155,7 +1312,7 @@ void HexEdit::Cut(void)
 		}
 		
 		/* destory scintilla handle */
-		::SendMessage(hSCI, SCI_UNDO, 0, 0);
+		CleanScintillaBuf(hSCI);
 		::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 
 		/* convert to hex if usefull */
@@ -1164,13 +1321,13 @@ void HexEdit::Cut(void)
 			tClipboard	data = clipboard;
 			ChangeClipboardDataToHex(&data);
 			/* store selected text in scintilla clipboard */
-			::SendMessage(_hParentHandle, SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
+			_SciWrp.execute(SCI_COPYTEXT, data.length+1, (LPARAM)data.text);
 			delete [] data.text;
 		}
 		else
 		{
 			/* store selected text in scintilla clipboard */
-			::SendMessage(_hParentHandle, SCI_COPYTEXT, clipboard.length+1, (LPARAM)clipboard.text);
+			_SciWrp.execute(SCI_COPYTEXT, clipboard.length+1, (LPARAM)clipboard.text);
 		}
 
 		/* delete old text and store to clipboard */
@@ -1178,7 +1335,7 @@ void HexEdit::Cut(void)
 			delete [] g_clipboard.text;
 		g_clipboard = clipboard;
 
-		ScintillaMsg(SCI_ENDUNDOACTION);
+		_SciWrp.execute(SCI_ENDUNDOACTION);
 	}
 }
 
@@ -1188,7 +1345,7 @@ void HexEdit::Paste(void)
 	if (_pCurProp == NULL)
 		return;
 
-	ScintillaMsg(SCI_BEGINUNDOACTION);
+	_SciWrp.execute(SCI_BEGINUNDOACTION);
 
 	if (g_clipboard.text == NULL)
 	{
@@ -1196,7 +1353,7 @@ void HexEdit::Paste(void)
 		HWND hSCI = (HWND)::SendMessage(_hParent, NPPM_CREATESCINTILLAHANDLE, 0, (LPARAM)_hSelf);
 		ScintillaMsg(hSCI, SCI_PASTE);
 
-		UINT	length = ScintillaMsg(SCI_GETTEXTLENGTH);
+		UINT	length = _SciWrp.execute(SCI_GETTEXTLENGTH);
 
 		/* test if first chars are digits only */
 		ScintillaMsg(hSCI, SCI_SETSEARCHFLAGS, SCFIND_REGEXP | SCFIND_POSIX);
@@ -1209,11 +1366,11 @@ void HexEdit::Paste(void)
 			/* if test again and extract informations */
 			UINT	lineCnt		= ScintillaMsg(hSCI, SCI_GETLINECOUNT);
 			UINT	charPerLine	= ScintillaMsg(hSCI, SCI_LINELENGTH, 0);
-			char*	buffer		= (char*)new char[charPerLine+1];
-			char*   target		= (char*)new char[charPerLine*lineCnt+1];
-			char*	p_buffer	= NULL;
-			char*	p_target	= target;
-			bool	isOk		= TRUE;
+			LPSTR	buffer		= (LPSTR)new CHAR[charPerLine+1];
+			LPSTR   target		= (LPSTR)new CHAR[charPerLine*lineCnt+1];
+			LPSTR	p_buffer	= NULL;
+			LPSTR	p_target	= target;
+			BOOL	isOk		= TRUE;
 			INT		expLine		= 0;
 
 			while ((posFind != -1) && (isOk))
@@ -1259,7 +1416,9 @@ void HexEdit::Paste(void)
 				else
 				{
 					isOk = FALSE;
-					DEBUG_VAL_INFO(buffer, ASCIIConvert(buffer)/0x10);
+					char	TEMP[256];
+					sprintf(TEMP, "%s %d\n", buffer, ASCIIConvert(buffer)/0x10);
+					OutputDebugString(TEMP);
 				}
 			}
 			delete buffer;
@@ -1270,22 +1429,114 @@ void HexEdit::Paste(void)
 				UINT	posBeg	= GetAnchor();
 				UINT	posEnd	= GetCurrentPos();
 
-				if (posBeg > posEnd)
+				if (posBeg > posEnd) {
 					posBeg = posEnd;
+					posEnd = GetAnchor();
+				}
 				
-				ScintillaMsg(_hParentHandle, SCI_SETSEL, posBeg, posEnd);
-				ScintillaMsg(_hParentHandle, SCI_TARGETFROMSELECTION);
-				ScintillaMsg(_hParentHandle, SCI_REPLACETARGET, p_target - target, (LPARAM)target);
+				_SciWrp.execute(SCI_SETSEL, posBeg, posEnd);
+				_SciWrp.execute(SCI_TARGETFROMSELECTION);
+				_SciWrp.execute(SCI_REPLACETARGET, p_target - target, (LPARAM)target);
+				UpdateBookmarks(posBeg, posEnd - posBeg);
 			}
 			delete target;
 		}
 		else
 		{
-			ScintillaMsg(SCI_PASTE);
+			UINT	uCF				= 0;
+			UINT	lenData			= 0;
+			LPSTR	pchData			= NULL;
+
+			/* Insure desired format is there, and open clipboard */
+			if (::IsClipboardFormatAvailable(CF_UNICODETEXT) == TRUE) {
+				uCF = CF_UNICODETEXT;
+			} else if (::IsClipboardFormatAvailable(CF_TEXT) == TRUE) {
+				uCF = CF_TEXT;
+			}
+
+			/* open clipboard */
+			if (uCF != 0) {
+				if (::OpenClipboard(NULL) == FALSE)
+					return;
+			} else {
+				return;
+			}
+
+			/* get clipboard data */
+			HANDLE hClipboardData = ::GetClipboardData(uCF);
+
+			if (uCF == CF_TEXT) {
+				LPSTR	pchBuffer	= (LPSTR)GlobalLock(hClipboardData);
+				lenData	= strlen(pchBuffer);
+				pchData = new CHAR[lenData+1];
+				::CopyMemory(pchData, pchBuffer, lenData);
+			} else if (uCF == CF_UNICODETEXT) {
+				LPWSTR	pwchBuffer	= (LPWSTR)GlobalLock(hClipboardData);
+				UINT	lenBuffer	= (UINT)wcslen(pwchBuffer);
+				switch (GetNppEncoding())
+				{
+					case HEX_CODE_NPP_ASCI:
+					{
+						lenBuffer++;
+						lenData = ::WideCharToMultiByte(CP_ACP, 0, pwchBuffer, lenBuffer, pchData, 0, NULL, NULL)-1;
+						pchData = new CHAR[lenData+1];
+						::WideCharToMultiByte(CP_ACP, 0, pwchBuffer, lenBuffer, pchData, lenData, NULL, NULL);
+						break;
+					}
+					case HEX_CODE_NPP_UTF8:
+					case HEX_CODE_NPP_UTF8_BOM:
+					{
+						lenBuffer++;
+						lenData = ::WideCharToMultiByte(CP_UTF8, 0, pwchBuffer, lenBuffer, pchData, 0, NULL, NULL)-1;
+						pchData = new CHAR[lenData+1];
+						::WideCharToMultiByte(CP_UTF8, 0, pwchBuffer, lenBuffer, pchData, lenData, NULL, NULL);
+						break;
+					}
+					case HEX_CODE_NPP_USCBE:
+					{
+						lenData = lenBuffer*2;
+						pchData = new CHAR[lenData+1];
+						LPSTR	pchBuffer = (LPSTR)pwchBuffer;
+						for (UINT pos = 0; pos < lenData; pos += 2) {
+							pchData[pos+1] = pchBuffer[pos];
+							pchData[pos] = pchBuffer[pos+1];
+						}
+						break;
+					}
+					case HEX_CODE_NPP_USCLE:
+					{
+						lenData = lenBuffer*2;
+						pchData = new CHAR[lenData+1];
+						::CopyMemory(pchData, pwchBuffer, lenData);
+						break;
+					}
+				}
+			}
+
+			/* copy into target scintilla */
+			if (pchData != NULL)
+			{
+				UINT	posBeg	= GetAnchor();
+				UINT	posEnd	= GetCurrentPos();
+
+				if (posBeg > posEnd) {
+					posBeg = posEnd;
+					posEnd = GetAnchor();
+				}
+				
+				_SciWrp.execute(SCI_SETSEL, posBeg, posEnd);
+				_SciWrp.execute(SCI_TARGETFROMSELECTION);
+				_SciWrp.execute(SCI_REPLACETARGET, lenData, (LPARAM)pchData);
+				UpdateBookmarks(posBeg, posEnd - posBeg);
+				delete [] pchData;
+			}
+
+			GlobalUnlock(hClipboardData);
+			::CloseClipboard();
 		}
 
 		/* destory scintilla handle */
-		::SendMessage(hSCI, SCI_UNDO, 0, 0);
+		CleanScintillaBuf(hSCI);
 		::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 	}	
 	else
@@ -1308,9 +1559,10 @@ void HexEdit::Paste(void)
 				::SendMessage(hSCI, SCI_SETSEL, posBeg, posEnd);
 				::SendMessage(hSCI, SCI_TARGETFROMSELECTION, 0, 0);
 				::SendMessage(hSCI, SCI_REPLACETARGET, g_clipboard.length, (LPARAM)g_clipboard.text);
+				UpdateBookmarks(posBeg, g_clipboard.length);
 				if (E_OK == replaceLittleToBig(hSCI, posBeg, posEnd-posBeg, g_clipboard.length))
 				{
-					SetPosition(posBeg + g_clipboard.length, _pCurProp->isLittle);
+					SetSelection(posBeg, posBeg + g_clipboard.length);
 				}
 				break;
 			}
@@ -1345,7 +1597,7 @@ void HexEdit::Paste(void)
 					if ((stride != g_clipboard.stride) || (items != g_clipboard.items))
 					{
 						MessageBox(_hSelf, "Box must have the same size!", "HexEdit", MB_OK);
-						ScintillaMsg(SCI_ENDUNDOACTION);
+						_SciWrp.execute(SCI_ENDUNDOACTION);
 						return;
 					}
 				}
@@ -1353,68 +1605,65 @@ void HexEdit::Paste(void)
 				posEnd = posBeg + g_clipboard.stride;
 				for (UINT i = 0; i < g_clipboard.items; i++)
 				{
-					ScintillaMsg(SCI_SETSEL, posBeg, posEnd);
-					ScintillaMsg(SCI_TARGETFROMSELECTION);
-					ScintillaMsg(SCI_REPLACETARGET, g_clipboard.stride, (LPARAM)&g_clipboard.text[i*g_clipboard.stride]);
+					_SciWrp.execute(SCI_SETSEL, posBeg, posEnd);
+					_SciWrp.execute(SCI_TARGETFROMSELECTION);
+					_SciWrp.execute(SCI_REPLACETARGET, g_clipboard.stride, (LPARAM)&g_clipboard.text[i*g_clipboard.stride]);
+					UpdateBookmarks(posBeg, g_clipboard.stride);
 					posBeg += VIEW_ROW;
 					posEnd += VIEW_ROW;
 				}
 
-				ScintillaMsg(SCI_SETSEL, posEnd - VIEW_ROW, posEnd - VIEW_ROW);
+				SetSelection(posEnd - VIEW_ROW, posEnd - VIEW_ROW);
 				break;
 			}
 			default:
 				break;
 		}
 		/* destory scintilla handle */
-		::SendMessage(hSCI, SCI_UNDO, 0, 0);
+		CleanScintillaBuf(hSCI);
 		::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 
 	}
-	ScintillaMsg(SCI_ENDUNDOACTION);
-	::SetTimer(_hSelf, IDC_HEX_PASTE, 25, NULL);
+	_SciWrp.execute(SCI_ENDUNDOACTION);
 }
 
 
 void HexEdit::ZoomIn(void)
 {
-	if (_iFontSize < 26)
+	if (_fontSize < (G_FONTSIZE_MAX-1))
 	{
-		_iFontSize += 2;
+		_fontSize++;
 
-		if (SetFontSize(_iFontSize) == FALSE)
-			DEBUG("Could not change font");
+		if (SetFont() == FALSE)
+			OutputDebugString("Could not change font\n");
 
 		GetLineVis();
-		UpdateHeader();
 	}
 }
 
 
 void HexEdit::ZoomOut(void)
 {
-	if (_iFontSize > 2)
+	if (_fontSize > 0)
 	{
-		_iFontSize -= 2;
+		_fontSize--;
 
-		if (SetFontSize(_iFontSize) == FALSE)
-			DEBUG("Could not change font");
+		if (SetFont() == FALSE)
+			OutputDebugString("Could not change font\n");
 
 		GetLineVis();
-		UpdateHeader();
 	}
 }
 
 
 void HexEdit::ZoomRestore(void)
 {
-	_iFontSize = 16;
+	_fontSize = FONTSIZE_DEFAULT;
 
-	if (SetFontSize(_iFontSize) == FALSE)
-		DEBUG("Could not change font");
+	if (SetFont() == FALSE)
+		OutputDebugString("Could not change font\n");
 
 	GetLineVis();
-	UpdateHeader();
 }
 
 
@@ -1423,13 +1672,40 @@ void HexEdit::ReadArrayToList(LPTSTR text, INT iItem, INT iSubItem)
 	/* create addresses */
 	if (iSubItem == 0)
 	{
-		if (getCLM())
-		{
-			sprintf(text, "%016X", iItem * _pCurProp->columns * _pCurProp->bits);
-		}
-		else
-		{
-			sprintf(text, "%016x", iItem * _pCurProp->columns * _pCurProp->bits);
+		if (getCLM()) {
+			switch (_pCurProp->addWidth)
+			{
+				case 4: sprintf(text, "%04X", iItem * VIEW_ROW); break;
+				case 5: sprintf(text, "%05X", iItem * VIEW_ROW); break;
+				case 6: sprintf(text, "%06X", iItem * VIEW_ROW); break;
+				case 7: sprintf(text, "%07X", iItem * VIEW_ROW); break;
+				case 8: sprintf(text, "%08X", iItem * VIEW_ROW); break;
+				case 9: sprintf(text, "%09X", iItem * VIEW_ROW); break;
+				case 10: sprintf(text, "%010X", iItem * VIEW_ROW); break;
+				case 11: sprintf(text, "%011X", iItem * VIEW_ROW); break;
+				case 12: sprintf(text, "%012X", iItem * VIEW_ROW); break;
+				case 13: sprintf(text, "%013X", iItem * VIEW_ROW); break;
+				case 14: sprintf(text, "%014X", iItem * VIEW_ROW); break;
+				case 15: sprintf(text, "%015X", iItem * VIEW_ROW); break;
+				case 16: sprintf(text, "%016X", iItem * VIEW_ROW); break;
+			}
+		} else {
+			switch (_pCurProp->addWidth)
+			{
+				case 4: sprintf(text, "%04x", iItem * VIEW_ROW); break;
+				case 5: sprintf(text, "%05x", iItem * VIEW_ROW); break;
+				case 6: sprintf(text, "%06x", iItem * VIEW_ROW); break;
+				case 7: sprintf(text, "%07x", iItem * VIEW_ROW); break;
+				case 8: sprintf(text, "%08x", iItem * VIEW_ROW); break;
+				case 9: sprintf(text, "%09x", iItem * VIEW_ROW); break;
+				case 10: sprintf(text, "%010x", iItem * VIEW_ROW); break;
+				case 11: sprintf(text, "%011x", iItem * VIEW_ROW); break;
+				case 12: sprintf(text, "%012x", iItem * VIEW_ROW); break;
+				case 13: sprintf(text, "%013x", iItem * VIEW_ROW); break;
+				case 14: sprintf(text, "%014x", iItem * VIEW_ROW); break;
+				case 15: sprintf(text, "%015x", iItem * VIEW_ROW); break;
+				case 16: sprintf(text, "%016x", iItem * VIEW_ROW); break;
+			}
 		}
 	}
 	/* create dump */
@@ -1478,7 +1754,7 @@ void HexEdit::ReadArrayToList(LPTSTR text, INT iItem, INT iSubItem)
 
 void HexEdit::AddressConvert(LPTSTR text, INT length)
 {
-	char *temp  = (char*)new char[length];
+	LPSTR temp  = (LPSTR)new CHAR[length];
 	memcpy(temp, text, length);
 
 	if (_pCurProp->isLittle == TRUE)
@@ -1624,39 +1900,53 @@ void HexEdit::TrackMenu(POINT pt)
 	HMENU	hMenu		= ::CreatePopupMenu();
 	HMENU	hSubMenu	= ::CreatePopupMenu();
 	BOOL	isChanged	= TRUE;
-	UINT	cursorPos	= GetCurrentPos();
 	UINT	anchorPos	= GetAnchor();
+	UINT	cursorPos	= GetCurrentPos();
 	UINT	oldColumns  = _pCurProp->columns;
 	UINT	oldBits     = _pCurProp->bits;
 	BOOL	oldBin		= _pCurProp->isBin;
 	BOOL	oldLittle   = _pCurProp->isLittle;
-	
+	CHAR	txtMenu[16];
 
 	/* set bit decoding */
-	::AppendMenu(hSubMenu, MF_STRING | ((_pCurProp->bits == HEX_BYTE)?MF_CHECKED:0), 6, "8-Bit");
-	::AppendMenu(hSubMenu, MF_STRING | ((_pCurProp->bits == HEX_WORD)?MF_CHECKED:0), 7, "16-Bit");
-	::AppendMenu(hSubMenu, MF_STRING | ((_pCurProp->bits == HEX_DWORD)?MF_CHECKED:0), 8, "32-Bit");
-	::AppendMenu(hSubMenu, MF_STRING | ((_pCurProp->bits == HEX_LONG)?MF_CHECKED:0), 9, "64-Bit");
+	::AppendMenu(hSubMenu, MF_STRING | ((_pCurProp->bits == HEX_BYTE)?MF_CHECKED:0), 7, "8-Bit");
+	::AppendMenu(hSubMenu, MF_STRING | ((_pCurProp->bits == HEX_WORD)?MF_CHECKED:0), 8, "16-Bit");
+	::AppendMenu(hSubMenu, MF_STRING | ((_pCurProp->bits == HEX_DWORD)?MF_CHECKED:0), 9, "32-Bit");
+	::AppendMenu(hSubMenu, MF_STRING | ((_pCurProp->bits == HEX_LONG)?MF_CHECKED:0), 10, "64-Bit");
 	::AppendMenu(hSubMenu, MF_SEPARATOR, 0, "-----------------");
 	/* set binary decoding */
-	::AppendMenu(hSubMenu, MF_STRING, 10, _pCurProp->isBin == TRUE ? "to Hex":"to Binary");
+	if (NLGetText(_hInst, _hParent, _pCurProp->isBin == TRUE ? "to Hex":"to Binary", txtMenu, sizeof(txtMenu)) == FALSE)
+		strcpy(txtMenu, _pCurProp->isBin == TRUE ? "to Hex":"to Binary");
+	::AppendMenu(hSubMenu, MF_STRING, 11, txtMenu);
 	/* change between big- and little-endian */
 	if (_pCurProp->bits > HEX_BYTE)
 	{
-		::AppendMenu(hSubMenu, MF_STRING, 11, _pCurProp->isLittle == TRUE? "to BigEndian":"to LittleEndian");
+		if (NLGetText(_hInst, _hParent, _pCurProp->isLittle == TRUE ? "to BigEndian":"to LittleEndian", txtMenu, sizeof(txtMenu)) == FALSE)
+			strcpy(txtMenu, _pCurProp->isLittle == TRUE ? "to BigEndian":"to LittleEndian");
+		::AppendMenu(hSubMenu, MF_STRING, 12, txtMenu);
 	}
 
-	::AppendMenu(hMenu, MF_STRING | ((!_pCurProp->isSel)?MF_GRAYED:0), 1, "Cut");
-	::AppendMenu(hMenu, MF_STRING | ((!_pCurProp->isSel)?MF_GRAYED:0), 2, "Copy");
-	::AppendMenu(hMenu, MF_STRING | ((!ScintillaMsg(SCI_CANPASTE))?MF_GRAYED:0), 3, "Paste");
-	::AppendMenu(hMenu, MF_STRING | ((!_pCurProp->isSel)?MF_GRAYED:0), 4, "Delete");
+	UINT style = 0;
+	
+	if (!(_pCurProp->isSel && ((_pCurProp->selection == HEX_SEL_NORM) || 
+		((_pCurProp->selection == HEX_SEL_BLOCK) && (_pCurProp->anchorPos != _pCurProp->cursorPos))))) {
+		style = MF_GRAYED;
+	}
+
+	::AppendMenu(hMenu, MF_STRING | style, 1, "Cut");
+	::AppendMenu(hMenu, MF_STRING | style, 2, "Copy");
+	::AppendMenu(hMenu, MF_STRING | ((!_SciWrp.execute(SCI_CANPASTE))?MF_GRAYED:0), 3, "Paste");
+	::AppendMenu(hMenu, MF_STRING | style, 4, "Delete");
 	::AppendMenu(hMenu, MF_SEPARATOR, 0, "-----------------");
 	::AppendMenu(hMenu, MF_STRING | MF_POPUP, (UINT_PTR)hSubMenu, "View in");
 	::AppendMenu(hMenu, MF_SEPARATOR, 0, "-----------------");
+
 	/* set columns */
-	::AppendMenu(hMenu, MF_STRING, 5, "Columns...");
+	::AppendMenu(hMenu, MF_STRING, 5, "Address Width...");
+	::AppendMenu(hMenu, MF_STRING, 6, "Columns...");
 
-
+	/* change language */
+	NLChangeMenu(_hInst, _hParent, hMenu, "SettingsMenu", MF_BYPOSITION);
 
 	/* create menu */
 	switch (::TrackPopupMenu(hMenu, TPM_RETURNCMD | TPM_LEFTALIGN | TPM_NONOTIFY, 
@@ -1679,78 +1969,105 @@ void HexEdit::TrackMenu(POINT pt)
 		}
 		case 4:
 		{
-			if (_pCurProp->selection == HEX_SEL_BLOCK)
-			{
-				ScintillaMsg(SCI_BEGINUNDOACTION);
-				OnDeleteBlock();
-				ScintillaMsg(SCI_ENDUNDOACTION);
-			}
-			else
-			{
-				ScintillaMsg(SCI_TARGETFROMSELECTION);
-				ScintillaMsg(SCI_REPLACETARGET, 0, NULL);
-			}
+			Delete();
 			break;
 		}
 		case 5:
 		{
 			ColumnDlg	dlg;
 			dlg.init(_hInst, _nppData);
-			UINT	val = dlg.doDialog(_pCurProp->columns);
-			if ((val > 0) && (val <= (128 / (UINT)_pCurProp->bits)))
+			UINT	val = dlg.doDialogAddWidth(_pCurProp->addWidth);
+			if ((val >= 4) && (val <= 16))
 			{
-				_pCurProp->columns = val;
+				_pCurProp->addWidth = val;
 			}
 			else
 			{
-				MessageBox(_nppData._nppHandle, "Max column count can be 1 till 128 bytes in a row.", "HexEdit", MB_OK|MB_ICONERROR);
+				if (NLMessageBox(_hInst, _hParent, "MsgBox MaxAddCnt", MB_OK|MB_ICONERROR) == FALSE)
+					::MessageBox(_hParent, "Only values between 4 and 16 possible.", "Hex-Editor", MB_OK|MB_ICONERROR);
 				isChanged = FALSE;
 			}
 			break;
 		}
 		case 6:
 		{
-			_pCurProp->firstVisRow	= 0;
-			_pCurProp->columns		= VIEW_ROW;
-			_pCurProp->bits			= HEX_BYTE;
+			ColumnDlg	dlg;
+			dlg.init(_hInst, _nppData);
+			UINT	val = dlg.doDialogColumn(_pCurProp->columns);
+			if ((val > 0) && (val <= (128 / (UINT)_pCurProp->bits)))
+			{
+				_pCurProp->columns = val;
+			}
+			else
+			{
+				if (NLMessageBox(_hInst, _hParent, "MsgBox MaxColCnt", MB_OK|MB_ICONERROR) == FALSE)
+					::MessageBox(_hParent, "Maximum of 128 bytes can be shown in a row.", "Hex-Editor", MB_OK|MB_ICONERROR);
+				isChanged = FALSE;
+			}
 			break;
 		}
 		case 7:
 		{
-			_pCurProp->firstVisRow	= 0;
-			if (VIEW_ROW >= HEX_WORD)
-				_pCurProp->columns	= VIEW_ROW / HEX_WORD;
-			else
-				_pCurProp->columns	= 1;
-			_pCurProp->bits			= HEX_WORD;
+			isChanged = ShouldDeleteCompare();
+			
+			if (isChanged == TRUE) {
+				_pCurProp->firstVisRow = 0;
+				_pCurProp->columns = VIEW_ROW;
+				_pCurProp->bits = HEX_BYTE;
+			}
 			break;
 		}
 		case 8:
 		{
-			_pCurProp->firstVisRow	= 0;
-			if (VIEW_ROW >= HEX_DWORD)
-				_pCurProp->columns	= VIEW_ROW / HEX_DWORD;
-			else
-				_pCurProp->columns	= 1;
-			_pCurProp->bits			= HEX_DWORD;
+			isChanged = ShouldDeleteCompare();
+			
+			if (isChanged == TRUE) {
+				_pCurProp->firstVisRow = 0;
+				if (VIEW_ROW >= HEX_WORD) {
+					_pCurProp->columns = VIEW_ROW / HEX_WORD;
+				} else {
+					_pCurProp->columns = 1;
+				}
+				_pCurProp->bits = HEX_WORD;
+			}
 			break;
 		}
 		case 9:
 		{
-			_pCurProp->firstVisRow	= 0;
-			if (VIEW_ROW >= HEX_LONG)
-				_pCurProp->columns	= VIEW_ROW / HEX_LONG;
-			else
-				_pCurProp->columns	= 1;
-			_pCurProp->bits			= HEX_LONG;
+			isChanged = ShouldDeleteCompare();
+			
+			if (isChanged == TRUE) {
+				_pCurProp->firstVisRow = 0;
+				if (VIEW_ROW >= HEX_DWORD) {
+					_pCurProp->columns = VIEW_ROW / HEX_DWORD;
+				} else {
+					_pCurProp->columns = 1;
+				}
+				_pCurProp->bits = HEX_DWORD;
+			}
 			break;
 		}
 		case 10:
 		{
-			_pCurProp->isBin	^= TRUE;
+			isChanged = ShouldDeleteCompare();
+			
+			if (isChanged == TRUE) {
+				_pCurProp->firstVisRow = 0;
+				if (VIEW_ROW >= HEX_LONG) {
+					_pCurProp->columns = VIEW_ROW / HEX_LONG;
+				} else {
+					_pCurProp->columns = 1;
+				}
+				_pCurProp->bits = HEX_LONG;
+			}
 			break;
 		}
 		case 11:
+		{
+			_pCurProp->isBin	^= TRUE;
+			break;
+		}
+		case 12:
 		{
 			_pCurProp->isLittle	^= TRUE;
 			break;
@@ -1772,24 +2089,6 @@ void HexEdit::TrackMenu(POINT pt)
 		}
 		UpdateHeader();
 
-		if (_pCurProp->isSel == FALSE)
-		{
-			SetPosition(cursorPos);
-		}
-		else
-		{
-			if (oldLittle == _pCurProp->isLittle)
-			{
-				SetSelection(anchorPos, cursorPos, _pCurProp->selection);
-			}
-			else
-			{
-				_pCurProp->editType = HEX_EDIT_HEX;
-				_pCurProp->isSel    = FALSE;
-				SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem);
-			}
-		}
-
 		SetLineVis(firstVisRow, HEX_LINE_FIRST);
 		_pCurProp->firstVisRow = firstVisRow;
 	}
@@ -1799,67 +2098,160 @@ void HexEdit::TrackMenu(POINT pt)
 }
 
 
-void HexEdit::OnDeleteBlock(void)
+BOOL HexEdit::ShouldDeleteCompare(void)
 {
-	HWND		hSCI;
-	INT			count  = 0;
-	INT			posBeg = 0;
-	INT			posEnd = 0;
-	UINT		lines  = 0;
-
-	/* test if something is selected */
-	GetSelection(&posBeg, &posEnd);
-	if (posBeg == posEnd)
+	if (_pCurProp->pCompareData != NULL)
 	{
-		::MessageBox(_hSelf, "Select something in the text!", "HexEdit", MB_OK);
-		return;
+		INT		retMsg = FALSE;
+		retMsg = NLMessageBox(_hInst, _hParent, "MsgBox CompDelete", MB_YESNO|MB_ICONERROR);
+		if (retMsg == FALSE) {
+			retMsg = ::MessageBox(_hParent, "Compare results will be cleared! Continue?", "Hex-Editor Compare", MB_YESNO|MB_ICONERROR);
+		}
+		if (retMsg == IDNO) {
+			return FALSE;
+		} else {
+			SetCompareResult(NULL);
+		}
 	}
+	setMenu();
+	return TRUE;
+}
 
-	if (posBeg > posEnd)
-		posBeg = posEnd;
 
-	/* copy data into scintilla handle (encoded if necessary) */
-	hSCI = (HWND)::SendMessage(_hParent, NPPM_CREATESCINTILLAHANDLE, 0, (LPARAM)_hSelf);
-	LittleEndianChange(hSCI, getCurrentHScintilla());
+void HexEdit::Delete(void)
+{
+	INT		posBeg	= 0;
+	INT		posItr	= 0;
+	INT		count	= 0;
+	UINT	lines	= 0;
 
-	/* get params of Hex Edit */
-	lines = GetItemCount();
 
+	GetSelection(&posBeg, &posItr);
+
+	/* get horizontal and vertical gap size */
 	if (_pCurProp->selection == HEX_SEL_BLOCK)
 	{
-		/* get horizontal and vertical gap size */
 		count = abs(_pCurProp->anchorPos  - _pCurProp->cursorPos);
 		lines = abs(_pCurProp->anchorItem - _pCurProp->cursorItem);
+	}
+	else
+	{
+		count = abs(posItr - posBeg);
+	}
 
-		posEnd = posBeg + count;
+	/* set iterator to begin of selection */
+	if (posBeg < posItr) {
+		posItr = posBeg;
+	}
+
+	_SciWrp.execute(SCI_BEGINUNDOACTION);
+
+	if (_pCurProp->isLittle == TRUE)
+	{
+	    /* copy data into scintilla handle (encoded if necessary) */
+		HWND	hSCI = (HWND)::SendMessage(_hParent, NPPM_CREATESCINTILLAHANDLE, 0, (LPARAM)_hSelf);
+	    LittleEndianChange(hSCI, getCurrentHScintilla());
 
 		/* replace block with "" */
 		for (UINT i = 0; i <= lines; i++)
 		{
-			ScintillaMsg(hSCI, SCI_SETSEL, posBeg, posEnd);
+			ScintillaMsg(hSCI, SCI_SETSEL, posItr, posItr + count);
 			ScintillaMsg(hSCI, SCI_TARGETFROMSELECTION);
 			ScintillaMsg(hSCI, SCI_REPLACETARGET, -1, (LPARAM)"\0");
-			if (E_OK != replaceLittleToBig(hSCI, posBeg, count, 0))
+			if (E_OK != replaceLittleToBig(hSCI, posItr, count, 0))
 			{
 				LITTLE_DELETE_ERROR;
 				
 				/* free allocated space */
-				::SendMessage(hSCI, SCI_UNDO, 0, 0);
+				CleanScintillaBuf(hSCI);
 				::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
 				return;
 			}
 
-			posBeg += (_pCurProp->bits * _pCurProp->columns) - count;
-			posEnd += posBeg + count;
+			/* reposition bookmarks */
+			UpdateBookmarks(posItr, -count);
+
+			posItr += VIEW_ROW - count;
+		}
+		/* free allocated space */
+		CleanScintillaBuf(hSCI);
+		::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
+	}
+	else
+	{
+		/* replace block with "" */
+		for (UINT i = 0; i <= lines; i++)
+		{
+			_SciWrp.execute(SCI_SETSEL, posItr, posItr + count);
+			_SciWrp.execute(SCI_TARGETFROMSELECTION);
+			_SciWrp.execute(SCI_REPLACETARGET, -1, (LPARAM)"\0");
+
+			/* reposition bookmarks */
+			UpdateBookmarks(posItr, -count);
+
+			posItr += VIEW_ROW - count;
 		}
 	}
+
 	/* set cursor position */
-	SetPosition(posEnd - count, _pCurProp->isLittle);
+	SetPosition(posBeg, _pCurProp->isLittle);
 	
-	/* free allocated space */
-	::SendMessage(hSCI, SCI_UNDO, 0, 0);
-	::SendMessage(_hParent, NPPM_DESTROYSCINTILLAHANDLE, 0, (LPARAM)hSCI);
+	_SciWrp.execute(SCI_ENDUNDOACTION);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void HexEdit::DrawAddressText(HDC hDc, DWORD iItem)
+{
+	RECT		rc		= {0};
+	SIZE		size	= {0};
+	CHAR		text[17];
+
+	/* get list information */
+	ListView_GetItemText(_hListCtrl, iItem, 0, text, 17);
+	ListView_GetSubItemRect(_hListCtrl, iItem, 0, LVIR_LABEL, &rc);
+
+	/* correct postion to get better visiual gap */
+	rc.right -= 2;
+
+	::SetTextColor(hDc, getColor(HEX_COLOR_REG_TXT));
+	::DrawText(hDc, text, _pCurProp->addWidth, &rc, DT_LEFT | DT_HEX_VIEW);
+
+	::GetTextExtentPoint(hDc, text, _pCurProp->addWidth, &size);
+	rc.left += size.cx;
+
+	/* draw bookmark */
+	for (UINT i = 0; (i < _pCurProp->vBookmarks.size()) && (_pCurProp->vBookmarks[i].iItem <= iItem) ; i++)
+	{
+		if (_pCurProp->vBookmarks[i].iItem == iItem)
+		{
+			HBRUSH hBrush	 = ::CreateSolidBrush(getColor(HEX_COLOR_BKMK));
+			
+			UINT uOff = (rc.bottom - rc.top) / 5;
+			UINT uEnd = rc.bottom - rc.top - uOff;
+			rc.left += uOff;
+
+			HANDLE hBrushOrig = ::SelectObject(hDc, hBrush);
+			::Ellipse(hDc, rc.left, rc.top + uOff, rc.left - uOff + uEnd, rc.top + uEnd);
+			::SelectObject(hDc, hBrushOrig);
+			::DeleteObject(hBrush);
+			break;
+		}
+	}
+}
+
 
 
 
@@ -1894,22 +2286,10 @@ void HexEdit::SelectItem(UINT iItem, UINT iSubItem, INT iCursor)
 			UINT itemCnt = ListView_GetItemCount(_hListCtrl);
 			ListView_SetItemCountEx(_hListCtrl, itemCnt + 1, 0);
 		}
-		ListView_EnsureVisible(_hListCtrl, iItem, TRUE);
-		InvalidateList();
-	}
 
-	/* set position in scintilla */
-	if (_pCurProp->isLittle == FALSE)
-	{
-		ScintillaMsg(SCI_GOTOPOS, VIEW_ROW * _pCurProp->cursorItem + (_pCurProp->cursorSubItem-1) * _pCurProp->bits + _pCurProp->cursorPos / FACTOR);
-	}
-	else if (FULL_SUBITEM)
-	{
-		ScintillaMsg(SCI_GOTOPOS, VIEW_ROW * _pCurProp->cursorItem + _pCurProp->cursorSubItem * _pCurProp->bits - _pCurProp->cursorPos / FACTOR - 1);
-	}
-	else
-	{
-		ScintillaMsg(SCI_GOTOPOS, VIEW_ROW * _pCurProp->cursorItem + (_pCurProp->cursorSubItem-1) * _pCurProp->bits + _currLength % _pCurProp->bits - _pCurProp->cursorPos / FACTOR - 1);
+		/* make item visible */
+		EnsureVisible(iItem, iSubItem);
+		InvalidateList();
 	}
 }
 
@@ -1948,6 +2328,7 @@ void HexEdit::OnMouseClickItem(WPARAM wParam, LPARAM lParam)
 BOOL HexEdit::OnKeyDownItem(WPARAM wParam, LPARAM lParam)
 {
 	bool	isShift = ((0x80 & ::GetKeyState(VK_SHIFT)) == 0x80);
+	bool	isCtrl	= ((0x80 & ::GetKeyState(VK_CONTROL)) == 0x80);
 
 	/* test if box should be switched into lines or culumns */
 	switch (wParam)
@@ -1994,13 +2375,40 @@ BOOL HexEdit::OnKeyDownItem(WPARAM wParam, LPARAM lParam)
 			{
 				SelectionKeys(wParam, lParam);
 			}
-			else if (_pCurProp->cursorSubItem == 1)
+			else if (_pCurProp->isSel == TRUE)
 			{
-				if (_pCurProp->cursorItem != 0)
-					SelectItem(_pCurProp->cursorItem - 1, _pCurProp->columns);
+				INT posBeg, posEnd;
+				GetSelection(&posBeg, &posEnd);
+				if (posBeg < posEnd) {
+					SetSelection(posBeg, posBeg);
+				} else {
+					SetSelection(posEnd, posEnd);
+				}
+			}
+			else if (isCtrl)
+			{
+				if (_pCurProp->cursorPos == 0) {
+					if ((_pCurProp->cursorSubItem == 1) && (_pCurProp->cursorItem != 0)) {
+						SelectItem(_pCurProp->cursorItem - 1, _pCurProp->columns, SUBITEM_LENGTH - FACTOR);
+					} else {
+						SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem - 1, SUBITEM_LENGTH - FACTOR);
+					}
+				} else if (_pCurProp->cursorPos % FACTOR) {
+					SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem, _pCurProp->cursorPos - (_pCurProp->cursorPos % FACTOR));
+				} else {
+					SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem, _pCurProp->cursorPos - FACTOR);
+				}
 			}
 			else
-				SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem - 1);
+			{
+				if ((_pCurProp->cursorSubItem == 1) && (_pCurProp->cursorItem != 0)) {
+					SelectItem(_pCurProp->cursorItem - 1, _pCurProp->columns);
+				} else if (_pCurProp->cursorPos != 0) {
+					SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem, 0);
+				} else {
+					SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem - 1);
+				}
+			}
 			return FALSE;
 		}
 		case VK_RIGHT:
@@ -2009,18 +2417,44 @@ BOOL HexEdit::OnKeyDownItem(WPARAM wParam, LPARAM lParam)
 			{
 				SelectionKeys(wParam, lParam);
 			}
+			else if (_pCurProp->isSel == TRUE)
+			{
+				INT posBeg, posEnd;
+				GetSelection(&posBeg, &posEnd);
+				if (posBeg < posEnd) {
+					SetSelection(posEnd, posEnd);
+				} else {
+					SetSelection(posBeg, posBeg);
+				}
+			}
 			else if (FULL_SUBITEM)
 			{
-				if (_pCurProp->cursorSubItem < (UINT)_pCurProp->columns)
-					SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem + 1);
+				if (isCtrl)
+				{
+					if (_pCurProp->cursorPos == (SUBITEM_LENGTH - FACTOR)) {
+						if (_pCurProp->cursorSubItem < (UINT)_pCurProp->columns) {
+							SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem + 1);
+						} else {
+							SelectItem(_pCurProp->cursorItem + 1, 1);
+						}
+					} else if (_pCurProp->cursorPos % FACTOR) {
+						SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem, _pCurProp->cursorPos + (_pCurProp->cursorPos % FACTOR));
+					} else {
+						SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem, _pCurProp->cursorPos + FACTOR);
+					}
+				}
 				else
-					SelectItem(_pCurProp->cursorItem + 1, 1);
+				{
+					if (_pCurProp->cursorSubItem < (UINT)_pCurProp->columns)
+						SelectItem(_pCurProp->cursorItem, _pCurProp->cursorSubItem + 1);
+					else
+						SelectItem(_pCurProp->cursorItem + 1, 1);
+				}
 			}
 			return FALSE;
 		}
 		default:
-			GlobalKeys(wParam, lParam);
-			break;
+			return GlobalKeys(wParam, lParam);
 	}
 
 	return TRUE;
@@ -2037,31 +2471,27 @@ BOOL HexEdit::OnCharItem(WPARAM wParam, LPARAM lParam)
 	BOOL	newLine	= FALSE;
 
 	/* test if correct char is pressed */
-	if (_pCurProp->isBin == FALSE)
-	{
-		if (((wParam < 0x30) || (wParam > 0x66)) ||
-			((wParam > 0x39) && (wParam < 0x41)) || 
-			((wParam > 0x46) && (wParam < 0x61)))
-			return FALSE;
-	}
-	else
-	{
-		if ((wParam != 0x30) && (wParam != 0x31))
-			return FALSE;
+	if (_pCurProp->isSel == TRUE) {
+		SetSelection(GetAnchor(), GetAnchor());
 	}
 
-	if (_pCurProp->isLittle == FALSE)
-	{
+	if (_pCurProp->isBin == FALSE) {
+		if (((wParam < 0x30) || (wParam > 0x66)) ||
+			((wParam > 0x39) && (wParam < 0x41)) || 
+			((wParam > 0x46) && (wParam < 0x61))) {
+			return TRUE;
+		}
+	} else if ((wParam != 0x30) && (wParam != 0x31)) {
+		return TRUE;
+	}
+
+	if (_pCurProp->isLittle == FALSE) {
 		textPos = _pCurProp->cursorPos / FACTOR;
 		posBeg  = _pCurProp->cursorItem * VIEW_ROW + (_pCurProp->cursorSubItem-1) * _pCurProp->bits + textPos;
-	}
-	else if (FULL_SUBITEM)
-	{
+	} else if (FULL_SUBITEM) {
 		textPos = (_pCurProp->bits-1) - _pCurProp->cursorPos / FACTOR;
 		posBeg  = _pCurProp->cursorItem * VIEW_ROW + (_pCurProp->cursorSubItem-1) * _pCurProp->bits + textPos;
-	}
-	else
-	{
+	} else {
 		textPos = 0;
 		posBeg  = _pCurProp->cursorItem * VIEW_ROW + (_pCurProp->cursorSubItem-1) * _pCurProp->bits;
 	}
@@ -2070,39 +2500,35 @@ BOOL HexEdit::OnCharItem(WPARAM wParam, LPARAM lParam)
 	ListView_GetItemText(_hListCtrl, _pCurProp->cursorItem, _pCurProp->cursorSubItem, text, SUBITEM_LENGTH);
 	text[_pCurProp->cursorPos] = (char)wParam;
 
-	if (_currLength > GetCurrentPos())
-	{
-		if (FULL_SUBITEM)
+	if (_currLength > GetCurrentPos()) {
+		if (FULL_SUBITEM) {
 			BinHexConvert(text, SUBITEM_LENGTH);
-		else
+		} else {
 			BinHexConvert(text, (_currLength % _pCurProp->bits) * FACTOR);
-
+		}
 		/* calculate correct position */
-		ScintillaMsg(_hParentHandle, SCI_SETTARGETSTART, posBeg);
-		ScintillaMsg(_hParentHandle, SCI_SETTARGETEND, posBeg + 1);
+		_SciWrp.execute(SCI_SETTARGETSTART, posBeg);
+		_SciWrp.execute(SCI_SETTARGETEND, posBeg + 1);
 
 		/* update text */
-		ScintillaMsg(_hParentHandle, SCI_REPLACETARGET, 1, (LPARAM)&text[textPos]);
-		ScintillaMsg(_hParentHandle, SCI_SETSEL, posBeg, posBeg);
-	}
-	else
-	{
+		_SciWrp.execute(SCI_REPLACETARGET, 1, (LPARAM)&text[textPos]);
+		_SciWrp.execute(SCI_SETSEL, posBeg, posBeg);
+	} else {
 		memset(&text[_pCurProp->cursorPos+1], 0x20, FACTOR);
 		BinHexConvert(text, ((_currLength % _pCurProp->bits) + 1) * FACTOR);
 
-		ScintillaMsg(_hParentHandle, SCI_SETCURRENTPOS, posBeg);
-		ScintillaMsg(_hParentHandle, SCI_ADDTEXT, 1, (LPARAM)&text[textPos]);
+		_SciWrp.execute(SCI_SETCURRENTPOS, posBeg);
+		_SciWrp.execute(SCI_ADDTEXT, 1, (LPARAM)&text[textPos]);
 	}
 
 	/* set position */
 	_pCurProp->cursorPos++;
-	if ((INT)_pCurProp->cursorPos >= SUBITEM_LENGTH)
-	{
+	if ((INT)_pCurProp->cursorPos >= SUBITEM_LENGTH) {
 		::SendMessage(_hListCtrl, WM_KEYDOWN, VK_RIGHT, 0);
 	}
 
 	InvalidateList();
-	return TRUE;
+	return FALSE;
 }
 
 
@@ -2113,51 +2539,78 @@ void HexEdit::DrawItemText(HDC hDc, DWORD item, INT subItem)
 	SIZE		size;
 	char		text[64];
 	RECT		rcCursor;
-	HBRUSH		bgbrush	 = ::CreateSolidBrush(RGB(0xFF,0xFF,0xFF));
 
 	/* get list informations */
 	ListView_GetItemText(_hListCtrl, item, subItem, text, 64);
 	ListView_GetSubItemRect(_hListCtrl, item, subItem, LVIR_BOUNDS, &rc);
 
-	/* delete background */
-	::SetBkMode(hDc, TRANSPARENT);
-	::FillRect(hDc, &rc, bgbrush);
-
-	/* calculate text position */
+	/* calculate text begin position */
 	::GetTextExtentPoint(hDc, text, SUBITEM_LENGTH, &size);
-	size.cx		= (rc.right  - rc.left - size.cx) / 2;
-	rcText		= rc;
-	rcText.left += size.cx;
-	rcCursor	= rcText;
-	::GetTextExtentPoint(hDc, "0", 1, &size);
+	rcText			= rc;
+	rcText.left		+= (rc.right  - rc.left - size.cx) / 2;
+	rcCursor		= rcText;
+	rcCursor.right = rcCursor.left;
 
-	if ((item * VIEW_ROW + subItem * _pCurProp->bits) > _currLength)
-	{
-		if ((item * VIEW_ROW + subItem * _pCurProp->bits) <= (_currLength + _pCurProp->bits))
-		{
-			/* clear text */
+	if ((item * VIEW_ROW + subItem * _pCurProp->bits) > _currLength) {
+		/* clear text */
+		if ((item * VIEW_ROW + subItem * _pCurProp->bits) <= (_currLength + _pCurProp->bits)) {
 			memset(&text[(_currLength%_pCurProp->bits)*FACTOR], 0x20, SUBITEM_LENGTH);
-		}
-		else
-		{
-			/* clear text */	
+		} else {
 			memset(text, 0x20, SUBITEM_LENGTH);
 		}
 	}
 
-	::SetTextColor(hDc, RGB(0x00,0x00,0x00));
-	::TextOut(hDc, rcText.left, rcText.top, text, SUBITEM_LENGTH);
+	/* draw normal text */
+	DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_MIDDLE, HEX_COLOR_REG);
+
+	/* draw compare highlight */
+	if (_pCurProp->pCompareData != NULL)
+	{
+		eSelItem	sel = HEX_ITEM_MIDDLE;
+		UINT		pos = item * _pCurProp->columns + subItem - 1;
+		if (pos == 0) {
+			if ((_pCurProp->pCompareData[0] == TRUE) && (_pCurProp->pCompareData[1] == FALSE)) {
+				DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_MIDDLE, HEX_COLOR_DIFF);
+			} else if ((_pCurProp->pCompareData[0] == TRUE) && (_pCurProp->pCompareData[1] == TRUE)) {
+				DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_FIRST, HEX_COLOR_DIFF);
+			}
+		} else if (_pCurProp->pCompareData[pos] == TRUE) {
+			if ((_pCurProp->pCompareData[pos-1] == TRUE) && (_pCurProp->pCompareData[pos+1] == TRUE)) {
+				if (subItem == 1) {
+					sel = HEX_ITEM_FIRST;
+				} else if (subItem == _pCurProp->columns) {
+					sel = HEX_ITEM_LAST;
+				} else {
+					sel = HEX_ITEM_MIDDLE_FULL;
+				}
+			} else if ((_pCurProp->pCompareData[pos-1] == FALSE) && (_pCurProp->pCompareData[pos+1] == TRUE) && (subItem != _pCurProp->columns)) {
+				sel = HEX_ITEM_FIRST;
+			} else if ((_pCurProp->pCompareData[pos-1] == TRUE) && (_pCurProp->pCompareData[pos+1] == FALSE) && (subItem != 1)) {
+				sel = HEX_ITEM_LAST;
+			}
+			DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, sel, HEX_COLOR_DIFF);
+		}
+	}
 
 	if (_pCurProp->isSel == FALSE)
 	{
 		/* paint cursor */
-		if ((subItem == _pCurProp->cursorSubItem) && (_pCurProp->editType == HEX_EDIT_HEX) && (_isCurOn == TRUE))
+		if (item == _pCurProp->cursorItem)
 		{
-			HBRUSH		hbrush	 = ::CreateSolidBrush(RGB(0x00,0x00,0x00));
-			rcCursor.left  += (size.cx * _pCurProp->cursorPos);
-			rcCursor.right  = rcCursor.left + 1;
-			::FillRect(hDc, &rcCursor, hbrush);
-			::DeleteObject(hbrush);
+			UINT	posCurBeg = 0;
+			if ((_pCurProp->editType == HEX_EDIT_HEX) && (subItem == _pCurProp->cursorSubItem)) {
+				::GetTextExtentPoint(hDc, text, _pCurProp->cursorPos, &size);
+				rcCursor.left += size.cx;
+				::GetTextExtentPoint(hDc, text, _pCurProp->cursorPos + FACTOR, &size);
+				rcCursor.right += size.cx;
+				DrawCursor(hDc, rcCursor);
+			} else if ((_pCurProp->editType == HEX_EDIT_ASCII) && ((_pCurProp->cursorPos / _pCurProp->bits) + 1 == subItem)) {
+				::GetTextExtentPoint(hDc, text, (_pCurProp->cursorPos % _pCurProp->bits) * FACTOR, &size);
+				rcCursor.left += size.cx;
+				::GetTextExtentPoint(hDc, text, ((_pCurProp->cursorPos % _pCurProp->bits) * FACTOR) + FACTOR, &size);
+				rcCursor.right += size.cx;
+				DrawCursor(hDc, rcCursor, TRUE);
+			}
 		}
 	}
 	else
@@ -2172,6 +2625,7 @@ void HexEdit::DrawItemText(HDC hDc, DWORD item, INT subItem)
 		/* correct cursor sub item */
 		if (firstItem > lastItem)
 		{
+			/* row of cursor is before row of anchor */
 			firstItem = _pCurProp->cursorItem;
 			lastItem  = _pCurProp->anchorItem;
 		}
@@ -2193,12 +2647,8 @@ void HexEdit::DrawItemText(HDC hDc, DWORD item, INT subItem)
 			lastCur  = _pCurProp->anchorPos;
 		}
 
-		HBRUSH		hbrush	 = SELECTION_COLOR;
 		INT			factor1  = (firstCur % _pCurProp->bits) * FACTOR;
 		INT			factor2  = (lastCur  % _pCurProp->bits) * FACTOR;
-
-		/* set text color to white and calculate cursor position */
-		::SetTextColor(hDc, RGB(0xFF,0xFF,0xFF));
 
 		switch (_pCurProp->selection)
 		{
@@ -2212,100 +2662,204 @@ void HexEdit::DrawItemText(HDC hDc, DWORD item, INT subItem)
 				{
 					if ((firstSub == subItem) && (firstItem == item))
 					{
-						rcText.left += (size.cx * factor1);
-						if (subItem == _pCurProp->columns)
-						{
-							rcText.right = rcText.left + (size.cx * (SUBITEM_LENGTH - factor1));
+						/* first selected item */
+						if (subItem == _pCurProp->columns) {
+							DrawPartOfItemText(hDc, rc, rcText, text, factor1, SUBITEM_LENGTH, HEX_ITEM_MIDDLE, HEX_COLOR_SEL);
+						} else {
+							DrawPartOfItemText(hDc, rc, rcText, text, factor1, SUBITEM_LENGTH, HEX_ITEM_FIRST, HEX_COLOR_SEL);
 						}
-						::FillRect(hDc, &rcText, hbrush);
-						::TextOut(hDc, rcText.left, rcText.top, &text[factor1], SUBITEM_LENGTH-factor1);
+					}
+					else if ((lastSub == subItem) && (lastItem == item))
+					{
+						if (((lastCur % _pCurProp->bits) == 0) || (lastSub == 1)) {
+							DrawPartOfItemText(hDc, rc, rcText, text, 0, factor2, HEX_ITEM_MIDDLE, HEX_COLOR_SEL);
+						} else {
+							DrawPartOfItemText(hDc, rc, rcText, text, 0, factor2, HEX_ITEM_LAST, HEX_COLOR_SEL);
+						}
 					}
 					else if (((item == firstItem) && (subItem > firstSub)) ||
 							((item > firstItem) && (item < lastItem)) ||
 							((item == lastItem) && (subItem < lastSub)))
 					{
-						if (subItem == 1)
-						{
-							::FillRect(hDc, &rcText, hbrush);
-							::TextOut(hDc, rcText.left, rcText.top, text, SUBITEM_LENGTH);
+						if ((subItem == _pCurProp->columns) || 
+							((item == lastItem) && ((lastCur % _pCurProp->bits) == 0) && ((subItem + 1) == lastSub))) {
+							if (subItem == 1) {
+								DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_MIDDLE, HEX_COLOR_SEL);
+							} else {
+								DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_LAST, HEX_COLOR_SEL);
+							}
+						} else {
+							if (subItem == 1) {
+								DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_FIRST, HEX_COLOR_SEL);
+							} else {
+								DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_MIDDLE_FULL, HEX_COLOR_SEL);
+							}
 						}
-						else if (subItem == _pCurProp->columns)
-						{
-							rc.right = rcText.left + (size.cx * SUBITEM_LENGTH);
-							::FillRect(hDc, &rc, hbrush);
-							::TextOut(hDc, rcText.left, rcText.top, text, SUBITEM_LENGTH);
-						}
-						else
-						{
-							::FillRect(hDc, &rc, hbrush);
-							::TextOut(hDc, rcText.left, rcText.top, text, SUBITEM_LENGTH);
-						}
-					}
-					else if ((lastSub == subItem) && (lastItem == item))
-					{
-						if (subItem == 1)
-						{
-							rc.left  = rcText.left;
-						}
-						rc.right = rcText.left + (size.cx * factor2);
-						::FillRect(hDc, &rc, hbrush);
-						::TextOut(hDc, rcText.left, rcText.top, text, factor2);
 					}
 					break;
 				}
 			}
 			case HEX_SEL_BLOCK:
 			{
-				if ((firstSub == subItem) && (lastSub == subItem))
+				if ((item >= firstItem) && (item <= lastItem))
 				{
-					rcText.left  += (size.cx * factor1);
-					rcText.right = rcText.left + (size.cx * (factor2-factor1));
-					::FillRect(hDc, &rcText, hbrush);
-					::TextOut(hDc, rcText.left, rcText.top, &text[factor1], factor2-factor1);
-				}
-				else if (firstSub == subItem)
-				{
-					rcText.left  += (size.cx * factor1);
-					if (subItem == _pCurProp->columns)
+					if ((firstSub == subItem) && (lastSub == subItem))
 					{
-						rcText.right = rcText.left + (size.cx * SUBITEM_LENGTH);
+						/* drawn only when one item is selected */
+						DrawPartOfItemText(hDc, rc, rcText, text, factor1, factor2, HEX_ITEM_MIDDLE, HEX_COLOR_SEL);
 					}
-					::FillRect(hDc, &rcText, hbrush);
-					::TextOut(hDc, rcText.left, rcText.top, &text[factor1], SUBITEM_LENGTH-factor1);
-				}
-				else if ((subItem > firstSub) && (subItem < lastSub))
-				{
-					if ((_pCurProp->cursorSubItem == DUMP_FIELD) && (subItem == _pCurProp->columns))
-						rc.right = rcText.left + (size.cx * SUBITEM_LENGTH);
-					::FillRect(hDc, &rc, hbrush);
-					::TextOut(hDc, rcText.left, rcText.top, text, SUBITEM_LENGTH);
-				}
-				else if (lastSub == subItem)
-				{
-					rc.right = rcText.left + (size.cx * factor2);
-					::FillRect(hDc, &rc, hbrush);
-					::TextOut(hDc, rcText.left, rcText.top, text, factor2);
+					else if (firstSub == subItem)
+					{
+						/* first subitem to be drawn */
+						if ((subItem == _pCurProp->columns) || 
+							((firstSub == lastSub-1) && ((lastCur % _pCurProp->bits) == 0))) {
+							DrawPartOfItemText(hDc, rc, rcText, text, factor1, SUBITEM_LENGTH - factor2, HEX_ITEM_MIDDLE, HEX_COLOR_SEL);
+						} else {
+							DrawPartOfItemText(hDc, rc, rcText, text, factor1, SUBITEM_LENGTH, HEX_ITEM_FIRST, HEX_COLOR_SEL);
+						}
+					}
+					else if ((subItem > firstSub) && (subItem < lastSub))
+					{
+						/* draw subitems between first and last one */
+						if (((lastCur % _pCurProp->bits) == 0) && ((subItem + 1) == lastSub)) {
+							DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_LAST, HEX_COLOR_SEL);
+						} else {
+							DrawPartOfItemText(hDc, rc, rcText, text, 0, SUBITEM_LENGTH, HEX_ITEM_MIDDLE_FULL, HEX_COLOR_SEL);
+						}
+					}
+					else if ((lastSub == subItem) && ((lastCur % _pCurProp->bits) != 0))
+					{
+						/* draw last element */
+						DrawPartOfItemText(hDc, rc, rcText, text, 0, factor2, HEX_ITEM_LAST, HEX_COLOR_SEL);
+					}
 				}
 				break;
 			}
 		}
-		::DeleteObject(hbrush);
 
 		/* paint cursor */
-		if ((_pCurProp->editType == HEX_EDIT_HEX) && (item == _pCurProp->cursorItem) && (_isCurOn == TRUE) &&
-			(subItem == _pCurProp->cursorSubItem))
+		if ((_pCurProp->editType == HEX_EDIT_HEX) && (item == _pCurProp->cursorItem))
 		{
-			hbrush = ::CreateSolidBrush(RGB(0x00,0x00,0x00));
-			rcCursor.left  += (size.cx * (_pCurProp->cursorPos % _pCurProp->bits) * FACTOR);
-			rcCursor.right  = rcCursor.left + 1;
-			::FillRect(hDc, &rcCursor, hbrush);
-			::DeleteObject(hbrush);
+			if ((_pCurProp->selection == HEX_SEL_BLOCK) || (firstItem == lastItem))
+			{
+				if ((subItem == (_pCurProp->cursorSubItem - 1)) && 
+					((_pCurProp->cursorPos % _pCurProp->bits) == 0) && (_pCurProp->anchorPos < _pCurProp->cursorPos))
+				{
+					/* correction to last element */
+					::GetTextExtentPoint(hDc, text, _pCurProp->bits * FACTOR, &size);
+					rcCursor.left += size.cx;
+					DrawCursor(hDc, rcCursor);
+				}
+				else if ((subItem == _pCurProp->cursorSubItem) && 
+					(((_pCurProp->cursorPos % _pCurProp->bits) != 0) || (_pCurProp->anchorPos >= _pCurProp->cursorPos)))
+				{
+					/* standard cursor position */
+					::GetTextExtentPoint(hDc, text, (_pCurProp->cursorPos % _pCurProp->bits) * FACTOR, &size);
+					rcCursor.left += size.cx;
+					DrawCursor(hDc, rcCursor);
+				}
+			}
+			else
+			{
+				if (((_pCurProp->cursorPos % _pCurProp->bits) == 0) && (subItem == (_pCurProp->cursorSubItem - 1)) &&
+					(_pCurProp->anchorItem < _pCurProp->cursorItem))
+				{
+					/* correction to last element */
+					::GetTextExtentPoint(hDc, text, _pCurProp->bits * FACTOR, &size);
+					rcCursor.left += size.cx;
+					DrawCursor(hDc, rcCursor);
+				}
+				else if ((subItem == _pCurProp->cursorSubItem) && 
+					(((_pCurProp->cursorPos % _pCurProp->bits) != 0) || (_pCurProp->anchorItem > _pCurProp->cursorItem)))
+				{
+					/* standard cursor position */
+					::GetTextExtentPoint(hDc, text, (_pCurProp->cursorPos % _pCurProp->bits) * FACTOR, &size);
+					rcCursor.left += size.cx;
+					DrawCursor(hDc, rcCursor);
+				}
+			}
 		}
 	}
-
-	::DeleteObject(bgbrush);
 }
 
+void HexEdit::DrawPartOfItemText(HDC hDc, RECT rc, RECT rcText, LPSTR text, UINT beg, UINT length, eSelItem sel, eSelType type)
+{
+	SIZE		size		= {0};
+	UINT		diff		= 0;
+	COLORREF	rgbBk		= 0;
+	COLORREF	rgbTxt		= 0;
+	COLORREF	rgbTBkReg	= getColor(HEX_COLOR_REG_BK);
+
+	switch (type)
+	{
+		case HEX_COLOR_REG:
+			rgbTxt	= getColor(HEX_COLOR_REG_TXT);
+			break;
+		case HEX_COLOR_SEL:
+			rgbBk	= getColor(HEX_COLOR_SEL_BK) ^ rgbTBkReg;
+			rgbTxt	= getColor(HEX_COLOR_SEL_TXT);
+			break;
+		case HEX_COLOR_DIFF:
+			rgbBk	= getColor(HEX_COLOR_DIFF_BK) ^ rgbTBkReg;
+			rgbTxt	= getColor(HEX_COLOR_DIFF_TXT);
+			break;
+	}
+
+	/* calculate text witdth and background width */
+	switch (sel)
+	{
+		case HEX_ITEM_FIRST:
+		{
+			/* first subitem to be drawn */
+			::GetTextExtentPoint(hDc, text, beg, &size);
+			rcText.left += size.cx;
+			rc.left = rcText.left;
+			diff = length - beg;
+			break;
+		}
+		case HEX_ITEM_MIDDLE:
+		{
+			/* drawn only when one item is selected */
+			rcText.right = rcText.left;
+			::GetTextExtentPoint(hDc, text, beg, &size);
+			rcText.left += size.cx;
+			::GetTextExtentPoint(hDc, text, length, &size);
+			rcText.right += size.cx;
+			rc = rcText;
+			diff = length - beg;
+			break;
+		}
+		case HEX_ITEM_LAST:
+		{
+			::GetTextExtentPoint(hDc, text, length, &size);
+			rc.right = rcText.left + size.cx;
+			diff = length;
+			break;
+		}
+		case HEX_ITEM_MIDDLE_FULL:
+		{
+			diff = length;
+			break;
+		}
+		default:
+			break;
+	}
+
+	/* draw background of text */
+	if (type != HEX_COLOR_REG)
+	{
+		HBRUSH	hBrush		= ::CreateSolidBrush(rgbBk);
+		HBRUSH	hOldBrush	= (HBRUSH)::SelectObject(hDc, hBrush);
+		::PatBlt(hDc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, PATINVERT);
+		::SelectObject(hDc, hOldBrush);
+		::DeleteObject(hBrush);
+	}
+
+	/* draw text */
+	COLORREF rgbOldTxt = ::SetTextColor(hDc, rgbTxt);
+	::DrawText(hDc, &text[beg], diff, &rcText, DT_LEFT | DT_HEX_VIEW);
+	::SetTextColor(hDc, rgbOldTxt);
+}
 
 
 
@@ -2341,17 +2895,18 @@ void HexEdit::SelectDump(INT iItem, INT iCursor)
 			INT itemCnt = ListView_GetItemCount(_hListCtrl);
 			ListView_SetItemCountEx(_hListCtrl, itemCnt + 1, 0);
 		}
-		ListView_EnsureVisible(_hListCtrl, iItem, TRUE);
+		EnsureVisible(iItem, DUMP_FIELD);
 		InvalidateList();
 	}
 
 	/* set position in scintilla */
-	if (_pCurProp->isLittle == FALSE)
-		ScintillaMsg(SCI_GOTOPOS, VIEW_ROW * _pCurProp->cursorItem + _pCurProp->cursorPos);
-	else
-		ScintillaMsg(SCI_GOTOPOS, VIEW_ROW * _pCurProp->cursorItem + _pCurProp->cursorPos + 
+	if (_pCurProp->isLittle == FALSE) {
+		_SciWrp.execute(SCI_GOTOPOS, VIEW_ROW * _pCurProp->cursorItem + _pCurProp->cursorPos);
+	} else {
+		_SciWrp.execute(SCI_GOTOPOS, VIEW_ROW * _pCurProp->cursorItem + _pCurProp->cursorPos + 
 								  (_pCurProp->cursorPos % _pCurProp->bits) + 
 								  ((_pCurProp->bits-1) - (_pCurProp->cursorPos % _pCurProp->bits)));
+	}
 }
 
 
@@ -2364,16 +2919,15 @@ void HexEdit::OnMouseClickDump(WPARAM wParam, LPARAM lParam)
 	info.pt.y = HIWORD(lParam);
 	ListView_SubItemHitTest(_hListCtrl, &info);
 
-	if (0x80 & ::GetKeyState(VK_SHIFT))
-	{
+	/* calc current position */
+	UINT	posEnd	= info.iItem * VIEW_ROW + CalcCursorPos(info);
+
+	if (0x80 & ::GetKeyState(VK_SHIFT)) {
 		UINT	posBeg		= GetAnchor();
 		bool	isMenu		= ((0x80 & ::GetKeyState(VK_MENU)) == 0x80);
-
-		SetSelection(posBeg, info.iItem * VIEW_ROW + CalcCursorPos(info), isMenu ? HEX_SEL_BLOCK:HEX_SEL_NORM);
-	}
-	else
-	{
-		SelectDump(info.iItem, CalcCursorPos(info));
+		SetSelection(posBeg, posEnd, isMenu ? HEX_SEL_BLOCK:HEX_SEL_NORM);
+	} else {
+		SetSelection(posEnd, posEnd);
 	}
 }
 
@@ -2421,13 +2975,25 @@ BOOL HexEdit::OnKeyDownDump(WPARAM wParam, LPARAM lParam)
 			{
 				SelectionKeys(wParam, lParam);
 			}
+			else if (_pCurProp->isSel == TRUE)
+			{
+				INT	posBeg, posEnd;
+				GetSelection(&posBeg, &posEnd);
+				if (posBeg < posEnd) {
+					SelectDump(_pCurProp->cursorItem, _pCurProp->anchorPos);
+				} else {
+					SelectDump(_pCurProp->cursorItem, _pCurProp->cursorPos);
+				}
+			}
 			else if (_pCurProp->cursorPos == 0)
 			{
 				if (_pCurProp->cursorItem != 0)
 					SelectDump(_pCurProp->cursorItem - 1, VIEW_ROW-1);
 			}
 			else
+			{
 				SelectDump(_pCurProp->cursorItem, _pCurProp->cursorPos - 1);
+			}
 			return FALSE;
 		}
 		case VK_RIGHT:
@@ -2438,119 +3004,141 @@ BOOL HexEdit::OnKeyDownDump(WPARAM wParam, LPARAM lParam)
 				{
 					SelectionKeys(wParam, lParam);
 				}
+				else if (_pCurProp->isSel == TRUE)
+				{
+					INT	posBeg, posEnd;
+					GetSelection(&posBeg, &posEnd);
+					if (posBeg < posEnd) {
+						SelectDump(_pCurProp->cursorItem, _pCurProp->cursorPos);
+					} else {
+						SelectDump(_pCurProp->cursorItem, _pCurProp->anchorPos);
+					}
+				}
 				else if (_pCurProp->cursorPos < (UINT)(VIEW_ROW - 1))
+				{
 					SelectDump(_pCurProp->cursorItem, _pCurProp->cursorPos + 1);
+				}
 				else
+				{
 					SelectDump(_pCurProp->cursorItem + 1, 0);
+				}
 			}
 			return FALSE;
 		}
 		default:
-			GlobalKeys(wParam, lParam);
-			break;
+			return GlobalKeys(wParam, lParam);
+
 	}
 	return TRUE;
 }
 
 
-void HexEdit::OnCharDump(WPARAM wParam, LPARAM lParam)
+BOOL HexEdit::OnCharDump(WPARAM wParam, LPARAM lParam)
 {
 	switch (wParam)
 	{
-		case 0x09:		/* TAB */
+		case 0x08:		/* Back     */
 		{
-			GlobalKeys(wParam, lParam);
 			break;
+		}
+		case 0x09:		/* TAB		*/
+		case 0x10:		/* Shift	*/
+		{
+			return GlobalKeys(wParam, lParam);
 		}
 		default:
 		{
+			if (_pCurProp->isSel == TRUE) {
+				SetSelection(GetAnchor(), GetAnchor());
+			}
+
 			/* calculate correct position */
 			UINT posBeg = 0;
 
-			if (_pCurProp->isLittle == FALSE)
-			{
+			if (_pCurProp->isLittle == FALSE) {
 				posBeg = VIEW_ROW * _pCurProp->cursorItem + _pCurProp->cursorPos;
-			}
-			else
-			{
+			} else {
 				posBeg = VIEW_ROW * _pCurProp->cursorItem + _pCurProp->cursorPos - 
 					(_pCurProp->cursorPos % _pCurProp->bits) + 
 					((_pCurProp->bits-1) - (_pCurProp->cursorPos % _pCurProp->bits));
 			}
 
-			if (_currLength != GetCurrentPos())
-			{
+			if (_currLength != GetCurrentPos()) {
 				/* update text */
-				ScintillaMsg(_hParentHandle, SCI_SETTARGETSTART, posBeg);
-				ScintillaMsg(_hParentHandle, SCI_SETTARGETEND, posBeg + 1);
-				ScintillaMsg(_hParentHandle, SCI_REPLACETARGET, 1, (LPARAM)&wParam);
-				ScintillaMsg(_hParentHandle, SCI_SETSEL, posBeg+1, posBeg+1);
-			}
-			else
-			{
+				_SciWrp.execute(SCI_SETTARGETSTART, posBeg);
+				_SciWrp.execute(SCI_SETTARGETEND, posBeg + 1);
+				_SciWrp.execute(SCI_REPLACETARGET, 1, (LPARAM)&wParam);
+				_SciWrp.execute(SCI_SETSEL, posBeg+1, posBeg+1);
+			} else {
 				/* add char */
-				if (_pCurProp->isLittle == TRUE)
-				{
-					ScintillaMsg(_hParentHandle, SCI_SETCURRENTPOS, _currLength - (_currLength%_pCurProp->bits));
+				if (_pCurProp->isLittle == TRUE) {
+					_SciWrp.execute(SCI_SETCURRENTPOS, _currLength - (_currLength%_pCurProp->bits));
 				}
-				ScintillaMsg(_hParentHandle, SCI_ADDTEXT, 1, (LPARAM)&wParam);
+				_SciWrp.execute(SCI_ADDTEXT, 1, (LPARAM)&wParam);
 			}
 
 			_pCurProp->cursorPos++;
-			if (_pCurProp->cursorPos >= (UINT)VIEW_ROW)
-			{
+			if (_pCurProp->cursorPos >= (UINT)VIEW_ROW) {
 				::SendMessage(_hListCtrl, WM_KEYDOWN, VK_RIGHT, 0);
 			}
 
 			InvalidateList();
+			return FALSE;
 		}
 	}
+	return TRUE;
 }
-
 
 void HexEdit::DrawDumpText(HDC hDc, DWORD item, INT subItem)
 {
 	RECT		rc;
-	SIZE		size;
 	char		text[129];
-	RECT		rcCursor;
-	HBRUSH		bgbrush	 = ::CreateSolidBrush(RGB(0xFF,0xFF,0xFF));
+	RECT		rcCursor	= {0};
+	SIZE		size		= {0};
+	UINT		diff		= VIEW_ROW;
 
 	/* get list informations */
 	ListView_GetItemText(_hListCtrl, item, subItem, text, 129);
 	ListView_GetSubItemRect(_hListCtrl, item, subItem, LVIR_BOUNDS, &rc);
 
-	/* paint background */
-	::SetBkMode(hDc, TRANSPARENT);
-	::FillRect(hDc, &rc, bgbrush);
-
-	/* calculate cursor */
+	/* calculate cursor start position */
 	rc.left += 6;
 	rcCursor = rc;
-	::GetTextExtentPoint(hDc, "0", 1, &size);
+	rcCursor.right = rcCursor.left;
 
-	/* draw text */
-	::SetTextColor(hDc, RGB(0x00,0x00,0x00));
-	if (ListView_GetItemCount(_hListCtrl) != (item + 1))
-	{
-		::TextOut(hDc, rc.left, rc.top, text, VIEW_ROW);
+	/* draw normal text */
+	if (ListView_GetItemCount(_hListCtrl) == (item + 1)) {
+		diff = _currLength - (item * VIEW_ROW);
+		memset(&text[diff], 0x20, 129 - diff);
 	}
-	else
+	DrawPartOfDumpText(hDc, rc, text, 0, diff, HEX_COLOR_REG);
+
+	/* draw compare highlight */
+	if (_pCurProp->pCompareData != NULL)
 	{
-		UINT	diff = _currLength - (item * VIEW_ROW);
-		::TextOut(hDc, rc.left, rc.top, text, diff);
-		text[diff] = 0x20;
+		UINT pos = item * _pCurProp->columns;
+		for (UINT i = 0; i < _pCurProp->columns; i++, pos++) {
+			if (_pCurProp->pCompareData[pos] == TRUE) {
+				DrawPartOfDumpText(hDc, rc, text, i * _pCurProp->bits, _pCurProp->bits, HEX_COLOR_DIFF);
+			}
+		}
 	}
 
+	/* draw selection */
 	if (_pCurProp->isSel == FALSE)
 	{
-		if ((_pCurProp->editType == HEX_EDIT_ASCII) && (_isCurOn == TRUE))
-		{
-			HBRUSH		hbrush	 = ::CreateSolidBrush(RGB(0x00,0x00,0x00));
-			rcCursor.left  += (size.cx * _pCurProp->cursorPos);
-			rcCursor.right  = rcCursor.left + 1;
-			::FillRect(hDc, &rcCursor, hbrush);
-			::DeleteObject(hbrush);
+		if (item == _pCurProp->cursorItem) {
+			UINT	posCurBeg = 0;
+			if (_pCurProp->editType == HEX_EDIT_ASCII) {
+				posCurBeg += _pCurProp->cursorPos;
+			} else {
+				posCurBeg += ((_pCurProp->cursorSubItem - 1) * _pCurProp->bits + _pCurProp->cursorPos / FACTOR);
+			}
+			::GetTextExtentPoint(hDc, text, posCurBeg, &size);
+			rcCursor.left += size.cx;
+			::GetTextExtentPoint(hDc, text, posCurBeg + 1, &size);
+			rcCursor.right += size.cx;
+			DrawCursor(hDc, rcCursor, _pCurProp->editType == HEX_EDIT_HEX);
 		}
 	}
 	else
@@ -2578,72 +3166,106 @@ void HexEdit::DrawDumpText(HDC hDc, DWORD item, INT subItem)
 			lastCur  = _pCurProp->anchorPos - 1;
 		}
 
-		switch (_pCurProp->selection)
+		if ((firstItem <= item) && (lastItem >= item))
 		{
-			case HEX_SEL_NORM:
+			switch (_pCurProp->selection)
 			{
-				if (firstItem == lastItem)
+				case HEX_SEL_NORM:
 				{
-					/* go to HEX_SEL_BLOCK */
+					if (firstItem == lastItem)
+					{
+						/* go to HEX_SEL_BLOCK */
+					}
+					else
+					{
+						if (firstItem == item)
+						{
+							/* calculate length and selection of string */
+							length		= VIEW_ROW - firstCur;
+							begText		= firstCur;
+						}
+						else if ((item > firstItem) && (item < lastItem))
+						{
+							/* calculate length and selection of string */
+							length		= VIEW_ROW;
+						}
+						else if (item == lastItem)
+						{
+							/* calculate length and selection of string */
+							length		= lastCur;
+							length		+= (length < VIEW_ROW)? 1:0;
+						}
+						break;
+					}
 				}
-				else
+				case HEX_SEL_VERTICAL:
+				case HEX_SEL_HORIZONTAL:
+				case HEX_SEL_BLOCK:
 				{
-					if (firstItem == item)
-					{
-						/* calculate length and selection of string */
-						length		= VIEW_ROW - firstCur;
-						rc.left		+= (size.cx * firstCur);
-						rc.right	= rc.left + (size.cx * length);
-						begText		= firstCur;
-					}
-					else if ((item > firstItem) && (item < lastItem))
-					{
-						/* calculate length and selection of string */
-						length		= VIEW_ROW;
-						rc.right	= rc.left + (size.cx * length);
-					}
-					else if (item == lastItem)
-					{
-						/* calculate length and selection of string */
-						length		= lastCur;
-						length		+= (length < VIEW_ROW)? 1:0;
-						rc.right	= rc.left + (size.cx * length);
-					}
+					/* calculate length and selection of string */
+					length		= lastCur-firstCur;
+					length		+= (firstCur+length < VIEW_ROW)? 1:0;
+					begText		= firstCur;
 					break;
 				}
 			}
-			case HEX_SEL_BLOCK:
-			{
-				/* calculate length and selection of string */
-				length		= lastCur-firstCur;
-				length		+= (firstCur+length < VIEW_ROW)? 1:0;
-				rc.left		+= (size.cx * firstCur);
-				rc.right	= rc.left + (size.cx * length);
-				begText		= firstCur;
-				break;
+
+			DrawPartOfDumpText(hDc, rc, text, begText, length, HEX_COLOR_SEL);
+
+			/* paint cursor */
+			if ((item == _pCurProp->cursorItem) && (_pCurProp->editType == HEX_EDIT_ASCII)) {
+				::GetTextExtentPoint(hDc, text, _pCurProp->cursorPos, &size);
+				rcCursor.left += size.cx;
+				DrawCursor(hDc, rcCursor);
 			}
 		}
-
-		/* draw text and background */
-		HBRUSH	hbrush  = SELECTION_COLOR;
-
-		::FillRect(hDc, &rc, hbrush);
-		::SetTextColor(hDc, RGB(0xFF,0xFF,0xFF));
-		::TextOut(hDc, rc.left, rc.top, &text[begText], length);
-		::DeleteObject(hbrush);
-
-
-		/* paint cursor */
-		if ((item == _pCurProp->cursorItem) && (_pCurProp->editType == HEX_EDIT_ASCII) && (_isCurOn == TRUE))
-		{
-			hbrush = ::CreateSolidBrush(RGB(0x00,0x00,0x00));
-			rcCursor.left  += (size.cx * _pCurProp->cursorPos);
-			rcCursor.right  = rcCursor.left + 1;
-			::FillRect(hDc, &rcCursor, hbrush);
-			::DeleteObject(hbrush);
-		}
 	}
-	::DeleteObject(bgbrush);
+}
+
+
+void HexEdit::DrawPartOfDumpText(HDC hDc, RECT rc, LPSTR text, UINT beg, UINT length, eSelType type)
+{
+	SIZE		size		= {0};
+	COLORREF	rgbBk		= 0;
+	COLORREF	rgbTxt		= 0;
+	COLORREF	rgbTBkReg	= getColor(HEX_COLOR_REG_BK);
+
+	switch (type)
+	{
+		case HEX_COLOR_REG:
+			rgbTxt	= getColor(HEX_COLOR_REG_TXT);
+			break;
+		case HEX_COLOR_SEL:
+			rgbBk	= getColor(HEX_COLOR_SEL_BK) ^ rgbTBkReg;
+			rgbTxt	= getColor(HEX_COLOR_SEL_TXT);
+			break;
+		case HEX_COLOR_DIFF:
+			rgbBk	= getColor(HEX_COLOR_DIFF_BK) ^ rgbTBkReg;
+			rgbTxt	= getColor(HEX_COLOR_DIFF_TXT);
+			break;
+	}
+
+	/* calculate text witdth */
+	rc.right = rc.left;
+	::GetTextExtentPoint(hDc, text, beg, &size);
+	rc.left += size.cx;
+	::GetTextExtentPoint(hDc, text, beg + length, &size);
+	rc.right += size.cx;
+
+	/* draw background of text */
+	if (type != HEX_COLOR_REG)
+	{
+		HBRUSH	hBrush		= ::CreateSolidBrush(rgbBk);
+		HBRUSH	hOldBrush	= (HBRUSH)::SelectObject(hDc, hBrush);
+		::PatBlt(hDc, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, PATINVERT);
+		::SelectObject(hDc, hOldBrush);
+		::DeleteObject(hBrush);
+	}
+
+	/* draw text */
+	COLORREF rgbOldTxt = ::SetTextColor(hDc, rgbTxt);
+	::DrawText(hDc, &text[beg], length, &rc, DT_LEFT | DT_HEX_VIEW);
+	::SetTextColor(hDc, rgbOldTxt);
 }
 
 
@@ -2659,7 +3281,7 @@ INT HexEdit::CalcCursorPos(LV_HITTESTINFO info)
 {
 	RECT			rc;
 	SIZE			size;
-	char			text[64];
+	char			text[128];
 	UINT			cursorPos;
 
 	/* get dc for calculate the font size */
@@ -2669,36 +3291,46 @@ INT HexEdit::CalcCursorPos(LV_HITTESTINFO info)
 	SelectObject(hDc, _hFont);
 
 	/* get item informations */
-	ListView_GetItemText(_hListCtrl, info.iItem, info.iSubItem, text, 64);
+	ListView_GetItemText(_hListCtrl, info.iItem, info.iSubItem, text, 128);
 	ListView_GetSubItemRect(_hListCtrl, info.iItem, info.iSubItem, LVIR_BOUNDS, &rc);
 
 	if (info.iSubItem == DUMP_FIELD)
 	{
 		/* left offset */
-		::GetTextExtentPoint(hDc, text, VIEW_ROW, &size);
 		rc.left += 6;
 
 		/* get clicked position */
-		::GetTextExtentPoint(hDc, "0", 1, &size);
-		cursorPos = (info.pt.x - rc.left + size.cx / 2) / size.cx;
+		for (cursorPos = 0; cursorPos < VIEW_ROW; cursorPos++) {
+			::GetTextExtentPoint(hDc, &text[cursorPos], 1, &size);
+			if (info.pt.x < (rc.left + (size.cx / 2))) {
+				break;
+			}
+			rc.left += size.cx;
+		}
 
 		if (cursorPos >= (UINT)VIEW_ROW)
 		{
-			if (_pCurProp->isSel == TRUE)
+			if (_pCurProp->isSel == TRUE) {
 				cursorPos = VIEW_ROW;
-			else
+			} else {
 				cursorPos = VIEW_ROW - 1;
+			}
 		}
 	}
 	else
 	{
 		/* left offset */
 		::GetTextExtentPoint(hDc, text, SUBITEM_LENGTH, &size);
-		size.cx = ((rc.right - rc.left) - size.cx) / 2;
-		rc.left   += size.cx;
-		::GetTextExtentPoint(hDc, "0", 1, &size);
+		rc.left += ((rc.right - rc.left) - size.cx) / 2;
 
-		cursorPos = (info.pt.x - rc.left + size.cx / 2) / size.cx;
+		/* get clicked position */
+		for (cursorPos = 0; cursorPos < VIEW_ROW; cursorPos++) {
+			::GetTextExtentPoint(hDc, &text[cursorPos], 1, &size);
+			if (info.pt.x < (rc.left + (size.cx / 2))) {
+				break;
+			}
+			rc.left += size.cx;
+		}
 
 		/* test if  */
 		if (FULL_SUBITEM)
@@ -2730,13 +3362,13 @@ INT HexEdit::CalcCursorPos(LV_HITTESTINFO info)
 		}
 
 	}
-	::ReleaseDC(_hSelf, hDc);
+	::ReleaseDC(_hListCtrl, hDc);
 	
 	return cursorPos;
 }
 
 
-void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
+BOOL HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 {
 	INT		posBeg;
 	INT		posEnd;
@@ -2747,6 +3379,9 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 	{
 		case VK_PRIOR:
 		case VK_NEXT:
+
+			DisableCursor();
+
 			if (isShift == false)
 			{
 				if (wParam == VK_NEXT)
@@ -2754,16 +3389,19 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 					_pCurProp->cursorItem += ListView_GetCountPerPage(_hListCtrl);
 					if (_pCurProp->cursorItem >= (UINT)ListView_GetItemCount(_hListCtrl))
 					{
-						_pCurProp->cursorItem = ListView_GetItemCount(_hListCtrl) - 1;
+						_pCurProp->cursorItem = GetItemCount();
 						if (GetCurrentPos() > _currLength)
 							SetPosition(_currLength);
 					}
 				}
 				else
 				{
-					_pCurProp->cursorItem -= ListView_GetCountPerPage(_hListCtrl);
-					if (_pCurProp->cursorItem < 0)
+					INT	iNewPos = _pCurProp->cursorItem - ListView_GetCountPerPage(_hListCtrl);
+					if (iNewPos < 0) {
 						_pCurProp->cursorItem = 0;
+					} else {
+						_pCurProp->cursorItem = (UINT)iNewPos;
+					}
 				}
 				SetLineVis(_pCurProp->cursorItem, HEX_LINE_MIDDLE);
 				_pCurProp->isSel = FALSE;
@@ -2777,7 +3415,7 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 					posEnd += ListView_GetCountPerPage(_hListCtrl) * VIEW_ROW;
 					if ((UINT)posEnd > _currLength)
 						posEnd = _currLength;
-					SetSelection(posBeg, posEnd, selection);
+					SetSelection(posBeg, posEnd, selection, _pCurProp->cursorSubItem == DUMP_FIELD);
 				}
 				else
 				{
@@ -2785,10 +3423,9 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 					posEnd -= ListView_GetCountPerPage(_hListCtrl) * VIEW_ROW;
 					if (posEnd < 0)
 						posEnd = 0;
-					SetSelection(posBeg, posEnd, selection);
+					SetSelection(posBeg, posEnd, selection, _pCurProp->cursorSubItem == DUMP_FIELD);
 				}
 				SetLineVis(_pCurProp->cursorItem, HEX_LINE_MIDDLE);
-				_pCurProp->isSel = TRUE;
 			}
 			break;
 		case VK_HOME:
@@ -2813,13 +3450,13 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 				if (0x80 & ::GetKeyState(VK_CONTROL))
 				{
 					GetSelection(&posBeg, &posEnd);
-					SetSelection(posBeg, 0, selection);
 					SetLineVis(0, HEX_LINE_FIRST);
+					SetSelection(posBeg, 0, selection);
 				}
 				else
 				{
 					GetSelection(&posBeg, &posEnd);
-					SetSelection(posBeg, _pCurProp->cursorItem * VIEW_ROW, selection);
+					SetSelection(posBeg, _pCurProp->cursorItem * VIEW_ROW, selection, _pCurProp->anchorItem < _pCurProp->cursorItem);
 				}
 			}
 			break;
@@ -2835,7 +3472,7 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 					/* set correct end position */
 					if (_pCurProp->editType == HEX_EDIT_HEX)
 					{
-						if ((_pCurProp->cursorItem != ListView_GetItemCount(_hListCtrl) - 1) ||
+						if ((_pCurProp->cursorItem != GetItemCount()) ||
 							((_currLength % VIEW_ROW) == 0))
 							SelectItem(_pCurProp->cursorItem, _pCurProp->columns, SUBITEM_LENGTH-FACTOR);
 						else
@@ -2843,7 +3480,7 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 					}
 					else
 					{
-						if ((_pCurProp->cursorItem != ListView_GetItemCount(_hListCtrl) - 1) ||
+						if ((_pCurProp->cursorItem != GetItemCount()) ||
 							((_currLength % VIEW_ROW) == 0))
 							SelectDump(_pCurProp->cursorItem, VIEW_ROW-1);
 						else
@@ -2856,19 +3493,18 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 				if (0x80 & ::GetKeyState(VK_CONTROL))
 				{
 					GetSelection(&posBeg, &posEnd);
-					SetSelection(posBeg, _currLength, selection, TRUE);
 					SetLineVis(ListView_GetItemCount(_hListCtrl)-1, HEX_LINE_LAST);
+					SetSelection(posBeg, _currLength, selection, TRUE);
 				}
 				else
 				{
 					GetSelection(&posBeg, &posEnd);
-					SetSelection(posBeg, (_pCurProp->cursorItem+1) * VIEW_ROW, selection, TRUE);
+					SetSelection(posBeg, (_pCurProp->cursorItem+1) * VIEW_ROW, selection, _pCurProp->anchorItem <= _pCurProp->cursorItem);
 				}
 			}
 			break;
 		case VK_TAB:
-			/* nothing happens here */
-			break;
+			return TabMessage();
 		case VK_ADD:
 			if (0x80 & ::GetKeyState(VK_CONTROL))
 				::SendMessage(_hParent, WM_COMMAND, IDM_VIEW_ZOOMIN, 0);
@@ -2882,20 +3518,15 @@ void HexEdit::GlobalKeys(WPARAM wParam, LPARAM lParam)
 				::SendMessage(_hParent, WM_COMMAND, IDM_VIEW_ZOOMRESTORE, 0);
 			break;
 		case VK_BACK:
+			if ((_pCurProp->editType == HEX_EDIT_HEX) && (_pCurProp->isSel == TRUE)) {
+				::SendMessage(_hListCtrl, WM_KEYDOWN, VK_LEFT, 0);
+			}
 			::SendMessage(_hListCtrl, WM_KEYDOWN, VK_LEFT, 0);
 			break;
 		default:
-			if ((0x80 & ::GetKeyState(VK_CONTROL)) || (0x80 & ::GetKeyState(VK_SHIFT)))
-			{
-				SetFocusNpp(_hParentHandle);
-				if ((0x80 & ::GetKeyState(VK_SHIFT)) && (0x80 & ::GetKeyState(VK_MENU)) && (0x80 & ::GetKeyState('H')))
-				{
-					toggleHexEdit();
-					SetFocusNpp(_hParentHandle);
-				}
-			}
-			break;
+			return TRUE;
 	}
+	return FALSE;
 }
 
 
@@ -2904,43 +3535,36 @@ void HexEdit::SelectionKeys(WPARAM wParam, LPARAM lParam)
 	INT		posBeg;
 	INT		posEnd;
 	bool	isMenu  = ((0x80 & ::GetKeyState(VK_MENU)) == 0x80);
+	bool	isCtrl  = ((0x80 & ::GetKeyState(VK_CONTROL)) == 0x80);
 	eSel	selection = (isMenu ? HEX_SEL_BLOCK:HEX_SEL_NORM);
 
 	switch (wParam)
 	{
 		case VK_UP:
 		{
-			if (_pCurProp->cursorPos == VIEW_ROW)
-			{
-				if (_pCurProp->cursorItem != 0)
-				{
-					_pCurProp->cursorItem--;
-					ListView_Update(_hListCtrl, 0);
-					SetStatusBar();
-				}
-			}
-			else
+			if (_pCurProp->cursorItem > 0)
 			{
 				GetSelection(&posBeg, &posEnd);
-				SetSelection(posBeg, posEnd - VIEW_ROW, selection);
+				if ((_pCurProp->anchorItem == _pCurProp->cursorItem) && (_pCurProp->cursorSubItem == DUMP_FIELD)) {
+					_pCurProp->cursorSubItem = 1;
+					_pCurProp->cursorPos = 0;
+					UpdateListChanges();
+				} else {
+					SetSelection(posBeg, posEnd - VIEW_ROW, selection, _pCurProp->cursorSubItem == DUMP_FIELD);
+				}
+				SetLineVis(_pCurProp->cursorItem, HEX_LINE_MIDDLE);
 			}
 			break;
 		}
 		case VK_DOWN:
 		{
-			if (_pCurProp->cursorPos == VIEW_ROW)
-			{
-				if (_pCurProp->cursorItem != ListView_GetItemCount(_hListCtrl))
-				{
-					_pCurProp->cursorItem++;
-					ListView_Update(_hListCtrl, 0);
-					SetStatusBar();
-				}
-			}
-			else
+			if (_pCurProp->cursorItem < ListView_GetItemCount(_hListCtrl))
 			{
 				GetSelection(&posBeg, &posEnd);
-				SetSelection(posBeg, posEnd + VIEW_ROW, selection);
+				posEnd += VIEW_ROW;
+				SetSelection(posBeg, posEnd, selection, (_pCurProp->cursorSubItem == DUMP_FIELD) ||
+					(((posEnd % VIEW_ROW) == 0) && (_pCurProp->anchorItem == _pCurProp->cursorItem)));
+				SetLineVis(_pCurProp->cursorItem, HEX_LINE_MIDDLE);
 			}
 			break;
 		}
@@ -2953,7 +3577,18 @@ void HexEdit::SelectionKeys(WPARAM wParam, LPARAM lParam)
 			else
 			{
 				GetSelection(&posBeg, &posEnd);
-				SetSelection(posBeg, posEnd - 1, selection);
+				if (isCtrl || (_pCurProp->editType == HEX_EDIT_ASCII )) {
+					posEnd--;
+					SetSelection(posBeg, posEnd, selection, ((posEnd % VIEW_ROW) == 0) && (posBeg < posEnd));
+				} else {
+					if (posEnd % _pCurProp->bits) {
+						posEnd -= (posEnd % _pCurProp->bits);
+					} else {
+						posEnd -= _pCurProp->bits;
+					}
+					SetSelection(posBeg, posEnd, selection, ((posEnd % VIEW_ROW) == 0) && (posBeg < posEnd));
+				}
+				SetLineVis(_pCurProp->cursorItem, HEX_LINE_MIDDLE);
 			}
 			break;
 		}
@@ -2966,19 +3601,21 @@ void HexEdit::SelectionKeys(WPARAM wParam, LPARAM lParam)
 				{
 					_pCurProp->cursorSubItem++;
 					_pCurProp->cursorPos++;
-					ListView_Update(_hListCtrl, 0);					
-					SetStatusBar();
+					UpdateListChanges();
 				}
-			}
-			else if (_pCurProp->cursorPos == VIEW_ROW)
-			{
-				GetSelection(&posBeg, &posEnd);
-				SetSelection(posBeg, posEnd, selection);
 			}
 			else
 			{
 				GetSelection(&posBeg, &posEnd);
-				SetSelection(posBeg, posEnd + 1, selection);
+				if (isCtrl || (_pCurProp->editType == HEX_EDIT_ASCII )) {
+					posEnd++;
+					SetSelection(posBeg, posEnd, selection, (posEnd % VIEW_ROW) == 0);
+				} else {
+					posEnd -= (posEnd % _pCurProp->bits);
+					posEnd += _pCurProp->bits;
+					SetSelection(posBeg, posEnd, selection, (posEnd % VIEW_ROW) == 0);
+				}
+				SetLineVis(_pCurProp->cursorItem, HEX_LINE_MIDDLE);
 			}
 			break;
 		}
@@ -2992,23 +3629,17 @@ void HexEdit::SetPosition(UINT pos, BOOL isLittle)
 {
 	if (isLittle == FALSE)
 	{
-		if (_pCurProp->editType == HEX_EDIT_HEX)
-		{
+		if (_pCurProp->editType == HEX_EDIT_HEX) {
 			SelectItem(pos / VIEW_ROW,((pos % VIEW_ROW)/_pCurProp->bits)+1, (pos % _pCurProp->bits) * FACTOR);
-		}
-		else
-		{
+		} else {
 			SelectDump(pos / VIEW_ROW, pos % VIEW_ROW);
 		}
 	}
 	else
 	{
-		if (_pCurProp->editType == HEX_EDIT_HEX)
-		{
+		if (_pCurProp->editType == HEX_EDIT_HEX) {
 			SelectItem(pos / VIEW_ROW,((pos % VIEW_ROW)/_pCurProp->bits)+1, (_pCurProp->bits) - ((pos % _pCurProp->bits)-1) * FACTOR);
-		}
-		else
-		{
+		} else {
 			SelectDump(pos / VIEW_ROW, (pos % VIEW_ROW) - 2*(pos % _pCurProp->bits) + (_pCurProp->bits - 1));
 		}
 	}
@@ -3017,42 +3648,25 @@ void HexEdit::SetPosition(UINT pos, BOOL isLittle)
 
 UINT HexEdit::GetCurrentPos(void)
 {
-	UINT	pos = 0;
-
-	if (_pCurProp->isSel == FALSE)
-	{
-		if (_pCurProp->editType == HEX_EDIT_HEX)
-		{
-			pos = _pCurProp->cursorItem * VIEW_ROW + (_pCurProp->cursorSubItem-1) * _pCurProp->bits + _pCurProp->cursorPos / FACTOR;
+	if ((_pCurProp->editType == HEX_EDIT_ASCII) || (_pCurProp->isSel == TRUE)) {
+		if (_pCurProp->cursorSubItem == DUMP_FIELD) {
+			return (_pCurProp->cursorItem + 1) * VIEW_ROW;
+		} else {
+			return _pCurProp->cursorItem * VIEW_ROW + _pCurProp->cursorPos;
 		}
-		else
-		{	
-			pos = _pCurProp->cursorItem * VIEW_ROW + _pCurProp->cursorPos;
-		}
+	} else {
+		return _pCurProp->cursorItem * VIEW_ROW + (_pCurProp->cursorSubItem - 1) * _pCurProp->bits + _pCurProp->cursorPos / FACTOR;
 	}
-	else
-	{
-		pos = _pCurProp->cursorItem * VIEW_ROW + _pCurProp->cursorPos;
-	}
-
-	return pos;
 }
 
 
 UINT HexEdit::GetAnchor(void)
 {
-	UINT	pos = 0;
-
-	if (_pCurProp->isSel == FALSE)
-	{
-		pos = GetCurrentPos();
+	if ((_pCurProp->editType == HEX_EDIT_ASCII) || (_pCurProp->isSel == TRUE)) {
+		return _pCurProp->anchorItem * VIEW_ROW + _pCurProp->anchorPos;
+	} else {
+		return _pCurProp->anchorItem * VIEW_ROW + (_pCurProp->anchorSubItem - 1) * _pCurProp->bits + _pCurProp->anchorPos / FACTOR;
 	}
-	else
-	{
-		pos = _pCurProp->anchorItem * VIEW_ROW + _pCurProp->anchorPos;
-	}
-
-	return pos;
 }
 
 
@@ -3068,29 +3682,34 @@ void HexEdit::SetSelection(UINT posBegin, UINT posEnd, eSel selection, BOOL isEN
 	if ((posBegin <= _currLength) && (posEnd <= _currLength) &&
 		(posBegin >= 0)           && (posEnd >= 0)) 
 	{
-		_pCurProp->anchorItem		= posBegin / VIEW_ROW;
-		_pCurProp->anchorSubItem	= ((posBegin % VIEW_ROW)/_pCurProp->bits) + 1;
-		_pCurProp->anchorPos		= posBegin % VIEW_ROW;
-		_pCurProp->cursorItem		= posEnd / VIEW_ROW;
-		_pCurProp->cursorSubItem	= ((posEnd % VIEW_ROW)/_pCurProp->bits) + 1;
-		_pCurProp->cursorPos		= posEnd % VIEW_ROW;
-		_pCurProp->isSel			= TRUE;
-		_pCurProp->selection		= selection;
+		UINT	modPosBegin			= posBegin % VIEW_ROW;
+		UINT	modPosEnd			= posEnd % VIEW_ROW;
+		BOOL	oldSel				= _pCurProp->isSel;
 
-		if ((_pCurProp->cursorPos == 0) && (isEND == TRUE))
-		{
+		_pCurProp->isSel			= posBegin == posEnd ? FALSE : TRUE;
+		_pCurProp->selection		= selection;
+		_pCurProp->anchorItem		= posBegin / VIEW_ROW;
+		_pCurProp->cursorItem		= posEnd / VIEW_ROW;
+		_pCurProp->anchorSubItem	= (modPosBegin/_pCurProp->bits) + 1;
+		_pCurProp->cursorSubItem	= (modPosEnd/_pCurProp->bits) + 1;
+
+		if ((_pCurProp->editType == HEX_EDIT_ASCII) || (_pCurProp->isSel == TRUE)) {
+			_pCurProp->anchorPos	= modPosBegin;
+			_pCurProp->cursorPos	= modPosEnd;
+		} else {
+			_pCurProp->anchorPos	= (posBegin % _pCurProp->bits) * FACTOR;
+			_pCurProp->cursorPos	= (posEnd % _pCurProp->bits) * FACTOR;
+		}
+
+		/* correction for corsor view */
+		if ((_pCurProp->cursorPos == 0) && (isEND == TRUE)) {
 			_pCurProp->cursorSubItem = DUMP_FIELD;
 			_pCurProp->cursorPos = VIEW_ROW;
 			_pCurProp->cursorItem--;
 		}
 
-		/* select also in parent view */
-		ScintillaMsg(SCI_SETSEL, _pCurProp->anchorItem * VIEW_ROW + _pCurProp->anchorPos,
-								 _pCurProp->cursorItem * VIEW_ROW + _pCurProp->cursorPos);
-		InvalidateNotepad();
+		UpdateListChanges();
 	}
-
-	ListView_Update(_hListCtrl, 0);
 }
 
 
@@ -3110,7 +3729,7 @@ void HexEdit::SetLineVis(UINT line, eLineVis mode)
 			ListView_EnsureVisible(_hListCtrl, line, FALSE);
 			break;
 		default:
-			DEBUG("Mode Unknown");
+			OutputDebugString("Mode Unknown\n");
 			break;
 	}
 }
@@ -3127,6 +3746,142 @@ void HexEdit::GetLineVis(void)
 	}
 }
 
+
+void HexEdit::NextBookmark(void)
+{
+	UINT	vecSize = _pCurProp->vBookmarks.size();
+
+	if (vecSize == 0)
+		return;
+
+	LONG	lAdrs	= _pCurProp->vBookmarks[0].lAddress;
+
+	_pCurProp->cursorPos			= 0;
+	if (_pCurProp->editType == HEX_EDIT_HEX)
+		_pCurProp->cursorSubItem	= 1;
+
+	for (UINT i = 0; i < vecSize; i++)
+	{
+		if (_pCurProp->vBookmarks[i].iItem > _pCurProp->cursorItem)
+		{
+			lAdrs	= _pCurProp->vBookmarks[i].lAddress;
+			break;
+		}
+	}
+	SetSelection((UINT)lAdrs, (UINT)lAdrs);
+	EnsureVisible(_pCurProp->cursorItem, _pCurProp->cursorSubItem);
+	RestartCursor();
+}
+
+void HexEdit::PrevBookmark(void)
+{
+	UINT	vecSize = _pCurProp->vBookmarks.size();
+
+	if (vecSize == 0)
+		return;
+
+	LONG	lAdrs	= _pCurProp->vBookmarks[vecSize-1].lAddress;
+
+	_pCurProp->cursorPos			= 0;
+	if (_pCurProp->editType == HEX_EDIT_HEX)
+		_pCurProp->cursorSubItem	= 1;
+
+	for (INT i = _pCurProp->vBookmarks.size() - 1; i >= 0 ; i--)
+	{
+		if (_pCurProp->vBookmarks[i].iItem < _pCurProp->cursorItem)
+		{
+			lAdrs	= _pCurProp->vBookmarks[i].lAddress;
+			break;
+		}
+	}
+	SetSelection((UINT)lAdrs, (UINT)lAdrs);
+	EnsureVisible(_pCurProp->cursorItem, _pCurProp->cursorSubItem);
+	RestartCursor();
+}
+
+void HexEdit::ToggleBookmark(void)
+{
+	ToggleBookmark(_pCurProp->cursorItem);
+}
+
+void HexEdit::ToggleBookmark(UINT iItem)
+{
+	UINT	isChanged = FALSE;
+
+	for (UINT i = 0; (i < _pCurProp->vBookmarks.size()) && (isChanged == FALSE); i++)
+	{
+		if (_pCurProp->vBookmarks[i].iItem == iItem) {
+			/* if bookmark exists delete it from list */
+			_pCurProp->vBookmarks.erase(&_pCurProp->vBookmarks[i]);
+			isChanged = TRUE;
+		}
+		else if (_pCurProp->vBookmarks[i].iItem > iItem) {
+			/* if bookmark dosn't exist on this position attach it and sort list */
+			tBkMk	bm = {iItem * VIEW_ROW, iItem};
+			_pCurProp->vBookmarks.push_back(bm);
+			QuickSortRecursive(0, _pCurProp->vBookmarks.size()-1);
+			isChanged = TRUE;
+		}
+	}
+
+	if (isChanged == FALSE)
+	{
+		/* bookmark wasn't found, attach it to list */
+		tBkMk	bm = {iItem * VIEW_ROW, iItem};
+		_pCurProp->vBookmarks.push_back(bm);
+	}
+
+	/* redraw bookmark */
+	RECT	rc;
+	ListView_GetSubItemRect(_hListCtrl, iItem, 0, LVIR_BOUNDS, &rc);
+	::RedrawWindow(_hListCtrl, &rc, NULL, TRUE);
+}
+
+void HexEdit::UpdateBookmarks(UINT firstAdd, INT length)
+{
+	if ((_pCurProp->vBookmarks.size() == 0) && (length != 0))
+		return;
+
+	RECT	rcOld	= {0};
+	RECT	rcNew	= {0};
+	UINT	endPos	= firstAdd + abs(length);
+
+	for (UINT i = 0; i < _pCurProp->vBookmarks.size(); i++)
+	{
+		LONG	addressTest = _pCurProp->vBookmarks[i].lAddress;
+		UINT	iItemTest	= _pCurProp->vBookmarks[i].iItem;
+		if (_pCurProp->vBookmarks[i].lAddress >= firstAdd)
+		{
+			/* get old item position */
+			ListView_GetSubItemRect(_hListCtrl, _pCurProp->vBookmarks[i].iItem, 0, LVIR_BOUNDS, &rcOld);
+
+			if ((_pCurProp->vBookmarks[i].lAddress <= firstAdd) && (length < 0)) {
+				/* remove bookmark if is in a delete section */
+				_pCurProp->vBookmarks.erase(&_pCurProp->vBookmarks[i]);
+				i--;
+			} else {
+				/* calculate new addresses of bookmarks behind the first address */
+				_pCurProp->vBookmarks[i].lAddress += length;
+				_pCurProp->vBookmarks[i].iItem = _pCurProp->vBookmarks[i].lAddress / VIEW_ROW;
+
+				addressTest = _pCurProp->vBookmarks[i].lAddress;
+				iItemTest	= _pCurProp->vBookmarks[i].iItem;
+
+				/* if some data was deleted and the changed item matches with the privious one delete it */
+				if ((i != 0) && (_pCurProp->vBookmarks[i].lAddress == _pCurProp->vBookmarks[i-1].lAddress)) {
+					_pCurProp->vBookmarks.erase(&_pCurProp->vBookmarks[i]);
+					i--;
+				}
+
+				/* redraw new item */
+				ListView_GetSubItemRect(_hListCtrl, _pCurProp->vBookmarks[i].iItem, 0, LVIR_BOUNDS, &rcNew);
+				::RedrawWindow(_hListCtrl, &rcNew, NULL, TRUE);
+			}
+			/* redraw old sub item */
+			::RedrawWindow(_hListCtrl, &rcOld, NULL, TRUE);
+		}
+	}
+}
 
 void HexEdit::GrayEncoding(void)
 {
