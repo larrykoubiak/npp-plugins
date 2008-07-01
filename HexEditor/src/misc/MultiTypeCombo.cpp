@@ -29,13 +29,15 @@ extern char	hexMask[256][3];
 
 MultiTypeCombo::MultiTypeCombo() : Window()
 {
-	_currDataType = HEX_CODE_ASCI;
+	_hCombo			= NULL;
+	_currDataType	= HEX_CODE_ASCI;
 	_comboItems.clear();
 }
 
 
-void MultiTypeCombo::init(HWND hCombo)
+void MultiTypeCombo::init(HWND hNpp, HWND hCombo)
 {
+	_hNpp	= hNpp;
 	_hCombo	= hCombo;
 
 	::SetWindowLong(_hSelf, GWL_STYLE, WS_VISIBLE | WS_CHILD);
@@ -272,12 +274,9 @@ BOOL MultiTypeCombo::setComboText(tEncComboInfo info, UINT message)
 
 void MultiTypeCombo::getComboText(char* str)
 {
-	if (_currDataType == HEX_CODE_UNI)
-	{
+	if (_currDataType == HEX_CODE_UNI) {
 		::SendMessageW(_hCombo, WM_GETTEXT, COMBO_STR_MAX, (LPARAM)str);
-	}
-	else
-	{
+	} else {
 		::SendMessage(_hCombo, WM_GETTEXT, COMBO_STR_MAX, (LPARAM)str);
 	}
 }
@@ -288,12 +287,9 @@ void MultiTypeCombo::selectComboText(tEncComboInfo info)
 	LRESULT			lResult	= -1;
 
 	encode(&info, _currDataType);
-	if (_currDataType == HEX_CODE_UNI)
-	{
+	if (_currDataType == HEX_CODE_UNI) {
 		lResult = ::SendMessageW(_hCombo, CB_FINDSTRINGEXACT, -1, (LPARAM)info.text);
-	}
-	else
-	{
+	} else {
 		lResult = ::SendMessage(_hCombo, CB_FINDSTRINGEXACT, -1, (LPARAM)info.text);
 	}
 	::SendMessage(_hCombo, CB_SETCURSEL, lResult, 0);
@@ -315,16 +311,17 @@ void MultiTypeCombo::decode(tComboInfo* info, eCodingType type)
 			char			buffer[COMBO_STR_MAX * 2];
 			UINT			length		= 0;
 			eNppCoding		nppCoding	= GetNppEncoding();
-			INT				uniMask		= IS_TEXT_UNICODE_NULL_BYTES;
+			INT				uniMask		= IS_TEXT_UNICODE_NOT_UNICODE_MASK;
 			UINT			codePage	= 0;
 
 			memset(buffer, 0, COMBO_STR_MAX);
 
 			codePage = (IsTextUnicode(info->text, info->length, &uniMask) != 0) ? CP_ACP:CP_UTF8;
-
 			length = ::WideCharToMultiByte(codePage, 0, (WCHAR*)info->text, -1, buffer, 256, NULL, NULL) - 1;
 
-			if ((nppCoding == HEX_CODE_NPP_UTF8) || (nppCoding == HEX_CODE_NPP_ASCI))
+			if ((nppCoding == HEX_CODE_NPP_ASCI) || 
+				(nppCoding == HEX_CODE_NPP_UTF8) || 
+				(nppCoding == HEX_CODE_NPP_UTF8_BOM))
 			{
 				memcpy(info->text, buffer, length);
 				info->text[length] = 0;
@@ -375,7 +372,8 @@ void MultiTypeCombo::decode(tComboInfo* info, eCodingType type)
 			if (length & 0x1)
 			{
 				HWND hWnd = ::GetActiveWindow();
-				::MessageBox(hWnd, "There are odd digits. The data will be trunkated!", "", MB_ICONWARNING | MB_OK);
+				if (NLMessageBox(_hInst, _hNpp, "MsgBox OddDigits", MB_ICONWARNING | MB_OK) == FALSE)
+					::MessageBox(_hNpp, "There are odd digits. The data will be trunkated!", "Hex-Editor", MB_ICONWARNING | MB_OK);
 				length--;
 			}
 
@@ -394,7 +392,7 @@ void MultiTypeCombo::decode(tComboInfo* info, eCodingType type)
 			break;
 		}
 		default:
-			DEBUG("Error!!!");
+			OutputDebugString("Decode Error!!!\n");
 			break;
 	}
 }
@@ -423,14 +421,19 @@ void MultiTypeCombo::encode(tEncComboInfo* info, eCodingType type)
 		{
 			char			buffer[COMBO_STR_MAX * 2];
 			size_t			length		= 0;
+			INT				uniMask		= IS_TEXT_UNICODE_NOT_UNICODE_MASK;
 			UINT			codePage	= CP_ACP;
 
 			memset(buffer, 0, COMBO_STR_MAX * 2);
 
-			if ((info->codePage == HEX_CODE_NPP_UTF8) || (info->codePage == HEX_CODE_NPP_ASCI))
+			if ((info->codePage == HEX_CODE_NPP_ASCI) || 
+				(info->codePage == HEX_CODE_NPP_UTF8) || 
+				(info->codePage == HEX_CODE_NPP_UTF8_BOM))
 			{
 				memcpy(buffer, info->text, info->length);
 				length = info->length;
+
+				codePage = (IsTextUnicode(info->text, info->length, &uniMask) != 0) ? CP_ACP:CP_UTF8;
 			}
 			else
 			{

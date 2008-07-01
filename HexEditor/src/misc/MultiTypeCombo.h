@@ -21,6 +21,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #define MULTITYPECOMBO_H
 
 #include "Window.h"
+#include "Hex.h"
 #include <vector>
 using namespace std;
 
@@ -82,7 +83,7 @@ class MultiTypeCombo : public Window
 public :
 	MultiTypeCombo();
     ~MultiTypeCombo () {};
-	virtual void init(HWND hCombo);
+	virtual void init(HWND hNpp, HWND hCombo);
 	virtual void destroy() {
 		DestroyWindow(_hSelf);
 	};
@@ -104,6 +105,7 @@ private:
 	void encode(tEncComboInfo* info, eCodingType type);
 
 private :
+	HWND					_hNpp;
 	HWND					_hCombo;
     WNDPROC					_hDefaultComboProc;
 
