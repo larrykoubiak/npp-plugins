@@ -304,13 +304,14 @@ BOOL changeMenu(LPCSTR pszPlInName, LPCSTR pszMenuName, HMENU hMenu, UINT uFlags
 	while (wPtr < &wKeys[dwSize])
 	{
 		/* set items */
-		if ((pos = _tstoi(wPtr)) != 0)
-		{
-			::GetPrivateProfileString(sectionName, wPtr, _T(""), TEMP_W, MAX_PATH, iniFilePath);
-			FormatMessage(FORMAT_MESSAGE_FROM_STRING, TEMP_W, 0, 0, wFormatMsg, MAX_PATH, NULL);
-			::ModifyMenu(hMenu, pos, uFlags | MF_STRING, pos, wFormatMsg);
-			wPtr += _tcslen(wPtr)+1;
-		}
+		pos = _tstoi(wPtr);
+		::GetPrivateProfileString(sectionName, wPtr, _T(""), TEMP_W, MAX_PATH, iniFilePath);
+		FormatMessage(FORMAT_MESSAGE_FROM_STRING, TEMP_W, 0, 0, wFormatMsg, MAX_PATH, NULL);
+		if (uFlags == MF_BYCOMMAND)
+			::ModifyMenu(hMenu, pos, MF_BYCOMMAND | MF_STRING, pos, wFormatMsg);
+		else
+			::ModifyMenu(hMenu, pos, MF_BYPOSITION | MF_STRING, ::GetMenuItemID(hMenu, pos), wFormatMsg);
+		wPtr += _tcslen(wPtr)+1;
 	}
 	return TRUE;
 }
