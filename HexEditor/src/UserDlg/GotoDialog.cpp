@@ -52,7 +52,7 @@ BOOL CALLBACK GotoDlg::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 			::SetWindowLong(_hLineEdit, GWL_USERDATA, reinterpret_cast<LONG>(this));
 			_hDefaultEditProc = reinterpret_cast<WNDPROC>(::SetWindowLong(_hLineEdit, GWL_WNDPROC, reinterpret_cast<LONG>(wndEditProc)));
 
-			::SendDlgItemMessage(_hSelf, IDC_CHECK_HEX, BM_SETCHECK, (_isHex == TRUE)?BST_CHECKED:BST_UNCHECKED, 0);
+			::SendDlgItemMessage(_hSelf, IDC_CHECK_LINE, BM_SETCHECK, (_isHex == TRUE)?BST_UNCHECKED:BST_CHECKED, 0);
 			::SendDlgItemMessage(_hSelf, IDC_RADIO_ADDRESS, BM_SETCHECK, BST_CHECKED, 0);
 
 			/* change language */
@@ -114,7 +114,7 @@ BOOL CALLBACK GotoDlg::run_dlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARA
 					display(false);
 					break;
 				}
-				case IDC_CHECK_HEX:
+				case IDC_CHECK_LINE:
 				{
 					if (HIWORD(wParam) == BN_CLICKED)
 					{
@@ -185,7 +185,7 @@ void GotoDlg::calcAddress(void)
 	char		temp[17];
 
 	/* get new states */
-	_isHex = (::SendDlgItemMessage(_hSelf, IDC_CHECK_HEX, BM_GETCHECK, 0, 0) == BST_CHECKED)? TRUE:FALSE;
+	_isHex = (::SendDlgItemMessage(_hSelf, IDC_CHECK_LINE, BM_GETCHECK, 0, 0) == BST_CHECKED)? FALSE:TRUE;
 	_isOff = (::SendDlgItemMessage(_hSelf, IDC_RADIO_OFFSET, BM_GETCHECK, 0, 0) == BST_CHECKED)? TRUE:FALSE;
 
 	/* update also min and max */

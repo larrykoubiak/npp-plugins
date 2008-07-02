@@ -182,7 +182,7 @@ CAPTION "Go To..."
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     EDITTEXT        IDC_EDIT_GOTO,96,18,74,12,ES_LOWERCASE | ES_AUTOHSCROLL
-    CONTROL         "View in Hex",IDC_CHECK_HEX,"Button",BS_AUTOCHECKBOX | 
+    CONTROL         "...to Line",IDC_CHECK_LINE,"Button",BS_AUTOCHECKBOX | 
                     BS_NOTIFY | WS_TABSTOP,192,63,63,10
     DEFPUSHBUTTON   "&Go !",IDOK,192,18,70,14
     PUSHBUTTON      "I'm going &nowhere",IDCANCEL,192,36,70,14

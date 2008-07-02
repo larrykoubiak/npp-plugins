@@ -71,7 +71,7 @@
     #define IDC_EDIT_GOTO                       (IDD_GOTO_DLG + 1)
     #define IDC_CURRLINE                        (IDD_GOTO_DLG + 2)
     #define IDC_LASTLINE                        (IDD_GOTO_DLG + 3)
-	#define IDC_CHECK_HEX                       (IDD_GOTO_DLG + 4)
+	#define IDC_CHECK_LINE                      (IDD_GOTO_DLG + 4)
 	#define IDC_STATIC_HERE                 	(IDD_GOTO_DLG + 5)
 	#define IDC_STATIC_GO                   	(IDD_GOTO_DLG + 6)
 	#define IDC_STATIC_MAX                  	(IDD_GOTO_DLG + 7)
