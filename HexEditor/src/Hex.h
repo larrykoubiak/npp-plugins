@@ -292,6 +292,8 @@ eError replaceLittleToBig(HWND hSource, INT startPos, INT lengthOld, INT lengthN
 
 /* Extended Window Funcions */
 eNppCoding GetNppEncoding(void);
+void ChangeNppMenu(BOOL toHexStyle, HWND hSci);
+void AppendNppMenu(HMENU hNppMenu, UINT idItem, HMENU & hMenu);
 void ClientToScreen(HWND hWnd, RECT* rect);
 void ScreenToClient(HWND hWnd, RECT* rect);
 

@@ -35,9 +35,9 @@
 #include <shlobj.h>
 #include <assert.h>
 
-
-const INT	nbFunc	= 9;
-
+/* menu entry count */
+const
+INT				nbFunc	= 9;
 
 /* for subclassing */
 WNDPROC	wndProcNotepad = NULL;
@@ -46,12 +46,12 @@ WNDPROC	wndProcNotepad = NULL;
 const char  PLUGIN_NAME[] = "HEX-Editor";
 
 /* current used file */
-TCHAR		currentPath[MAX_PATH];
-TCHAR		configPath[MAX_PATH];
-TCHAR		iniFilePath[MAX_PATH];
-UINT		currentSC	= MAIN_VIEW;
-INT			openDoc1	= -1;
-INT			openDoc2	= -1;
+TCHAR			currentPath[MAX_PATH];
+TCHAR			configPath[MAX_PATH];
+TCHAR			iniFilePath[MAX_PATH];
+UINT			currentSC	= MAIN_VIEW;
+INT				openDoc1	= -1;
+INT				openDoc2	= -1;
 
 /* global values */
 NppData			nppData;
@@ -60,7 +60,6 @@ HWND			g_HSource;
 HWND			g_hFindRepDlg;
 FuncItem		funcItem[nbFunc];
 toolbarIcons	g_TBHex;
-
 
 
 /* create classes */
@@ -78,19 +77,18 @@ tProp			prop;
 char			hexMask[256][3];
 
 /* handle of current used edit */
-HexEdit*		_curHexEdit = NULL;
-
-
-INT				state = 0;
+HexEdit*		pCurHexEdit = NULL;
 
 /* get system information */
 BOOL	isNotepadCreated	= FALSE;
 
-/* menu params */
-bool	viewHex				= false;
+/* notepad menus */
+BOOL			isMenuHex	= FALSE;
+HMENU			hMenuFile	= NULL;
+HMENU			hMenuEdit	= NULL;
+HMENU			hMenuSearch	= NULL;
+HMENU			hMenuView	= NULL;
 
-/* dialog params */
-RECT	rcDlg		 = {0, 0, 0, 0};
 
 BOOL APIENTRY DllMain( HANDLE hModule, 
                        DWORD  reasonForCall, 
@@ -191,7 +189,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	/* Subclassing for Notepad */
 	wndProcNotepad = (WNDPROC)SetWindowLong(nppData._nppHandle, GWL_WNDPROC, (LPARAM)SubWndProcNotepad);
 
-	_curHexEdit = &hexEdit1;
+	pCurHexEdit = &hexEdit1;
 	setHexMask();
 }
 
@@ -247,13 +245,13 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 					else
 					{
 						/* test for line length */
-						_curHexEdit->TestLineLength();
+						pCurHexEdit->TestLineLength();
 
 						/* redo undo the code */
 						if (notifyCode->modificationType & SC_PERFORMED_UNDO ||
 							notifyCode->modificationType & SC_PERFORMED_REDO)
 						{
-							_curHexEdit->RedoUndo(notifyCode->position, notifyCode->length, notifyCode->modificationType);
+							pCurHexEdit->RedoUndo(notifyCode->position, notifyCode->length, notifyCode->modificationType);
 						}
 					}
 				}
@@ -284,7 +282,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 			case NPPN_FILECLOSED:
 			{
 				SystemUpdate();
-				_curHexEdit->doDialog();
+				pCurHexEdit->doDialog();
 				break;
 			}
 			default:
@@ -414,7 +412,7 @@ void setHexMask(void)
 void setMenu(void)
 {
 	HMENU			hMenu	= ::GetMenu(nppData._nppHandle);
-	const tHexProp*	p_prop	= _curHexEdit->GetHexProp();
+	const tHexProp*	p_prop	= pCurHexEdit->GetHexProp();
 
 	::EnableMenuItem(hMenu, funcItem[4]._cmdID, MF_BYCOMMAND | (p_prop->isVisible?0:MF_GRAYED));
 	::EnableMenuItem(hMenu, funcItem[5]._cmdID, MF_BYCOMMAND | (p_prop->isVisible?0:MF_GRAYED));
@@ -588,7 +586,7 @@ HWND getCurrentHScintilla(void)
 
 void toggleHexEdit(void)
 {
-	_curHexEdit->doDialog(TRUE);
+	pCurHexEdit->doDialog(TRUE);
 	DialogUpdate();
 	setMenu();
 }
@@ -602,20 +600,20 @@ void compareHex(void)
 
 void clearCompare(void)
 {
-	if (_curHexEdit->GetHexProp()->pCompareData != NULL) {
-		_curHexEdit->SetCompareResult(NULL);
+	if (pCurHexEdit->GetHexProp()->pCompareData != NULL) {
+		pCurHexEdit->SetCompareResult(NULL);
 		setMenu();
 	}
 }
 
 void insertColumnsDlg(void)
 {
-	patDlg.insertColumns(_curHexEdit->getHSelf());
+	patDlg.insertColumns(pCurHexEdit->getHSelf());
 }
 
 void replacePatternDlg(void)
 {
-	patDlg.patternReplace(_curHexEdit->getHSelf());
+	patDlg.patternReplace(pCurHexEdit->getHSelf());
 }
 
 void openPropDlg(void)
@@ -668,57 +666,57 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				SystemUpdate();
 			}
 
-			if (_curHexEdit->isVisible() == true)
+			if (pCurHexEdit->isVisible() == true)
 			{
 				switch (LOWORD(wParam))
 				{
 					case IDM_EDIT_CUT:
-						_curHexEdit->Cut();
+						pCurHexEdit->Cut();
 						return TRUE;
 					case IDM_EDIT_COPY:
-						_curHexEdit->Copy();
+						pCurHexEdit->Copy();
 						return TRUE;
 					case IDM_EDIT_PASTE:
-						_curHexEdit->Paste();
+						pCurHexEdit->Paste();
 						return TRUE;
 					case IDM_VIEW_ZOOMIN:
-						_curHexEdit->ZoomIn();
+						pCurHexEdit->ZoomIn();
 						return TRUE;
 					case IDM_VIEW_ZOOMOUT:
-						_curHexEdit->ZoomOut();
+						pCurHexEdit->ZoomOut();
 						return TRUE;
 					case IDM_VIEW_ZOOMRESTORE:
-						_curHexEdit->ZoomRestore();
+						pCurHexEdit->ZoomRestore();
 						return TRUE;
 					case IDM_SEARCH_FIND:
-						findRepDlg.doDialog(_curHexEdit->getHSelf(), FALSE);
+						findRepDlg.doDialog(pCurHexEdit->getHSelf(), FALSE);
 						return TRUE;
 					case IDM_SEARCH_REPLACE:
-						findRepDlg.doDialog(_curHexEdit->getHSelf(), TRUE);
+						findRepDlg.doDialog(pCurHexEdit->getHSelf(), TRUE);
 						return TRUE;
 					case IDM_SEARCH_FINDNEXT:
-						findRepDlg.findNext(_curHexEdit->getHSelf());
+						findRepDlg.findNext(pCurHexEdit->getHSelf());
 						return TRUE;
 					case IDM_SEARCH_FINDPREV:
-						findRepDlg.findPrev(_curHexEdit->getHSelf());
+						findRepDlg.findPrev(pCurHexEdit->getHSelf());
 						return TRUE;
 					case IDM_SEARCH_VOLATILE_FINDNEXT:
-						findRepDlg.findNext(_curHexEdit->getHSelf(), TRUE);
+						findRepDlg.findNext(pCurHexEdit->getHSelf(), TRUE);
 						return TRUE;
 					case IDM_SEARCH_VOLATILE_FINDPREV:
-						findRepDlg.findPrev(_curHexEdit->getHSelf(), TRUE);
+						findRepDlg.findPrev(pCurHexEdit->getHSelf(), TRUE);
 						return TRUE;
 					case IDM_SEARCH_GOTOLINE:
-						gotoDlg.doDialog(_curHexEdit->getHSelf());
+						gotoDlg.doDialog(pCurHexEdit->getHSelf());
 						return TRUE;
 					case IDM_SEARCH_NEXT_BOOKMARK:
-						_curHexEdit->NextBookmark();
+						pCurHexEdit->NextBookmark();
 						return TRUE;
 					case IDM_SEARCH_PREV_BOOKMARK:
-						_curHexEdit->PrevBookmark();
+						pCurHexEdit->PrevBookmark();
 						return TRUE;
 					case IDM_SEARCH_TOGGLE_BOOKMARK:
-						_curHexEdit->ToggleBookmark();
+						pCurHexEdit->ToggleBookmark();
 						return TRUE;
 					/* ignore this messages */
 					case IDM_EDIT_LINE_UP:
@@ -742,7 +740,7 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				case IDM_FILE_RELOAD:
 				{
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
-					_curHexEdit->SetCompareResult(NULL);
+					pCurHexEdit->SetCompareResult(NULL);
 					break;
 				}
 				case IDM_SEARCH_FIND:
@@ -757,22 +755,30 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					if (::SendMessage(g_HSource, SCI_GETMODIFY, 0, 0) == 0)
 					{
-						_curHexEdit->ResetModificationState();
+						pCurHexEdit->ResetModificationState();
 					}
 					break;
 				}
 				case IDM_FILE_SAVEAS: 
 				{
-					char oldPath[MAX_PATH];
-					char newPath[MAX_PATH];
+					CHAR oldPath[MAX_PATH];
+					CHAR newPath[MAX_PATH];
+
+					/* stop updating of active documents (workaround to keep possible HEX view open) */
+					isNotepadCreated = FALSE;
 
 					::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)oldPath);
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					::SendMessage(nppData._nppHandle, NPPM_GETFULLCURRENTPATH, 0, (LPARAM)newPath);
-					_curHexEdit->FileNameChanged(newPath);
+					pCurHexEdit->FileNameChanged(newPath);
+
+					/* switch update again on and do the update now self */
+					isNotepadCreated = TRUE;
+					SystemUpdate();
+
 					if (::SendMessage(g_HSource, SCI_GETMODIFY, 0, 0) == 0)
 					{
-						_curHexEdit->ResetModificationState();
+						pCurHexEdit->ResetModificationState();
 					}
 					break;
 				}
@@ -785,18 +791,18 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				{
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					SystemUpdate();
-					_curHexEdit->doDialog();
+					pCurHexEdit->doDialog();
 					break;
 				}
 				case IDM_DOC_GOTO_ANOTHER_VIEW:
 				case IDM_DOC_CLONE_TO_ANOTHER_VIEW:
 				{
-					const tHexProp*	p_prop = _curHexEdit->GetHexProp();
+					const tHexProp*	p_prop = pCurHexEdit->GetHexProp();
 
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					SystemUpdate();
 
-					if (_curHexEdit == &hexEdit1)
+					if (pCurHexEdit == &hexEdit1)
 					{
 						hexEdit1.SetHexProp(*p_prop);
 						hexEdit1.doDialog();
@@ -818,7 +824,7 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 		{
 			ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 			SystemUpdate();
-			_curHexEdit->doDialog();
+			pCurHexEdit->doDialog();
 			break;
 		}
 		case WM_NOTIFY:
@@ -830,7 +836,7 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				(notifyCode->nmhdr.code == SCN_SAVEPOINTREACHED))
 			{
 				SystemUpdate();
-				if (TRUE != _curHexEdit->GetModificationState())
+				if (TRUE != pCurHexEdit->GetModificationState())
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 				break;
 			}
@@ -847,12 +853,12 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				case TCN_TABDROPPED:
 				case TCN_TABDROPPEDOUTSIDE:
 				{
-					const tHexProp*	p_prop = _curHexEdit->GetHexProp();
+					const tHexProp*	p_prop = pCurHexEdit->GetHexProp();
 
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					SystemUpdate();
 
-					if (_curHexEdit == &hexEdit1)
+					if (pCurHexEdit == &hexEdit1)
 					{
 						hexEdit2.doDialog();
 						hexEdit1.SetHexProp(*p_prop);
@@ -939,9 +945,9 @@ void SystemUpdate(void)
 
 		/* update edit */
 		if (currentSC == MAIN_VIEW)
-			_curHexEdit = &hexEdit1;
+			pCurHexEdit = &hexEdit1;
 		else
-			_curHexEdit = &hexEdit2;
+			pCurHexEdit = &hexEdit2;
 
 		ActivateWindow();
 		setMenu();
@@ -974,18 +980,18 @@ void DialogUpdate(void)
 	}
 
 	/* find replace dialog change */
-	if ((_curHexEdit->isVisible() == false) && (findRepDlg.isVisible() == true))
+	if ((pCurHexEdit->isVisible() == false) && (findRepDlg.isVisible() == true))
 	{
 		findRepDlg.display(FALSE);
 		::SendMessage(nppData._nppHandle, WM_COMMAND, (findRepDlg.isFindReplace() == TRUE)?IDM_SEARCH_REPLACE:IDM_SEARCH_FIND, 0);
 	}
 	else if (g_hFindRepDlg != NULL)
 	{
-		if ((_curHexEdit->isVisible() == true) && (::IsWindowVisible(g_hFindRepDlg) == TRUE))
+		if ((pCurHexEdit->isVisible() == true) && (::IsWindowVisible(g_hFindRepDlg) == TRUE))
 		{
 			char	text[5];
 			::GetWindowText(g_hFindRepDlg, text, 5);
-			findRepDlg.doDialog(_curHexEdit->getHSelf(), (strcmp(text, "Find") != 0)?TRUE:FALSE);
+			findRepDlg.doDialog(pCurHexEdit->getHSelf(), (strcmp(text, "Find") != 0)?TRUE:FALSE);
 			::SendMessage(g_hFindRepDlg, WM_COMMAND, IDCANCEL, 0);
 		}
 	}
@@ -1044,7 +1050,7 @@ void ChangeClipboardDataToHex(tClipboard *clipboard)
 void LittleEndianChange(HWND hTarget, HWND hSource)
 {
 	const 
-	tHexProp*	p_prop	= _curHexEdit->GetHexProp();
+	tHexProp*	p_prop	= pCurHexEdit->GetHexProp();
 	UINT		length  = 0;
 	char*		buffer  = NULL;
 
@@ -1287,6 +1293,63 @@ eNppCoding GetNppEncoding(void)
 
 	return ret;
 }
+
+void ChangeNppMenu(BOOL toHexStyle, HWND hSci)
+{
+	if ((toHexStyle == isMenuHex) || (hSci != g_HSource))
+		return;
+
+	TCHAR	text[64];
+	HMENU	hMenu	 = NULL;
+	HMENU	hMenuNpp = ::GetMenu(nppData._nppHandle);
+
+	/* store if menu will be modified */
+	isMenuHex = toHexStyle;
+
+	/* activate/deactive menu entries */
+	::EnableMenuItem(hMenuNpp, MENUINDEX_FORMAT, MF_BYPOSITION | (toHexStyle?MF_GRAYED:MF_ENABLED));
+	::EnableMenuItem(hMenuNpp, MENUINDEX_LANGUAGE, MF_BYPOSITION | (toHexStyle?MF_GRAYED:MF_ENABLED));
+	::EnableMenuItem(hMenuNpp, MENUINDEX_MACRO, MF_BYPOSITION | (toHexStyle?MF_GRAYED:MF_ENABLED));
+	::DrawMenuBar(nppData._nppHandle);
+
+#ifdef TODO_SUPPORT_HEX_MENU
+
+	/* greate own menu for file */
+	if (hMenuFile == NULL)
+	{
+		hMenuFile = ::CreatePopupMenu();
+		AppendNppMenu(hMenuNpp, IDM_FILE_NEW, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_OPEN, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_RELOAD, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_SAVE, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_SAVEAS, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_SAVECOPYAS, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_SAVEALL, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_CLOSE, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_CLOSEALL, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_CLOSEALL_BUT_CURRENT, hMenuFile);
+		::AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
+		AppendNppMenu(hMenuNpp, IDM_FILE_LOADSESSION, hMenuFile);
+		AppendNppMenu(hMenuNpp, IDM_FILE_SAVESESSION, hMenuFile);
+		::AppendMenu(hMenuFile, MF_SEPARATOR, 0, NULL);
+		AppendNppMenu(hMenuNpp, IDM_FILE_EXIT, hMenuFile);
+	}
+
+	/* exchange menus */
+	hMenu = ::GetSubMenu(hMenuNpp, MENUINDEX_FILE);
+	::GetMenuString(hMenuNpp, MENUINDEX_FILE, text, 64, MF_BYPOSITION);
+	::ModifyMenu(hMenuNpp, MENUINDEX_FILE, MF_BYPOSITION | MF_STRING | MF_POPUP, (UINT_PTR)hMenuFile, text);
+	hMenuFile = hMenu;
+#endif
+}
+
+void AppendNppMenu(HMENU hMenuNpp, UINT idItem, HMENU & hMenu)
+{
+	TCHAR	text[64];
+	::GetMenuString(hMenuNpp, idItem, text, 64, MF_BYCOMMAND);
+	::AppendMenu(hMenu, MF_STRING, idItem, text);
+}
+
 
 void ClientToScreen(HWND hWnd, RECT* rect)
 {

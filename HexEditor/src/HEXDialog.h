@@ -315,7 +315,6 @@ private:
 	void UpdateBookmarks(UINT firstElem, INT length);
 
 	void SetStatusBar(void);
-	void GrayEncoding(void);
 
 
 	INT CalcStride(INT posBeg, INT posEnd)
