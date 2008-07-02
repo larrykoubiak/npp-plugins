@@ -85,7 +85,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib"
-				OutputFile="C:/Program Files/Notepad++/Plugins/HexEditor.dll"
+				OutputFile="C:/Programme/Notepad++/Plugins/HexEditor.dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
