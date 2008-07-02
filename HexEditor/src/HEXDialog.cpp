@@ -853,13 +853,13 @@ void HexEdit::doDialog(BOOL toggle)
 				UINT	selStart		= _SciWrp.execute(SCI_GETSELECTIONSTART);
 				UINT	selEnd			= _SciWrp.execute(SCI_GETSELECTIONEND);
 
-				eNppCoding	encoding	= GetNppEncoding();
 
 				switch (GetNppEncoding())
 				{
 					case HEX_CODE_NPP_UTF8_BOM:
 					{
 						::SendMessage(_nppData._nppHandle, NPPM_DECODESCI, currentSC, 0);
+						::SendMessage(_nppData._nppHandle, WM_COMMAND, IDM_FORMAT_ANSI, 0);
 						_currLength = (UINT)_SciWrp.execute(SCI_GETLENGTH, 0, 0);
 						SetSelection(selStart+3, selEnd+3, HEX_SEL_NORM, (selEnd+3) % VIEW_ROW == 0);
 						break;
@@ -881,6 +881,7 @@ void HexEdit::doDialog(BOOL toggle)
 							if (curPos <= selEnd) posEnd += 2;
 						}
 						::SendMessage(_nppData._nppHandle, NPPM_DECODESCI, currentSC, 0);
+						::SendMessage(_nppData._nppHandle, WM_COMMAND, IDM_FORMAT_ANSI, 0);
 						SetSelection(posStart, posEnd, HEX_SEL_NORM, posEnd % VIEW_ROW == 0);
 						break;
 					}
@@ -973,7 +974,7 @@ void HexEdit::doDialog(BOOL toggle)
 	ActivateWindow();
 
 	/* set coding entries gray */
-	GrayEncoding();
+	ChangeNppMenu(_pCurProp->isVisible, _hParentHandle);
 
 	/* check menu and tb icon */
 	checkMenu(_pCurProp->isVisible);
@@ -3882,17 +3883,6 @@ void HexEdit::UpdateBookmarks(UINT firstAdd, INT length)
 		}
 	}
 }
-
-void HexEdit::GrayEncoding(void)
-{
-	HMENU	hMenu = ::GetMenu(_hParent);
-
-	for (UINT i = IDM_FORMAT_ANSI; i <= IDM_FORMAT_AS_UTF_8; i++)
-	{
-		::EnableMenuItem(hMenu, i, MF_BYCOMMAND | (_pCurProp->isVisible?MF_GRAYED:MF_ENABLED));
-	}
-}
-
 
 void HexEdit::SetStatusBar(void)
 {
