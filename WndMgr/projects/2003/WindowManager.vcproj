@@ -187,6 +187,9 @@
 					RelativePath="..\..\..\Common\Ccpp\PluginInterface.h">
 				</File>
 				<File
+					RelativePath="..\..\..\Common\Ccpp\SciSubClassWrp.h">
+				</File>
+				<File
 					RelativePath="..\..\..\Common\Ccpp\Scintilla.h">
 				</File>
 				<File

@@ -70,13 +70,12 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			/* Set function pointers */
 			funcItem[0]._pFunc = toggleMgr;
 			funcItem[1]._pFunc = toggleTab;
-			funcItem[2]._pFunc = toggleTab;
+			funcItem[2]._pFunc = NULL;
 			funcItem[3]._pFunc = aboutDlg;
 		    	
 			/* Fill menu names */
 			strcpy(funcItem[0]._itemName, "&Manager...");
 			strcpy(funcItem[1]._itemName, "&Hide Tabbar");
-			strcpy(funcItem[2]._itemName, "----------");
 			strcpy(funcItem[3]._itemName, "&About...");
 
 			/* Set shortcuts */
@@ -461,12 +460,11 @@ void FileListUpdate(void)
 	for (i = 0; i < docCnt2; i++)
 		fileNames2[i] = (LPSTR)new CHAR[MAX_PATH];
 
-	if (::SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMESPRIMARY, (WPARAM)fileNames1, (LPARAM)docCnt1)) {
-		UpdateCurrUsedDocs(vFileList1, fileNames1, docCnt1);
-	}
-	if (::SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMESSECOND, (WPARAM)fileNames2, (LPARAM)docCnt2)) {
-		UpdateCurrUsedDocs(vFileList2, fileNames2, docCnt2);
-	}
+	::SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMESPRIMARY, (WPARAM)fileNames1, (LPARAM)docCnt1);
+	UpdateCurrUsedDocs(vFileList1, fileNames1, docCnt1);
+
+	::SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMESSECOND, (WPARAM)fileNames2, (LPARAM)docCnt2);
+	UpdateCurrUsedDocs(vFileList2, fileNames2, docCnt2);
 
 	for (i = 0; i < docCnt1; i++)
 		delete [] fileNames1[i];

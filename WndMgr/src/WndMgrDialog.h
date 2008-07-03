@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "WndMgr.h"
 #include "FileList.h"
+#include "SciSubClassWrp.h"
 #include "DockingDlgInterface.h"
 
 /*  */
@@ -85,6 +86,8 @@ private:
 	HWND					_hSplitterCtrl;
 
 	/* classes */
+	SciSubClassWrp			_Sci1;
+	SciSubClassWrp			_Sci2;
 	FileList				_FileList1;
 	FileList				_FileList2;
 
@@ -92,11 +95,9 @@ private:
 	tTbData					_data;
 	tMgrProp*				_pMgrProp;
 
-	/* splitter and sci control process */
+	/* splitter process */
 	WNDPROC					_hDefaultSplitterProc;
-	WNDPROC					_hDefaultSCI1Proc;
-	WNDPROC					_hDefaultSCI2Proc;
-	
+
 	/* some status values */
 	INT						_selTabMain;
 	INT						_selTabSub;

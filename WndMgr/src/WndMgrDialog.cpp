@@ -251,8 +251,8 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 		{
 			/* restore subclasses */
 			::SetWindowLong(_hSplitterCtrl, GWL_WNDPROC, (LONG)_hDefaultSplitterProc);
-			::SetWindowLong(_nppData._scintillaMainHandle, GWL_WNDPROC, (LONG)_hDefaultSCI1Proc);
-			::SetWindowLong(_nppData._scintillaSecondHandle, GWL_WNDPROC, (LONG)_hDefaultSCI2Proc);
+			_Sci1.CleanUp();
+			_Sci2.CleanUp();
 
             ::DestroyIcon(_data.hIconTab);
 			break;
@@ -366,7 +366,7 @@ LRESULT WndMgrDialog::runSplitterProc(HWND hwnd, UINT Message, WPARAM wParam, LP
 
 LRESULT WndMgrDialog::runSCIProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-	LRESULT	lRes = 0;
+	LRESULT lRes = 0;
 
 	switch (Message)
 	{
@@ -380,9 +380,9 @@ LRESULT WndMgrDialog::runSCIProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM 
 	}
 	
 	if (hwnd == _nppData._scintillaMainHandle) {
-		lRes = ::CallWindowProc(_hDefaultSCI1Proc, hwnd, Message, wParam, lParam);
+		lRes = _Sci1.SciCallWndProc(_Sci2.OrigSciWndProc, hwnd, Message, wParam, lParam);
 	} else {
-		lRes = ::CallWindowProc(_hDefaultSCI2Proc, hwnd, Message, wParam, lParam);
+		lRes = _Sci2.SciCallWndProc(_Sci2.OrigSciWndProc, hwnd, Message, wParam, lParam);
 	}
 	return lRes;
 }
@@ -410,8 +410,8 @@ void WndMgrDialog::InitialDialog(void)
 	_hDefaultSplitterProc = (WNDPROC)(::SetWindowLong(_hSplitterCtrl, GWL_WNDPROC, reinterpret_cast<LONG>(wndDefaultSplitterProc)));
 
 	/* subclass scintillas */
-	_hDefaultSCI1Proc = (WNDPROC)(::SetWindowLong(_nppData._scintillaMainHandle, GWL_WNDPROC, reinterpret_cast<LONG>(wndDefaultSCIProc)));
-	_hDefaultSCI2Proc = (WNDPROC)(::SetWindowLong(_nppData._scintillaSecondHandle, GWL_WNDPROC, reinterpret_cast<LONG>(wndDefaultSCIProc)));
+	_Sci1.Init(_nppData._scintillaMainHandle, wndDefaultSCIProc);
+	_Sci2.Init(_nppData._scintillaSecondHandle, wndDefaultSCIProc);
 
 	/* add columns */
 	ColSetup.mask		= LVCF_TEXT | LVCF_FMT | LVCF_WIDTH;
