@@ -19,100 +19,78 @@
 #define TOOL_BAR_H
 
 #include "Window.h"
+#include "Notepad_plus_msgs.h"
 
+#define REBAR_BAR_TOOLBAR		0
+#define REBAR_BAR_SEARCH		1
+
+#define REBAR_BAR_EXTERNAL		10
 #ifndef _WIN32_IE
 #define _WIN32_IE	0x0600
 #endif //_WIN32_IE
 
 #include <commctrl.h>
+#include <vector>
+using namespace std;
 
-#ifndef TB_SETIMAGELIST
-#define TB_SETIMAGELIST	(WM_USER+48)
-#endif
-
-#ifndef TB_SETHOTIMAGELIST
-#define TB_SETHOTIMAGELIST	(WM_USER+52)
-#endif
-
-#ifndef TB_SETDISABLEDIMAGELIST
-#define TB_SETDISABLEDIMAGELIST (WM_USER+54)
-#endif
-
-enum toolBarStatusType {TB_HIDE, TB_SMALL, TB_LARGE, TB_STANDARD};
+enum toolBarStatusType {/*TB_HIDE, */TB_SMALL, TB_LARGE, TB_STANDARD};
 
 #include "ImageListSet.h"
 
 
+typedef struct {
+	UINT		message;		// identification of icon in tool bar (menu ID)
+	HBITMAP		hBmp;			// bitmap for toolbar
+	HICON		hIcon;			// icon for toolbar
+} tDynamicList;
+
+class ReBar;
+
 class ToolBar : public Window
 {
 public :
-	const static bool REDUCED;
-	const static bool ENLARGED;
-	ToolBar():Window(), _pTBB(NULL){};
+	ToolBar():Window(), _pTBB(NULL), _nrButtons(0), _nrDynButtons(0), _nrTotalButtons(0), _nrCurrentButtons(0), _pRebar(NULL) {};
 	virtual ~ToolBar(){};
 
-	virtual bool init(HINSTANCE hInst, HWND hPere, int iconSize, 
-		ToolBarButtonUnit *buttonUnitArray, int arraySize,
-		bool doUglyStandardIcon = false, int *bmpArray = NULL, int bmpArraySize = 0);
+	virtual bool init(HINSTANCE hInst, HWND hPere, toolBarStatusType type, 
+		ToolBarButtonUnit *buttonUnitArray, int arraySize);
 
-	virtual void destroy() {
-		delete [] _pTBB;
-		::DestroyWindow(_hSelf);
-		_hSelf = NULL;
-		_toolBarIcons.destroy();
-	};
-	virtual void reSizeTo(RECT & rcWin) {
-		::SendMessage(_hSelf, TB_SETROWS, MAKEWPARAM(1,FALSE), NULL);
-		Window::reSizeTo(rcWin);
-
-		UINT size = rcWin.right - rcWin.left;
-
-		RECT	rc;
-		::SendMessage(_hSelf, TB_GETRECT, _pTBB[_toolBarIcons.getNbCommand()-1].idCommand, (LPARAM)&rc);
-		_row = 1 + rc.left / size;
-
-		::SendMessage(_hSelf, TB_SETROWS, MAKEWPARAM(_row,TRUE), (LPARAM)&rc);
-		::SendMessage(_hSelf, TB_AUTOSIZE, 0, 0);
-	}
-
+	virtual void destroy();
 	void enable(int cmdID, bool doEnable) const {
 		::SendMessage(_hSelf, TB_ENABLEBUTTON, cmdID, (LPARAM)doEnable);
 	};
 
-	int getHeight() const {
-		if (!::IsWindowVisible(_hSelf))
-			return 0;
-		return Window::getHeight();
-	};
+	int getWidth() const;
+	int getHeight() const;
 
 	void reduce() {
 		if (_state == TB_SMALL)
 			return;
-		// I really don't know why we have to enlarge then reduce 
-		// to take the effect.
-		if (_state == TB_STANDARD)
-			_toolBarIcons.resizeIcon(32);
 
 		_toolBarIcons.resizeIcon(16);
-		reset();
-
+		bool recreate = (_state == TB_STANDARD);
+		setState(TB_SMALL);
+		reset(recreate);	//recreate toolbar if std icons were used
 		Window::redraw();
-		_state = TB_SMALL;
 	};
 	void enlarge() {
 		if (_state == TB_LARGE)
 			return;
-		_toolBarIcons.resizeIcon(32);
-		reset();
-		Window::redraw();
-		_state = TB_LARGE;
-	};
 
-	void display(bool toShow = true) {
-		Window::display(toShow);
-		if (!toShow)
-			_state = TB_HIDE;
+		_toolBarIcons.resizeIcon(32);
+		bool recreate = (_state == TB_STANDARD);
+		setState(TB_LARGE);
+		reset(recreate);	//recreate toolbar if std icons were used
+		Window::redraw();
 	};
+	void setToUglyIcons() {
+		if (_state == TB_STANDARD) 
+			return;
+		bool recreate = true;
+		setState(TB_STANDARD);
+		reset(recreate);	//must recreate toolbar if setting to internal bitmaps
+		Window::redraw();
+	}
 
 	bool getCheckState(int ID2Check) const {
 		return bool(::SendMessage(_hSelf, TB_GETSTATE, (WPARAM)ID2Check, 0) & TBSTATE_CHECKED);
@@ -122,29 +100,31 @@ public :
 		::SendMessage(_hSelf, TB_CHECKBUTTON, (WPARAM)ID2Check, (LPARAM)MAKELONG(willBeChecked, 0));
 	};
 
-	toolBarStatusType getState() const {return _state;};
+	toolBarStatusType getState() const {
+		return _state;
+	};
 
-	void setToUglyIcons();
-
-	bool changeIcons(int whichLst, int iconIndex, const char *iconLocation){
+	bool changeIcons(int whichLst, int iconIndex, const TCHAR *iconLocation){
 		return _toolBarIcons.replaceIcon(whichLst, iconIndex, iconLocation);
 	};
 
-	int getCountOfTBIcons(void) {
-		return _toolBarIcons.getNbCommand();
-	};
-	int getTBLines(void) {
-		return _row;
-	};
+	void registerDynBtn(UINT message, toolbarIcons* hBmp);
 
+	void doPopop(POINT chevPoint);	//show the popup if buttons are hidden
+
+	void addToRebar(ReBar * rebar);
 
 private :
 	TBBUTTON *_pTBB;
 	ToolBarIcons _toolBarIcons;
 	toolBarStatusType _state;
-	int *_bmpArray;
-	int _bmpArraySize;
-	int _row;
+	vector<tDynamicList> _vDynBtnReg;
+	size_t _nrButtons;
+	size_t _nrDynButtons;
+	size_t _nrTotalButtons;
+	size_t _nrCurrentButtons;
+	ReBar * _pRebar;
+	REBARBANDINFO _rbBand;
 
 
 	void setDefaultImageList() {
@@ -157,69 +137,38 @@ private :
 		::SendMessage(_hSelf, TB_SETDISABLEDIMAGELIST, (WPARAM)0, (LPARAM)_toolBarIcons.getDisableLst());
 	};
 
-
-
-	void setButtonSize(int w, int h) {
-		::SendMessage(_hSelf, TB_SETBUTTONSIZE , (WPARAM)0, (LPARAM)MAKELONG (w, h));
-	};
-	
-	void reset();
+	void reset(bool create = false);
+	void setState(toolBarStatusType state) {
+		_state = state;
+	}
 	
 };
 
 class ReBar : public Window
 {
 public :
-	ReBar():Window(), _pToolBar(NULL) {
-		_rbi.cbSize = sizeof(REBARINFO);
-		_rbi.fMask  = 0;
-		_rbi.himl   = (HIMAGELIST)NULL;
-
-		_rbBand.cbSize  = sizeof(REBARBANDINFO);
-		_rbBand.fMask   = /*RBBIM_COLORS | RBBIM_TEXT | RBBIM_BACKGROUND | \*/
-						RBBIM_STYLE | RBBIM_CHILD  | RBBIM_CHILDSIZE | \
-						RBBIM_SIZE;
-
-		_rbBand.fStyle  = RBBS_CHILDEDGE;
-		_rbBand.hbmBack = NULL;
-		_rbBand.lpText     = "Toolbar";
-	};
+	ReBar():Window() { usedIDs.clear(); };
 
 	virtual void destroy() {
 		::DestroyWindow(_hSelf);
 		_hSelf = NULL;
+		usedIDs.clear();
 	};
-	virtual void reSizeTo(RECT & rc) {
-		Window::reSizeTo(rc);
 
-		int dwBtnSize	= ::SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
-		int iSize		= rc.right - rc.left;
+	void init(HINSTANCE hInst, HWND hPere);
+	bool addBand(REBARBANDINFO * rBand, bool useID);	//useID true if ID from info should be used (false for plugins). wID in bandinfo will be set to used ID
+	void reNew(int id, REBARBANDINFO * rBand);					//wID from bandinfo is used for update
+	void removeBand(int id);
 
-		if (LOWORD(dwBtnSize) < iSize) {
-			_rbBand.cxMinChild = LOWORD(dwBtnSize) * _pToolBar->getCountOfTBIcons();
-			_rbBand.cyMinChild = HIWORD(dwBtnSize) * _pToolBar->getTBLines();
-			_rbBand.cx         = iSize;
-		} else {
-			_rbBand.cxMinChild = LOWORD(dwBtnSize);
-			_rbBand.cyMinChild = (rc.bottom - rc.top) - 4;
-			_rbBand.cx         = LOWORD(dwBtnSize);
-		}
-
-		::SendMessage(_hSelf, RB_SETBANDINFO, (WPARAM)0, (LPARAM)&_rbBand);
-	}
-
-	void init(HINSTANCE hInst, HWND hPere, ToolBar *pToolBar);
-	void reNew() {
-		_rbBand.hwndChild  = _pToolBar->getHSelf();
-		int dwBtnSize = SendMessage(_pToolBar->getHSelf(), TB_GETBUTTONSIZE, 0,0);
-		_rbBand.cyMinChild = HIWORD(dwBtnSize);
-		::SendMessage(_hSelf, RB_INSERTBAND, (WPARAM)0, (LPARAM)&_rbBand);
-	};
+	void setIDVisible(int id, bool show);
+	bool getIDVisible(int id);
 
 private:
-	REBARINFO _rbi;
-	REBARBANDINFO _rbBand;
-	ToolBar *_pToolBar;
+	vector<int> usedIDs;
+
+	int getNewID();
+	void releaseID(int id);
+	bool isIDTaken(int id);
 };
 
 #endif // TOOL_BAR_H

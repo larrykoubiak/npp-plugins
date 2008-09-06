@@ -17,140 +17,11 @@
 
 #include "SysMsg.h"
 #include <memory>
-#include <string>
 #include <algorithm>
 
-DWORD ShortToLongPathName(LPCTSTR lpszShortPath, LPTSTR lpszLongPath, DWORD cchBuffer)
-{
-    // Catch null pointers.
-    if (!lpszShortPath || !lpszLongPath)
-    {
-        SetLastError(ERROR_INVALID_PARAMETER);
-        return 0;
-    }
+WcharMbcsConvertor * WcharMbcsConvertor::_pSelf = new WcharMbcsConvertor;
 
-    // Check whether the input path is valid.
-    if (0xffffffff == GetFileAttributes(lpszShortPath))
-        return 0;
-
-    // Special characters.
-    char const sep = '\\';
-    char const colon = ':';
-
-    // Make some short aliases for basic_strings of TCHAR.
-    typedef std::basic_string<TCHAR> tstring;
-    typedef tstring::traits_type traits;
-    typedef tstring::size_type size;
-    size const npos = tstring::npos;
-
-    // Copy the short path into the work buffer and convert forward 
-    // slashes to backslashes.
-    tstring path = lpszShortPath;
-    std::replace(path.begin(), path.end(), '/', sep);
-
-    // We need a couple of markers for stepping through the path.
-    size left = 0;
-    size right = 0;
-
-    // Parse the first bit of the path.
-    if (path.length() >= 2 && isalpha(path[0]) && colon == path[1]) // Drive letter?
-    {
-        if (2 == path.length()) // 'bare' drive letter
-        {
-            right = npos; // skip main block
-        }
-        else if (sep == path[2]) // drive letter + backslash
-        {
-            // FindFirstFile doesn't like "X:\"
-            if (3 == path.length())
-            {
-                right = npos; // skip main block
-            }
-            else
-            {
-                left = right = 3;
-            }
-        }
-        else return 0; // parsing failure
-    }
-    else if (path.length() >= 1 && sep == path[0])
-    {
-        if (1 == path.length()) // 'bare' backslash
-        {
-            right = npos;  // skip main block
-        }
-        else 
-        {
-            if (sep == path[1]) // is it UNC?
-            {
-                // Find end of machine name
-                right = path.find_first_of(sep, 2);
-                if (npos == right)
-                    return 0;
-
-                // Find end of share name
-                right = path.find_first_of(sep, right + 1);
-                if (npos == right)
-                    return 0;
-            }
-            ++right;
-        }
-    }
-    // else FindFirstFile will handle relative paths
-
-    // The data block for FindFirstFile.
-    WIN32_FIND_DATA fd;
-
-    // Main parse block - step through path.
-    while (npos != right)
-    {
-        left = right; // catch up
-
-        // Find next separator.
-        right = path.find_first_of(sep, right);
-
-        // Temporarily replace the separator with a null character so that
-        // the path so far can be passed to FindFirstFile.
-        if (npos != right)
-            path[right] = 0;
-
-        // See what FindFirstFile makes of the path so far.
-        HANDLE hf = FindFirstFile(path.c_str(), &fd);
-        if (INVALID_HANDLE_VALUE == hf)
-            return 0;
-        FindClose(hf);
-
-        // Put back the separator.
-        if (npos != right)
-            path[right] = sep;
-
-        // The file was found - replace the short name with the long.
-        size old_len = (npos == right) ? path.length() - left : right - left;
-        size new_len = traits::length(fd.cFileName);
-        path.replace(left, old_len, fd.cFileName, new_len);
-
-        // More to do?
-        if (npos != right)
-        {
-            // Yes - move past separator .
-            right = left + new_len + 1;
-
-            // Did we overshoot the end? (i.e. path ends with a separator).
-            if (right >= path.length())
-                right = npos;
-        }
-    }
-
-    // If buffer is too small then return the required size.
-    if (cchBuffer <= path.length())
-        return (DWORD)path.length() + 1;
-
-    // Copy the buffer and return the number of characters copied.
-    traits::copy(lpszLongPath, path.c_str(), path.length() + 1);
-    return (DWORD)path.length();
-}
-
-void systemMessage(const char *title)
+void systemMessage(const TCHAR *title)
 {
   LPVOID lpMsgBuf;
   FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -161,5 +32,182 @@ void systemMessage(const char *title)
                  0,
                  NULL );// Process any inserts in lpMsgBuf.
   MessageBox( NULL, (LPTSTR)lpMsgBuf, title, MB_OK | MB_ICONSTOP);
+  ::LocalFree(lpMsgBuf);
 }
 
+void printInt(int int2print)
+{
+	TCHAR str[32];
+	wsprintf(str, TEXT("%d"), int2print);
+	::MessageBox(NULL, str, TEXT(""), MB_OK);
+}
+
+void printStr(const TCHAR *str2print)
+{
+	::MessageBox(NULL, str2print, TEXT(""), MB_OK);
+}
+
+void writeLog(const TCHAR *logFileName, const TCHAR *log2write)
+{	
+	FILE *f = generic_fopen(logFileName, TEXT("a+"));
+	const TCHAR * ptr = log2write;
+	fwrite(log2write, sizeof(log2write[0]), lstrlen(log2write), f);
+	fputc('\n', f);
+	fflush(f);
+	fclose(f);
+}
+
+int filter(unsigned int code, struct _EXCEPTION_POINTERS *ep) 
+{
+   if (code == EXCEPTION_ACCESS_VIOLATION)
+      return EXCEPTION_EXECUTE_HANDLER;
+
+   return EXCEPTION_CONTINUE_SEARCH;
+}
+
+int getCpFromStringValue(const TCHAR * encodingStr)
+{
+	if (!encodingStr)
+		return CP_ACP;
+
+	if (generic_stricmp(TEXT("windows-1250"), encodingStr) == 0)
+		return 1250;
+	if (generic_stricmp(TEXT("windows-1251"), encodingStr) == 0)
+		return 1251;
+	if (generic_stricmp(TEXT("windows-1252"), encodingStr) == 0)
+		return 1252;
+	if (generic_stricmp(TEXT("windows-1253"), encodingStr) == 0)
+		return 1253;
+	if (generic_stricmp(TEXT("windows-1254"), encodingStr) == 0)
+		return 1254;
+	if (generic_stricmp(TEXT("windows-1255"), encodingStr) == 0)
+		return 1255;
+	if (generic_stricmp(TEXT("windows-1256"), encodingStr) == 0)
+		return 1256;
+	if (generic_stricmp(TEXT("windows-1257"), encodingStr) == 0)
+		return 1257;
+	if (generic_stricmp(TEXT("windows-1258"), encodingStr) == 0)
+		return 1258;
+
+	if (generic_stricmp(TEXT("big5"), encodingStr) == 0)
+		return 950;
+	if (generic_stricmp(TEXT("gb2312"), encodingStr) == 0)
+		return 936;
+	if (generic_stricmp(TEXT("shift_jis"), encodingStr) == 0)
+		return 936;
+	if (generic_stricmp(TEXT("euc-kr"), encodingStr) == 0)
+		return 936;
+	if (generic_stricmp(TEXT("tis-620"), encodingStr) == 0)
+		return 874;
+
+	if (generic_stricmp(TEXT("iso-8859-8"), encodingStr) == 0)
+		return 28598;
+
+	if (generic_stricmp(TEXT("utf-8"), encodingStr) == 0)
+		return 65001;
+
+	return CP_ACP;
+}
+
+std::basic_string<TCHAR> purgeMenuItemString(const TCHAR * menuItemStr, bool keepAmpersand)
+{
+	TCHAR cleanedName[64] = TEXT("");
+	size_t j = 0;
+	size_t menuNameLen = lstrlen(menuItemStr);
+	for(size_t k = 0 ; k < menuNameLen ; k++) 
+	{
+		if (menuItemStr[k] == '\t')
+		{
+			cleanedName[k] = 0;
+			break;
+		}
+		else if (menuItemStr[k] == '&')
+		{
+			if (keepAmpersand)
+				cleanedName[j++] = menuItemStr[k];
+			//else skip
+		}
+		else
+		{
+			cleanedName[j++] = menuItemStr[k];
+		}
+	}
+	cleanedName[j] = 0;
+	return cleanedName;
+};
+
+const wchar_t * WcharMbcsConvertor::char2wchar(const char * mbcs2Convert, UINT codepage)
+{
+	if (!_wideCharStr)
+	{
+		_wideCharStr = new wchar_t[initSize];
+		_wideCharAllocLen = initSize;
+	}
+
+	int len = MultiByteToWideChar(codepage, 0, mbcs2Convert, -1, _wideCharStr, 0);
+	if (len > 0)
+	{
+		if (len > int(_wideCharAllocLen))
+		{
+			delete [] _wideCharStr;
+			_wideCharAllocLen = len;
+			_wideCharStr = new wchar_t[_wideCharAllocLen];
+		}
+		MultiByteToWideChar(codepage, 0, mbcs2Convert, -1, _wideCharStr, len);
+	}
+	else
+		_wideCharStr[0] = 0;
+
+	return _wideCharStr;
+}
+
+const char * WcharMbcsConvertor::wchar2char(const wchar_t * wcharStr2Convert, UINT codepage) 
+{
+	if (!_multiByteStr)
+	{
+		_multiByteStr = new char[initSize];
+		_multiByteAllocLen = initSize;
+	}
+
+	int len = WideCharToMultiByte(codepage, 0, wcharStr2Convert, -1, _multiByteStr, 0, NULL, NULL);
+	if (len > 0)
+	{
+		if (len > int(_multiByteAllocLen))
+		{
+			delete [] _multiByteStr;
+			_multiByteAllocLen = len;
+			_multiByteStr = new char[_multiByteAllocLen];
+		}
+		WideCharToMultiByte(codepage, 0, wcharStr2Convert, -1, _multiByteStr, len, NULL, NULL);
+	}
+	else
+		_multiByteStr[0] = 0;
+
+	return _multiByteStr;
+}
+
+std::wstring string2wstring(const std::string & rString, UINT codepage)
+{
+	int len = MultiByteToWideChar(codepage, 0, rString.c_str(), -1, NULL, 0);
+	if(len > 0)
+	{		
+		std::vector<wchar_t> vw(len);
+		MultiByteToWideChar(codepage, 0, rString.c_str(), -1, &vw[0], len);
+		return &vw[0];
+	}
+	else
+		return L"";
+}
+
+std::string wstring2string(const std::wstring & rwString, UINT codepage)
+{
+	int len = WideCharToMultiByte(codepage, 0, rwString.c_str(), -1, NULL, 0, NULL, NULL);
+	if(len > 0)
+	{		
+		std::vector<char> vw(len);
+		WideCharToMultiByte(codepage, 0, rwString.c_str(), -1, &vw[0], len, NULL, NULL);
+		return &vw[0];
+	}
+	else
+		return "";
+}

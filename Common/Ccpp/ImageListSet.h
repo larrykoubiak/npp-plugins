@@ -30,9 +30,10 @@ class IconList
 public :
 	IconList() : _hImglst(NULL) {};
 
-	void create(HINSTANCE hInst, int iconSize) {_iconSize = iconSize;
+	void create(HINSTANCE hInst, int iconSize) {
+		InitCommonControls();
 		_hInst = hInst;
-		InitCommonControls(); 
+		_iconSize = iconSize; 
 		_hImglst = ImageList_Create(iconSize, iconSize, ILC_COLOR32 | ILC_MASK, 0, nbMax);
 		if (!_hImglst)
 			throw int(25);
@@ -59,12 +60,12 @@ public :
 		if (!hIcon)
 			throw int(26);
 		ImageList_AddIcon(_hImglst, hIcon);
-		//ImageList_AddMasked(_hImglst, (HBITMAP)hBmp, RGB(0, 0, 0));
+		//ImageList_AddMasked(_hImglst, hBmp, RGB(0, 0, 0));
 		::DeleteObject(hIcon);
 		//::DeleteObject(hBmp);
 	};
 
-	bool changeIcon(int index, const char *iconLocation) const{
+	bool changeIcon(int index, const TCHAR *iconLocation) const{
 		HBITMAP hBmp = (HBITMAP)::LoadImage(_hInst, iconLocation, IMAGE_ICON, _iconSize, _iconSize, LR_LOADFROMFILE | LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		if (!hBmp)
 			return false;
@@ -74,7 +75,7 @@ public :
 		return (i == index);
 	};
 /*
-	bool changeIcon(int index, const char *iconLocation, int size) const{
+	bool changeIcon(int index, const TCHAR *iconLocation, int size) const{
 		HBITMAP hBmp = (HBITMAP)::LoadImage(_hInst, iconLocation, IMAGE_ICON, size, size, LR_LOADFROMFILE | LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		if (!hBmp)
 			return false;
@@ -85,7 +86,7 @@ public :
 
 /*
 	void addImage(int iconID) const {
-		HBITMAP hBmp = ::LoadBitmap(_hInst, MAKEINTRESOURCE("STD_FILEOPEN"));
+		HBITMAP hBmp = ::LoadBitmap(_hInst, MAKEINTRESOURCE(TEXT("STD_FILEOPEN")));
 		//HBITMAP hBmp = (HBITMAP)::LoadImage(_hInst, MAKEINTRESOURCE(iconID), IMAGE_ICON, _iconSize, _iconSize, LR_LOADMAP3DCOLORS);
 		ImageList_Add(_hImglst, hBmp, NULL);
 		::DeleteObject(hBmp);
@@ -112,9 +113,7 @@ typedef struct
 	int _hotIcon;
 	int _grayIcon;
 
-	int _uglyIcon;
-
-	UINT _uIconStyle;
+	int _stdIcon;
 }ToolBarButtonUnit;
 
 typedef std::vector<ToolBarButtonUnit> ToolBarIconIDs;
@@ -158,7 +157,7 @@ public :
 		return IconLists::getImageListHandle(HLIST_DISABLE);
 	};
 
-	int getNbCommand() const {return _nbCmd;};
+	unsigned int getNbCommand() const {return _nbCmd;};
 	int getCommandAt(int index) const {return _cmdArray[index];};
 	void resizeIcon(int size) {
 		reInit(size);
@@ -185,15 +184,11 @@ public :
 		return int(_tbiis.size());
 	};
 
-	int getUglyIconAt(int i) const {
-		return _tbiis[i]._uglyIcon;
+	int getStdIconAt(int i) const {
+		return _tbiis[i]._stdIcon;
 	};
 
-	UINT getIconStyle(int i) const {
-		return _tbiis[i]._uIconStyle;
-	};
-
-	bool replaceIcon(int witchList, int iconIndex, const char *iconLocation) const {
+	bool replaceIcon(int witchList, int iconIndex, const TCHAR *iconLocation) const {
 		if ((witchList != HLIST_DEFAULT) && (witchList != HLIST_HOT) && (witchList != HLIST_DISABLE))
 			return false;
 		return _iconListVector[witchList].changeIcon(iconIndex, iconLocation);
@@ -203,7 +198,7 @@ public :
 private :
 	ToolBarIconIDs _tbiis;
 	int _cmdArray[nbMax];
-	int _nbCmd;
+	unsigned int _nbCmd;
 };
 
 #endif //IMAGE_LIST_H
