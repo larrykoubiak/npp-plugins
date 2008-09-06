@@ -69,7 +69,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 			}
 		}
 	}
-	lstrcat(iniFile, "NppAutoIndent.ini");
+	lstrcat(iniFile, TEXT("NppAutoIndent.ini"));
 
 	HANDLE ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
 	if (ini == INVALID_HANDLE_VALUE) {	//opening file failed, creating too, disable plugin
@@ -80,19 +80,19 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 	}
 }
 
-extern "C" __declspec(dllexport) const char * getName() {
-	return "NppAutoIndent";
+extern "C" __declspec(dllexport) const TCHAR * getName() {
+	return TEXT("NppAutoIndent");
 }
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
 	*nbF = nrFunc;
 	//ZeroMemory(&funcItem, sizeof(FuncItem));
 	clearmem(funcItems, sizeof(FuncItem) * nrFunc);
-	lstrcpy(funcItems[0]._itemName, "Auto Indent off");
-	lstrcpy(funcItems[1]._itemName, "Block Indent");
-	lstrcpy(funcItems[2]._itemName, "Smart Indent");
-	//lstrcpy(funcItems[3]._itemName, "-");
-	//lstrcpy(funcItems[4]._itemName, "Aboot");
+	lstrcpy(funcItems[0]._itemName, TEXT("Auto Indent off"));
+	lstrcpy(funcItems[1]._itemName, TEXT("Block Indent"));
+	lstrcpy(funcItems[2]._itemName, TEXT("Smart Indent"));
+	//lstrcpy(funcItems[3]._itemName, TEXT("-"));
+	//lstrcpy(funcItems[4]._itemName, TEXT("Aboot"));
 	funcItems[0]._pFunc = &indentOff;
 	funcItems[1]._pFunc = &indentBlock;
 	funcItems[2]._pFunc = &indentSmart;
@@ -143,6 +143,12 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam
 	return TRUE;
 }
 
+#ifdef UNICODE
+extern "C" __declspec(dllexport) BOOL isUnicode() {
+	return true;
+}
+#endif
+
 //Plugin helper functions
 HWND getCurrentHScintilla(int which) {
 	return (which == 0)?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
@@ -163,8 +169,8 @@ void deinitializePlugin() {
 	if (!initializedPlugin)
 		return;
 
-	char value[10];
-	wsprintf(value, "%d", currentIndent);
+	TCHAR value[10];
+	wsprintf(value, TEXT("%d"), currentIndent);
 	::WritePrivateProfileString(TEXT("NppAutoIndent"), TEXT("IndentType"), value, iniFile);
 
 	initializedPlugin = false;
@@ -187,7 +193,7 @@ void indentSmart() {
 }
 
 void about() {
-	::MessageBox(nppData._nppHandle, "NppAutoIndent for C-Style indenting. Crappy but it does the job", "Unhelpful message", MB_OK);
+	::MessageBox(nppData._nppHandle, TEXT("NppAutoIndent for C-Style indenting. Crappy but it does the job"), TEXT("Unhelpful message"), MB_OK);
 }
 
 //Modify menu
@@ -230,7 +236,7 @@ void onChar(const int ch_int) {
 				triggerIndentBlock(ch);
 			break;
 		case IndentSmart:
-			if (ch == '\r' || ch == '\n' || ch == ':' || ch == '{' || ch == '}')
+			if (ch == '\r' || ch == '\n' || ch == ':' || ch == '{' || ch == '}' || ch == '#')
 			triggerIndentSmart(ch);
 			break;
 		default:
@@ -294,6 +300,7 @@ void triggerIndentSmart(char ch) {
 			possibleMatches = LineMatchable;
 			break;
 		case LineLabel:
+		case LinePreprocessor:
 			execute(SCI_SETLINEINDENTATION, startLine, 0);	//perform indent
 			return;
 		case LineCase:
@@ -310,6 +317,9 @@ void triggerIndentSmart(char ch) {
 			possibleMatches = LineBraceOpen;
 			outDent = true;
 			break;
+		default:
+			//Everything else doesnt trigger indenting
+			return;
 	}
 
 	//Start looking at lines above current line
@@ -437,9 +447,25 @@ LineType getLineType() {
 	LineClosed,			//Regular line (semicolon)
 	LineOpen			//unfinished line (similar to statement)
 */
-	int len = lstrlen(lineBuffer);
+	int len = lstrlenA(lineBuffer);
 	if (len == 0)
 		return LineEmpty;
+	//check if the line is a preprocessor line by looking at first non-whitespace char
+	int i = 0;
+	while(i < len) {
+		if (lineBuffer[i] == ' '  ||
+			lineBuffer[i] == '\t' ||
+			lineBuffer[i] == '\r' ||
+			lineBuffer[i] == '\n')
+			i++;
+		else
+			break;
+	}
+	if (lineBuffer[i] == '#')
+		return LinePreprocessor;
+	else if (i < (len-1) && lineBuffer[i] == '/' && lineBuffer[i+1] == '/')	// '//' comment line
+		return LineComment;
+
 	//Trailing whitespace stripped, so can look at end of lineBuffer
 	switch(lineBuffer[len-1]) {
 		case ':': {
@@ -455,9 +481,9 @@ LineType getLineType() {
 				ch = lineBuffer[i];
 			}
 			lineBuffer[i] = 0;
-			if (!lstrcmp(lineBuffer+start, "case") || !lstrcmp(lineBuffer+start, "default"))
+			if (!lstrcmpA(lineBuffer+start, "case") || !lstrcmpA(lineBuffer+start, "default"))
 				return LineCase;
-			else if (!lstrcmp(lineBuffer+start, "public") || !lstrcmp(lineBuffer+start, "private"))
+			else if (!lstrcmpA(lineBuffer+start, "public") || !lstrcmpA(lineBuffer+start, "private"))
 				return LineAccess;
 
 			return LineLabel;
@@ -481,7 +507,7 @@ int findBraceOpenLine(int line) {
 
 	//char brace = (char)execute(SCI_GETCHARAT, bracepos);
 	getLine(line);
-	int i = lstrlen(lineBuffer) - 1;
+	int i = lstrlenA(lineBuffer) - 1;
 	int offset = -1;
 	int level = 0;
 	while(i >= 0) {
@@ -558,10 +584,12 @@ BOOL createDirectory(LPCTSTR path) {
 			}
 		}
 		parsedPath[i] = *curStringOffset;
+#ifndef UNICODE	//no DBCS checks needed when WCHAR
 		if (IsDBCSLeadByte(*curStringOffset)) {
 			i++;
 			parsedPath[i] = *(curStringOffset + 1);
 		}
+#endif
 		i++;
 		parsedPath[i] = 0;
 		prevStringOffset = curStringOffset;

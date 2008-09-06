@@ -2,6 +2,11 @@ Plugin to export selection or file to clipboard or file in RTF or HTML.
 
 Build with visual studio 2003 or higher
 
+0.2.8
+Add UNICODE caps.
+Export all formats now includes CF_TEXT
+Reverted to static menu name
+
 0.2.7
 Fix missing characters above 127 (ie 'eating accented characters').
 Filters out indicator flags, should prevent out of bounds problems.

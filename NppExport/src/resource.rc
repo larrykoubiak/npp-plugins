@@ -53,8 +53,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,2,7,3
- PRODUCTVERSION 0,2,7,3
+ FILEVERSION 0,2,8,0
+ PRODUCTVERSION 0,2,8,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,12 +70,16 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "Export Plugin for Notepad++, a free (GNU) source code editor"
-            VALUE "FileVersion", "0.2.7"
+#ifdef UNICODE
+            VALUE "FileVersion", "0.2.8 Unicode"
+#else
+            VALUE "FileVersion", "0.2.8 ANSI"
+#endif
             VALUE "InternalName", "Exporter"
             VALUE "LegalCopyright", "Copyright (C) 2007"
             VALUE "OriginalFilename", "NppExport.dll"
             VALUE "ProductName", "NppExport"
-            VALUE "ProductVersion", "0.2.7"
+            VALUE "ProductVersion", "0.2.8"
         END
     END
     BLOCK "VarFileInfo"

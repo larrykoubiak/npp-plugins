@@ -30,19 +30,21 @@ enum IndentType {
 };
 
 enum LineType {
-	LineEmpty		=0x01,		//empty line (whitespace or nothing)
-	LineLabel		=0x02,		//ends with colon
-	LineCase		=0x04,			//case
-	LineAccess		=0x08,			//public/private
-	LineBraceOpen	=0x10,		//line with opening brace
-	LineBraceClose	=0x20,		//line with closing brace
-	LineClosed		=0x40,		//Regular line (semicolon)
-	LineOpen		=0x80,		//unfinished line (also for single-line if/else/while/for)
-	LineMask		=0xFF		//All LineTypes
+	LineEmpty		=0x001,		//empty line (whitespace or nothing)
+	LineLabel		=0x002,		//ends with colon
+	LineCase		=0x004,		//case
+	LineAccess		=0x008,		//public/private
+	LineBraceOpen	=0x010,		//line with opening brace
+	LineBraceClose	=0x020,		//line with closing brace
+	LineClosed		=0x040,		//Regular line (semicolon)
+	LineOpen		=0x080,		//unfinished line (also for single-line if/else/while/for)
+	LinePreprocessor=0x100,		//preprocessor directive (starts with '#'), act like label
+	LineComment		=0x200,		//single line comments
+	LineMask		=0x3FF		//All LineTypes
 };
 
 //Cannot match empty lines or labels, XOR them out
-#define LineMatchable (LineMask ^ LineEmpty ^ LineLabel)
+#define LineMatchable (LineMask ^ LineEmpty ^ LineLabel ^ LinePreprocessor ^ LineComment)
 
 HMODULE hDLL;
 bool initializedPlugin = false;
@@ -51,7 +53,7 @@ IndentType currentIndent = IndentNone;
 NppData nppData;
 const int nrFunc = 3;
 FuncItem funcItems[nrFunc];
-char iniFile[MAX_PATH];
+TCHAR iniFile[MAX_PATH];
 
 char lineBuffer[LINESIZE];
 
@@ -66,10 +68,14 @@ bool handleChar = false;
 //Function declarations
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved);
 extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData);
-extern "C" __declspec(dllexport) const char * getName();
+extern "C" __declspec(dllexport) const TCHAR * getName();
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF);
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode);
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam);
+
+#ifdef UNICODE
+extern "C" __declspec(dllexport) BOOL isUnicode();
+#endif //UNICODE
 
 HWND getCurrentHScintilla(int which);
 void initializePlugin();

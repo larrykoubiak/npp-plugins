@@ -2,6 +2,7 @@
 #include "NppExport.h"
 #include "HTMLExporter.h"
 #include "RTFExporter.h"
+#include "TXTExporter.h"
 
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved) {
 	switch (ul_reason_for_call) {
@@ -11,18 +12,18 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			ZeroMemory(&nppData, sizeof(NppData));
 			iniFile = NULL;
 
-			dllPath = new char[MAX_PATH];
+			dllPath = new TCHAR[MAX_PATH];
 			if (!GetModuleFileName(hDLL, dllPath, MAX_PATH)) {
 				//Handle any problems with filename retrieval here
 				delete [] dllPath;
 				return FALSE;
 			}
 			
-			dllName = new char[MAX_PATH];
-			strcpy(dllName,PathFindFileName(dllPath));
+			dllName = new TCHAR[MAX_PATH];
+			lstrcpy(dllName,PathFindFileName(dllPath));
 			
-			pluginName = new char[MAX_PATH];
-			strcpy(pluginName, dllName);
+			pluginName = new TCHAR[MAX_PATH];
+			lstrcpy(pluginName, dllName);
 			PathRemoveExtension(pluginName);
 			
 			PathRemoveFileSpec(dllPath);
@@ -30,31 +31,31 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			ZeroMemory(funcItem, sizeof(FuncItem) * nbFunc);
 
 			funcItem[0]._pFunc = &doExportRTF;
-			lstrcpyn(funcItem[0]._itemName, "&Export to RTF", 64);			//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[0]._itemName, TEXT("&Export to RTF"), 64);			//Copy in the functionname, no more than 64 chars
 			funcItem[0]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[0]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[0]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
 			funcItem[1]._pFunc = &doExportHTML;
-			lstrcpyn(funcItem[1]._itemName, "&Export to HTML", 64);			//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[1]._itemName, TEXT("&Export to HTML"), 64);			//Copy in the functionname, no more than 64 chars
 			funcItem[1]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[1]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[1]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
 			funcItem[2]._pFunc = &doClipboardRTF;
-			lstrcpyn(funcItem[2]._itemName, "&Copy RTF to clipboard", 64);	//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[2]._itemName, TEXT("&Copy RTF to clipboard"), 64);	//Copy in the functionname, no more than 64 chars
 			funcItem[2]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[2]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[2]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
 			funcItem[3]._pFunc = &doClipboardHTML;
-			lstrcpyn(funcItem[3]._itemName, "&Copy HTML to clipboard", 64);	//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[3]._itemName, TEXT("&Copy HTML to clipboard"), 64);	//Copy in the functionname, no more than 64 chars
 			funcItem[3]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[3]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[3]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
 
 			funcItem[4]._pFunc = &doClipboardAll;
-			lstrcpyn(funcItem[4]._itemName, "&Copy all formats to clipboard", 64);	//Copy in the functionname, no more than 64 chars
+			lstrcpyn(funcItem[4]._itemName, TEXT("&Copy all formats to clipboard"), 64);	//Copy in the functionname, no more than 64 chars
 			funcItem[4]._init2Check = false;								//The menu item is not checked by default, you could set this to true if something should be enabled on startup
 			funcItem[4]._pShKey = new ShortcutKey;							//Give the menu command a ShortcutKey. If you do not wish for any shortcut to be assigned by default,
 			ZeroMemory(funcItem[4]._pShKey, sizeof(ShortcutKey));			//Zero out the ShortcutKey structure, this way the user can always map a shortcutkey manually
@@ -87,17 +88,17 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 
 	//Load the ini file
 	if (iniFile == NULL)
-		iniFile = new char[MAX_PATH];
+		iniFile = new TCHAR[MAX_PATH];
 	iniFile[0] = 0;
 
 	BOOL result = (BOOL) SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM) iniFile);
 
 	if (!result)	//npp doesnt support config dir or something else went wrong (ie too small buffer)
-		strcpy(iniFile, dllPath);
+		lstrcpy(iniFile, dllPath);
 
-	strcat(iniFile, "\\");	//append backslash
-	strcat(iniFile, pluginName);
-	strcat(iniFile, ".ini");
+	lstrcat(iniFile, TEXT("\\"));	//append backslash
+	lstrcat(iniFile, pluginName);
+	lstrcat(iniFile, TEXT(".ini"));
 
 	//HANDLE ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
 	//if (ini == INVALID_HANDLE_VALUE) {	//opening file failed
@@ -110,8 +111,9 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 	//}
 }
 
-extern "C" __declspec(dllexport) const char * getName() {
-	return pluginName;
+extern "C" __declspec(dllexport) const TCHAR * getName() {
+	//return pluginName;
+	return TEXT("NppExport");
 }
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
@@ -126,6 +128,12 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam) {
 	return TRUE;
 }
+
+#ifdef UNICODE
+extern "C" __declspec(dllexport) BOOL isUnicode() {
+	return true;
+}
+#endif //UNICODE
 
 inline HWND getCurrentHScintilla(int which) {
 	return (which == 0)?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
@@ -179,12 +187,12 @@ void destroyWindows() {
 
 //Menu command functions
 void doExportRTF() {
-	char filename[MAX_PATH];
+	TCHAR filename[MAX_PATH];
 	fillScintillaData(&mainCSD, 0 , -1);
 
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM) filename);
-	lstrcat(filename, ".rtf");
-	if (saveFile(filename, MAX_PATH, "RTF file (*.rtf)\0*.rtf\0All files (*.*)\0*.*\0")) {
+	lstrcat(filename, TEXT(".rtf"));
+	if (saveFile(filename, MAX_PATH, TEXT("RTF file (*.rtf)\0*.rtf\0All files (*.*)\0*.*\0"))) {
 		//FILE * output = fopen(filename, "wb");
 		HANDLE hFileOut = CreateFile(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (!hFileOut) {
@@ -197,12 +205,12 @@ void doExportRTF() {
 }
 
 void doExportHTML() {
-	char filename[MAX_PATH];
+	TCHAR filename[MAX_PATH];
 	fillScintillaData(&mainCSD, 0 , -1);
 
 	SendMessage(nppData._nppHandle, NPPM_GETFILENAME, 0, (LPARAM) filename);
-	lstrcat(filename, ".html");
-	if (saveFile(filename, MAX_PATH, "HTML file (*.html)\0*.html\0All files (*.*)\0*.*\0")) {
+	lstrcat(filename, TEXT(".html"));
+	if (saveFile(filename, MAX_PATH, TEXT("HTML file (*.html)\0*.html\0All files (*.*)\0*.*\0"))) {
 		//FILE * output = fopen(filename, "wb");
 		HANDLE hFileOut = CreateFile(filename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (!hFileOut) {
@@ -219,13 +227,13 @@ void doClipboardRTF() {
 
 	BOOL result = OpenClipboard(nppData._nppHandle);
 	if (result == FALSE) {
-		err("Unable to open clipboard");
+		err(TEXT("Unable to open clipboard"));
 		return;
 	}
 
 	result = EmptyClipboard();
 	if (result == FALSE) {
-		err("Unable to empty clipboard");
+		err(TEXT("Unable to empty clipboard"));
 		return;
 	}
 
@@ -233,7 +241,7 @@ void doClipboardRTF() {
 
 	result = CloseClipboard();
 	if (result == FALSE) {
-		err("Unable to close clipboard");
+		err(TEXT("Unable to close clipboard"));
 		return;
 	}
 }
@@ -243,13 +251,13 @@ void doClipboardHTML() {
 	
 	BOOL result = OpenClipboard(nppData._nppHandle);
 	if (result == FALSE) {
-		err("Unable to open clipboard");
+		err(TEXT("Unable to open clipboard"));
 		return;
 	}
 
 	result = EmptyClipboard();
 	if (result == FALSE) {
-		err("Unable to empty clipboard");
+		err(TEXT("Unable to empty clipboard"));
 		return;
 	}
 
@@ -257,7 +265,7 @@ void doClipboardHTML() {
 
 	result = CloseClipboard();
 	if (result == FALSE) {
-		err("Unable to close clipboard");
+		err(TEXT("Unable to close clipboard"));
 		return;
 	}
 }
@@ -267,28 +275,29 @@ void doClipboardAll() {
 	
 	BOOL result = OpenClipboard(nppData._nppHandle);
 	if (result == FALSE) {
-		err("Unable to open clipboard");
+		err(TEXT("Unable to open clipboard"));
 		return;
 	}
 
 	result = EmptyClipboard();
 	if (result == FALSE) {
-		err("Unable to empty clipboard");
+		err(TEXT("Unable to empty clipboard"));
 		return;
 	}
 
 	exportRTF(true, NULL);
 	exportHTML(true, NULL);
+	exportTXT(true, NULL);	//also put plaintext on clipboard
 
 	result = CloseClipboard();
 	if (result == FALSE) {
-		err("Unable to close clipboard");
+		err(TEXT("Unable to close clipboard"));
 		return;
 	}
 }
 
 //Internal functions
-BOOL saveFile(char * filebuffer, int buffersize, const char * filters) {
+BOOL saveFile(TCHAR * filebuffer, int buffersize, const TCHAR * filters) {
 	OPENFILENAME ofi;
 	ZeroMemory(&ofi,sizeof(OPENFILENAME));
 	ofi.lStructSize = sizeof(OPENFILENAME);
@@ -409,14 +418,29 @@ void fillScintillaData(CurrentScintillaData * csd, int start, int end) {
 	int ppliy = GetDeviceCaps(scintDC, LOGPIXELSY);
 	int nHeight = -MulDiv(csd->styles[STYLE_DEFAULT].size, ppliy, 72);
 
+#ifdef UNICODE
+
+	TCHAR uniFont[32];
+	MultiByteToWideChar(CP_ACP, 0, csd->styles[STYLE_DEFAULT].fontString, -1, uniFont, 32);
+
+	HFONT font = CreateFont(nHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
+							OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, 
+							uniFont);
+
+#else
+
 	HFONT font = CreateFont(nHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 
 							OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH, 
 							csd->styles[STYLE_DEFAULT].fontString);
+
+#endif
+
+
 	HGDIOBJ old = SelectObject(scintDC, font);
 
 	SIZE size;
 	size.cx = 8;	//fallback, 8 pix default
-	GetTextExtentPoint32(scintDC, " ", 1, &size);
+	GetTextExtentPoint32(scintDC, TEXT(" "), 1, &size);
 	int twips = size.cx * (1440 / pplix);
 
 	SelectObject(scintDC, old);
@@ -452,31 +476,16 @@ void exportHTML(bool isClipboard, HANDLE exportFile) {
 		//if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
 		DWORD result = 0;
 		if (WriteFile(exportFile, buffer, ed.bufferSize, &result, NULL) != TRUE) {
-			err("Error writing data to file");
+			err(TEXT("Error writing data to file"));
 		}
 		GlobalUnlock(ed.hBuffer);
 		GlobalFree(ed.hBuffer);
 	} else {
-		//BOOL result = OpenClipboard(nppData._nppHandle);
-		//if (result == FALSE) {
-		//	err("Unable to open clipboard");
-		//}
-
-		//result = EmptyClipboard();
-		//if (result == FALSE) {
-		//	err("Unable to empty clipboard");
-		//}
-
 		HANDLE clipHandle = SetClipboardData(htmlexp.getClipboardID(), ed.hBuffer);
 		if (!clipHandle) {
 			GlobalFree(ed.hBuffer);
-			err("Failed setting clipboard data");
+			err(TEXT("Failed setting clipboard data"));
 		}
-
-		//result = CloseClipboard();
-		//if (result == FALSE) {
-		//	err("Unable to close clipboard");
-		//}
 	}
 }
 
@@ -498,7 +507,7 @@ void exportRTF(bool isClipboard, HANDLE exportFile) {
 		//if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
 		DWORD result = 0;
 		if (WriteFile(exportFile, buffer, ed.bufferSize, &result, NULL) != TRUE) {
-			err("Error writing data to file");
+			err(TEXT("Error writing data to file"));
 		}
 		GlobalUnlock(ed.hBuffer);
 		GlobalFree(ed.hBuffer);
@@ -506,7 +515,37 @@ void exportRTF(bool isClipboard, HANDLE exportFile) {
 		HANDLE clipHandle = SetClipboardData(rtfexp.getClipboardID(), ed.hBuffer);
 		if (!clipHandle) {
 			GlobalFree(ed.hBuffer);
-			err("Failed setting clipboard data");
+			err(TEXT("Failed setting clipboard data"));
+		}
+	}
+}
+
+void exportTXT(bool isClipboard, HANDLE exportFile) {
+	TXTExporter txtexp;
+	ExportData ed;
+
+	ed.isClipboard = isClipboard;
+	ed.csd = &mainCSD;
+
+	txtexp.exportData(&ed);
+
+	if (!ed.hBuffer)
+		return;
+
+	if (!isClipboard) {
+		char * buffer = (char *)GlobalLock(ed.hBuffer);
+		//if (fwrite(buffer, 1, ed.bufferSize, exportFile) != ed.bufferSize) {
+		DWORD result = 0;
+		if (WriteFile(exportFile, buffer, ed.bufferSize, &result, NULL) != TRUE) {
+			err(TEXT("Error writing data to file"));
+		}
+		GlobalUnlock(ed.hBuffer);
+		GlobalFree(ed.hBuffer);
+	} else {
+		HANDLE clipHandle = SetClipboardData(txtexp.getClipboardID(), ed.hBuffer);
+		if (!clipHandle) {
+			GlobalFree(ed.hBuffer);
+			err(TEXT("Failed setting clipboard data"));
 		}
 	}
 }

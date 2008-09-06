@@ -8,7 +8,7 @@
 HTMLExporter::HTMLExporter(void) {
 	setClipboardID(RegisterClipboardFormat(CF_HTML));
 	if (getClipboardID() == 0) {
-		MessageBox(NULL, "Unable to register clipboard format HTML!", "Error", MB_OK);
+		MessageBox(NULL, TEXT("Unable to register clipboard format HTML!"), TEXT("Error"), MB_OK);
 	}
 }
 
@@ -118,7 +118,7 @@ bool HTMLExporter::exportData(ExportData * ed) {
 		currentStyle = (ed->csd->styles)+i;
 		if (ed->csd->usedStyles[i] == true) {
 			currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, ".sc%d {\r\n", i);
-			if (lstrcmpi(currentStyle->fontString, defaultStyle->fontString))
+			if (lstrcmpiA(currentStyle->fontString, defaultStyle->fontString))	//this is forcefully set to ANSI, this part of the plugin doesnt need Unicode
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-family: '%s';\r\n", currentStyle->fontString);
 			if (currentStyle->size != defaultStyle->size)
 				currentBufferOffset += sprintf(clipbuffer+currentBufferOffset, "\tfont-size: %0dpt;\r\n", currentStyle->size);

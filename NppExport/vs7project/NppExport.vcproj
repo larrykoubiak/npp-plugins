@@ -33,7 +33,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="shlwapi.lib comctl32.lib"
-				OutputFile="$(OutDir)/../NppExport_D.dll"
+				OutputFile="$(OutDir)/../NppExportA_D.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				GenerateDebugInformation="TRUE"
@@ -91,7 +91,7 @@
 				IgnoreImportLibrary="FALSE"
 				AdditionalOptions="shlwapi.lib comctl32.lib"
 				AdditionalDependencies="..\src\Libs\LIBCTINY.LIB"
-				OutputFile="$(OutDir)/../NppExport.dll"
+				OutputFile="$(OutDir)/../NppExportA.dll"
 				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="TRUE"
 				GenerateDebugInformation="FALSE"
@@ -111,6 +111,120 @@
 				Name="VCPreLinkEventTool"/>
 			<Tool
 				Name="VCResourceCompilerTool"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Debug Unicode|Win32"
+			OutputDirectory="..\build\$(ConfigurationName)"
+			IntermediateDirectory="..\build\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories=".\..\src\Notepad_specific"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NPPPLUGIN_EXPORTS;UNICODE;_UNICODE"
+				MinimalRebuild="TRUE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="3"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="4"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="shlwapi.lib comctl32.lib"
+				OutputFile="$(OutDir)/../NppExport_D.dll"
+				LinkIncremental="2"
+				SuppressStartupBanner="TRUE"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile="$(OutDir)/NppExport.pdb"
+				SubSystem="2"
+				ImportLibrary="$(OutDir)/NppExport.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="UNICODE"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release Unicode|Win32"
+			OutputDirectory="..\build\$(ConfigurationName)"
+			IntermediateDirectory="..\build\$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="2">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				GlobalOptimizations="TRUE"
+				FavorSizeOrSpeed="2"
+				OptimizeForWindowsApplication="TRUE"
+				AdditionalIncludeDirectories=".\..\src\Notepad_specific"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPPLUGIN_EXPORTS;UNICODE;_UNICODE"
+				StringPooling="TRUE"
+				ExceptionHandling="FALSE"
+				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
+				UsePrecompiledHeader="3"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				IgnoreImportLibrary="FALSE"
+				AdditionalOptions="shlwapi.lib comctl32.lib"
+				AdditionalDependencies="..\src\Libs\LIBCTINY.LIB"
+				OutputFile="$(OutDir)/../NppExport.dll"
+				LinkIncremental="1"
+				IgnoreAllDefaultLibraries="TRUE"
+				GenerateDebugInformation="FALSE"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				ImportLibrary="$(OutDir)/NppPlugin.lib"
+				TargetMachine="1"/>
+			<Tool
+				Name="VCMIDLTool"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="UNICODE"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -156,6 +270,21 @@
 						Name="VCCLCompilerTool"
 						UsePrecompiledHeader="1"/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Debug Unicode|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release Unicode|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\src\TXTExporter.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -182,6 +311,9 @@
 			</File>
 			<File
 				RelativePath="..\src\stdafx.h">
+			</File>
+			<File
+				RelativePath="..\src\TXTExporter.h">
 			</File>
 			<Filter
 				Name="Notepad_specific"

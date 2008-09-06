@@ -8,7 +8,7 @@
 RTFExporter::RTFExporter(void) {
 	setClipboardID( RegisterClipboardFormat(CF_RTF));
 	if (getClipboardID() == 0) {
-		MessageBox(NULL, "Unable to register clipboard format RTF!", "Error", MB_OK);
+		MessageBox(NULL, TEXT("Unable to register clipboard format RTF!"), TEXT("Error"), MB_OK);
 	}
 }
 
