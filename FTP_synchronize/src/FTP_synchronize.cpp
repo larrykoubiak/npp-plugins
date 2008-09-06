@@ -44,12 +44,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 
 			lstrcpy(pluginName, dllName);
 			PathRemoveExtension(pluginName);
-		#ifdef UNICODE
-			pluginNameA = new char[MAX_PATH];
-			dllNameA = new char[MAX_PATH];
-			strcpyTtoA(pluginNameA, dllName, MAX_PATH);
-			strcpyTtoA(dllNameA, dllName, MAX_PATH);
-		#endif
 
 			PathRemoveFileSpec(dllPath);	//path only
 			lstrcat(dllPath, TEXT("\\"));	//append removed backslash
@@ -59,13 +53,13 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			ZeroMemory(funcItem, sizeof(FuncItem) * nbFunc);
 
 			funcItem[0]._pFunc = showFolders;
-			strcpy(funcItem[0]._itemName, "Show FTP Folders");
+			lstrcpy(funcItem[0]._itemName, TEXT("Show FTP Folders"));
 			funcItem[0]._init2Check = false;
 			funcItem[0]._pShKey = new ShortcutKey;		//I do not need the shortcut, yet I do want the toolbaricon, and ZeroMemory works (key NULL is no key so it seems, hacky)
 			ZeroMemory(funcItem[0]._pShKey, sizeof(ShortcutKey));
 
 			funcItem[1]._pFunc = about;
-			strcpy(funcItem[1]._itemName, "About");
+			lstrcpy(funcItem[1]._itemName, TEXT("About"));
 			funcItem[1]._init2Check = false;
 			funcItem[1]._pShKey = NULL;
 
@@ -77,16 +71,6 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			lstrcpy(outputDockName, TEXT("FTP Messages"));
 			lstrcpy(folderDockInfo, TEXT("Disconnected"));
 			lstrcpy(outputDockInfo, TEXT("No connection"));
-#ifdef UNICODE
-			folderDockNameA = new char[INIBUFSIZE];
-			outputDockNameA = new char[INIBUFSIZE];
-			folderDockInfoA = new char[INIBUFSIZE];
-			outputDockInfoA = new char[INIBUFSIZE];
-			strcpy(folderDockNameA, "FTP Folders");
-			strcpy(outputDockNameA, "FTP Messages");
-			strcpy(folderDockInfoA, "Disconnected");
-			strcpy(outputDockInfoA, "No connection");
-#endif
 
 			toolBitmapFolders = CreateMappedBitmap(hDLL,IDB_BITMAP_FOLDERS,0,0,0);
 
@@ -105,13 +89,8 @@ BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved)
 			if (lpReserved == NULL) {
 				delete [] dllName; delete [] dllPath; delete [] iniFile; delete [] storage; delete [] pluginName;
 				delete [] folderDockName; delete [] outputDockName; delete [] folderDockInfo; delete [] outputDockInfo;
-				Beep(500, 100);
+				//Beep(500, 100);
 
-#ifdef UNICODE
-				delete [] pluginNameA; delete [] dllNameA;
-				delete [] folderDockNameA; delete [] outputDockNameA; delete [] folderDockInfoA; delete [] outputDockInfoA;
-#endif
-				
 				delete funcItem[0]._pShKey;
 
 				DeleteObject(toolBitmapFolders);
@@ -133,15 +112,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 
 	//Load the ini file
 	iniFile[0] = 0;
-#ifdef UNICODE
-	char * iniFileA = new char[MAX_PATH];
-	BOOL result = (BOOL) SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM) iniFileA);
-	if (result)
-		MultiByteToWideChar(CP_ACP, 0, iniFileA, -1, iniFile, MAX_PATH);
-	delete [] iniFileA;
-#else
 	BOOL result = (BOOL) SendMessage(nppData._nppHandle, NPPM_GETPLUGINSCONFIGDIR, MAX_PATH, (LPARAM) iniFile);
-#endif
 
 	if (!result) {	//npp doesnt support config dir or something else went wrong (ie too small buffer)
 		lstrcpy(iniFile, dllPath);	//This directory has to exist always, else the DLL doesn't exist
@@ -165,15 +136,9 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 	}
 }
 
-extern "C" __declspec(dllexport) const char * getName() {
-#ifdef UNICODE
-	//return pluginNameA;
-	return "FTP_synchronize";
-#else
+extern "C" __declspec(dllexport) const TCHAR * getName() {
 	//return pluginName;
-	return "FTP_synchronize";
-#endif
-	
+	return TEXT("FTP_synchronize");
 }
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
@@ -194,7 +159,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 		case NPPN_FILESAVED: {
 			//a file has just been saved
 			if (uploadOnSave) {			//autosave enabled, uplaod file
-				upload(TRUE, FALSE);	//do not allow uncached uploads
+				upload(TRUE, FALSE, (void*)(notifyCode->nmhdr.idFrom));	//do not allow uncached uploads
 			}
 			break; }
 		case NPPN_SHUTDOWN: {	//Notepad++ is shutting down, cleanup everything
@@ -208,6 +173,11 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam
 	return TRUE;
 }
 
+#ifdef UNICODE
+extern "C" __declspec(dllexport) BOOL isUnicode() {
+	return true;
+}
+#endif //UNICODE
 //Plugin helper functions
 HWND getCurrentHScintilla(int which) {
 	return (which == 0)?nppData._scintillaMainHandle:nppData._scintillaSecondHandle;
@@ -751,17 +721,11 @@ void setStatusMessage(LPCTSTR status) {
 
 void setTitleBarAddon(LPCTSTR info) {
 	lstrcpy(folderDockInfo, info);
-#ifdef UNICODE
-	strcpyTtoA(folderDockInfoA, (TCHAR*)info, INIBUFSIZE);
-#endif
 	SendMessage(nppData._nppHandle, NPPM_DMMUPDATEDISPINFO, 0, (LPARAM) hFolderWindow);
 }
 
 void setOutputTitleAddon(LPCTSTR info) {
 	lstrcpy(outputDockInfo, info);
-#ifdef UNICODE
-	strcpyTtoA(outputDockInfoA, (TCHAR*)info, INIBUFSIZE);
-#endif
 	SendMessage(nppData._nppHandle, NPPM_DMMUPDATEDISPINFO, 0, (LPARAM) hOutputWindow);
 }
 
@@ -842,9 +806,9 @@ void showFolders() {
 			ZeroMemory(&tbd, sizeof(tTbData));
 			tbd.dlgID = 0;													//Nr of menu item to assign (!= _cmdID, beware)
 			tbd.hIconTab = iconFolderDock;									//icon to use
-			tbd.pszAddInfo = TVAR(folderDockInfo);							//Titlebar info pointer										//I dont use it, you can probably make use of it internally
-			tbd.pszModuleName = TVAR(dllName);								//name of the dll this dialog belongs to (I set this in DLL_ATTACH)
-			tbd.pszName = TVAR(folderDockName);								//Name for titlebar
+			tbd.pszAddInfo = folderDockInfo;							//Titlebar info pointer										//I dont use it, you can probably make use of it internally
+			tbd.pszModuleName = dllName;								//name of the dll this dialog belongs to (I set this in DLL_ATTACH)
+			tbd.pszName = folderDockName;								//Name for titlebar
 			tbd.uMask = DWS_ICONTAB | DWS_DF_CONT_RIGHT | DWS_ADDINFO;		//Flags to use (see docking.h)
 			tbd.hClient = hFolderWindow;									//HWND Handle of window this dock belongs to
 			tbd.iPrevCont = -1;
@@ -882,9 +846,9 @@ void showOutput() {
 			RECT rct = {0, 0, 0, 0};
 			tbd.dlgID = -1;													//Nr of menu item to assign (!= _cmdID, beware)
 			tbd.hIconTab = iconOuputDock;									//icon to use
-			tbd.pszAddInfo = TVAR(outputDockInfo);
-			tbd.pszModuleName = TVAR(dllName);								//name of the dll this dialog belongs to (I set this in DLL_ATTACH)
-			tbd.pszName = TVAR(outputDockName);								//Name for titlebar
+			tbd.pszAddInfo = outputDockInfo;
+			tbd.pszModuleName = dllName;								//name of the dll this dialog belongs to (I set this in DLL_ATTACH)
+			tbd.pszName = outputDockName;								//Name for titlebar
 			tbd.uMask = DWS_ICONTAB | DWS_DF_CONT_BOTTOM | DWS_ADDINFO;		//Flags to use (see docking.h)
 			tbd.hClient = hOutputWindow;									//HWND Handle of window this dock belongs to
 			SendMessage(nppData._nppHandle,NPPM_DMMREGASDCKDLG,0,(LPARAM)&tbd);	//Register it
@@ -902,7 +866,7 @@ void showOutput() {
 void settings() {
 	
 	//Create Property sheets
-	int nrPages = 4;
+	int nrPages = 3;
 
 	PROPSHEETHEADER psh;
 	PROPSHEETPAGE * psp = new PROPSHEETPAGE[nrPages];
@@ -926,8 +890,8 @@ void settings() {
 	psp[2].pszTemplate = (LPCTSTR) IDD_DIALOG_SETTINGS_TRANSFERS;
 	psp[2].pfnDlgProc = &TransferDlgProcedure;
 
-	psp[3].pszTemplate = (LPCTSTR) IDD_DIALOG_SETTINGS_PROXY;
-	psp[3].pfnDlgProc = &ProxyDlgProcedure;
+	//psp[3].pszTemplate = (LPCTSTR) IDD_DIALOG_SETTINGS_PROXY;
+	//psp[3].pfnDlgProc = &ProxyDlgProcedure;
 
 	psh.dwSize = sizeof(PROPSHEETHEADER);
 	psh.dwFlags = PSH_DEFAULT | PSH_PROPSHEETPAGE | PSH_NOAPPLYNOW;
@@ -1070,18 +1034,18 @@ void downloadSpecified() {
 	mainQueue->addOperationToQueue(qi);
 }
 
-void upload(BOOL uploadCached, BOOL uploadUncached) {
+void upload(BOOL uploadCached, BOOL uploadUncached, void * BufferID) {
 	if (!connected)
 		return;
 
-//UNICODE WARNING
-//notepad only supports ANSI chars at the time of writing (v4.3), so CreateFileA is used
-//as soon as unicode support is added change this
-
 	TCHAR * curFile;
-	char * openFile = new char[MAX_PATH];
-	SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)openFile);
-	HANDLE hOpenFile = CreateFileA(openFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	TCHAR * openFile = new TCHAR[MAX_PATH];
+	if (BufferID != NULL) {
+		SendMessage(nppData._nppHandle,NPPM_GETFULLPATHFROMBUFFERID,(WPARAM)BufferID,(LPARAM)openFile);
+	} else {
+		SendMessage(nppData._nppHandle,NPPM_GETFULLCURRENTPATH,0,(LPARAM)openFile);
+	}
+	HANDLE hOpenFile = CreateFile(openFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if (openFile == INVALID_HANDLE_VALUE) {
 		err(TEXT("Unable to open the file"));
@@ -1093,16 +1057,8 @@ void upload(BOOL uploadCached, BOOL uploadUncached) {
 	uld->targetTreeDir = NULL;
 	uld->local = hOpenFile;
 
-#ifdef UNICODE	//Convert curFile to unicode
-	TCHAR * curFileUnicode = new TCHAR[MAX_PATH];
-	MultiByteToWideChar(CP_ACP, 0, openFile, -1, curFileUnicode, MAX_PATH);
-	delete [] openFile;
-	curFile = curFileUnicode;
-	uld->localName = curFileUnicode;
-#else
 	curFile = openFile;
 	uld->localName = curFile;
-#endif
 	
 	//check if FTP valid file;
 	int len = (int)lstrlen(storage);
@@ -1485,7 +1441,7 @@ void onEvent(FTP_Service * service, unsigned int type, int code) {
 								lstrcat(storage, TEXT("\\"));
 						} else {
 							lstrcpy(storage, dllPath);
-							lstrcat(storage, TEXT("\\"));
+							//lstrcat(storage, TEXT("\\"));	//already has backslash
 							lstrcat(storage, pluginName);
 							lstrcat(storage, TEXT("\\"));
 						}
@@ -1792,11 +1748,11 @@ int doDownload(void * param) {
 		}
 	}
 	if (result && dld->openFile) {
-		char * filenameA = new char[MAX_PATH];
-		strcpyTtoA(filenameA, dld->localName, MAX_PATH);
-		SendMessage(nppData._nppHandle,WM_DOOPEN,0,(LPARAM)filenameA);
-		SendMessage(nppData._nppHandle,NPPM_RELOADFILE,(WPARAM)FALSE,(LPARAM)filenameA);
-		delete [] filenameA;
+		TCHAR * filename = new TCHAR[MAX_PATH];
+		lstrcpy(filename, dld->localName);
+		SendMessage(nppData._nppHandle,WM_DOOPEN,0,(LPARAM)filename);
+		SendMessage(nppData._nppHandle,NPPM_RELOADFILE,(WPARAM)FALSE,(LPARAM)filename);
+		delete [] filename;
 	}
 
 	delete [] dld->localName;
@@ -2623,7 +2579,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					return TRUE;
 					break; }
 				case IDM_POPUP_UPLOADFILE: {
-					upload(FALSE, TRUE);	//only allow to upload to current selected folder
+					upload(FALSE, TRUE, NULL);	//only allow to upload to current selected folder
 					return TRUE;
 					break; }
 				case IDM_POPUP_UPLOADOTHERFILE: {
@@ -2667,7 +2623,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 					return TRUE;
 					break; }
 				case IDB_BUTTON_TOOLBAR_UPLOAD: {
-					upload(TRUE, TRUE);		//upload to cached folder is present, else upload to last selected folder
+					upload(TRUE, TRUE, NULL);		//upload to cached folder is present, else upload to last selected folder
 					return TRUE;
 					break;}
 				case IDB_BUTTON_TOOLBAR_SETTINGS: {

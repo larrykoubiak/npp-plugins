@@ -172,9 +172,6 @@ HCURSOR cursorDefault, cursorSplitterHorizontal, cursorSplitterVertical;
 
 //Global strings
 TCHAR * dllName, * dllPath, * iniFile, * storage, * pluginName, * folderDockName, * outputDockName, * folderDockInfo, * outputDockInfo;
-#ifdef UNICODE
-	char * pluginNameA, * dllNameA, * outputDockNameA, * folderDockNameA, * folderDockInfoA, * outputDockInfoA;	//make unicode plugin compatible with ANSI notepad stuff
-#endif
 
 //General settings
 BOOL cacheOnDirect, openOnDirect, renameCache, deleteCache, uploadOnSave, otherCache;
@@ -212,10 +209,14 @@ std::vector< QueueItem * > queueItemVec;
 //Function declarations
 BOOL APIENTRY DllMain(HANDLE hModule,DWORD ul_reason_for_call,LPVOID lpReserved);
 extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData);
-extern "C" __declspec(dllexport) const char * getName();
+extern "C" __declspec(dllexport) const TCHAR * getName();
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF);
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode);
 extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam, LPARAM lParam);
+
+#ifdef UNICODE
+extern "C" __declspec(dllexport) BOOL isUnicode();
+#endif //UNICODE
 
 HWND getCurrentHScintilla(int which);
 void initializePlugin();
@@ -256,7 +257,7 @@ void about();
 void connect();
 void disconnect();
 void download();
-void upload(BOOL uploadCached, BOOL uploadUncached);
+void upload(BOOL uploadCached, BOOL uploadUncached, void * BufferID);	//void* to make sure pointer will fit (set to NULL for current file)
 void uploadSpecified();
 void uploadByName(TCHAR * filename);
 void abortOperation();
