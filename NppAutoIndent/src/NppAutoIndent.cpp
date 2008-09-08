@@ -287,6 +287,7 @@ void triggerIndentSmart(char ch) {
 	LineType prevType = LineEmpty;		//LineType history
 	bool addIndent = false;				//true if we need to indent a level
 	bool outDent = false;				//true if line is outdenting (like closing brace)
+	bool forceSame = false;				//true if same indentation has to be kept
 	bool notFound = true;				//false if line is found which has indent to copy
 
 	int firstOpenLine = -1;				//LineOpen lines need to be tracked
@@ -308,10 +309,11 @@ void triggerIndentSmart(char ch) {
 			break;
 		case LineAccess:
 			possibleMatches = (LineBraceOpen);
-			outDent = true;	//can only match with opening brace, which indents, so outdent it
+			forceSame = true;	//can only match with opening brace, which indents, so prevent that
 			break;
 		case LineBraceOpen:
 			possibleMatches = LineMatchable;
+			forceSame = true;
 			break;
 		case LineBraceClose:
 			possibleMatches = LineBraceOpen;
@@ -374,7 +376,7 @@ void triggerIndentSmart(char ch) {
 				int i = 1;
 				do {
 					getLine(line - i);
-					i--;
+					i++;
 				} while(currentType == LineEmpty && i <= line);
 				if (currentType != LineOpen)	//first open line, add indent
 					addIndent = true;
@@ -393,10 +395,12 @@ void triggerIndentSmart(char ch) {
 
 	int indent = (int)execute(SCI_GETLINEINDENTATION, line);
 	int tabSize = (int)execute(SCI_GETTABWIDTH);
-	if (addIndent)
-		indent += tabSize;		//add a tab
-	if (outDent)
-		indent -= tabSize;		//remove tab
+	if (!forceSame) {
+		if (addIndent)
+			indent += tabSize;		//add a tab
+		if (outDent)
+			indent -= tabSize;		//remove tab
+	}
 	indent = max(0, indent);
 	execute(SCI_SETLINEINDENTATION, startLine, indent);	//perform indent
 

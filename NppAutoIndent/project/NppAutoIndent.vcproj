@@ -253,6 +253,9 @@
 			<File
 				RelativePath="..\src\NppAutoIndent.h">
 			</File>
+			<File
+				RelativePath="..\src\resource.h">
+			</File>
 			<Filter
 				Name="NPP"
 				Filter="">
