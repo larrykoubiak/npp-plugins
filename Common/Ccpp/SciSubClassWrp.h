@@ -1,5 +1,5 @@
-//this file is part of notepad++
-//Copyright (C)2003 Don HO ( donho@altern.org )
+//this file is part of plugins common
+//Copyright (C)2008 Loon Chew Yeo & Jens Lorenz
 //
 //This program is free software; you can redistribute it and/or
 //modify it under the terms of the GNU General Public License
@@ -15,14 +15,16 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+#ifndef SCI_SUB_CLASS_WRP_H
+#define SCI_SUB_CLASS_WRP_H
+
+#include "Scintilla.h"
+
+
 class SciSubClassWrp
 {
 public:
 	HWND hWnd;
-	LRESULT (WINAPI *SciCallWndProc) (WNDPROC,HWND,UINT,WPARAM,LPARAM);
-	int (* SciFunc) (void*, int, int, int);
-	void * SciPtr;
-	WNDPROC OrigSciWndProc;
 
 	SciSubClassWrp()
 		:
@@ -58,7 +60,17 @@ public:
 		return SciFunc(SciPtr, static_cast<int>(Msg), static_cast<int>(wParam), static_cast<int>(lParam));
 	};
 
+LRESULT CALLBACK CallScintillaWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp )
+	{
+		return SciCallWndProc( OrigSciWndProc, hwnd, msg, wp, lp );
+	}
+
 private:
+INAPI *SciCallWndProc) (WNDPROC,HWND,UINT,WPARAM,LPARAM);
+	int (* SciFunc) (void*, int, int, int);
+	void * SciPtr;
+	WNDPROC OrigSciWndProc;
+
 	void SubclassScintillaWndProc( WNDPROC NewWndProc )
 	{
 		if ( ::IsWindowUnicode( hWnd ) )
@@ -73,3 +85,5 @@ private:
 		}
 	}
 };
+
+#endif
