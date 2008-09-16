@@ -20,13 +20,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "PluginInterface.h"
+#include <vector>
 
 const int LINESIZE = 4096;
+const int INIBUFFER = 1024;
 
 enum IndentType {
 	IndentNone=0,		//No indenting
-	IndentBlock=1,	//Keep current indent
-	IndentSmart=2		//Adjust indent to syntax
+	IndentPrevious=1,	//Copy previous line
+	IndentBlock=2,		//Keep current indent
+	IndentSmart=3		//Adjust indent to syntax
 };
 
 enum LineType {
@@ -51,11 +54,15 @@ bool initializedPlugin = false;
 IndentType currentIndent = IndentNone;
 
 NppData nppData;
-const int nrFunc = 3;
+const int nrFunc = 6;
 FuncItem funcItems[nrFunc];
 TCHAR iniFile[MAX_PATH];
 
 char lineBuffer[LINESIZE];
+std::vector<int> indentCLangs;
+bool isEnabled = false;			//true if indenting is allowed (ie correct language)
+bool overrideActive = false;	//true if indent always allowed
+
 
 //When character is typed, this gets set properly:
 int currentLine = -1;
@@ -80,12 +87,16 @@ extern "C" __declspec(dllexport) BOOL isUnicode();
 HWND getCurrentHScintilla(int which);
 void initializePlugin();
 void deinitializePlugin();
+void readSettings();
+void writeSettings();
 
 //Menu
 void indentOff();
+void indentPrevious();
 void indentBlock();
 void indentSmart();
 void about();
+void override();
 
 //Modify menu
 void setMenu();
@@ -94,10 +105,12 @@ void setMenu();
 void preChar(const int ch_int);
 void onChar(const int ch);
 void triggerIndentNone(char ch);
+void triggerIndentPrevious(char ch);
 void triggerIndentBlock(char ch);
 void triggerIndentSmart(char ch);
 
 //Helper funcs
+void checkDocumentType();
 void getLine(int line);
 LineType getLineType();
 int findBraceOpenLine(int line);

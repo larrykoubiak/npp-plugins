@@ -13,8 +13,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,1,0
- PRODUCTVERSION 1,1,1,0
+ FILEVERSION 1,2,0,0
+ PRODUCTVERSION 1,2,0,0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -31,9 +31,9 @@ BEGIN
         BEGIN
             VALUE "FileDescription", "AutoIndent Plugin for Notepad++, a free (GNU) source code editor"
 #ifdef UNICODE
-            VALUE "FileVersion", "1.1.1 Unicode"
+            VALUE "FileVersion", "1.2 Unicode"
 #else
-            VALUE "FileVersion", "1.1.1 ANSI"
+            VALUE "FileVersion", "1.2 ANSI"
 #endif
             VALUE "InternalName", "NppAutoIndent"
             VALUE "LegalCopyright", "Copyright (C) 2008"
@@ -43,7 +43,7 @@ BEGIN
             VALUE "OriginalFilename", "NppAutoIndentA.dll"
 #endif
             VALUE "ProductName", "NppAutoIndent"
-            VALUE "ProductVersion", "1.1.1"
+            VALUE "ProductVersion", "1.2"
         END
     END
     BLOCK "VarFileInfo"

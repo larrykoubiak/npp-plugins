@@ -89,21 +89,27 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
 	//ZeroMemory(&funcItem, sizeof(FuncItem));
 	clearmem(funcItems, sizeof(FuncItem) * nrFunc);
 	lstrcpy(funcItems[0]._itemName, TEXT("Auto Indent off"));
-	lstrcpy(funcItems[1]._itemName, TEXT("Block Indent"));
-	lstrcpy(funcItems[2]._itemName, TEXT("Smart Indent"));
-	//lstrcpy(funcItems[3]._itemName, TEXT("-"));
-	//lstrcpy(funcItems[4]._itemName, TEXT("Aboot"));
+	lstrcpy(funcItems[1]._itemName, TEXT("Previous line"));
+	lstrcpy(funcItems[2]._itemName, TEXT("Block Indent"));
+	lstrcpy(funcItems[3]._itemName, TEXT("Smart Indent"));
+	lstrcpy(funcItems[4]._itemName, TEXT("-"));
+	lstrcpy(funcItems[5]._itemName, TEXT("Ignore language"));
+	//lstrcpy(funcItems[6]._itemName, TEXT("Aboot"));
+
 	funcItems[0]._pFunc = &indentOff;
-	funcItems[1]._pFunc = &indentBlock;
-	funcItems[2]._pFunc = &indentSmart;
-	//funcItems[3]._pFunc = NULL;
-	//funcItems[4]._pFunc = &about;
+	funcItems[1]._pFunc = &indentPrevious;
+	funcItems[2]._pFunc = &indentBlock;
+	funcItems[3]._pFunc = &indentSmart;
+	funcItems[4]._pFunc = NULL;
+	funcItems[5]._pFunc = &override;
+	//funcItems[6]._pFunc = &about;
 	return funcItems;
 }
 
 extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 	if (((notifyCode->nmhdr.hwndFrom == nppData._scintillaMainHandle) ||
 		 (notifyCode->nmhdr.hwndFrom == nppData._scintillaSecondHandle))) {
+		hScint = (HWND)(notifyCode->nmhdr.hwndFrom);
 		switch (notifyCode->nmhdr.code) {
 			case SCN_MODIFIED: {
 				break;
@@ -117,7 +123,6 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 					onChar(currentCharacter);
 				break;
 			case SCN_CHARADDED: {
-				hScint = (HWND)notifyCode->nmhdr.hwndFrom;
 				//Char is already added, but styling is not done yet
 				//Therefore, setup everything and do it later when styling IS added
 				preChar(notifyCode->ch);
@@ -128,11 +133,16 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode) {
 	} else if (notifyCode->nmhdr.hwndFrom == nppData._nppHandle) {
 		switch(notifyCode->nmhdr.code) {
 			case NPPN_READY:	//Can set menu stuff
-				setMenu();
+				checkDocumentType();
+				//setMenu();
 				break;
 			case NPPN_SHUTDOWN: {	//Notepad++ is shutting down, cleanup everything
 				deinitializePlugin();
 				break; }
+			case NPPN_BUFFERACTIVATED:
+			case NPPN_LANGCHANGED:
+				checkDocumentType();
+				break;
 		}
 	}
 
@@ -158,9 +168,7 @@ void initializePlugin() {
 	if (initializedPlugin)
 		return;
 
-	int currentIndentInt = ::GetPrivateProfileInt(TEXT("NppAutoIndent"), TEXT("IndentType"), 0, iniFile);
-	if (currentIndentInt >= IndentNone && currentIndentInt <= IndentSmart)
-		currentIndent = (IndentType)currentIndentInt;
+	readSettings();
 
 	initializedPlugin = true;
 }
@@ -169,16 +177,70 @@ void deinitializePlugin() {
 	if (!initializedPlugin)
 		return;
 
+	writeSettings();
+
+	initializedPlugin = false;
+}
+
+void readSettings() {
+	int currentIndentInt = ::GetPrivateProfileInt(TEXT("NppAutoIndent"), TEXT("IndentType"), 0, iniFile);
+	if (currentIndentInt >= IndentNone && currentIndentInt <= IndentSmart)
+		currentIndent = (IndentType)currentIndentInt;
+
+	overrideActive = ::GetPrivateProfileInt(TEXT("NppAutoIndent"), TEXT("Override"), 0, iniFile) != 0;
+
+	TCHAR * string = new TCHAR[INIBUFFER];
+	::GetPrivateProfileString(TEXT("NppAutoIndent"), TEXT("CLangs"), TEXT(""), string, INIBUFFER, iniFile);
+	if (*string != 0) {
+		TCHAR * token = _tcstok(string, TEXT(";"));
+		while(token != NULL) {
+			int lang = _ttoi(token);
+			if (lang > 0) {	//if its zero its invalid number or SCLEX_CONTAINER, which is not used in N++
+				indentCLangs.push_back(lang);
+			}
+			token = _tcstok(NULL, TEXT(";"));
+		}
+	} else {
+		indentCLangs.push_back(L_C);
+		indentCLangs.push_back(L_CPP);
+		indentCLangs.push_back(L_JAVA);
+		indentCLangs.push_back(L_JS);
+		indentCLangs.push_back(L_FLASH);
+		indentCLangs.push_back(L_PHP);
+		indentCLangs.push_back(L_CS);
+		indentCLangs.push_back(L_OBJC);
+	}
+	delete [] string;
+}
+
+void writeSettings() {
 	TCHAR value[10];
 	wsprintf(value, TEXT("%d"), currentIndent);
 	::WritePrivateProfileString(TEXT("NppAutoIndent"), TEXT("IndentType"), value, iniFile);
 
-	initializedPlugin = false;
+	::WritePrivateProfileString(TEXT("NppAutoIndent"), TEXT("Override"), overrideActive?TEXT("1"):TEXT("0"), iniFile);
+
+	TCHAR * string = new TCHAR[INIBUFFER];	//overflow not possible, input is limited to INIBUFFER
+	int offset = 0;
+	size_t size = indentCLangs.size();
+	for(size_t i = 0; i < size; i++) {
+		offset += wsprintf(string+offset, TEXT("%d;"), indentCLangs[i]);
+	}
+	::WritePrivateProfileString(TEXT("NppAutoIndent"), TEXT("CLangs"), string, iniFile);
+	delete [] string;
+
+	indentCLangs;
+
 }
 
 //For menu
 void indentOff() {
 	currentIndent = IndentNone;
+	setMenu();
+}
+
+void indentPrevious() {
+	currentIndent = IndentPrevious;
 	setMenu();
 }
 
@@ -196,10 +258,25 @@ void about() {
 	::MessageBox(nppData._nppHandle, TEXT("NppAutoIndent for C-Style indenting. Crappy but it does the job"), TEXT("Unhelpful message"), MB_OK);
 }
 
+void override() {
+	overrideActive = !overrideActive;
+	setMenu();
+}
+
 //Modify menu
 void setMenu() {
 	HMENU nppMenu = (HMENU)::SendMessage(nppData._nppHandle, NPPM_GETMENUHANDLE, 0, 0);
-	CheckMenuRadioItem(nppMenu, funcItems[0]._cmdID, funcItems[2]._cmdID, funcItems[currentIndent]._cmdID, MF_BYCOMMAND);
+	::CheckMenuRadioItem(nppMenu, funcItems[IndentNone]._cmdID, funcItems[IndentSmart]._cmdID, funcItems[currentIndent]._cmdID, MF_BYCOMMAND);
+
+	UINT value = MF_BYCOMMAND | (overrideActive?MF_CHECKED:MF_UNCHECKED);
+	::CheckMenuItem(nppMenu, funcItems[5]._cmdID, value);
+
+	bool enabled = (isEnabled || overrideActive);
+	value = MF_BYCOMMAND | (enabled?0:MF_GRAYED);
+	for(int i = IndentNone; i <= IndentSmart; i++) {
+		::EnableMenuItem(nppMenu, funcItems[i]._cmdID, value);
+	}
+
 	/*
 	MENUITEMINFO mii;
 	clearmem(&mii, sizeof(mii));
@@ -223,6 +300,9 @@ void preChar(const int ch_int) {
 void onChar(const int ch_int) {
 	handleChar = false;	//done with character after onChar is done
 
+	if (!isEnabled && !overrideActive)
+		return;
+
 	if (ch_int < 0 || ch_int > 255)	//there are no important characters outside this range
 		return;
 
@@ -230,6 +310,10 @@ void onChar(const int ch_int) {
 	switch(currentIndent) {
 		case IndentNone:
 			//triggerIndentNone(ch);
+			break;
+		case IndentPrevious:
+			if (ch == '\r' || ch == '\n')
+			triggerIndentPrevious(ch);
 			break;
 		case IndentBlock:
 			if (ch == '\r' || ch == '\n')
@@ -247,6 +331,23 @@ void onChar(const int ch_int) {
 void triggerIndentNone(char ch) {
 	//Do nothing
 	return;
+};
+
+void triggerIndentPrevious(char ch) {
+	int line = currentLine;
+	if (line == 0)
+		return;
+
+	line--;
+	getLine(line);
+
+	int indent = (int)execute(SCI_GETLINEINDENTATION, line);
+	execute(SCI_SETLINEINDENTATION, currentLine, indent);	//perform indent
+	//If we added a newline, the cursor is at the start of the line and has to be moved to the end if the indentation
+	if (ch == '\r' || ch == '\n') {
+		int pos = (int)execute(SCI_GETLINEINDENTPOSITION, currentLine);
+		execute(SCI_GOTOPOS, pos);
+	}
 }
 
 void triggerIndentBlock(char ch) {
@@ -412,6 +513,23 @@ void triggerIndentSmart(char ch) {
 }
 
 //helper functions
+void checkDocumentType() {
+	int langID = L_TXT;
+	::SendMessage(nppData._nppHandle, NPPM_GETCURRENTLANGTYPE, 0, (LPARAM)&langID);
+	size_t size = indentCLangs.size();
+	bool found = false;
+	for(size_t i = 0; i < size; i++) {
+		if (indentCLangs[i] == langID) {
+			found = true;
+			break;
+		}
+	}
+
+	isEnabled = found;
+	setMenu();
+	return;
+}
+
 void getLine(int line) {
 	/*
 	Fills buffers with data from line

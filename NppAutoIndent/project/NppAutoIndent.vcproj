@@ -77,7 +77,8 @@
 				AdditionalIncludeDirectories="..\..\Common\Ccpp"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPAUTOINDENT_EXPORTS"
 				StringPooling="TRUE"
-				ExceptionHandling="FALSE"
+				MinimalRebuild="FALSE"
+				ExceptionHandling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
@@ -88,11 +89,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="LIBCTINY.LIB shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib"
 				OutputFile="..\build\NppAutoIndentA.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\lib"
-				IgnoreAllDefaultLibraries="TRUE"
+				IgnoreAllDefaultLibraries="FALSE"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -126,16 +127,16 @@
 			OutputDirectory="..\build\$(ConfigurationName)"
 			IntermediateDirectory="..\build\$(ConfigurationName)"
 			ConfigurationType="2"
-			CharacterSet="2">
+			CharacterSet="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="1"
 				GlobalOptimizations="TRUE"
 				FavorSizeOrSpeed="2"
 				AdditionalIncludeDirectories="..\..\Common\Ccpp"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPAUTOINDENT_EXPORTS;UNICODE;_UNICODE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPAUTOINDENT_EXPORTS"
 				StringPooling="TRUE"
-				ExceptionHandling="FALSE"
+				ExceptionHandling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
 				UsePrecompiledHeader="0"
@@ -146,11 +147,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="LIBCTINY.LIB shlwapi.lib"
+				AdditionalDependencies="shlwapi.lib"
 				OutputFile="..\build\NppAutoIndent.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\lib"
-				IgnoreAllDefaultLibraries="TRUE"
+				IgnoreAllDefaultLibraries="FALSE"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -185,12 +186,12 @@
 			OutputDirectory="..\build\$(ConfigurationName)"
 			IntermediateDirectory="..\build\$(ConfigurationName)"
 			ConfigurationType="2"
-			CharacterSet="2">
+			CharacterSet="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\Common\Ccpp"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NPPAUTOINDENT_EXPORTS;UNICODE;_UNICODE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NPPAUTOINDENT_EXPORTS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
