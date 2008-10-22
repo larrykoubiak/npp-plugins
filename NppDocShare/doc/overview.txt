@@ -1,0 +1,15 @@
+For the curious, How it all works:
+
+When Scintilla fires an event, it sends the position and text associated to the other client(s). Then two things happen:
+Locally, a record is made in the form of a linked list of the event that occured. This record will be kept untill the other client acknowledges the event, at which point the record wil lbe marked as confirmed.
+Externally, the arrived event will be matched against the local change records, and shifted and modified if neccessary. The resulting range and position are then applied to the local scintilla. The event will immediatly be marked as confirmed (with the exception of a external delete, which is recorded seperatly, look at the implementation for details).
+
+DocView is the representation of the records and the local document. When counting only the local changes, running through it's linked list you should be able to map the entire file that is loaded. When looking at records that have not yet been confirmed, you can determine how the other client will see your file, except for any local changes it has itself.
+The (double) linked list consists of DocRange objects, each with length, type (Delete, Insert, Confirmed or special cases thereof) and time of occurence.
+
+Most occuring conflicts are text being inserted at the same location, and the same text being deleted.
+Insertion conflict are resolved using a precedence token, which are dealt by the server (currently, first to connect gets higher precedence), deletion conflict are resolved by determining any overlap and deleting all the text combined, ignoring any newly inserted text.
+
+Currently one client is allowed, thoguh parts of the code have been written to support more, but the DocView class is probably not able to handle that well.
+
+NppDocShare.cpp is mostly interface, the magick happens inside DocView.cpp.

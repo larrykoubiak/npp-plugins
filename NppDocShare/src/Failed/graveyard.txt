@@ -1,0 +1,6 @@
+These files were an early attempt at keeping track of changes.
+It failed horribly, but I spent a lot of time on it and some
+algorithms still apply.
+
+The history keeps track of TextEvent objects that occured.
+TextEvent represents a change, defined with TextRange

@@ -1,0 +1,113 @@
+#include "afxres.h"
+#include "resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_DIALOG_DOCK DIALOGEX 0, 0, 160, 429
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Address:",IDC_STATIC,6,6,30,8
+    EDITTEXT        IDC_EDIT_ADDRESS,36,6,78,14,ES_AUTOHSCROLL
+    LTEXT           "Port:",IDC_STATIC,6,30,17,8
+    EDITTEXT        IDC_EDIT_PORT,36,30,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    DEFPUSHBUTTON   "Connect",IDC_BTN_CONNECT,6,48,50,14
+    PUSHBUTTON      "Serve",IDC_BTN_SERVE,66,48,44,14
+    PUSHBUTTON      "Disconnect",IDC_BTN_DISCONNECT,6,66,50,14,WS_DISABLED
+    LTEXT           "Status:",IDC_STATIC,6,90,24,8
+    EDITTEXT        IDC_EDIT_STATUS,36,90,96,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Messages:",IDC_STATIC,6,108,35,8
+    EDITTEXT        IDC_EDIT_HISTORY,6,120,126,108,ES_MULTILINE | 
+                    ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | 
+                    WS_VSCROLL
+    EDITTEXT        IDC_EDIT_MSG,6,234,126,30,ES_MULTILINE | ES_AUTOHSCROLL | 
+                    ES_WANTRETURN | WS_DISABLED | WS_VSCROLL
+    PUSHBUTTON      "Send",IDC_BTN_SEND,84,264,48,12,WS_DISABLED
+    LTEXT           "Connected with:",IDC_STATIC,6,282,54,8
+    LISTBOX         IDC_LIST_CLIENTS,6,294,126,36,LBS_NOINTEGRALHEIGHT | 
+                    LBS_NOSEL | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Resume outgoing data",IDC_BTN_RESUME,54,396,78,14,NOT 
+                    WS_VISIBLE
+    PUSHBUTTON      "Stop outgoing data",IDC_BTN_STOP,54,414,78,14,NOT 
+                    WS_VISIBLE
+    PUSHBUTTON      "Step",IDC_BTN_STEP,6,414,36,14,NOT WS_VISIBLE
+    PUSHBUTTON      "MD5",IDC_BTN_HASH,6,396,36,14,NOT WS_VISIBLE
+END
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_BITMAP_TOOLBAR      BITMAP                  "bitmaps\\maintoolbar_docs.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ICON_DIALOG         ICON                    "bitmaps\\icon_messages.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 0,1,0,0
+ PRODUCTVERSION 0,1,0,0
+ FILEFLAGSMASK 0x17L
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080004b0"
+        BEGIN
+            VALUE "FileDescription", "Collaborative Edit Plugin for Notepad++, a free (GNU) source code editor"
+#ifdef UNICODE
+            VALUE "FileVersion", "0.1 Unicode"
+#else
+            VALUE "FileVersion", "0.1 ANSI"
+#endif
+            VALUE "InternalName", "NppDocShare"
+            VALUE "LegalCopyright", "Copyright (C) 2008"
+#ifdef UNICODE
+            VALUE "OriginalFilename", "NppDocShare.dll"
+#else
+            VALUE "OriginalFilename", "NppDocShareA.dll"
+#endif
+            VALUE "ProductName", "NppDocShare"
+            VALUE "ProductVersion", "0.1"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x800, 1200
+    END
+END
+
+
+
+// English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
