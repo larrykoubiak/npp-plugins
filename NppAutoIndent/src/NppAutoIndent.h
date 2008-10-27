@@ -46,6 +46,13 @@ enum LineType {
 	LineMask		=0x3FF		//All LineTypes
 };
 
+enum LineFlags {
+	FlagNone			=0x01,	//No special flags for the line
+	FlagBraceSingle		=0x02,	//The line only contains a brace		//These two are
+	FlagBraceText		=0x04,	//The line contains a brace and text	//mutex!
+	FlagMask			=0x07	//All LineFlags
+};
+
 //Cannot match empty lines or labels, XOR them out
 #define LineMatchable (LineMask ^ LineEmpty ^ LineLabel ^ LinePreprocessor ^ LineComment)
 
@@ -69,6 +76,7 @@ int currentLine = -1;
 int currentPos = -1;
 int currentCharacter = -1;
 LineType currentType = LineEmpty;
+LineFlags currentFlags = FlagNone;
 HWND hScint = NULL;
 bool handleChar = false;
 
@@ -113,6 +121,7 @@ void triggerIndentSmart(char ch);
 void checkDocumentType();
 void getLine(int line);
 LineType getLineType();
+LineFlags getLineFlags();	//call only after calling getLineType()
 int findBraceOpenLine(int line);
 
 LRESULT execute(UINT msg, WPARAM = 0, LPARAM = 0);

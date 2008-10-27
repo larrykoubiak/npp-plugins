@@ -380,21 +380,22 @@ void triggerIndentSmart(char ch) {
 
 	The other LineTypes dont trigger indent, but they do exist
 	*/
-	getLine(currentLine);				//retrieve info about current line
+	getLine(currentLine);					//retrieve info about current line
 
-	int startLine = currentLine;		//line to indent
-	int line = currentLine;				//line currently looking at for indent to set
-	LineType startType = currentType;	//Type of line with indent to set
-	LineType prevType = LineEmpty;		//LineType history
-	bool addIndent = false;				//true if we need to indent a level
-	bool outDent = false;				//true if line is outdenting (like closing brace)
-	bool forceSame = false;				//true if same indentation has to be kept
-	bool notFound = true;				//false if line is found which has indent to copy
+	int startLine = currentLine;			//line to indent
+	int line = currentLine;					//line currently looking at for indent to set
+	LineType startType = currentType;		//Type of line with indent to set
+	LineType prevType = LineEmpty;			//LineType history
+	LineFlags startFlags = currentFlags;	//Flags of line with indent to set
+	bool addIndent = false;					//true if we need to indent a level
+	bool outDent = false;					//true if line is outdenting (like closing brace)
+	bool forceSame = false;					//true if same indentation has to be kept
+	bool notFound = true;					//false if line is found which has indent to copy
 
-	int firstOpenLine = -1;				//LineOpen lines need to be tracked
-	bool closingOpen = false;			//To keep track of LineOpen lines
+	int firstOpenLine = -1;					//LineOpen lines need to be tracked
+	bool closingOpen = false;				//To keep track of LineOpen lines
 
-	int possibleMatches = 0;			//Mask if which LineTypes can be used to match against
+	int possibleMatches = 0;				//Mask if which LineTypes can be used to match against
 
 	//First check if we can apply indent immediatly without looking (labels)
 	switch(startType) {
@@ -414,12 +415,20 @@ void triggerIndentSmart(char ch) {
 			break;
 		case LineBraceOpen:
 			possibleMatches = LineMatchable;
+			//forceSame = true;
+			break;
+		case LineBraceClose: {
+			//outDent = true;
 			forceSame = true;
-			break;
-		case LineBraceClose:
-			possibleMatches = LineBraceOpen;
-			outDent = true;
-			break;
+			int matchline = findBraceOpenLine(line);
+			if (matchline != -1) {	//only if found adjust line
+				line = matchline + 1;	//offset for following adjustment
+				getLine(matchline);
+				possibleMatches = currentType;	//match the line that was returned
+			} else {
+				return;	//there is nothing to match, so just leave it as it is
+			}
+			break; }
 		default:
 			//Everything else doesnt trigger indenting
 			return;
@@ -437,25 +446,22 @@ void triggerIndentSmart(char ch) {
 			continue;	//ignore line
 		}
 
+		notFound = false;
 		switch(currentType) {
 			case LineCase:
 				if (startType != LineCase) {
 					addIndent = true;
 				}
-				notFound = false;
 				break;
 			case LineAccess:
 				addIndent = true;
-				notFound = false;
 				break;
 			case LineBraceOpen:
 				//Found section we belong to, grab indent and add
-				notFound = false;
 				addIndent = true;
 				break;
 			case LineBraceClose: {
 				//Found closing brace, search for opening brace and base off that
-				notFound = false;
 				int matchline = findBraceOpenLine(line);
 				if (matchline != -1) {	//only if found adjust line
 					line = matchline;
@@ -471,7 +477,6 @@ void triggerIndentSmart(char ch) {
 				} while(currentType == LineEmpty && i <= line);
 				if (currentType == LineOpen)
 					outDent = true;
-				notFound = false;
 				break; }
 			case LineOpen: {
 				int i = 1;
@@ -480,11 +485,16 @@ void triggerIndentSmart(char ch) {
 					i++;
 				} while(currentType == LineEmpty && i <= line);
 				if (currentType != LineOpen)	//first open line, add indent
-					addIndent = true;
-				notFound = false;	
+					if (startType == LineBraceOpen && (startFlags & FlagBraceSingle)) {
+						//In case of ANSI bracket style (new bracket on empty line)
+						//Do not add indent but keep the same level
+					} else {
+						addIndent = true;
+					}
 				break; }
 			default:
 				//Unhandled type, ignore
+				notFound = true;
 				break;
 		}
 		if (notFound)
@@ -558,6 +568,7 @@ void getLine(int line) {
 	}
 
 	currentType = getLineType();
+	currentFlags = getLineFlags();
 }
 
 LineType getLineType() {
@@ -619,6 +630,28 @@ LineType getLineType() {
 		default:
 			return LineOpen;
 	}
+}
+
+LineFlags getLineFlags() {
+	int len = lstrlenA(lineBuffer);
+	int i = 0;
+	while(i < len) {
+		if (lineBuffer[i] == ' '  ||
+			lineBuffer[i] == '\t' ||
+			lineBuffer[i] == '\r' ||
+			lineBuffer[i] == '\n')
+			i++;
+		else
+			break;
+	}
+	if (currentType == LineBraceOpen || currentType == LineBraceClose) {
+		if (lineBuffer[i] != '{' && lineBuffer[i] != '}') {
+			return FlagBraceText;
+		} else {
+			return FlagBraceSingle;
+		}
+	}
+	return FlagNone;
 }
 
 int findBraceOpenLine(int line) {
