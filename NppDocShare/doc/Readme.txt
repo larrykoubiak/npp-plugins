@@ -43,3 +43,9 @@ Dont ask for any of this, when I get to it I try to add it, I'm jsut beginning :
 This thing was made as a fun project. Therefore, I try to make it work right, but dont expect
 miracles (there are other collaborative editors out there that were specifically designed 
 from the ground up as such, but they lacked a little thing, they arent Notepad++ :]).
+
+History:
+-	-
+0.1 is the first release
+Somewhere around Notepad++ 5.1.1 it was renamed from DocShare to NetNote because
+DocShare is for Eclipse
