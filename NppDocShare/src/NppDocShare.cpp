@@ -1,5 +1,5 @@
 /*
-This file is part of NppDocShare Plugin for Notepad++
+This file is part of NppNetNote Plugin for Notepad++
 Copyright (C)2008 Harry <harrybharry@users.sourceforge.net>
 
 This program is free software; you can redistribute it and/or
@@ -97,15 +97,15 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 		//It's possible the directory does not yet exist
 		if (PathFileExists(iniFile) == FALSE) {
 			if (createDirectory(iniFile) == FALSE) {
-				MessageBox(nppData._nppHandle, TEXT("NppDocShare\r\n\r\nUnable to create settings directory"), iniFile, MB_OK);
+				MessageBox(nppData._nppHandle, TEXT("NppNetNote\r\n\r\nUnable to create settings directory"), iniFile, MB_OK);
 			}
 		}
 	}
-	lstrcat(iniFile, TEXT("NppDocShare.ini"));
+	lstrcat(iniFile, TEXT("NppNetNote.ini"));
 
 	HANDLE ini = CreateFile(iniFile,0,FILE_SHARE_READ|FILE_SHARE_WRITE,NULL,OPEN_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
 	if (ini == INVALID_HANDLE_VALUE) {	//opening file failed, creating too, disable plugin
-		MessageBox(nppData._nppHandle, TEXT("NppDocShare\r\n\r\nNo settings were available and unable to create new settingsfile.\r\nThe plugin will not work!"), iniFile, MB_OK|MB_ICONEXCLAMATION);
+		MessageBox(nppData._nppHandle, TEXT("NppNetNote\r\n\r\nNo settings were available and unable to create new settingsfile.\r\nThe plugin will not work!"), iniFile, MB_OK|MB_ICONEXCLAMATION);
 	} else {	//we got our config, lets get profiles
 		CloseHandle(ini);
 		initializePlugin();
@@ -113,7 +113,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notepadPlusData) {
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName() {
-	return TEXT("NppDocShare");
+	return TEXT("NppNetNote");
 }
 
 extern "C" __declspec(dllexport) FuncItem * getFuncsArray(int *nbF) {
@@ -850,7 +850,7 @@ void registerDockableDialog() {
 	tbd.hIconTab = iconDialogDock;									//icon to use
 	tbd.pszAddInfo = dialogTitle;									//Titlebar info pointer										//I dont use it, you can probably make use of it internally
 	tbd.pszModuleName = dllName;									//name of the dll this dialog belongs to (I set this in DLL_ATTACH)
-	tbd.pszName = TEXT("NppDocShare");								//Name for titlebar
+	tbd.pszName = TEXT("NppNetNote");								//Name for titlebar
 	tbd.uMask = DWS_ICONTAB | DWS_DF_CONT_RIGHT | DWS_ADDINFO;		//Flags to use (see docking.h)
 	tbd.hClient = hDialog;											//HWND Handle of window this dock belongs to
 	tbd.iPrevCont = -1;
@@ -1072,7 +1072,7 @@ LRESULT execute(UINT msg, WPARAM wParam, LPARAM lParam) {
 }
 
 void err(LPCTSTR str) {
-	MessageBox(nppData._nppHandle,str,TEXT("NppDocShare Error"),MB_OK);
+	MessageBox(nppData._nppHandle,str,TEXT("NppNetNote Error"),MB_OK);
 }
 
 void Error(LPTSTR lpszFunction) { 
@@ -1088,7 +1088,7 @@ void Error(LPTSTR lpszFunction) {
 	lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT,(lstrlen((LPCTSTR)lpMsgBuf)+lstrlen((LPCTSTR)lpszFunction)+40)*sizeof(TCHAR)); 
 	wsprintf((LPTSTR)lpDisplayBuf,TEXT("%s failed with error %d: %s"),lpszFunction, dw, lpMsgBuf); 
 
-	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("NppDocShare Error"), MB_OK); 
+	MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("NppNetNote Error"), MB_OK); 
 
 	LocalFree(lpMsgBuf);
 	LocalFree(lpDisplayBuf);

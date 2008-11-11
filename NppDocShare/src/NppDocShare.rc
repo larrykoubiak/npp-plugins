@@ -90,14 +90,14 @@ BEGIN
 #else
             VALUE "FileVersion", "0.1 ANSI"
 #endif
-            VALUE "InternalName", "NppDocShare"
+            VALUE "InternalName", "NppNetNote"
             VALUE "LegalCopyright", "Copyright (C) 2008"
 #ifdef UNICODE
-            VALUE "OriginalFilename", "NppDocShare.dll"
+            VALUE "OriginalFilename", "NppNetNote.dll"
 #else
-            VALUE "OriginalFilename", "NppDocShareA.dll"
+            VALUE "OriginalFilename", "NppNetNoteA.dll"
 #endif
-            VALUE "ProductName", "NppDocShare"
+            VALUE "ProductName", "NppNetNote"
             VALUE "ProductVersion", "0.1"
         END
     END

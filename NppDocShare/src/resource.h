@@ -1,5 +1,5 @@
 /*
-This file is part of NppDocShare Plugin for Notepad++
+This file is part of NppNetNote Plugin for Notepad++
 Copyright (C)2008 Harry <harrybharry@users.sourceforge.net>
 
 This program is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-// Used by NppDocShare.rc
+// Used by NppNetNote.rc
 //
 #define IDD_DIALOG_DOCK                 9
 #define IDB_BITMAP_TOOLBAR              104

@@ -1,5 +1,5 @@
 /*
-This file is part of NppDocShare Plugin for Notepad++
+This file is part of NppNetNote Plugin for Notepad++
 Copyright (C)2008 Harry <harrybharry@users.sourceforge.net>
 
 This program is free software; you can redistribute it and/or

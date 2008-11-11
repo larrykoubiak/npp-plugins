@@ -20,7 +20,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src\Network;..\src\Notepad_specific;..\src\Utilities;..\..\Common\Ccpp"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NPPDOCSHARE_EXPORTS;WIN32_LEAN_AND_MEAN"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NPPNETNOTE_EXPORTS;WIN32_LEAN_AND_MEAN"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -33,14 +33,14 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib WS2_32.lib comctl32.lib"
-				OutputFile="..\build\NppDocShareA_D.dll"
+				OutputFile="..\build\NppNetNoteA_D.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="FALSE"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/NppDocShare.pdb"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/NppDocShare.lib"
+				ImportLibrary="$(OutDir)/NppNetNotelib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -75,7 +75,7 @@
 				GlobalOptimizations="TRUE"
 				FavorSizeOrSpeed="2"
 				AdditionalIncludeDirectories="..\src\Network;..\src\Notepad_specific;..\src\Utilities;..\..\Common\Ccpp"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPDOCSHARE_EXPORTS;WIN32_LEAN_AND_MEAN"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPNETNOTE_EXPORTS;WIN32_LEAN_AND_MEAN"
 				StringPooling="TRUE"
 				MinimalRebuild="FALSE"
 				ExceptionHandling="TRUE"
@@ -90,7 +90,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib WS2_32.lib comctl32.lib"
-				OutputFile="..\build\NppDocShareA.dll"
+				OutputFile="..\build\NppNetNoteA.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="FALSE"
@@ -99,7 +99,7 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				OptimizeForWindows98="1"
-				ImportLibrary="$(OutDir)/NppDocShare.lib"
+				ImportLibrary="$(OutDir)/NppNetNote.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -134,7 +134,7 @@
 				GlobalOptimizations="TRUE"
 				FavorSizeOrSpeed="2"
 				AdditionalIncludeDirectories="..\src\Network;..\src\Notepad_specific;..\src\Utilities;..\..\Common\Ccpp"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPDOCSHARE_EXPORTS;WIN32_LEAN_AND_MEAN"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NPPNETNOTE_EXPORTS;WIN32_LEAN_AND_MEAN"
 				StringPooling="TRUE"
 				ExceptionHandling="TRUE"
 				RuntimeLibrary="0"
@@ -148,7 +148,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib WS2_32.lib comctl32.lib"
-				OutputFile="..\build\NppDocShare.dll"
+				OutputFile="..\build\NppNetNote.dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="FALSE"
@@ -157,7 +157,7 @@
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				OptimizeForWindows98="1"
-				ImportLibrary="$(OutDir)/NppDocShare.lib"
+				ImportLibrary="$(OutDir)/NppNetNote.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -191,7 +191,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\src\Network;..\src\Notepad_specific;..\src\Utilities;..\..\Common\Ccpp"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NPPDOCSHARE_EXPORTS;WIN32_LEAN_AND_MEAN"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NPPNETNOTE_EXPORTS;WIN32_LEAN_AND_MEAN"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -204,14 +204,14 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib WS2_32.lib comctl32.lib"
-				OutputFile="..\build\NppDocShare_D.dll"
+				OutputFile="..\build\NppNetNote_D.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="..\lib"
 				IgnoreAllDefaultLibraries="FALSE"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(OutDir)/NppDocShare.pdb"
+				ProgramDatabaseFile="$(OutDir)/NppNetNote.pdb"
 				SubSystem="2"
-				ImportLibrary="$(OutDir)/NppDocShare.lib"
+				ImportLibrary="$(OutDir)/NppNetNote.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
