@@ -18,7 +18,6 @@
 #ifndef NOTEPAD_PLUS_MSGS_H
 #define NOTEPAD_PLUS_MSGS_H
 
-//#include "menuCmdID.h"
 
 enum LangType {L_TXT, L_PHP , L_C, L_CPP, L_CS, L_OBJC, L_JAVA, L_RC,\
 			   L_HTML, L_XML, L_MAKEFILE, L_PASCAL, L_BATCH, L_INI, L_NFO, L_USER,\
@@ -165,7 +164,7 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 			void * info; // defined by plugin
 		};
 
-	#define NPPM_MENUCOMMAND (NPPMSG + 48)
+	#define NPPM_MENUCOMMAND 			(NPPMSG + 48)
 	//void NPPM_MENUCOMMAND(0, int cmdID)
 	// uncomment //#include "menuCmdID.h"
 	// in the beginning of this file then use the command symbols defined in "menuCmdID.h" file
@@ -190,7 +189,7 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 	#define NPPM_ISTABBARHIDE (NPPMSG + 52)
 	// BOOL NPPM_ISTABBARHIDE(0, 0)
 	// returned value : TRUE if tab bar is hidden, otherwise FALSE
-
+	
 	#define NPPM_CHECKDOCSTATUS (NPPMSG + 53)
 	// VOID NPPM_CHECKDOCSTATUS(BOOL, 0)
 
@@ -223,26 +222,57 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 	// allocate fullFilePath with the return values + 1, then call it again to get  full path file name
 
 	#define NPPM_GETBUFFERIDFROMPOS (NPPMSG + 59)
-	// TODO
+	//wParam: Position of document
+	//lParam: View to use, 0 = Main, 1 = Secondary
+	//Returns 0 if invalid
 
 	#define NPPM_GETCURRENTBUFFERID (NPPMSG + 60)
-	// TODO
+	//Returns active Buffer
 
 	#define NPPM_RELOADBUFFERID (NPPMSG + 61)
-	// TODO
+	//Reloads Buffer
+	//wParam: Buffer to reload
+	//lParam: 0 if no alert, else alert
 
-/*
-	#define NPPM_ADDREBAR (NPPMSG + 57)
-	// BOOL NPPM_ADDREBAR(0, REBARBANDINFO *)
-	// Returns assigned ID in wID value of struct pointer
-	#define NPPM_UPDATEREBAR (NPPMSG + 58)
-	// BOOL NPPM_ADDREBAR(INT ID, REBARBANDINFO *)
-	//Use ID assigned with NPPM_ADDREBAR
-	#define NPPM_REMOVEREBAR (NPPMSG + 59)
-	// BOOL NPPM_ADDREBAR(INT ID, 0)
-	//Use ID assigned with NPPM_ADDREBAR
-*/
+	#define NPPM_SETFILENAME (NPPMSG + 63)
+	//wParam: BufferID to rename
+	//lParam: name to set (TCHAR*)
+	//Buffer must have been previously unnamed (eg "new 1" document types)
 
+	#define NPPM_GETBUFFERLANGTYPE (NPPMSG + 64)
+	//wParam: BufferID to get LangType from
+	//lParam: 0
+	//Returns as int, see LangType. -1 on error
+
+	#define NPPM_SETBUFFERLANGTYPE (NPPMSG + 65)
+	//wParam: BufferID to set LangType of
+	//lParam: LangType
+	//Returns TRUE on success, FALSE otherwise
+	//use int, see LangType for possible values
+	//L_USER and L_EXTERNAL are not supported
+
+	#define NPPM_GETBUFFERENCODING (NPPMSG + 66)
+	//wParam: BufferID to get encoding from
+	//lParam: 0
+	//returns as int, see UniMode. -1 on error
+
+	#define NPPM_SETBUFFERENCODING (NPPMSG + 67)
+	//wParam: BufferID to set encoding of
+	//lParam: format
+	//Returns TRUE on success, FALSE otherwise
+	//use int, see UniMode
+	//Can only be done on new, unedited files
+
+	#define NPPM_GETBUFFERFORMAT (NPPMSG + 68)
+	//wParam: BufferID to get format from
+	//lParam: 0
+	//returns as int, see formatType. -1 on error
+
+	#define NPPM_SETBUFFERFORMAT (NPPMSG + 69)
+	//wParam: BufferID to set format of
+	//lParam: format
+	//Returns TRUE on success, FALSE otherwise
+	//use int, see formatType
 
 #define	RUNCOMMAND_USER    (WM_USER + 3000)
 	#define NPPM_GETFULLCURRENTPATH		(RUNCOMMAND_USER + FULL_CURRENT_PATH)
@@ -261,11 +291,10 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 	#define NPPM_GETCURRENTLINE			(RUNCOMMAND_USER + CURRENT_LINE)
 	// INT NPPM_GETCURRENTLINE(0, 0)
 	// return the caret current position line
-	#define NPPM_GETCURRENTCOLUMN			(RUNCOMMAND_USER + CURRENT_COLUMN)
+	#define NPPM_GETCURRENTCOLUMN		(RUNCOMMAND_USER + CURRENT_COLUMN)
 	// INT NPPM_GETCURRENTCOLUMN(0, 0)
 	// return the caret current position column
 
-		
 		#define VAR_NOT_RECOGNIZED 0
 		#define FULL_CURRENT_PATH 1
 		#define CURRENT_DIRECTORY 2
@@ -280,50 +309,74 @@ enum winVer{WV_UNKNOWN, WV_WIN32S, WV_95, WV_98, WV_ME, WV_NT, WV_W2K, WV_XP, WV
 
 // Notification code
 #define NPPN_FIRST 1000
-	#define NPPN_READY (NPPN_FIRST + 1) // To notify plugins that all the procedures of launchment of notepad++ are done.
+
+	// To notify plugins that all the procedures of launchment of notepad++ are done.
+	#define NPPN_READY					(NPPN_FIRST + 1)
 	//scnNotification->nmhdr.code = NPPN_READY;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = 0;
 
-	#define NPPN_TBMODIFICATION (NPPN_FIRST + 2) // To notify plugins that toolbar icons can be registered
+	// To notify plugins that toolbar icons can be registered
+	#define NPPN_TBMODIFICATION			(NPPN_FIRST + 2)
 	//scnNotification->nmhdr.code = NPPN_TB_MODIFICATION;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = 0;
 
-	#define NPPN_FILEBEFORECLOSE (NPPN_FIRST + 3) // To notify plugins that the current file is about to be closed
+	// To notify plugins that the current file is about to be closed
+	#define NPPN_FILEBEFORECLOSE		(NPPN_FIRST + 3)
 	//scnNotification->nmhdr.code = NPPN_FILEBEFORECLOSE;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = BufferID;
 
-	#define NPPN_FILEOPENED (NPPN_FIRST + 4) // To notify plugins that the current file is just opened
+	// To notify plugins that the current file is just opened
+	#define NPPN_FILEOPENED				(NPPN_FIRST + 4)
 	//scnNotification->nmhdr.code = NPPN_FILEOPENED;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = BufferID;
 
-	#define NPPN_FILECLOSED (NPPN_FIRST + 5) // To notify plugins that the current file is just closed
+	// To notify plugins that the current file is about to be closed
+	#define NPPN_FILECLOSED				(NPPN_FIRST + 5)
 	//scnNotification->nmhdr.code = NPPN_FILECLOSED;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = BufferID;
 
-	#define NPPN_FILEBEFOREOPEN (NPPN_FIRST + 6) // To notify plugins that the current file is about to be opened
+	// To notify plugins that the current file is about to be opened
+	#define NPPN_FILEBEFOREOPEN			(NPPN_FIRST + 6)
 	//scnNotification->nmhdr.code = NPPN_FILEBEFOREOPEN;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = BufferID;
-	
-	#define NPPN_FILEBEFORESAVE (NPPN_FIRST + 7) // To notify plugins that the current file is about to be saved
-	//scnNotification->nmhdr.code = NPPN_FILEBEFOREOPEN;
-	//scnNotification->nmhdr.hwndFrom = hwndNpp;
-	//scnNotification->nmhdr.idFrom = BufferID;
-	
-	#define NPPN_FILESAVED (NPPN_FIRST + 8) // To notify plugins that the current file is just saved
-	//scnNotification->nmhdr.code = NPPN_FILECLOSED;
+
+	// To notify plugins that the current file is just saved
+	#define NPPN_FILEBEFORESAVE			(NPPN_FIRST + 7)
+	//scnNotification->nmhdr.code = NPPN_FILEBEFORESAVE;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = BufferID;
 
+	// To notify plugins that the current file is about to be saved
+	#define NPPN_FILESAVED				(NPPN_FIRST + 8)
+	//scnNotification->nmhdr.code = NPPN_FILESAVED;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = BufferID;
 
-	#define NPPN_SHUTDOWN (NPPN_FIRST + 9) // To notify plugins that Notepad++ is about to be shutdowned.
-	//scnNotification->nmhdr.code = NPPN_SHUTDOWN;
+	// To notify plugins that Notepad++ is about to be shutdowned.
+	#define NPPN_SHUTDOWN				(NPPN_FIRST + 9)
+	//scnNotification->nmhdr.code = NPPN_SHOUTDOWN;
 	//scnNotification->nmhdr.hwndFrom = hwndNpp;
 	//scnNotification->nmhdr.idFrom = 0;
+
+	// To notify plugins that a buffer was activated (put to foreground).
+	#define NPPN_BUFFERACTIVATED		(NPPN_FIRST + 10)
+	//scnNotification->nmhdr.code = NPPN_BUFFERACTIVATED;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = activatedBufferID;
+
+	// To notify plugins that the language in the current doc is just changed.
+	#define NPPN_LANGCHANGED			(NPPN_FIRST + 11)
+	//scnNotification->nmhdr.code = NPPN_LANGCHANGED;
+	//scnNotification->nmhdr.hwndFrom = hwndNpp;
+	//scnNotification->nmhdr.idFrom = currentBufferID;
+
+#define NPPM_DOOPEN						(SCINTILLA_USER   + 8)
+
 
 #endif //NOTEPAD_PLUS_MSGS_H
