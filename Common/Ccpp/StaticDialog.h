@@ -21,6 +21,7 @@
 //#include "resource.h"
 #include "Window.h"
 #include <TCHAR.h>
+#include "notepad_plus_msgs.h"
 
 #include <uxtheme.h>
 
