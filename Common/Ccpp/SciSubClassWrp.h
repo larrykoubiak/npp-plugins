@@ -45,14 +45,18 @@ public:
 
 	void CleanUp()
 	{
-		if ( ::IsWindowUnicode( hWnd ) )
+		if (OrigSciWndProc != 0)
 		{
-			SetWindowLongW( hWnd, GWL_WNDPROC, (LONG) OrigSciWndProc );
+			if ( ::IsWindowUnicode( hWnd ) )
+			{
+				SetWindowLongW( hWnd, GWL_WNDPROC, (LONG) OrigSciWndProc );
+			}
+			else
+			{
+				SetWindowLongA( hWnd, GWL_WNDPROC, (LONG) OrigSciWndProc );
+			}
 		}
-		else
-		{
-			SetWindowLongA( hWnd, GWL_WNDPROC, (LONG) OrigSciWndProc );
-		}
+		OrigSciWndProc = 0;
 	}
 
 	LRESULT execute(UINT Msg, WPARAM wParam=0, LPARAM lParam=0) const
@@ -60,13 +64,13 @@ public:
 		return SciFunc(SciPtr, static_cast<int>(Msg), static_cast<int>(wParam), static_cast<int>(lParam));
 	};
 
-LRESULT CALLBACK CallScintillaWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp )
+	LRESULT CALLBACK CallScintillaWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp )
 	{
 		return SciCallWndProc( OrigSciWndProc, hwnd, msg, wp, lp );
 	}
 
 private:
-INAPI *SciCallWndProc) (WNDPROC,HWND,UINT,WPARAM,LPARAM);
+	LRESULT (WINAPI *SciCallWndProc) (WNDPROC,HWND,UINT,WPARAM,LPARAM);
 	int (* SciFunc) (void*, int, int, int);
 	void * SciPtr;
 	WNDPROC OrigSciWndProc;
