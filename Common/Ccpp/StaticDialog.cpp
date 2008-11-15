@@ -18,6 +18,9 @@
 #include "StaticDialog.h"
 #include "SysMsg.h"
 
+#define WS_EX_LAYOUTRTL 0x00400000L
+
+
 void StaticDialog::goToCenter()
 {
     RECT rc;
@@ -86,7 +89,7 @@ HGLOBAL StaticDialog::makeRTLResource(int dialogID, DLGTEMPLATE **ppMyDlgTemplat
 	return hMyDlgTemplate;
 }
 
-void StaticDialog::create(int dialogID, bool isRTL)
+void StaticDialog::create(int dialogID, bool isRTL, bool isModeles)
 {
 	if (isRTL)
 	{
@@ -100,11 +103,14 @@ void StaticDialog::create(int dialogID, bool isRTL)
 
 	if (!_hSelf)
 	{
-		systemMessage(TEXT("StaticDialog"));
+		systemMessage(_T("StaticDialog"));
 		throw int(666);
 	}
 
-	::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (WPARAM)_hSelf);
+	if (isModeles) {
+		_isModeles = isModeles;
+		::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (WPARAM)_hSelf);
+	}
 }
 
 BOOL CALLBACK StaticDialog::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
@@ -117,17 +123,17 @@ BOOL CALLBACK StaticDialog::dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPAR
 			pStaticDlg->_hSelf = hwnd;
 			::SetWindowLongPtr(hwnd, GWL_USERDATA, (long)lParam);
 			::GetWindowRect(hwnd, &(pStaticDlg->_rc));
-            pStaticDlg->run_dlgProc(message, wParam, lParam);
+            pStaticDlg->run_dlgProc(hwnd, message, wParam, lParam);
 			
 			return TRUE;
 		}
 
 		default :
 		{
-			StaticDialog *pStaticDlg = reinterpret_cast<StaticDialog *>(::GetWindowLongPtr(hwnd, GWL_USERDATA));
+			StaticDialog *pStaticDlg = reinterpret_cast<StaticDialog *>(::GetWindowLong(hwnd, GWL_USERDATA));
 			if (!pStaticDlg)
 				return FALSE;
-			return pStaticDlg->run_dlgProc(message, wParam, lParam);
+			return pStaticDlg->run_dlgProc(hwnd, message, wParam, lParam);
 		}
 	}
 }

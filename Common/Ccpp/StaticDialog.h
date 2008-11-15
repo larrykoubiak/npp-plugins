@@ -20,7 +20,7 @@
 
 //#include "resource.h"
 #include "Window.h"
-#include "Notepad_plus_msgs.h"
+#include <TCHAR.h>
 
 #include <uxtheme.h>
 
@@ -45,12 +45,12 @@ struct DLGTEMPLATEEX {
 class StaticDialog : public Window
 {
 public :
-	StaticDialog() : Window() {};
+	StaticDialog() : Window(), _isModeles(false) {};
 	~StaticDialog(){
 		if (isCreated())
 			destroy();
 	};
-	virtual void create(int dialogID, bool isRTL = false);
+	virtual void create(int dialogID, bool isRTL = false, bool isModeles = true);
 
     virtual bool isCreated() const {
 		return (_hSelf != NULL);
@@ -71,17 +71,21 @@ public :
 	};
 
     void destroy() {
-		::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)_hSelf);
+		if (_isModeles) {
+			::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGREMOVE, (WPARAM)_hSelf);
+		}
 		::DestroyWindow(_hSelf);
 	};
 
 protected :
 	RECT _rc;
 	static BOOL CALLBACK dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
-	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam) = 0;
+	virtual BOOL CALLBACK run_dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) = 0;
 
     void alignWith(HWND handle, HWND handle2Align, PosAlign pos, POINT & point);
 	HGLOBAL makeRTLResource(int dialogID, DLGTEMPLATE **ppMyDlgTemplate);
+
+	bool		_isModeles;
 };
 
 #endif //STATIC_DIALOG_H
