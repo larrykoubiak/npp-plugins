@@ -47,16 +47,5 @@ void ToolBarIcons::destroy()
 	_iconListVector[HLIST_DISABLE].destroy();
 	//_iconListVector[HLIST_UGLY].destroy();
 }
-/*
-bool IconList::changeIcon(int index, const TCHAR *iconLocation) const 
-{
-	HBITMAP hBmp = (HBITMAP)::LoadImage(_hInst, iconLocation, IMAGE_ICON, _iconSize, _iconSize, LR_LOADFROMFILE	);
-	if (!hBmp)
-		return false;
-	int i = ImageList_ReplaceIcon(_hImglst, index, (HICON)hBmp);
-	::DeleteObject(hBmp);
-	return (i == index);
-}
-*/
 
 

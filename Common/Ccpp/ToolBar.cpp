@@ -18,7 +18,6 @@
 //#include "..\..\resource.h"
 #include "ToolBar.h"
 #include "SysMsg.h"
-#include "Shortcut.h"
 
 const int WS_TOOLBARSTYLE = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | TBSTYLE_TOOLTIPS |TBSTYLE_FLAT | CCS_TOP | BTNS_AUTOSIZE | CCS_NOPARENTALIGN | CCS_NORESIZE | CCS_NODIVIDER;
 
@@ -46,13 +45,14 @@ bool ToolBar::init( HINSTANCE hInst, HWND hPere, toolBarStatusType type,
 	int cmd = 0;
 	int bmpIndex = -1, style;
 	size_t i = 0;
+
 	for (; i < _nrButtons ; i++)
 	{
 		cmd = buttonUnitArray[i]._cmdID;
 		if (cmd != 0)
 		{
 			bmpIndex++;
-			style = BTNS_BUTTON;
+			style = BTNS_BUTTON | _toolBarIcons.getIconStyle(i);
 		}
 		else
 		{
@@ -85,7 +85,7 @@ bool ToolBar::init( HINSTANCE hInst, HWND hPere, toolBarStatusType type,
 			_pTBB[i].iBitmap = bmpIndex;
 			_pTBB[i].idCommand = cmd;
 			_pTBB[i].fsState = TBSTATE_ENABLED;
-			_pTBB[i].fsStyle = BTNS_BUTTON; 
+			_pTBB[i].fsStyle = BTNS_BUTTON | _toolBarIcons.getIconStyle(i); 
 			_pTBB[i].dwData = 0; 
 			_pTBB[i].iString = 0;
 		}
@@ -154,7 +154,7 @@ void ToolBar::reset(bool create)
 		// Send the TB_BUTTONSTRUCTSIZE message, which is required for 
 		// backward compatibility.
 		::SendMessage(_hSelf, TB_BUTTONSTRUCTSIZE, (WPARAM)sizeof(TBBUTTON), 0);
-		::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, (LPARAM)TBSTYLE_EX_HIDECLIPPEDBUTTONS);
+		::SendMessage(_hSelf, TB_SETEXTENDEDSTYLE, 0, (LPARAM)TBSTYLE_EX_HIDECLIPPEDBUTTONS | TBSTYLE_EX_DRAWDDARROWS);
 	}
 
 	if (!_hSelf)
@@ -222,7 +222,7 @@ void ToolBar::registerDynBtn(UINT messageID, toolbarIcons* tIcon)
 	}
 }
 
-void ToolBar::doPopop(POINT chevPoint) {
+UINT ToolBar::doPopop(POINT chevPoint) {
 	//first find hidden buttons
 	int width = Window::getWidth();
 
@@ -236,23 +236,33 @@ void ToolBar::doPopop(POINT chevPoint) {
 	}
 
 	if (start < _nrCurrentButtons) {	//some buttons are hidden
+		UINT elements = 0;
+		TOOLTIPTEXT ttt = {0};
 		HMENU menu = ::CreatePopupMenu();
-		int cmd;
-		basic_string<TCHAR> text;
 		while (start < _nrCurrentButtons) {
-			cmd = _pTBB[start].idCommand;
-			getNameStrFromCmd(cmd, text);
-			if (_pTBB[start].idCommand != 0) {
-				if (::SendMessage(_hSelf, TB_ISBUTTONENABLED, cmd, 0) != 0)
-					AppendMenu(menu, MF_ENABLED, cmd, text.c_str());
-				else
-					AppendMenu(menu, MF_DISABLED|MF_GRAYED, cmd, text.c_str());
-			} else
+
+			INT	cmd = _pTBB[start].idCommand;
+
+			/* get text over tooltip function */
+			ttt.hdr.code	= TTN_GETDISPINFO;
+			ttt.hdr.idFrom	= cmd;
+			if (cmd != 0)
+			{
+				::SendMessage(_hParent, WM_NOTIFY, cmd, (LPARAM)&ttt);
+				if (::SendMessage(_hSelf, TB_ISBUTTONENABLED, cmd, 0) != 0) {
+					AppendMenu(menu, MF_ENABLED, cmd, ttt.lpszText);
+				} else {
+					AppendMenu(menu, MF_DISABLED|MF_GRAYED, cmd, ttt.lpszText);
+				}
+			} else if (elements != 0) {
 				AppendMenu(menu, MF_SEPARATOR, 0, TEXT(""));
+			}
+			elements++;
 			start++;
 		}
-		TrackPopupMenu(menu, 0, chevPoint.x, chevPoint.y, 0, _hSelf, NULL);
+		return (UINT)TrackPopupMenu(menu, TPM_RETURNCMD, chevPoint.x, chevPoint.y, 0, _hParent, NULL);
 	}
+	return (UINT)-1;
 }
 
 void ToolBar::addToRebar(ReBar * rebar) {

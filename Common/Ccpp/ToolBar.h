@@ -20,6 +20,7 @@
 
 #include "Window.h"
 #include "Notepad_plus_msgs.h"
+#include "ImageListSet.h"
 
 #define REBAR_BAR_TOOLBAR		0
 #define REBAR_BAR_SEARCH		1
@@ -29,14 +30,12 @@
 #define _WIN32_IE	0x0600
 #endif //_WIN32_IE
 
+#include "windows.h"
 #include <commctrl.h>
 #include <vector>
 using namespace std;
 
 enum toolBarStatusType {/*TB_HIDE, */TB_SMALL, TB_LARGE, TB_STANDARD};
-
-#include "ImageListSet.h"
-
 
 typedef struct {
 	UINT		message;		// identification of icon in tool bar (menu ID)
@@ -110,7 +109,7 @@ public :
 
 	void registerDynBtn(UINT message, toolbarIcons* hBmp);
 
-	void doPopop(POINT chevPoint);	//show the popup if buttons are hidden
+	UINT doPopop(POINT chevPoint);	//show the popup if buttons are hidden
 
 	void addToRebar(ReBar * rebar);
 
