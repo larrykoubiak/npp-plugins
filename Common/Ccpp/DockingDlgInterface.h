@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "StaticDialog.h"
 #include "Resource.h"
 #include "Docking.h"
+#include "PluginInterface.h"
 #include <shlwapi.h>
 
 #define UPDATE_CAPTION updateDockingDlg
