@@ -62,7 +62,7 @@ typedef struct tNatLangInfo {
  * @fn			void NLChangeDialog(HINSTANCE hInst, HWND hNpp, HWND hWnd, LPCTSTR pszSection)
  * @brief		Changes the dialog language. Call function in e.g. WM_INITDIALOG.
  *
- * @param[in]	hInst			The instance handle of dialog.
+ * @param[in]	hInst			The instance handle of Notepad++.
  * @param[in]	hNpp			The window handle of Notepad++.
  * @param[in]	hWnd			The window handle of the dialog box.
  * @param[in]	pszSection		The section name in NativeLang.ini file.
@@ -96,7 +96,7 @@ static void NLChangeDialog(HINSTANCE hInst, HWND hNpp, HWND hWnd, LPCTSTR pszSec
  * @fn			void NLChangeNppMenu(HINSTANCE hInst, HWND hNpp, LPCTSTR pszPluginName, FuncItem* funcItem, UINT nbFunc)
  * @brief		Changes Notepad++ plugins menu. Call function on notification NPPN_TBMODIFICATION.
  *
- * @param[in]	hInst			The instance handle of dialog.
+ * @param[in]	hInst			The instance handle of Notepad++.
  * @param[in]	hNpp			The window handle of Notepad++.
  * @param[in]	pszPluginName	The name of plugin that was given to Notepad++ on by function getName().
  * @param[in]	funcItem		The funcItem struct that was given to Notepad++ by function getFuncsArray().
@@ -134,7 +134,7 @@ static void NLChangeNppMenu(HINSTANCE hInst, HWND hNpp, LPCTSTR pszPluginName, F
  * @fn			BOOL NLChangeMenu(HINSTANCE hInst, HWND hNpp, HMENU hMenu, LPCTSTR pszMenu, UINT mf_ByComPos)
  * @brief		Changes given plugin menu. Call function before ::TrackPopupMenu().
  *
- * @param[in]	hInst			The instance handle of dialog.
+ * @param[in]	hInst			The instance handle of Notepad++.
  * @param[in]	hNpp			The window handle of Notepad++.
  * @param[in]	hMenu			The menu handle of the plugin menu.
  * @param[in]	pszMenu			The section name in NativeLang.ini file.
@@ -173,7 +173,7 @@ static BOOL NLChangeMenu(HINSTANCE hInst, HWND hNpp, HMENU hMenu, LPCTSTR pszMen
  * @fn			void NLChangeHeader(HINSTANCE hInst, HWND hNpp, HWND hHeader, LPCTSTR pszSection)
  * @brief		Change automaticaly the header text. Call function in e.g. WM_INITDIALOG.
  *
- * @param[in]	hInst			The instance handle of dialog.
+ * @param[in]	hInst			The instance handle of Notepad++.
  * @param[in]	hNpp			The window handle of Notepad++.
  * @param[in]	hHeader			The handle of header.
  * @param[in]	pszSection		The section name in NativeLang.ini file.
@@ -205,7 +205,7 @@ static void NLChangeHeader(HINSTANCE hInst, HWND hNpp, HWND hHeader, LPCTSTR psz
  * @fn			void NLChangeCombo(HINSTANCE hInst, HWND hNpp, HWND hCombo, LPCTSTR pszSection, UINT count)
  * @brief		Change automaticaly the combo text. Call function in e.g. WM_INITDIALOG.
  *
- * @param[in]	hInst			The instance handle of dialog.
+ * @param[in]	hInst			The instance handle of Notepad++.
  * @param[in]	hNpp			The window handle of Notepad++.
  * @param[in]	hCombo			The handle of combo box.
  * @param[in]	pszSection		The section name in NativeLang.ini file.
@@ -236,10 +236,10 @@ static void NLChangeCombo(HINSTANCE hInst, HWND hNpp, HWND hCombo, LPCTSTR pszSe
 }
 
 /**
- * @fn			UINT NLGetTextA(HINSTANCE hInst, HWND hNpp, LPCTSTR pszKey, LPTSTR pszText, UINT length)
+ * @fn			UINT NLGetText(HINSTANCE hInst, HWND hNpp, LPCTSTR pszKey, LPTSTR pszText, UINT length)
  * @brief		ANSI version to get a language specific text by a key.
  *
- * @param[in]	hInst			The instance handle of dialog.
+ * @param[in]	hInst			The instance handle of Notepad++.
  * @param[in]	hNpp			The window handle of Notepad++.
  * @param[in]	pszKey			The key name in NativeLang.ini file.
  * @param[out]	pszText			The buffer to fill.
@@ -277,14 +277,15 @@ static UINT NLGetText(HINSTANCE hInst, HWND hNpp, LPCTSTR pszKey, LPTSTR pszText
 
 
 /**
- * @fn			BOOL NLMessageBox(HINSTANCE hInst, HWND hNpp, LPCTSTR pszKey, UINT uType)
+ * @fn			BOOL NLMessageBox(HINSTANCE hInst, HWND hNpp, LPCTSTR pszKey, UINT uType, HWND hDlg = NULL		)
  * @brief		Show message box identified by a key.
  *
- * @param[in]	hInst			The instance handle of dialog.
+ * @param[in]	hInst			The instance handle of Notepad++.
  * @param[in]	hNpp			The window handle of Notepad++.
  * @param[in]	pszKey			The key name in NativeLang.ini file.
  * @param[in]	uType			The buffer to fill.
- * @retval		INT				The message box was shown.
+ * @param[in]	hDlg			The buffer to fill.
+ * @retval		INT				The parent associated handle.
  *
  * @details		Add in NativeLang.ini a section like the following:\n
  *				\n
