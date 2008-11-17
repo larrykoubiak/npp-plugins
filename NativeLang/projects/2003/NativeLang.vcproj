@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../../NativeLang/src;../../../Common/Ccpp"
+				AdditionalIncludeDirectories="../../src,../../src/HelpDlg,../../../Common/Ccpp"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;NATIVELANG_EXPORTS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -66,7 +66,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="../../src,../../../Common/Ccpp"
+				AdditionalIncludeDirectories="../../src,../../src/HelpDlg,../../../Common/Ccpp"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;NATIVELANG_EXPORTS"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
@@ -109,11 +109,23 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
 			<File
+				RelativePath="..\..\src\HelpDlg\HelpDialog.cpp">
+			</File>
+			<File
 				RelativePath="..\..\src\NativeLang.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\HelpDlg\URLCtrl.cpp">
 			</File>
 			<Filter
 				Name="Common"
 				Filter="">
+				<File
+					RelativePath="..\..\..\Common\Ccpp\StaticDialog.cpp">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\SysMsg.cpp">
+				</File>
 				<File
 					RelativePath="..\..\..\Common\Ccpp\stdafx.cpp">
 				</File>
@@ -123,10 +135,22 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
+				RelativePath="..\..\src\HelpDlg\HelpDialog.h">
+			</File>
+			<File
 				RelativePath="..\..\src\NativeLang.h">
 			</File>
 			<File
+				RelativePath="..\..\src\NativeLangResource.h">
+			</File>
+			<File
 				RelativePath="..\..\src\NativeLang_def.h">
+			</File>
+			<File
+				RelativePath="..\..\src\HelpDlg\URLCtrl.h">
+			</File>
+			<File
+				RelativePath="..\..\src\resource.h">
 			</File>
 			<File
 				RelativePath="resource.h">
@@ -142,6 +166,12 @@
 				</File>
 				<File
 					RelativePath="..\..\..\Common\Ccpp\Scintilla.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\StaticDialog.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\SysMsg.h">
 				</File>
 				<File
 					RelativePath="..\..\..\Common\Ccpp\Window.h">
