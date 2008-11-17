@@ -58,8 +58,8 @@ void WndMgrDialog::doDialog(bool willBeShown)
 
 		// define the default docking behaviour
 		_data.uMask			= DWS_DF_CONT_RIGHT | DWS_ICONTAB;
-		if (!NLGetText(_hInst, _nppData._nppHandle, "Window Manager", _data.pszName, MAX_PATH)) {
-			strcpy(_data.pszName, "Window Manager");
+		if (!NLGetText(_hInst, _nppData._nppHandle, _T("Window Manager"), _data.pszName, MAX_PATH)) {
+			_tcscpy(_data.pszName, _T("Window Manager"));
 		}
 		_data.hIconTab		= (HICON)::LoadImage(_hInst, MAKEINTRESOURCE(IDI_WNDMGR), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		_data.pszModuleName	= getPluginFileName();
@@ -214,11 +214,13 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 				return _FileList2.notify(wParam, lParam);
 			} else if ((nmhdr->hwndFrom == _hHeader1Ctrl) && (nmhdr->code == HDN_ITEMCHANGED)) {
 				_pMgrProp->propMain.iColumnPosName = ListView_GetColumnWidth(_hList1Ctrl, 0);
-				_pMgrProp->propMain.iColumnPosPath = ListView_GetColumnWidth(_hList1Ctrl, 1);
+				_pMgrProp->propMain.iColumnPosType = ListView_GetColumnWidth(_hList1Ctrl, 1);
+				_pMgrProp->propMain.iColumnPosPath = ListView_GetColumnWidth(_hList1Ctrl, 2);
 				return TRUE;
 			} else if ((nmhdr->hwndFrom == _hHeader2Ctrl) && (nmhdr->code == HDN_ITEMCHANGED)) {
 				_pMgrProp->propSec.iColumnPosName = ListView_GetColumnWidth(_hList2Ctrl, 0);
-				_pMgrProp->propSec.iColumnPosPath = ListView_GetColumnWidth(_hList2Ctrl, 1);
+				_pMgrProp->propSec.iColumnPosType = ListView_GetColumnWidth(_hList2Ctrl, 1);
+				_pMgrProp->propSec.iColumnPosPath = ListView_GetColumnWidth(_hList2Ctrl, 2);
 				return TRUE;
 			} else if ((nmhdr->hwndFrom == _hParent) && (LOWORD(nmhdr->code) == DMN_CLOSE)) {
 				toggleMgr();
@@ -250,7 +252,7 @@ BOOL CALLBACK WndMgrDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, 
 		case WM_DESTROY:
 		{
 			/* restore subclasses */
-			::SetWindowLong(_hSplitterCtrl, GWL_WNDPROC, (LONG)_hDefaultSplitterProc);
+			::SetWindowLongPtr(_hSplitterCtrl, GWL_WNDPROC, (LONG)_hDefaultSplitterProc);
 			_Sci1.CleanUp();
 			_Sci2.CleanUp();
 
@@ -380,9 +382,9 @@ LRESULT WndMgrDialog::runSCIProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM 
 	}
 	
 	if (hwnd == _nppData._scintillaMainHandle) {
-		lRes = _Sci1.SciCallWndProc(_Sci2.OrigSciWndProc, hwnd, Message, wParam, lParam);
+		lRes = _Sci1.CallScintillaWndProc(hwnd, Message, wParam, lParam);
 	} else {
-		lRes = _Sci2.SciCallWndProc(_Sci2.OrigSciWndProc, hwnd, Message, wParam, lParam);
+		lRes = _Sci2.CallScintillaWndProc(hwnd, Message, wParam, lParam);
 	}
 	return lRes;
 }
@@ -407,7 +409,7 @@ void WndMgrDialog::InitialDialog(void)
 	_hSplitterCursorLeftRight	= ::LoadCursor(_hInst, MAKEINTRESOURCE(IDC_LEFTRIGHT));
 
 	/* subclass splitter */
-	_hDefaultSplitterProc = (WNDPROC)(::SetWindowLong(_hSplitterCtrl, GWL_WNDPROC, reinterpret_cast<LONG>(wndDefaultSplitterProc)));
+	_hDefaultSplitterProc = (WNDPROC)(::SetWindowLongPtr(_hSplitterCtrl, GWL_WNDPROC, reinterpret_cast<LONG>(wndDefaultSplitterProc)));
 
 	/* subclass scintillas */
 	_Sci1.Init(_nppData._scintillaMainHandle, wndDefaultSCIProc);
@@ -416,21 +418,26 @@ void WndMgrDialog::InitialDialog(void)
 	/* add columns */
 	ColSetup.mask		= LVCF_TEXT | LVCF_FMT | LVCF_WIDTH;
 	ColSetup.fmt		= LVCFMT_LEFT;
-	ColSetup.pszText	= "Name";
-	ColSetup.cchTextMax = (INT)strlen("Name");
+	ColSetup.pszText	= _T("Name");
+	ColSetup.cchTextMax = (INT)_tcslen(_T("Name"));
 	ColSetup.cx			= _pMgrProp->propMain.iColumnPosName;
 	ListView_InsertColumn(_hList1Ctrl, 0, &ColSetup);
 	ColSetup.cx			= _pMgrProp->propSec.iColumnPosName;
 	ListView_InsertColumn(_hList2Ctrl, 0, &ColSetup);
-	ColSetup.pszText	= "Path";
-	ColSetup.cchTextMax = (INT)strlen("Path");
-	ColSetup.cx			= _pMgrProp->propMain.iColumnPosPath;
+	ColSetup.pszText	= _T("Type");
+	ColSetup.cchTextMax = (INT)_tcslen(_T("Type"));
+	ColSetup.cx			= _pMgrProp->propMain.iColumnPosType;
 	ListView_InsertColumn(_hList1Ctrl, 1, &ColSetup);
-	ColSetup.cx			= _pMgrProp->propSec.iColumnPosPath;
+	ColSetup.cx			= _pMgrProp->propSec.iColumnPosType;
 	ListView_InsertColumn(_hList2Ctrl, 1, &ColSetup);
-
+	ColSetup.pszText	= _T("Path");
+	ColSetup.cchTextMax = (INT)_tcslen(_T("Path"));
+	ColSetup.cx			= _pMgrProp->propMain.iColumnPosPath;
+	ListView_InsertColumn(_hList1Ctrl, 2, &ColSetup);
+	ColSetup.cx			= _pMgrProp->propSec.iColumnPosPath;
+	ListView_InsertColumn(_hList2Ctrl, 2, &ColSetup);
 	/* change language */
-	NLChangeHeader(_hInst, _nppData._nppHandle, _hHeader1Ctrl, "List");
-	NLChangeHeader(_hInst, _nppData._nppHandle, _hHeader2Ctrl, "List");
+	NLChangeHeader(_hInst, _nppData._nppHandle, _hHeader1Ctrl, _T("List"));
+	NLChangeHeader(_hInst, _nppData._nppHandle, _hHeader2Ctrl, _T("List"));
 }
 

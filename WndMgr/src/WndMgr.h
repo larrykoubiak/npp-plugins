@@ -34,6 +34,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 using namespace std;
 
+#ifdef _UNICODE
+#define string wstring
+#endif
+
 
 extern vector<struct tFileList>	vFileList1;
 extern vector<struct tFileList>	vFileList2;
@@ -49,7 +53,7 @@ extern HIMAGELIST ghImgList;
 #define IDM_WINDOW_MRU_FIRST (IDR_WINDOWS_MENU + 20)
 #define IDM_WINDOW_MRU_LIMIT (IDR_WINDOWS_MENU + 29)
 
-const char UNTITLED_STR[] = "new";
+const TCHAR UNTITLED_STR[] = _T("new");
 
 #define	DOCKABLE_WNDMGR_INDEX	0
 
@@ -60,10 +64,12 @@ CONST TCHAR SplitterPos[]		= _T("SplitterPos");
 CONST TCHAR SplitterPosHor[]	= _T("SplitterPosHor");
 CONST TCHAR ColumnPosNameMain[]	= _T("ColumnPosNameMain");
 CONST TCHAR ColumnPosPathMain[]	= _T("ColumnPosPathMain");
+CONST TCHAR ColumnPosTypeMain[]	= _T("ColumnPosTypeMain");
 CONST TCHAR SortStateMain[]		= _T("SortStateMain");
 CONST TCHAR SortColMain[]		= _T("SortColMain");
 CONST TCHAR ColumnPosNameSec[]	= _T("ColumnPosNameSec");
 CONST TCHAR ColumnPosPathSec[]	= _T("ColumnPosPathSec");
+CONST TCHAR ColumnPosTypeSec[]	= _T("ColumnPosTypeSec");
 CONST TCHAR SortStateSec[]		= _T("SortStateSec");
 CONST TCHAR SortColSec[]		= _T("SortColSec");
 CONST TCHAR Debug[]				= _T("Debug");
@@ -83,9 +89,10 @@ typedef struct tFileList {
 	INT		iTabPos;
 	eFSt	fileState;
 	eFSt	oldFileState;
-	CHAR	szName[MAX_PATH];
-	CHAR	szPath[MAX_PATH];
-	CHAR	szCompletePath[MAX_PATH];
+	TCHAR	szName[MAX_PATH];
+	TCHAR	szPath[MAX_PATH];
+	TCHAR	szCompletePath[MAX_PATH];
+	TCHAR	szType[MAX_PATH];
 } tFileList;
 
 typedef enum eSortState {
@@ -97,6 +104,7 @@ typedef enum eSortState {
 typedef struct tWndProp {
 	INT		iColumnPosPath;
 	INT		iColumnPosName;
+	INT		iColumnPosType;
 	eSSt	sortState;
 	INT		iSortCol;
 } tWndProp;
@@ -132,7 +140,7 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 
 /* global file list */
 void FileListUpdate(void);
-void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCSTR* pFiles, UINT numFiles);
+void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCTSTR* pFiles, UINT numFiles);
 void UpdateFileState(vector<tFileList> & vList, HWND hSci, INT iDoc);
 void ChangeFileState(UINT iView, UINT iDoc, eFSt fileState);
 

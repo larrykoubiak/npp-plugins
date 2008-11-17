@@ -72,7 +72,7 @@ void FileList::init(HINSTANCE hInst, HWND hParent, HWND hParentList, NppData npp
 	/* subclass list control */
 	WndReg[uView].hWnd = _hSelf;
 	WndReg[uView].lpFileListClass = this;
-	_hDefaultListProc = (WNDPROC)::SetWindowLong(_hSelf, GWL_WNDPROC, (LONG)wndDefaultListProc);
+	_hDefaultListProc = (WNDPROC)::SetWindowLongPtr(_hSelf, GWL_WNDPROC, (LONG)wndDefaultListProc);
 
 	/* initialize droping */
 	::RegisterDragDrop(_hSelf, this);
@@ -169,16 +169,19 @@ BOOL FileList::notify(WPARAM wParam, LPARAM lParam)
 					switch (lvItem.iSubItem)
 					{
 						case 0:
-							strcpy(str, _vFileList[lvItem.iItem].szName);
+							_tcscpy(str, _vFileList[lvItem.iItem].szName);
 							break;
 						case 1:
-							strcpy(str, _vFileList[lvItem.iItem].szPath);
+							_tcscpy(str, _vFileList[lvItem.iItem].szType);
+							break;
+						case 2:
+							_tcscpy(str, _vFileList[lvItem.iItem].szPath);
 							break;
 						default:
 							break;
 					}
 					lvItem.pszText		= str;
-					lvItem.cchTextMax	= strlen(str);
+					lvItem.cchTextMax	= _tcslen(str);
 				}
 
 				if (lvItem.mask & LVIF_IMAGE)
@@ -279,10 +282,10 @@ void FileList::ViewToolTip(void)
 			RECT	rc				= {0};
 			INT		width			= 0;
 
-			if (strlen(_vFileList[hittest.iItem].szPath) != 0) {
-				sprintf(pszText, "%s\n%s", _vFileList[hittest.iItem].szName, _vFileList[hittest.iItem].szPath);
+			if (_tcslen(_vFileList[hittest.iItem].szPath) != 0) {
+				_stprintf(pszText, _T("%s\n%s"), _vFileList[hittest.iItem].szName, _vFileList[hittest.iItem].szPath);
 			} else {
-				strcpy(pszText, _vFileList[hittest.iItem].szName);
+				_tcscpy(pszText, _vFileList[hittest.iItem].szName);
 			}
 			width = ListView_GetStringWidth(_hSelf, pszText);
 
@@ -313,7 +316,7 @@ void FileList::OnDragDrop(void)
 	/* storge begin of drag view in global param */
 	giViewBeginDnD = _iView;
 
-	UINT			bufsz = sizeof(DROPFILES) + 1;
+	UINT			bufsz = sizeof(DROPFILES) + sizeof(TCHAR);
 	CIDropSource	pdsrc;
 	CIDataObject	pdobj(&pdsrc);
 
@@ -321,9 +324,9 @@ void FileList::OnDragDrop(void)
 	for (UINT i = 0; i < _vFileList.size(); i++)
 	{
 		if ((ListView_GetItemState(_hSelf, i, LVIS_SELECTED) == LVIS_SELECTED) &&
-			(strstr(_vFileList[i].szCompletePath, UNTITLED_STR) != &_vFileList[i].szCompletePath[0]))
+			(_tcsstr(_vFileList[i].szCompletePath, UNTITLED_STR) != &_vFileList[i].szCompletePath[0]))
 		{
-			bufsz += (lstrlen(_vFileList[i].szCompletePath) + 1);
+			bufsz += (_tcslen(_vFileList[i].szCompletePath) + 1) * sizeof(TCHAR);
 		}
 	}
 
@@ -343,7 +346,7 @@ void FileList::OnDragDrop(void)
 	lpDropFileStruct->pt.x = 0;
 	lpDropFileStruct->pt.y = 0;
 	lpDropFileStruct->fNC = FALSE;
-#ifdef BLAA
+#ifdef _UNICODE
 	lpDropFileStruct->fWide = TRUE;
 #else
 	lpDropFileStruct->fWide = FALSE;
@@ -351,14 +354,14 @@ void FileList::OnDragDrop(void)
 
 	/* add files to payload and seperate with "\0\0" */
 	UINT	offset	= 0;
-	CHAR*	szPath	= (CHAR*)&lpDropFileStruct[1];
+	LPTSTR	szPath	= (LPTSTR)&lpDropFileStruct[1];
 	for (i = 0; i < _vFileList.size(); i++)
 	{
 		if ((ListView_GetItemState(_hSelf, i, LVIS_SELECTED) == LVIS_SELECTED) &&
-			(strstr(_vFileList[i].szCompletePath, UNTITLED_STR) != &_vFileList[i].szCompletePath[0]))
+			(_tcsstr(_vFileList[i].szCompletePath, UNTITLED_STR) != &_vFileList[i].szCompletePath[0]))
 		{
-			lstrcpy(&szPath[offset], _vFileList[i].szCompletePath);
-			offset += lstrlen(_vFileList[i].szCompletePath) + 1;
+			_tcscpy(&szPath[offset], _vFileList[i].szCompletePath);
+			offset += _tcslen(_vFileList[i].szCompletePath) + 1;
 		}
 	}
 
@@ -397,7 +400,7 @@ bool FileList::OnDrop(FORMATETC* pFmtEtc, STGMEDIUM& medium, DWORD *pdwEffect)
 
 	if (iFileCnt != 0)
 	{
-		CHAR	lpszFile[MAX_PATH];
+		TCHAR	lpszFile[MAX_PATH];
 
 		if (giViewBeginDnD == -1) {
 			/* set focus to associated view */
@@ -414,9 +417,9 @@ bool FileList::OnDrop(FORMATETC* pFmtEtc, STGMEDIUM& medium, DWORD *pdwEffect)
 			::SendMessage(_nppData._nppHandle, NPPM_DOOPEN, 0, (LPARAM)lpszFile);
 			if (giViewBeginDnD != -1) {
 				if (*pdwEffect == DROPEFFECT_MOVE) {
-					::SendMessage(_nppData._nppHandle, WM_COMMAND, IDM_DOC_GOTO_ANOTHER_VIEW, 0);
+					::SendMessage(_nppData._nppHandle, WM_COMMAND, IDM_VIEW_GOTO_ANOTHER_VIEW, 0);
 				} else if (*pdwEffect == DROPEFFECT_COPY) {
-					::SendMessage(_nppData._nppHandle, WM_COMMAND, IDM_DOC_CLONE_TO_ANOTHER_VIEW, 0);
+					::SendMessage(_nppData._nppHandle, WM_COMMAND, IDM_VIEW_CLONE_TO_ANOTHER_VIEW, 0);
 				}
 			}
 		}
@@ -484,8 +487,8 @@ BOOL FileList::isRBtnTrigg(UINT Message, WPARAM wParam, LPARAM lParam)
 								}
 							}
 							if (vPos.size() == 0) {
-								if (NLMessageBox(_hInst, _nppData._nppHandle, "MsgBox NotPossible", MB_OK) == FALSE)
-									::MessageBox(_hSelf, "Not possible", "Window Manager", MB_OK | MB_ICONEXCLAMATION);
+								if (NLMessageBox(_hInst, _nppData._nppHandle, _T("MsgBox NotPossible"), MB_OK) == FALSE)
+									::MessageBox(_hSelf, _T("Not possible"), _T("Window Manager"), MB_OK | MB_ICONEXCLAMATION);
 							} else {
 								INT offset = 0;
 								for (i = 0; i < vPos.size(); i++) {
@@ -505,28 +508,28 @@ BOOL FileList::isRBtnTrigg(UINT Message, WPARAM wParam, LPARAM lParam)
 							if (hLoc == NULL)
 								break;
 
-							LPSTR	pStr	= NULL;
-							LPSTR	pStrLoc	= (LPSTR)::GlobalLock(hLoc);
+							LPTSTR	pStr	= NULL;
+							LPTSTR	pStrLoc	= (LPTSTR)::GlobalLock(hLoc);
 							pStrLoc[0] = 0;
 
 							for (INT i = 0; i < _vFileList.size(); i++) {
 								if (ListView_GetItemState(_hSelf, i, LVIS_SELECTED) == LVIS_SELECTED) {
 									if (wParam == IDM_EDIT_FULLPATHTOCLIP) {
-										size += strlen(_vFileList[i].szCompletePath) + 1;
+										size += _tcslen(_vFileList[i].szCompletePath) + 1;
 										pStr = _vFileList[i].szCompletePath;
 									} else if (wParam == IDM_EDIT_CURRENTDIRTOCLIP) {
-										size += strlen(_vFileList[i].szPath) + 1;
+										size += _tcslen(_vFileList[i].szPath) + 1;
 										pStr = _vFileList[i].szPath;
 									} else {
-										size += strlen(_vFileList[i].szName) + 1;
+										size += _tcslen(_vFileList[i].szName) + 1;
 										pStr = _vFileList[i].szName;
 									}
 									hLoc = ::LocalReAlloc(hLoc, size, LHND);
 									if (hLoc == NULL)
 										break;
-									pStrLoc	= (LPSTR)::GlobalLock(hLoc);
-									strcat(pStrLoc, pStr);
-									strcat(pStrLoc, "\n");
+									pStrLoc	= (LPTSTR)::GlobalLock(hLoc);
+									_tcscat(pStrLoc, pStr);
+									_tcscat(pStrLoc, _T("\n"));
 								}
 							}
 							Str2CB(pStrLoc);
@@ -552,7 +555,7 @@ BOOL FileList::isRBtnTrigg(UINT Message, WPARAM wParam, LPARAM lParam)
 							for (i = 0; i < vPos.size(); i++) {
 								::SendMessage(_nppData._nppHandle, NPPM_ACTIVATEDOC, _iView, (LPARAM)vPos[i] - offset);
 								::SendMessage(_nppData._nppHandle, WM_COMMAND, wParam, lParam);
-								if ((wParam == IDM_DOC_GOTO_ANOTHER_VIEW) || (wParam == IDM_FILE_CLOSE)) {
+								if ((wParam == IDM_VIEW_GOTO_ANOTHER_VIEW) || (wParam == IDM_FILE_CLOSE)) {
 									offset++;
 								}
 							}
@@ -652,7 +655,7 @@ void FileList::QuickSortRecursiveCol(vector<tFileList>* vList, INT d, INT h, INT
 	INT		i		= 0;
 	INT		j		= 0;
 	INT		pos		= 0;
-	string	str		= "";
+	string	str		= _T("");
 
 	/* return on empty list */
 	if (d > h || d < 0)
@@ -670,13 +673,13 @@ void FileList::QuickSortRecursiveCol(vector<tFileList>* vList, INT d, INT h, INT
 			{
 				if (bAscending == TRUE)
 				{
-					while (stricmp((*vList)[j].szName, str.c_str()) < 0) j++;
-					while (stricmp((*vList)[i].szName, str.c_str()) > 0) i--;
+					while (_tcsicmp((*vList)[j].szName, str.c_str()) < 0) j++;
+					while (_tcsicmp((*vList)[i].szName, str.c_str()) > 0) i--;
 				}
 				else
 				{
-					while (stricmp((*vList)[j].szName, str.c_str()) > 0) j++;
-					while (stricmp((*vList)[i].szName, str.c_str()) < 0) i--;
+					while (_tcsicmp((*vList)[j].szName, str.c_str()) > 0) j++;
+					while (_tcsicmp((*vList)[i].szName, str.c_str()) < 0) i--;
 				}
 				if ( i >= j )
 				{
@@ -694,18 +697,47 @@ void FileList::QuickSortRecursiveCol(vector<tFileList>* vList, INT d, INT h, INT
 		}
 		case 1:
 		{
+			str = (*vList)[((INT) ((d+h) / 2))].szType;
+			do
+			{
+				if (bAscending == TRUE)
+				{
+					while (_tcsicmp((*vList)[j].szType, str.c_str()) < 0) j++;
+					while (_tcsicmp((*vList)[i].szType, str.c_str()) > 0) i--;
+				}
+				else
+				{
+					while (_tcsicmp((*vList)[j].szType, str.c_str()) > 0) j++;
+					while (_tcsicmp((*vList)[i].szType, str.c_str()) < 0) i--;
+				}
+				if ( i >= j )
+				{
+					if ( i != j )
+					{
+						tFileList buf = (*vList)[i];
+						(*vList)[i] = (*vList)[j];
+						(*vList)[j] = buf;
+					}
+					i--;
+					j++;
+				}
+			} while (j <= i);
+			break;
+		}
+		case 2:
+		{
 			str = (*vList)[((INT) ((d+h) / 2))].szCompletePath;
 			do
 			{
 				if (bAscending == TRUE)
 				{
-					while (stricmp((*vList)[j].szCompletePath, str.c_str()) < 0) j++;
-					while (stricmp((*vList)[i].szCompletePath, str.c_str()) > 0) i--;
+					while (_tcsicmp((*vList)[j].szCompletePath, str.c_str()) < 0) j++;
+					while (_tcsicmp((*vList)[i].szCompletePath, str.c_str()) > 0) i--;
 				}
 				else
 				{
-					while (stricmp((*vList)[j].szCompletePath, str.c_str()) > 0) j++;
-					while (stricmp((*vList)[i].szCompletePath, str.c_str()) < 0) i--;
+					while (_tcsicmp((*vList)[j].szCompletePath, str.c_str()) > 0) j++;
+					while (_tcsicmp((*vList)[i].szCompletePath, str.c_str()) < 0) i--;
 				}
 				if ( i >= j )
 				{
@@ -770,7 +802,7 @@ void FileList::QuickSortRecursiveColEx(vector<tFileList>* vList, INT d, INT h, I
 	{
 		case 0:
 		{
-			string		str = "";
+			string		str = _T("");
 
 			for (INT i = d; i < h ;)
 			{
@@ -799,7 +831,7 @@ void FileList::QuickSortRecursiveColEx(vector<tFileList>* vList, INT d, INT h, I
 /******************************************************************************************
  *	Sets a string to clipboard
  */
-bool FileList::Str2CB(const char *str2cpy)
+bool FileList::Str2CB(LPCTSTR str2cpy)
 {
 	if (!str2cpy)
 		return false;
@@ -809,7 +841,7 @@ bool FileList::Str2CB(const char *str2cpy)
 		
 	::EmptyClipboard();
 	
-	HGLOBAL hglbCopy = ::GlobalAlloc(GMEM_MOVEABLE, strlen(str2cpy) + 1);
+	HGLOBAL hglbCopy = ::GlobalAlloc(GMEM_MOVEABLE, (_tcslen(str2cpy) + 1) * sizeof(TCHAR));
 	
 	if (hglbCopy == NULL) 
 	{ 
@@ -818,8 +850,8 @@ bool FileList::Str2CB(const char *str2cpy)
 	} 
 
 	// Lock the handle and copy the text to the buffer. 
-	char *pStr = (char *)::GlobalLock(hglbCopy);
-	strcpy(pStr, str2cpy);
+	LPTSTR pStr = (LPTSTR)::GlobalLock(hglbCopy);
+	_tcscpy(pStr, str2cpy);
 	::GlobalUnlock(hglbCopy); 
 
 	// Place the handle on the clipboard. 

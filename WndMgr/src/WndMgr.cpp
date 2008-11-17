@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 /* information for notepad */
 CONST INT	nbFunc	= 4;
-CONST CHAR	PLUGIN_NAME[] = "&Window Manager";
+CONST TCHAR	PLUGIN_NAME[] = _T("&Window Manager");
 
 /* global values */
 HANDLE				g_hModule			= NULL;
@@ -74,9 +74,9 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 			funcItem[3]._pFunc = aboutDlg;
 		    	
 			/* Fill menu names */
-			strcpy(funcItem[0]._itemName, "&Manager...");
-			strcpy(funcItem[1]._itemName, "&Hide Tabbar");
-			strcpy(funcItem[3]._itemName, "&About...");
+			_tcscpy(funcItem[0]._itemName, _T("&Manager..."));
+			_tcscpy(funcItem[1]._itemName, _T("&Hide Tabbar"));
+			_tcscpy(funcItem[3]._itemName, _T("&About..."));
 
 			/* Set shortcuts */
 			funcItem[0]._pShKey = new ShortcutKey;
@@ -107,7 +107,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 
 			/* Remove subclaasing */
 			if (wndProcNotepad != NULL)
-				::SetWindowLong(nppData._nppHandle, GWL_WNDPROC, (LONG)wndProcNotepad);
+				::SetWindowLongPtr(nppData._nppHandle, GWL_WNDPROC, (LONG)wndProcNotepad);
 			break;
 		}
 		case DLL_THREAD_ATTACH:
@@ -129,6 +129,9 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	gWinVersion  = (winVer)::SendMessage(nppData._nppHandle, NPPM_GETWINDOWSVERSION, 0, 0);
 	gNppVersion  = (UINT)::SendMessage(nppData._nppHandle, NPPM_GETNPPVERSION, 0, 0);
 
+	if ((LOWORD(gNppVersion) < 10) && (LOWORD(gNppVersion) != 0))
+		gNppVersion = (0xFFFF0000 & gNppVersion) + (LOWORD(gNppVersion) * 10);
+
 	/* load data */
 	loadSettings();
 
@@ -137,10 +140,10 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	AboutDlg.init((HINSTANCE)g_hModule, nppData);
 
 	/* Subclassing for Notepad */
-	wndProcNotepad = (WNDPROC)::SetWindowLong(nppData._nppHandle, GWL_WNDPROC, (LPARAM)SubWndProcNotepad);
+	wndProcNotepad = (WNDPROC)::SetWindowLongPtr(nppData._nppHandle, GWL_WNDPROC, (LPARAM)SubWndProcNotepad);
 }
 
-extern "C" __declspec(dllexport) LPCSTR getName()
+extern "C" __declspec(dllexport) LPCTSTR getName()
 {
 	return PLUGIN_NAME;
 }
@@ -211,6 +214,19 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam
 	return TRUE;
 }
 
+
+/***
+ *	isUnicode()
+ *
+ *	marks the plugin as one that support unicode
+ */
+#ifdef UNICODE
+extern "C" __declspec(dllexport) BOOL isUnicode()
+{
+	return TRUE;
+}
+#endif
+
 /***
  *	loadSettings()
  *
@@ -232,13 +248,13 @@ void loadSettings(void)
 
 		for (INT i = vPaths.size()-1; i >= 0; i--)
 		{
-			strcpy(configPath, vPaths[i].c_str());
+			_tcscpy(configPath, vPaths[i].c_str());
 			::CreateDirectory(configPath, NULL);
 		}
 	}
 
-	strcpy(iniFilePath, configPath);
-	strcat(iniFilePath, WINDOWMANAGER_INI);
+	_tcscpy(iniFilePath, configPath);
+	_tcscat(iniFilePath, WINDOWMANAGER_INI);
 	if (PathFileExists(iniFilePath) == FALSE)
 	{
 		::CloseHandle(::CreateFile(iniFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL));
@@ -248,10 +264,12 @@ void loadSettings(void)
 	mgrProp.iSplitterPosHorizontal	= ::GetPrivateProfileInt(dlgWndMgr, SplitterPosHor, 200, iniFilePath);
 	mgrProp.propMain.iColumnPosName	= ::GetPrivateProfileInt(dlgWndMgr, ColumnPosNameMain, 100, iniFilePath);
 	mgrProp.propMain.iColumnPosPath	= ::GetPrivateProfileInt(dlgWndMgr, ColumnPosPathMain, 300, iniFilePath);
+	mgrProp.propMain.iColumnPosType	= ::GetPrivateProfileInt(dlgWndMgr, ColumnPosTypeMain, 40, iniFilePath);
 	mgrProp.propMain.sortState		= (eSSt)::GetPrivateProfileInt(dlgWndMgr, SortStateMain, SST_UNSORT, iniFilePath);
 	mgrProp.propMain.iSortCol		= ::GetPrivateProfileInt(dlgWndMgr, SortColMain, 0, iniFilePath);
 	mgrProp.propSec.iColumnPosName	= ::GetPrivateProfileInt(dlgWndMgr, ColumnPosNameSec, 100, iniFilePath);
 	mgrProp.propSec.iColumnPosPath	= ::GetPrivateProfileInt(dlgWndMgr, ColumnPosPathSec, 300, iniFilePath);
+	mgrProp.propSec.iColumnPosType	= ::GetPrivateProfileInt(dlgWndMgr, ColumnPosTypeSec, 40, iniFilePath);
 	mgrProp.propSec.sortState		= (eSSt)::GetPrivateProfileInt(dlgWndMgr, SortStateSec, SST_UNSORT, iniFilePath);
 	mgrProp.propSec.iSortCol		= ::GetPrivateProfileInt(dlgWndMgr, SortColSec, 0, iniFilePath);
 	mgrProp.debug					= ::GetPrivateProfileInt(dlgWndMgr, Debug, 1, iniFilePath);
@@ -267,18 +285,20 @@ void saveSettings(void)
 {
 	TCHAR	temp[256];
 
-	::WritePrivateProfileString(dlgWndMgr, SplitterPos, itoa(mgrProp.iSplitterPos, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, SplitterPosHor, itoa(mgrProp.iSplitterPosHorizontal, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, ColumnPosNameMain, itoa(mgrProp.propMain.iColumnPosName, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, ColumnPosPathMain, itoa(mgrProp.propMain.iColumnPosPath, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, SortStateMain, itoa(mgrProp.propMain.sortState, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, SortColMain, itoa(mgrProp.propMain.iSortCol, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, ColumnPosNameSec, itoa(mgrProp.propSec.iColumnPosName, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, ColumnPosPathSec, itoa(mgrProp.propSec.iColumnPosPath, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, SortStateSec, itoa(mgrProp.propSec.sortState, temp, 10), iniFilePath);
-	::WritePrivateProfileString(dlgWndMgr, SortColSec, itoa(mgrProp.propSec.iSortCol, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, SplitterPos, _itot(mgrProp.iSplitterPos, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, SplitterPosHor, _itot(mgrProp.iSplitterPosHorizontal, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, ColumnPosNameMain, _itot(mgrProp.propMain.iColumnPosName, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, ColumnPosPathMain, _itot(mgrProp.propMain.iColumnPosPath, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, ColumnPosTypeMain, _itot(mgrProp.propMain.iColumnPosType, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, SortStateMain, _itot(mgrProp.propMain.sortState, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, SortColMain, _itot(mgrProp.propMain.iSortCol, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, ColumnPosNameSec, _itot(mgrProp.propSec.iColumnPosName, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, ColumnPosPathSec, _itot(mgrProp.propSec.iColumnPosPath, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, ColumnPosTypeSec, _itot(mgrProp.propSec.iColumnPosType, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, SortStateSec, _itot(mgrProp.propSec.sortState, temp, 10), iniFilePath);
+	::WritePrivateProfileString(dlgWndMgr, SortColSec, _itot(mgrProp.propSec.iSortCol, temp, 10), iniFilePath);
 	if ((HIWORD(gNppVersion) >= 4) && (LOWORD(gNppVersion) >= 8))
-		::WritePrivateProfileString(dlgWndMgr, IsTabHidden, itoa(mgrProp.isTabHidden, temp, 10), iniFilePath);
+		::WritePrivateProfileString(dlgWndMgr, IsTabHidden, _itot(mgrProp.isTabHidden, temp, 10), iniFilePath);
 }
 
 /***
@@ -290,7 +310,8 @@ void initMenu(void)
 {
 	HMENU		hMenu	= ::GetMenu(nppData._nppHandle);
 	::CheckMenuItem(hMenu, funcItem[1]._cmdID, MF_BYCOMMAND | (mgrProp.isTabHidden ? MF_CHECKED : MF_UNCHECKED));
-	if ((HIWORD(gNppVersion) >= 4) && (LOWORD(gNppVersion) >= 80)) {
+	if (((HIWORD(gNppVersion) == 4) && (LOWORD(gNppVersion) >= 80)) ||
+		(HIWORD(gNppVersion)  > 4)) {
 		::ModifyMenu(hMenu, funcItem[2]._cmdID, MF_BYCOMMAND | MF_SEPARATOR, 0, 0);
 	} else {
 		::RemoveMenu(hMenu, funcItem[1]._cmdID, MF_BYCOMMAND);
@@ -387,8 +408,8 @@ LRESULT CALLBACK SubWndProcNotepad(HWND hWnd, UINT message, WPARAM wParam, LPARA
 				case IDM_FILE_CLOSEALL_BUT_CURRENT:
 				case IDM_EDIT_SETREADONLY:
 				case IDM_EDIT_CLEARREADONLY:
-				case IDM_DOC_GOTO_ANOTHER_VIEW:
-				case IDM_DOC_CLONE_TO_ANOTHER_VIEW:
+				case IDM_VIEW_GOTO_ANOTHER_VIEW:
+				case IDM_VIEW_CLONE_TO_ANOTHER_VIEW:
 				{
 					ret = ::CallWindowProc(wndProcNotepad, hWnd, message, wParam, lParam);
 					FileListUpdate();
@@ -446,19 +467,19 @@ void FileListUpdate(void)
 	INT			i = 0;
 	INT			docCnt1;
 	INT			docCnt2;
-	LPCSTR		*fileNames1;
-	LPCSTR		*fileNames2;
+	LPCTSTR		*fileNames1;
+	LPCTSTR		*fileNames2;
 	
 	/* update doc information */
 	docCnt1		= (INT)::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, (LPARAM)PRIMARY_VIEW);
 	docCnt2		= (INT)::SendMessage(nppData._nppHandle, NPPM_GETNBOPENFILES, 0, (LPARAM)SECOND_VIEW);
-	fileNames1	= (LPCSTR*)new LPSTR[docCnt1];
-	fileNames2	= (LPCSTR*)new LPSTR[docCnt2];
+	fileNames1	= (LPCTSTR*)new LPTSTR[docCnt1];
+	fileNames2	= (LPCTSTR*)new LPTSTR[docCnt2];
 
 	for (i = 0; i < docCnt1; i++)
-		fileNames1[i] = (LPSTR)new CHAR[MAX_PATH];
+		fileNames1[i] = (LPTSTR)new TCHAR[MAX_PATH];
 	for (i = 0; i < docCnt2; i++)
-		fileNames2[i] = (LPSTR)new CHAR[MAX_PATH];
+		fileNames2[i] = (LPTSTR)new TCHAR[MAX_PATH];
 
 	::SendMessage(nppData._nppHandle, NPPM_GETOPENFILENAMESPRIMARY, (WPARAM)fileNames1, (LPARAM)docCnt1);
 	UpdateCurrUsedDocs(vFileList1, fileNames1, docCnt1);
@@ -476,7 +497,7 @@ void FileListUpdate(void)
 	WndMgrDlg.doUpdate(20);
 }
 
-void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCSTR* pFiles, UINT numFiles)
+void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCTSTR* pFiles, UINT numFiles)
 {
 	tFileList			fileList;
 	vector<tFileList>	vTempList;
@@ -489,20 +510,22 @@ void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCSTR* pFiles, UINT numFiles
 		/* try now to find the given files in old list and if available don't change file state */
 		BOOL	found = FALSE;
 
-		if ((strstr(pFiles[i], UNTITLED_STR) != &pFiles[i][0]) &&
+		if ((_tcsstr(pFiles[i], UNTITLED_STR) != &pFiles[i][0]) &&
 			(::GetLongPathName(pFiles[i], pszLongName, MAX_PATH) != 0))
 		{
-			strcpy(fileList.szCompletePath, pszLongName);
-			strcpy(fileList.szName, strrchr(pszLongName, '\\')+1);
+			_tcscpy(fileList.szCompletePath, pszLongName);
+			_tcscpy(fileList.szName, _tcsrchr(pszLongName, '\\')+1);
+			_tcscpy(fileList.szType, _tcsrchr(fileList.szName, '.')+1);
 			PathRemoveFileSpec(pszLongName);
-			strcpy(fileList.szPath, pszLongName);
+			_tcscpy(fileList.szPath, pszLongName);
 		} else {
-			strcpy(fileList.szCompletePath, pFiles[i]);
-			strcpy(fileList.szName, pFiles[i]);
+			_tcscpy(fileList.szCompletePath, pFiles[i]);
+			_tcscpy(fileList.szName, pFiles[i]);
 			fileList.szPath[0] = '\0';
+			fileList.szType[0] = '\0';
 		}
 		for (UINT j = 0; j < vList.size(); j++) {
-			if (strcmp(fileList.szCompletePath, vList[j].szCompletePath) == 0) {
+			if (_tcscmp(fileList.szCompletePath, vList[j].szCompletePath) == 0) {
 				fileList = vList[j];
 				found = TRUE;
 			}
@@ -596,7 +619,7 @@ void ErrorMessage(DWORD err)
 	LPVOID	lpMsgBuf;
 
 	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) & lpMsgBuf, 0, NULL);	// Process any inserts in lpMsgBuf.
-	::MessageBox(NULL, (LPCTSTR) lpMsgBuf, "Error", MB_OK | MB_ICONINFORMATION);
+	::MessageBox(NULL, (LPCTSTR) lpMsgBuf, _T("Error"), MB_OK | MB_ICONINFORMATION);
 
 	LocalFree(lpMsgBuf);
 }

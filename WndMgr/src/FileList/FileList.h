@@ -103,7 +103,7 @@ protected:
 
 		UINT	selRow	= ListView_GetSelectionMark(_hSelf);
 		_isRBtnTriggered = TRUE;
-		::SendMessage(_nppData._nppHandle, NPPM_ACTIVATEDOCMENU, _iView, _vFileList[selRow].iTabPos);
+		::SendMessage(_nppData._nppHandle, NPPM_TRIGGERTABBARCONTEXTMENU, _iView, _vFileList[selRow].iTabPos);
 		ListView_SetItemState(_hSelf, selRow, LVIS_SELANDFOC, 0xFF);
 	}
 
@@ -115,7 +115,7 @@ protected:
 	void QuickSortRecursiveCol(vector<tFileList>* vList, INT d, INT h, INT column, BOOL bAscending);
 	void QuickSortRecursiveColEx(vector<tFileList>* vList, INT d, INT h, INT column, BOOL bAscending);
 
-	bool Str2CB(const char *str2cpy);
+	bool Str2CB(LPCTSTR str2cpy);
 
 private:
 	/* handles */
