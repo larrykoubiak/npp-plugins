@@ -2,6 +2,18 @@
 Change-log for SpellChecker.dll
 
 ------------------------------------------------------------------------------------
+08/11/15  v1.3.2 :
+------------------------------------------------------------------------------------
+    Fix: UNICODE support for Notepad++ 5.1
+
+------------------------------------------------------------------------------------
+07/12/20  v1.3.1 :
+------------------------------------------------------------------------------------
+    Fix: On serious conditions SpellChecker crashes Npp on end of checking text
+    New: At the end of checking plugin restores the cursor positions
+    New: Field 'Replace with' is marked on suggestion for faster access
+
+------------------------------------------------------------------------------------
 07/11/22  v1.3 :
 ------------------------------------------------------------------------------------
     New: Multi-language support implemented. NativeLang plugin needed.
