@@ -2,6 +2,13 @@
 Change-log for WindowManager.dll
 
 ------------------------------------------------------------------------------------
+08/11/15  v1.2 :
+------------------------------------------------------------------------------------
+    Fix: UNICODE support for Notepad++ 5.1
+    New: Sorting by file type possible
+    Fix: Hide tabbar feature was not usable in other versions than N++ 4.8.0
+
+------------------------------------------------------------------------------------
 08/07/03  v1.1.2 :
 ------------------------------------------------------------------------------------
     Fix: Breaks Unicode "Cyrillic" input to the main window [NPP-P-B-1977701]
