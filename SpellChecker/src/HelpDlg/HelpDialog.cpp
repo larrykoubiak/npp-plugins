@@ -41,13 +41,13 @@ BOOL CALLBACK HelpDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LP
             _urlAspell.init(_hInst, _hSelf);
             _urlAspellWin32.init(_hInst, _hSelf);
 
-            _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), "mailto:jens.plugin.npp@gmx.de");
-            _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), "http://sourceforge.net/projects/npp-plugins/");
-            _urlAspell.create(::GetDlgItem(_hSelf, IDC_ASPELL_URL), "http://aspell.net/");
-            _urlAspellWin32.create(::GetDlgItem(_hSelf, IDC_ASPELL_WIN_URL), "http://aspell.net/win32/");
+            _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), _T("mailto:jens.plugin.npp@gmx.de"));
+            _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), _T("http://sourceforge.net/projects/npp-plugins/"));
+            _urlAspell.create(::GetDlgItem(_hSelf, IDC_ASPELL_URL), _T("http://aspell.net/"));
+            _urlAspellWin32.create(::GetDlgItem(_hSelf, IDC_ASPELL_WIN_URL), _T("http://aspell.net/win32/"));
 
 			/* Change dialog lang */
-			NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, "Help");
+			NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, _T("Help"));
 
 			return TRUE;
 		}

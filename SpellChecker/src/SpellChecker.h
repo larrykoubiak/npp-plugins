@@ -36,7 +36,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 using namespace std;
 
-CONST CHAR  PLUGIN_NAME[] = "&Spell-Checker";
+CONST TCHAR  PLUGIN_NAME[]		= _T("&Spell-Checker");
 
 /* store name for ini file */
 CONST TCHAR dlgSC[]				= _T("Spell-Checker");
@@ -51,8 +51,8 @@ CONST TCHAR CONFIG_PATH[]		= _T("\\plugins\\Config");
 #define	MAX_OF_LANG	30
 
 typedef struct {
-    char		szLang[MAX_OF_LANG];
-	char		szRelPath[MAX_PATH];
+    TCHAR		szLang[MAX_OF_LANG];
+	TCHAR		szRelPath[MAX_PATH];
 } tSCProp;
 
 
@@ -70,7 +70,6 @@ void doCheck(void);
 void spellCheck(void);
 void helpDialog(void);
 void howToDlg(void);
-
 
 
 /* Extended Window Funcions */

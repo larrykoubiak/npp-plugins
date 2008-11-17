@@ -14,6 +14,7 @@
 
 BOOL LoadAspell(tSCProp* pSCProp);
 void UnloadAspell(void);
+void AspellErrorMsgBox(HWND hWnd, LPCSTR error);
 
 #ifdef __cplusplus
 extern "C" {

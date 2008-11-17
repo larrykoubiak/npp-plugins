@@ -54,8 +54,8 @@ typedef enum {
 } eEventId;
 
 const char szEnc[][11] = {
-	_T("iso8859-15"),
-	_T("utf-8"),
+	"iso8859-15",
+	"utf-8",
 };
 
 typedef enum UniMode {
@@ -99,8 +99,8 @@ protected:
 
 	UniMode GetCurrentEncoding(void);
 
-	void GetEditText(HWND hWnd, char* pszString, int nMaxCount);
-	void SetEditText(HWND hWnd, char* pszString);
+	void GetEditText(HWND hWnd, LPSTR pszString, int nMaxCount);
+	void SetEditText(HWND hWnd, LPSTR pszString);
 
 private:
 	/* Handles */
@@ -133,9 +133,9 @@ private:
 	INT						_iLineEndPos;
 
 	/* buffer for spell suggestion and parsing of lines */
-	LPTSTR					_pszLine;
+	LPSTR					_pszLine;
 	UINT					_uSizeLineBuf;
-    TCHAR                   _szWord[MAX_WORD];
+    CHAR                    _szWord[MAX_WORD];
 
 	/* Aspell members */
 	BOOL					_bAspellIsWorking;

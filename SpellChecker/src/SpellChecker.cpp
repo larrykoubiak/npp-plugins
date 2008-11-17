@@ -113,7 +113,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	dlgNotAvail.init((HINSTANCE)g_hModule, nppData);
 }
 
-extern "C" __declspec(dllexport) LPCSTR getName()
+extern "C" __declspec(dllexport) LPCTSTR getName()
 {
 	return PLUGIN_NAME;
 }
@@ -126,9 +126,9 @@ extern "C" __declspec(dllexport) FuncItem * getFuncsArray(INT *nbF)
 	funcItem[2]._pFunc = howToDlg;
     
 	/* Fill menu names */
-	strcpy(funcItem[0]._itemName, "&Spell-Checker...");
-	strcpy(funcItem[1]._itemName, "&Help...");
-	strcpy(funcItem[2]._itemName, "&How to use...");
+	_tcscpy(funcItem[0]._itemName, _T("&Spell-Checker..."));
+	_tcscpy(funcItem[1]._itemName, _T("&Help..."));
+	_tcscpy(funcItem[2]._itemName, _T("&How to use..."));
 
 	/* Set shortcuts */
 	funcItem[0]._pShKey = new ShortcutKey;
@@ -176,6 +176,19 @@ extern "C" __declspec(dllexport) LRESULT messageProc(UINT Message, WPARAM wParam
    return FALSE;
 }
 
+
+#ifdef UNICODE
+/***
+ *	isUnicode()
+ *
+ *	This function is called to test if this plugin supports unicode
+ */
+extern "C" __declspec(dllexport) BOOL isUnicode()
+{
+	return TRUE;
+}
+#endif
+
 /***
  *	ScintillaMsg()
  *
@@ -202,15 +215,28 @@ void loadSettings(void)
 		::CreateDirectory(configPath, NULL);
 	}
 
-	strcpy(iniFilePath, configPath);
-	strcat(iniFilePath, SPELLCHECKER_INI);
+	_tcscpy(iniFilePath, configPath);
+	_tcscat(iniFilePath, SPELLCHECKER_INI);
 	if (PathFileExists(iniFilePath) == FALSE)
 	{
-		::CloseHandle(::CreateFile(iniFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL));
+		HANDLE	hFile			= NULL;
+#ifdef UNICODE
+		CHAR	szBOM[]			= {0xFF, 0xFE};
+		DWORD	dwByteWritten	= 0;
+#endif
+			
+		if (hFile != INVALID_HANDLE_VALUE)
+		{
+			hFile = ::CreateFile(iniFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+#ifdef UNICODE
+			::WriteFile(hFile, szBOM, sizeof(szBOM), &dwByteWritten, NULL);
+#endif
+			::CloseHandle(hFile);
+		}
 	}
 
-	::GetPrivateProfileString(dlgSC, curLang, "", scProp.szLang, MAX_OF_LANG, iniFilePath);
-	::GetPrivateProfileString(dlgSC, relPath, "..\\Aspell\\bin", scProp.szRelPath, MAX_PATH, iniFilePath);
+	::GetPrivateProfileString(dlgSC, curLang, _T("\0"), scProp.szLang, MAX_OF_LANG, iniFilePath);
+	::GetPrivateProfileString(dlgSC, relPath, _T("..\\Aspell\\bin"), scProp.szRelPath, MAX_PATH, iniFilePath);
 }
 
 /***

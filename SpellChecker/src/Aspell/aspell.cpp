@@ -317,3 +317,17 @@ void UnloadAspell(void)
         FreeLibrary(hInstLib);
 }
 
+void AspellErrorMsgBox(HWND hWnd, LPCSTR szErrorMsg)
+{
+	TCHAR	szMsg[MAX_PATH];
+#ifdef UNICODE
+	TCHAR	szTemp[MAX_PATH];
+	::MultiByteToWideChar(CP_ACP, 0, szErrorMsg, -1, szTemp, MAX_PATH);
+	_stprintf(szMsg, _T("Error:\n%s"), szTemp);
+#else
+	_stprintf(szMsg, _T("Error:\n%s"), szErrorMsg);
+#endif
+	::MessageBox(hWnd, szMsg, _T("GNU Aspell"), MB_OK);
+}
+
+

@@ -149,7 +149,7 @@ BOOL CALLBACK SpellCheckerDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wP
 
 			if (((HWND)lParam == _hLang) && (HIWORD(wParam) == CBN_SELCHANGE))
 			{
-                SetEditText(_hNewEdit, _szWord);
+				SetEditText(_hNewEdit, _szWord);
                 ::SetEvent(hEvent[EID_CHANGE_LANG]);
 				return TRUE;
 			}
@@ -202,7 +202,7 @@ RTHR SpellCheckerDialog::NotifyEvent(DWORD event)
     {
         case EID_REPLACE :
         {
-			TCHAR   pszReplaceWord[MAX_PATH];
+			CHAR   pszReplaceWord[MAX_PATH];
 
 			/* get current word and replace */
 			GetEditText(_hNewEdit, pszReplaceWord, MAX_PATH);
@@ -215,7 +215,7 @@ RTHR SpellCheckerDialog::NotifyEvent(DWORD event)
         }
         case EID_LERN :
         {
-			TCHAR   pszLernWord[MAX_PATH];
+			CHAR   pszLernWord[MAX_PATH];
 
 			/* lern word */
 			GetEditText(_hNewEdit, pszLernWord, MAX_PATH);
@@ -223,9 +223,7 @@ RTHR SpellCheckerDialog::NotifyEvent(DWORD event)
             aspell_speller_save_all_word_lists(_aspSpeller);
             if (aspell_speller_error(_aspSpeller) != 0)
             {
-		        TCHAR	szErrorMsg[MAX_PATH];
-		        sprintf(szErrorMsg, _T("Error:\n%s"), aspell_speller_error_message(_aspSpeller));
-		        ::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
+				AspellErrorMsgBox(_hSelf, aspell_speller_error_message(_aspSpeller));
             }
             break;
         }
@@ -235,7 +233,7 @@ RTHR SpellCheckerDialog::NotifyEvent(DWORD event)
         }
 		case EID_IGNOREALL:
 		{
-			TCHAR   pszIgnoreWord[MAX_PATH];
+			CHAR   pszIgnoreWord[MAX_PATH];
 
 			/* add to temporary skip list */
 			GetEditText(_hNewEdit, pszIgnoreWord, MAX_PATH);
@@ -243,9 +241,7 @@ RTHR SpellCheckerDialog::NotifyEvent(DWORD event)
             aspell_speller_save_all_word_lists(_aspSpeller);
             if (aspell_speller_error(_aspSpeller) != 0)
             {
-		        TCHAR	szErrorMsg[MAX_PATH];
-		        sprintf(szErrorMsg, _T("Error:\n%s"), aspell_speller_error_message(_aspSpeller));
-		        ::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
+				AspellErrorMsgBox(_hSelf, aspell_speller_error_message(_aspSpeller));
             }
 			break;
 		}
@@ -279,19 +275,19 @@ void SpellCheckerDialog::onSelSugg(void)
 	if (iSel != LB_ERR)
 	{
 		void*	pvSel		= NULL;
-		INT		nMaxCount	= (INT)::SendMessage(_hSuggList, LB_GETTEXTLEN, iSel, 0) + 1;
+		INT		nMaxCount	= (INT)::SendMessageA(_hSuggList, LB_GETTEXTLEN, iSel, 0) + 1;
 
 		if (_uniMode == uni8Bit) {
-			pvSel  = (LPTSTR)new TCHAR[nMaxCount];
-			::SendMessage(_hSuggList, LB_GETTEXT, iSel, (LPARAM)((LPTSTR)pvSel));
+			pvSel  = (LPTSTR)new CHAR[nMaxCount];
+			::SendMessageA(_hSuggList, LB_GETTEXT, iSel, (LPARAM)((LPSTR)pvSel));
 		} else {
 			WCHAR	wcChar[MAX_WORD_UNI];
 			::ZeroMemory(wcChar, sizeof(wcChar));
 			::SendMessageW(_hSuggList, LB_GETTEXT, iSel, (LPARAM)wcChar);
 
-			pvSel  = (LPTSTR)new TCHAR[nMaxCount*2];
+			pvSel  = (LPTSTR)new CHAR[nMaxCount*2];
 			::ZeroMemory(pvSel, sizeof(pvSel));
-			::WideCharToMultiByte(CP_UTF8, 0, wcChar, -1, (LPTSTR)pvSel, nMaxCount*2, NULL, NULL);
+			::WideCharToMultiByte(CP_UTF8, 0, wcChar, -1, (LPSTR)pvSel, nMaxCount*2, NULL, NULL);
 		}
 
 		/* avoid new test of word */
@@ -312,18 +308,15 @@ void SpellCheckerDialog::InitialDialog(void)
 	UpdateHSCI();
 
 	/* change language */
-	NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, "Spell-Checker");
+	NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, _T("Spell-Checker"));
 
 	/* when is in rectangle mode, do not check */
 	if ((BOOL)ScintillaMsg(SCI_SELECTIONISRECTANGLE) == TRUE)
 	{
 		LPTSTR	wPtr = NULL;
 		TCHAR	text[MAX_PATH];
-		if (NLGetText(_hInst, _nppData._nppHandle, "MsgBox RectMode", text, MAX_PATH)) {
-			wPtr = _tcstok(text, _T("\t"));
-			wPtr = _tcstok(NULL, _T("\t"));
-			::MessageBox(_hSelf, text, wPtr, MB_OK);
-		} else {
+		if (NLMessageBox(_hInst, _nppData._nppHandle, _T("MsgBox RectMode"), MB_OK, _hSelf) == FALSE)
+		{
 			::MessageBox(_hSelf, _T("Checking of misspelling is not possible in rectangle mode!"), _T("Spell-Checker"), MB_OK);
 		}
 		::EndDialog(_hSelf, TRUE);
@@ -338,7 +331,8 @@ void SpellCheckerDialog::InitialDialog(void)
 		}
 		else
 		{
-			LRESULT	lResult	= ::SendMessage(_hLang, CB_FINDSTRINGEXACT, -1, (LPARAM)_pSCProp->szLang);
+			LRESULT	lResult = 0;
+			lResult	= ::SendMessage(_hLang, CB_FINDSTRINGEXACT, -1, (LPARAM)_pSCProp->szLang);
 			if (lResult >= 0) ::SendMessage(_hLang, CB_SETCURSEL, lResult, 0);
 		}
 
@@ -348,6 +342,10 @@ void SpellCheckerDialog::InitialDialog(void)
 		if (_bAspellIsWorking == TRUE)
 		{
 			CreateThreadResources();
+		}
+		else
+		{
+			::EndDialog(_hSelf, TRUE);
 		}
 	}
 	else
@@ -384,9 +382,9 @@ BOOL SpellCheckerDialog::FillLanguages(void)
 	UINT	uElementCnt	= 0;
 	while ((entry = aspell_dict_info_enumeration_next(dels)) != 0) 
 	{
-		::SendMessage(_hLang, CB_INSERTSTRING, uElementCnt++, (LPARAM)entry->name);
+		::SendMessageA(_hLang, CB_INSERTSTRING, uElementCnt++, (LPARAM)entry->name);
 	}
-	::SendMessage(_hLang, CB_SETMINVISIBLE, uElementCnt, 0);
+	::SendMessageA(_hLang, CB_SETMINVISIBLE, uElementCnt, 0);
 
 	delete_aspell_dict_info_enumeration(dels);
 	return TRUE;
@@ -419,14 +417,20 @@ void SpellCheckerDialog::UpdateLanguage(void)
 
 	/* set language */
 	aspCfg = new_aspell_config();
+#ifdef UNICODE
+	CHAR	szLang[MAX_OF_LANG] = "\0";
+	::WideCharToMultiByte(CP_ACP, 0, _pSCProp->szLang, -1, szLang, MAX_OF_LANG, NULL, NULL);
+	aspell_config_replace(aspCfg, "lang", szLang);
+#else
 	aspell_config_replace(aspCfg, "lang", _pSCProp->szLang);
+#endif
 
 	/* set in current encoding */
 	_uniMode = GetCurrentEncoding();
 	aspell_config_replace(aspCfg, "encoding", szEnc[_uniMode]);
 
 	/* set filter */
-	LangType	langType = L_END;
+	LangType	langType = L_EXTERNAL;
 	::SendMessage(_hParent, NPPM_GETCURRENTLANGTYPE, 0, (LPARAM)&langType);
 	switch (langType) {
 		case L_HTML: 
@@ -442,11 +446,8 @@ void SpellCheckerDialog::UpdateLanguage(void)
 
 	if (aspell_error(aspRet) != 0)
 	{
-		TCHAR	szErrorMsg[MAX_PATH];
-		sprintf(szErrorMsg, _T("Error:\n%s"), aspell_error_message(aspRet));
-		::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
+		AspellErrorMsgBox(_hSelf, aspell_error_message(aspRet));
 		delete_aspell_can_have_error(aspRet);
-		::DestroyWindow(_hSelf);
 		return;
 	}
 
@@ -458,9 +459,7 @@ void SpellCheckerDialog::UpdateLanguage(void)
 
 	if (aspell_error(aspRet) != 0)
 	{
-		TCHAR	szErrorMsg[MAX_PATH];
-		sprintf(szErrorMsg, _T("Error:\n%s"), aspell_error_message(aspRet));
-		::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
+		AspellErrorMsgBox(_hSelf, aspell_error_message(aspRet));
 		::DestroyWindow(_hSelf);
 	    return;
 	}
@@ -476,9 +475,7 @@ void SpellCheckerDialog::FillSuggList(const AspellWordList *wl)
 
 	if (wl == 0)
 	{
-		TCHAR	szErrorMsg[MAX_PATH];
-		sprintf(szErrorMsg, _T("Error: %s"), aspell_speller_error_message(_aspSpeller));
-		::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
+		AspellErrorMsgBox(_hSelf, aspell_speller_error_message(_aspSpeller));
 	}
 	else
 	{
@@ -487,7 +484,7 @@ void SpellCheckerDialog::FillSuggList(const AspellWordList *wl)
 		while ((pWord = aspell_string_enumeration_next(els)) != 0)
 		{
 			if (_uniMode == uni8Bit) {
-				::SendMessage(_hSuggList, LB_ADDSTRING, 0, (LPARAM)pWord);
+				::SendMessageA(_hSuggList, LB_ADDSTRING, 0, (LPARAM)pWord);
 			} else  {
 				WCHAR	wcChar[MAX_WORD_UNI];
 				::ZeroMemory(wcChar, sizeof(wcChar));
@@ -564,7 +561,7 @@ RTHR SpellCheckerDialog::NextMisspelling(void)
 		{
 			if (_pszLine != NULL) delete [] _pszLine;
 			_uSizeLineBuf = _iLineEndPos-_iLineStartPos+1;
-			_pszLine = (LPTSTR) new TCHAR[_uSizeLineBuf];
+			_pszLine = (LPSTR) new CHAR[_uSizeLineBuf];
 		}
 
 		/* get line for test */
@@ -590,13 +587,8 @@ RTHR SpellCheckerDialog::NextMisspelling(void)
 
 	if ((_iCurLine > _iLastLine) && (_aspToken.len == 0))
 	{
-		LPTSTR	wPtr = NULL;
-		TCHAR	text[MAX_PATH];
-		if (NLGetText(_hInst, _nppData._nppHandle, "MsgBox Done", text, MAX_PATH)) {
-			wPtr = _tcstok(text, _T("\t"));
-			wPtr = _tcstok(NULL, _T("\t"));
-			::MessageBox(_hSelf, text, wPtr, MB_OK);
-		} else {
+		if (NLMessageBox(_hInst, _nppData._nppHandle, _T("MsgBox Done"), MB_OK, _hSelf) == FALSE)
+		{
 			::MessageBox(_hSelf, _T("Done"), _T("Spell-Checker"), MB_OK);
 		}
 		return SC_STOP;
@@ -607,7 +599,7 @@ RTHR SpellCheckerDialog::NextMisspelling(void)
 
 RTHR SpellCheckerDialog::CheckWord(bool showAspellError)
 {
-    TCHAR   pszReplaceWord[MAX_PATH];
+    CHAR   pszReplaceWord[MAX_PATH];
 
     /* get current word */
     GetEditText(_hNewEdit, pszReplaceWord, MAX_PATH);
@@ -623,9 +615,7 @@ RTHR SpellCheckerDialog::CheckWord(bool showAspellError)
 	}
 	else if ((error != 1) && (showAspellError))
 	{
-		TCHAR	szErrorMsg[MAX_PATH];
-		sprintf(szErrorMsg, _T("Error: %s"), aspell_speller_error_message(_aspSpeller));
-		::MessageBox(_hSelf, szErrorMsg, _T("GNU Aspell"), MB_OK);
+		AspellErrorMsgBox(_hSelf, aspell_speller_error_message(_aspSpeller));
         ::SetEvent(hEvent[EID_CANCEL]);
     }
     return SC_NEXT;
@@ -678,7 +668,7 @@ UniMode SpellCheckerDialog::GetCurrentEncoding(void)
 void SpellCheckerDialog::GetEditText(HWND hWnd, char* lpString, int nMaxCount)
 {
 	if (_uniMode == uni8Bit) {
-		::SendMessage(hWnd, WM_GETTEXT, nMaxCount, (LPARAM)lpString);
+		::SendMessageA(hWnd, WM_GETTEXT, nMaxCount, (LPARAM)lpString);
 	} else	{
 		WCHAR	wcChar[MAX_WORD_UNI];
 		::ZeroMemory(wcChar, sizeof(wcChar));
@@ -687,10 +677,10 @@ void SpellCheckerDialog::GetEditText(HWND hWnd, char* lpString, int nMaxCount)
 	}
 }
 
-void SpellCheckerDialog::SetEditText(HWND hWnd, LPTSTR lpString)
+void SpellCheckerDialog::SetEditText(HWND hWnd, LPSTR lpString)
 {
 	if (_uniMode == uni8Bit) {
-		::SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)lpString);
+		::SendMessageA(hWnd, WM_SETTEXT, 0, (LPARAM)lpString);
 	} else {
 		WCHAR	wcChar[MAX_WORD_UNI];
 		::ZeroMemory(wcChar, sizeof(wcChar));

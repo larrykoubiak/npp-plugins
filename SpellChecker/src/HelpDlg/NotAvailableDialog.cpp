@@ -37,10 +37,10 @@ BOOL CALLBACK NotAvailableDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wP
 			::SetDlgItemText(_hSelf, IDC_EDIT_RELPATH, _pSCProp->szRelPath);
 
             _urlAspellWin32.init(_hInst, _hSelf);
-            _urlAspellWin32.create(::GetDlgItem(_hSelf, IDC_ASPELL_WIN_URL), "http://aspell.net/win32/");
+            _urlAspellWin32.create(::GetDlgItem(_hSelf, IDC_ASPELL_WIN_URL), _T("http://aspell.net/win32/"));
 
 			/* Change dialog lang */
-			NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, "NotAvailable");
+			NLChangeDialog(_hInst, _nppData._nppHandle, _hSelf, _T("NotAvailable"));
 
 			return TRUE;
 		}
