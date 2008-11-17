@@ -23,29 +23,38 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define WIN32_LEAN_AND_MEAN
 #include "PluginInterface.h"
+#include "NativeLangResource.h"
 #include <windows.h>
 #include <zmouse.h>
 #include <windowsx.h>
 #include <commctrl.h>
 #include "Scintilla.h"
 #include <TCHAR.H>
-
+#include <vector>
 #include <string>
+
+
+#ifdef _UNICODE
+#define string wstring
+#endif
 
 using namespace std;
 
+void openHelpDlg(void);
+void attachSupportedPlugin(LPCTSTR strSupportedPlugin);
+
+extern vector<string> vSupportedPlugins;
 
 /* store name for ini file */
 const TCHAR NATIVELANG_INI[]	= _T("\\NativeLang.ini");
 
 /* change of possible controlls */
-void changeDialog(LPCSTR pszPlInName, LPCSTR pszDlgName, HWND hDlg);
-void changeNppMenu(LPCSTR pszPlInName, LPCSTR pszMenuName, FuncItem * funcItems, UINT count);
-BOOL changeMenu(LPCSTR pszPlInName, LPCSTR pszMenuName, HMENU hMenu, UINT uFlags);
-void changeHeader(LPCSTR pszPlInName, LPCSTR pszHeaderName, HWND hHeader);
-void changeCombo(LPCSTR pszPlInName, LPCSTR pszComboName, HWND hCombo, UINT count);
-UINT getTextA(LPCSTR pszPlInName, LPCSTR pszKey, LPSTR* ppszText, UINT length);
-UINT getTextW(LPCSTR pszPlInName, LPCSTR pszKey, LPWSTR* ppszText, UINT length);
+void changeDialog(LPCTSTR pszPlInName, LPCTSTR pszDlgName, HWND hDlg);
+void changeNppMenu(LPCTSTR pszPlInName, LPCTSTR pszMenuName, FuncItem * funcItems, UINT count);
+BOOL changeMenu(LPCTSTR pszPlInName, LPCTSTR pszMenuName, HMENU hMenu, UINT uFlags);
+void changeHeader(LPCTSTR pszPlInName, LPCTSTR pszHeaderName, HWND hHeader);
+void changeCombo(LPCTSTR pszPlInName, LPCTSTR pszComboName, HWND hCombo, UINT count);
+UINT getText(LPCTSTR pszPlInName, LPCTSTR pszKey, LPTSTR* ppszText, UINT length);
 
 
 
