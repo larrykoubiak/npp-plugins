@@ -40,7 +40,7 @@ BEGIN
     LTEXT           "eMail:",IDC_STATIC_MAIL,12,41,51,8
     LTEXT           "Manager...\t\t\tViews the file list dialog.",
                     IDC_STATIC_MANAGER,15,76,203,9
-    CTEXT           "Window Manager Plugin for Notepad++ v4.9.2                  v1.1.2",
+    CTEXT           "Window Manager Plugin for Notepad++ v5.1 (UNI)             v1.2",
                     IDC_STATIC,5,6,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
                     WS_EX_TRANSPARENT
     LTEXT           "http://sourceforge.net/projects/npp-plugins/",
@@ -128,13 +128,13 @@ IDC_LEFTRIGHT           CURSOR                  "..\\res\\leftright.cur"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,2,0
- PRODUCTVERSION 1,1,2,0
+ FILEVERSION 1,2,0,0
+ PRODUCTVERSION 1,2,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
- FILEFLAGS 0x1L
+ FILEFLAGS 0x21L
 #else
- FILEFLAGS 0x0L
+ FILEFLAGS 0x20L
 #endif
  FILEOS 0x40004L
  FILETYPE 0x2L
@@ -147,12 +147,13 @@ BEGIN
             VALUE "Comments", "Visit https://sourceforge.net/projects/npp-plugins"
             VALUE "CompanyName", "Jens Lorenz"
             VALUE "FileDescription", "Notepad++ Window Manager Plugin : a free (GNU) source code window manager"
-            VALUE "FileVersion", "1, 1, 2, 0"
+            VALUE "FileVersion", "1, 2, 0, 0"
             VALUE "InternalName", "Window Manager"
-            VALUE "LegalCopyright", "Copyright © 2007"
+            VALUE "LegalCopyright", "Copyright © 2007- 2008"
             VALUE "OriginalFilename", "WndMgr.dll"
             VALUE "ProductName", "Window Manager"
-            VALUE "ProductVersion", "1, 1, 2, 0"
+            VALUE "ProductVersion", "1, 2, 0, 0"
+            VALUE "SpecialBuild", "UNICODE"
         END
     END
     BLOCK "VarFileInfo"

@@ -24,6 +24,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "PluginInterface.h"
 #include "Window.h"
 #include <commctrl.h>
+#include <tchar.h>
 
 
 using namespace std;
@@ -47,7 +48,7 @@ public:
 // Implementation
 public:
 	virtual void init(HINSTANCE hInst, HWND hParent);
-	void Show(RECT rectTitle, char* pszTitleText, int iXOff = 0, int iWidthOff = 0);
+	void Show(RECT rectTitle, LPTSTR pszTitleText, int iXOff = 0, int iWidthOff = 0);
 
 protected:
     WNDPROC		_defaultProc;
