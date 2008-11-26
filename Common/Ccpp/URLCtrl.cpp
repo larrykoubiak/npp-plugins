@@ -99,7 +99,7 @@ void URLCtrl::create(HWND itemHandle, LPTSTR link, COLORREF linkColor)
 
 	// set the URL text (not the display text)
 	if (link)
-		strcpy(_URL, link);
+		lstrcpy(_URL, link);
 
 	// set the hyperlink colour
     _linkColor = linkColor;
@@ -206,13 +206,13 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			    // Open a browser
 			    if(_URL[0])
 			    {
-                    ::ShellExecute(NULL, "open", _URL, NULL, NULL, SW_SHOWNORMAL);
+                    ::ShellExecute(NULL, TEXT("open"), _URL, NULL, NULL, SW_SHOWNORMAL);
 			    }
 			    else
 			    {
-                    char szWinText[_MAX_PATH];
+                    TCHAR szWinText[_MAX_PATH];
                     ::GetWindowText(hwnd, szWinText, sizeof szWinText);
-                    ::ShellExecute(NULL, "open", szWinText, NULL, NULL, SW_SHOWNORMAL);
+                    ::ShellExecute(NULL, TEXT("open"), szWinText, NULL, NULL, SW_SHOWNORMAL);
 			    }
 		    }
 
