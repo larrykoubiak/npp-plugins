@@ -66,6 +66,65 @@ FuncItem funcItem[MCP_NUM_FUNC_ITEM];
 #define EXTENDED_KEY (0x00000001 << 24)
 
 
+class ScintillaWrapper
+{
+public:
+	HWND hWnd;
+	LRESULT (WINAPI *ScintillaCallWndProc) (WNDPROC,HWND,UINT,WPARAM,LPARAM);
+	int (* ScintillaFunc) (void*, int, int, int);
+	void * ScintillaPtr;
+	WNDPROC OriginalScintillaWndProc;
+
+	ScintillaWrapper()
+		:
+		hWnd(0)
+		,ScintillaCallWndProc(0)
+		,ScintillaFunc(0)
+		,ScintillaPtr(0)
+		,OriginalScintillaWndProc(0)
+	{}
+
+	void Init( HWND hScintilla, WNDPROC NewWndProc )
+	{
+		hWnd = hScintilla;
+		SubclassScintillaWndProc( NewWndProc );
+		ScintillaFunc = (int(*)(void*,int,int,int))::SendMessage( hScintilla, SCI_GETDIRECTFUNCTION, 0, 0);
+		ScintillaPtr = (void*)::SendMessage( hScintilla, SCI_GETDIRECTPOINTER, 0, 0);
+	}
+
+	void CleanUp()
+	{
+		if ( ::IsWindowUnicode( hWnd ) )
+		{
+			SetWindowLongW( hWnd, GWL_WNDPROC, (LONG) OriginalScintillaWndProc );
+		}
+		else
+		{
+			SetWindowLongA( hWnd, GWL_WNDPROC, (LONG) OriginalScintillaWndProc );
+		}
+	}
+
+	LRESULT execute(UINT Msg, WPARAM wParam=0, LPARAM lParam=0) const
+	{
+		return ScintillaFunc(ScintillaPtr, static_cast<int>(Msg), static_cast<int>(wParam), static_cast<int>(lParam));
+	};
+
+private:
+	void SubclassScintillaWndProc( WNDPROC NewWndProc )
+	{
+		if ( ::IsWindowUnicode( hWnd ) )
+		{
+			ScintillaCallWndProc = CallWindowProcW;
+			OriginalScintillaWndProc = (WNDPROC) SetWindowLongW( hWnd, GWL_WNDPROC, (LONG) NewWndProc );
+		}
+		else
+		{
+			ScintillaCallWndProc = CallWindowProcA;
+			OriginalScintillaWndProc = (WNDPROC) SetWindowLongA( hWnd, GWL_WNDPROC, (LONG) NewWndProc );
+		}
+	}
+};
+
 // *PATCH* --------------------------------------------------------------------
 //quick & dirty "debugger"
 //#include <stdio.h>
@@ -82,14 +141,14 @@ bool bNumberedPasteList = true;			// Use numbers instead of text characters as p
 
 
 // npp variables
+ScintillaWrapper ScintillaMain;
+ScintillaWrapper ScintillaSecond;
 char configPath[MAX_PATH];
 char iniFilePath[MAX_PATH];
 std::vector<std::string> copyTextList;	// The list of text that is copied
 const int MENU_TEXT_LENGTH = 42;		// Number of char to display in the popup menu
 const int TIMER_ID = MULTI_COPY_MENU_CMD;	// Timer ID used in WM_TIMER for auto copy text
 WNDPROC oldNppWndProc = 0;				// nppData._nppHandle's Windows procedure
-WNDPROC oldScintillaMainWndProc = 0;	// nppData._scintillaMainHandle's Windows procedure
-WNDPROC oldScintilla2ndWndProc = 0;		// nppData._scintillaSecondHandle's Windows procedure
 HMENU hPasteMenu = 0;					// Handle to popup menu for paste items
 bool useMouseCoords = false;			// Use mouse coords to display popup menu?
 int prevSelStart = -1;					// Start of last selected text position
@@ -105,13 +164,13 @@ size_t iCurCyclePos = 0;				// Pointer to element of paste list during cycle
 // function prototypes
 void loadSettings(void);
 void saveSettings(void);
-HWND getCurrentScintillaHwnd();
-void pasteClipboardItem( int id, HWND hCurrScintilla );
-void pasteClipboardItemCycle( HWND hCurrScintilla );
+ScintillaWrapper * getCurrentScintilla();
+void pasteClipboardItem( int id, ScintillaWrapper * pCurrScintilla );
+void pasteClipboardItemCycle( ScintillaWrapper * pCurrScintilla );
 void multiClipboardPaste();
 LRESULT CALLBACK multiClipboardSubClassWndProc(HWND, UINT, WPARAM, LPARAM);
 void recreateCopyMenu();
-void rearangeList( int posBringToTop, HWND hCurrScintilla );
+void rearrangeList( int posBringToTop, ScintillaWrapper * pCurrScintilla );
 void onCopyText();
 void createMenuText( std::string str, char * menuTextBuf, int index );
 void cleanup();
@@ -197,8 +256,8 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	loadSettings();
 
     oldNppWndProc = (WNDPROC) SetWindowLong( nppData._nppHandle, GWL_WNDPROC, (LONG) multiClipboardSubClassWndProc );
-    oldScintillaMainWndProc = (WNDPROC) SetWindowLong( nppData._scintillaMainHandle, GWL_WNDPROC, (LONG) multiClipboardSubClassWndProc );
-	oldScintilla2ndWndProc = (WNDPROC) SetWindowLong( nppData._scintillaSecondHandle, GWL_WNDPROC, (LONG) multiClipboardSubClassWndProc );
+	ScintillaMain.Init( nppData._scintillaMainHandle, multiClipboardSubClassWndProc );
+	ScintillaSecond.Init( nppData._scintillaSecondHandle, multiClipboardSubClassWndProc );
 
 	clearClipboardItems();
 }
@@ -319,15 +378,15 @@ void saveSettings(void)
 	::WritePrivateProfileString(PLUGIN_NAME, NUMBERED_PASTE_LIST, _itoa((int)bNumberedPasteList, temp, 10), iniFilePath);
 }
 
-HWND getCurrentScintillaHwnd()
+ScintillaWrapper * getCurrentScintilla()
 {
 	int currentEdit;
 	::SendMessage( nppData._nppHandle, NPPM_GETCURRENTSCINTILLA, 0, (LPARAM)&currentEdit );
-	return ( currentEdit == 0 ) ? nppData._scintillaMainHandle : nppData._scintillaSecondHandle;
+	return ( currentEdit == 0 ) ? &ScintillaMain : &ScintillaSecond;
 }
 
 
-void pasteClipboardItem( int id, HWND hCurrScintilla )
+void pasteClipboardItem( int id, ScintillaWrapper * pCurrScintilla )
 {
 	// Check menu selection
 	if ( id >= MULTI_COPY_MENU_CMD && id < (MULTI_COPY_MENU_CMD + MAX_LIST_SIZE) )
@@ -344,14 +403,14 @@ void pasteClipboardItem( int id, HWND hCurrScintilla )
 		std::advance( iter, idx );	// Move the iterator to the correct text
 
 		// Paste the text into the editor
-		::SendMessage( hCurrScintilla, SCI_REPLACESEL, 0, (LPARAM) iter->c_str() );
+		pCurrScintilla->execute( SCI_REPLACESEL, 0, (LPARAM) iter->c_str() );
 
 		// Move the selected item to the front of the list
-		rearangeList( idx, hCurrScintilla );
+		rearrangeList( idx, pCurrScintilla );
 	}
 }
 
-void pasteClipboardItemCycle( HWND hCurrScintilla )
+void pasteClipboardItemCycle( ScintillaWrapper * pCurrScintilla )
 {
 	size_t	size = copyTextList.size();
 	if ( size )
@@ -359,7 +418,7 @@ void pasteClipboardItemCycle( HWND hCurrScintilla )
 		/* start keyboard sniffering and enable cycle mode */
 		if (bDoMCCycle == false)
 		{
-			::SendMessage( hCurrScintilla, SCI_BEGINUNDOACTION, 0, 0 );
+			pCurrScintilla->execute( SCI_BEGINUNDOACTION, 0, 0 );
 			bIsShiftUp = false;
 			bIsCtrlUp = false;
 			bDoMCCycle = true;
@@ -383,13 +442,13 @@ void pasteClipboardItemCycle( HWND hCurrScintilla )
 		std::advance( iter, iCurCyclePos );	// Move the iterator to the correct text
 
 		// Get current position of cursor
-		UINT iCurPos = ::SendMessage( hCurrScintilla, SCI_GETSELECTIONSTART, 0, 0 );
+		UINT iCurPos = pCurrScintilla->execute( SCI_GETSELECTIONSTART, 0, 0 );
 
 		// Paste the text into the editor
-		::SendMessage( hCurrScintilla, SCI_REPLACESEL, 0, (LPARAM) iter->c_str() );
+		pCurrScintilla->execute( SCI_REPLACESEL, 0, (LPARAM) iter->c_str() );
 
 		// Select replaced text
-		::SendMessage( hCurrScintilla, SCI_SETSEL, iCurPos, (LPARAM) (iCurPos + iter->size()) );
+		pCurrScintilla->execute( SCI_SETSEL, iCurPos, (LPARAM) (iCurPos + iter->size()) );
 
 // *PATCH* --------------------------------------------------------------------
       // keep selection positions up-to-date [080203 BN]
@@ -410,7 +469,7 @@ void multiClipboardPaste()
 	}
 
     // Get current scintilla editor
-    HWND hCurrScintilla = getCurrentScintillaHwnd();
+	ScintillaWrapper * pCurrScintilla = getCurrentScintilla();
 
 	if (bShowPasteList == true)
 	{
@@ -422,10 +481,10 @@ void multiClipboardPaste()
 		else
 		{
 			// Get current cursor position
-			int currentPos = ::SendMessage( hCurrScintilla, SCI_GETCURRENTPOS, 0, 0 );
-			pt.x = ::SendMessage( hCurrScintilla, SCI_POINTXFROMPOSITION, 0, (LPARAM)currentPos );
-			pt.y = ::SendMessage( hCurrScintilla, SCI_POINTYFROMPOSITION, 0, (LPARAM)currentPos );
-			ClientToScreen( hCurrScintilla, &pt );
+			int currentPos = pCurrScintilla->execute( SCI_GETCURRENTPOS, 0, 0 );
+			pt.x = pCurrScintilla->execute( SCI_POINTXFROMPOSITION, 0, (LPARAM)currentPos );
+			pt.y = pCurrScintilla->execute( SCI_POINTYFROMPOSITION, 0, (LPARAM)currentPos );
+			ClientToScreen( pCurrScintilla->hWnd, &pt );
 		}
 
 		// Popup the menu
@@ -443,11 +502,11 @@ void multiClipboardPaste()
 		bEnableMiddleClickPaste = mClickState;
 // -------------------------------------------------------------------- *PATCH*
 
-		pasteClipboardItem( id, hCurrScintilla );
+		pasteClipboardItem( id, pCurrScintilla );
 	}
 	else
 	{
-		pasteClipboardItemCycle( hCurrScintilla );
+		pasteClipboardItemCycle( pCurrScintilla );
 	}
 }
 
@@ -463,13 +522,13 @@ struct selection
 {
    int start, end;
 
-   selection( HWND hCurrScintilla=0 )
+   selection( ScintillaWrapper * pCurrScintilla=0 )
    {
-      if( ! hCurrScintilla )
-         hCurrScintilla = getCurrentScintillaHwnd();
+      if( ! pCurrScintilla )
+         pCurrScintilla = getCurrentScintilla();
 
-      start = ::SendMessage( hCurrScintilla, SCI_GETSELECTIONSTART, 0, 0 );
-      end   = ::SendMessage( hCurrScintilla, SCI_GETSELECTIONEND  , 0, 0 );
+	  start = pCurrScintilla->execute( SCI_GETSELECTIONSTART, 0, 0 );
+      end   = pCurrScintilla->execute( SCI_GETSELECTIONEND  , 0, 0 );
    }
 
    bool isActive() { return start != end; }
@@ -584,9 +643,9 @@ void paste( int method=npp, int clickPt=-1 )
    std::string snippet;
 
    // Get current scintilla editor
-   HWND hCurrScintilla = getCurrentScintillaHwnd();
+   ScintillaWrapper * pCurrScintilla = getCurrentScintilla();
    // and its selection extents
-   selection sel( hCurrScintilla );
+   selection sel( pCurrScintilla );
 
    // If we got here via keystroke,
    if( clickPt == -1 )
@@ -623,9 +682,9 @@ void paste( int method=npp, int clickPt=-1 )
       {
          // if not replacing an active selection, move cursor to clickpoint
          if( ! pasteover )
-            ::SendMessage( hCurrScintilla, SCI_GOTOPOS, clickPt, 0 );
+			 pCurrScintilla->execute( SCI_GOTOPOS, clickPt, 0 );
          // paste
-         ::SendMessage( hCurrScintilla, SCI_REPLACESEL, 0, (LPARAM) snippet.c_str() );
+         pCurrScintilla->execute( SCI_REPLACESEL, 0, (LPARAM) snippet.c_str() );
       }
    }
 }
@@ -648,7 +707,7 @@ LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, L
 		}
 		else if ( id >= MULTI_COPY_MENU_CMD && id < (MULTI_COPY_MENU_CMD + MAX_LIST_SIZE) )
 		{
-			pasteClipboardItem( id, getCurrentScintillaHwnd() );
+			pasteClipboardItem( id, getCurrentScintilla() );
 		}
 // *PATCH* --------------------------------------------------------------------
 		else if ( id == IDM_EDIT_PASTE )
@@ -679,10 +738,10 @@ LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, L
 // -------------------------------------------------------------------- *PATCH*
 		{
 			// Get current scintilla editor
-			HWND hCurrScintilla = getCurrentScintillaHwnd();
+			ScintillaWrapper * pCurrScintilla = getCurrentScintilla();
 
 			// Set cursor position to mouse position
-			int currPos = ::SendMessage( hCurrScintilla, SCI_POSITIONFROMPOINT, LOWORD(lp), HIWORD(lp) );
+			int currPos = pCurrScintilla->execute( SCI_POSITIONFROMPOINT, LOWORD(lp), HIWORD(lp) );
 // *PATCH* --------------------------------------------------------------------
 // (this step delayed till paste())
 //			::SendMessage( hCurrScintilla, SCI_GOTOPOS, currPos, 0 );
@@ -729,7 +788,8 @@ LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, L
 			if ( wp == VK_CONTROL ) {
 				bIsCtrlUp = true;
 			}
-			if ( bIsShiftUp || bIsCtrlUp ) {
+			if ( bIsShiftUp || bIsCtrlUp )
+			{
 // *PATCH* --------------------------------------------------------------------
 //				// Move the selected item to the front of the list
 //				if ( iCurCyclePos >= copyTextList.size() )
@@ -737,15 +797,23 @@ LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, L
 //				else
 //					rearangeList( iCurCyclePos, hwnd );
 
-            // see pasteClipboardItemCycle [080212 BN]
-            rearangeList( iCurCyclePos, hwnd );
+				// see pasteClipboardItemCycle [080212 BN]
 // -------------------------------------------------------------------- *PATCH*
-				SendMessage( hwnd, SCI_ENDUNDOACTION, 0, 0 );
+				if ( nppData._scintillaMainHandle == hwnd )	// Main Scintilla Window
+				{
+					rearrangeList( iCurCyclePos, &ScintillaMain );
+					ScintillaMain.execute( SCI_ENDUNDOACTION, 0, 0 );
+				}
+				if ( nppData._scintillaSecondHandle == hwnd )	// Second Scintilla Window
+				{
+					rearrangeList( iCurCyclePos, &ScintillaSecond );
+					ScintillaSecond.execute( SCI_ENDUNDOACTION, 0, 0 );
+				}
 				SetTimer( nppData._nppHandle, TIMER_ID, 500, onAutoCopyTimer );
 				bDoMCCycle = false;
 // *PATCH* --------------------------------------------------------------------
-            // lets autoCopyUndo() know the active selection wasn't autocopied
-            bIsCycleSelection = true;
+				// lets autoCopyUndo() know the active selection wasn't autocopied
+				bIsCycleSelection = true;
 // -------------------------------------------------------------------- *PATCH*
 			}
 		}
@@ -755,17 +823,17 @@ LRESULT CALLBACK multiClipboardSubClassWndProc(HWND hwnd, UINT msg, WPARAM wp, L
     // Find the correct windows procedure to call
     if ( nppData._scintillaMainHandle == hwnd )	// Main Scintilla Window
     {
-        return CallWindowProc( oldScintillaMainWndProc, hwnd, msg, wp, lp );
+		return ScintillaMain.ScintillaCallWndProc( ScintillaMain.OriginalScintillaWndProc, hwnd, msg, wp, lp );
     }
     if ( nppData._scintillaSecondHandle == hwnd )	// Second Scintilla Window
     {
-        return CallWindowProc( oldScintilla2ndWndProc, hwnd, msg, wp, lp );
+        return ScintillaSecond.ScintillaCallWndProc( ScintillaSecond.OriginalScintillaWndProc, hwnd, msg, wp, lp );
     }
     // Notepad++ Window
     return CallWindowProc( oldNppWndProc, hwnd, msg, wp, lp );
 }
 
-void rearangeList( int posBringToTop, HWND hCurrScintilla )
+void rearrangeList( int posBringToTop, ScintillaWrapper * pCurrScintilla )
 {
 	if ( posBringToTop != 0 )
 	{
@@ -778,7 +846,7 @@ void rearangeList( int posBringToTop, HWND hCurrScintilla )
 		copyTextList.insert( copyTextList.begin(), text );
 
 		// Copy selected text to clipboard
-		::SendMessage( hCurrScintilla, SCI_COPYTEXT, (WPARAM) text.length(), (LPARAM) text.c_str() );
+		pCurrScintilla->execute( SCI_COPYTEXT, (WPARAM) text.length(), (LPARAM) text.c_str() );
 
 		// Recreate the menu
 		recreateCopyMenu();
@@ -841,10 +909,10 @@ void recreateCopyMenu()
 void onCopyText()
 {
     // Get current scintilla editor
-    HWND hCurrScintilla = getCurrentScintillaHwnd();
+	ScintillaWrapper * pCurrScintilla = getCurrentScintilla();
 
     // Get length of selected text
-    int textLength = ::SendMessage( hCurrScintilla, SCI_GETSELTEXT, 0, 0 );
+	int textLength = pCurrScintilla->execute( SCI_GETSELECTIONEND ) - pCurrScintilla->execute( SCI_GETSELECTIONSTART );
     if ( 0 == textLength )
     {
         // No text selected, return
@@ -852,9 +920,9 @@ void onCopyText()
     }
 
     // Allocate temporary memory for text
-    char * pTempText = new char[textLength];
+    char * pTempText = new char[textLength+1];
     // Get selected text
-	::SendMessage( hCurrScintilla, SCI_GETSELTEXT, 0, (LPARAM)pTempText );
+	pCurrScintilla->execute( SCI_GETSELTEXT, 0, (LPARAM)pTempText );
 
 	// Assign text to string object
 	std::string selectedText( pTempText );;
@@ -974,8 +1042,8 @@ void cleanup()
 
     // Unset the windows subclassing
 	::SetWindowLong( nppData._nppHandle, GWL_WNDPROC, (LONG)oldNppWndProc );
-    ::SetWindowLong( nppData._scintillaMainHandle, GWL_WNDPROC, (LONG)oldScintillaMainWndProc );
-    ::SetWindowLong( nppData._scintillaSecondHandle, GWL_WNDPROC, (LONG)oldScintilla2ndWndProc );
+    ScintillaMain.CleanUp();
+    ScintillaSecond.CleanUp();
 }
 
 
@@ -1137,11 +1205,11 @@ VOID CALLBACK onAutoCopyTimer( HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwT
 	}
 
 	// Get current scintilla editor
-	HWND hCurrScintilla = getCurrentScintillaHwnd();
+	ScintillaWrapper * pCurrScintilla = getCurrentScintilla();
 
 	int currSelStart = -1, currSelEnd = -1;
-	currSelStart = ::SendMessage( hCurrScintilla, SCI_GETSELECTIONSTART, 0, 0 );
-	currSelEnd   = ::SendMessage( hCurrScintilla, SCI_GETSELECTIONEND  , 0, 0 );
+	currSelStart = pCurrScintilla->execute( SCI_GETSELECTIONSTART, 0, 0 );
+	currSelEnd   = pCurrScintilla->execute( SCI_GETSELECTIONEND  , 0, 0 );
 
 // *PATCH* --------------------------------------------------------------------
 	if ( currSelStart == currSelEnd )

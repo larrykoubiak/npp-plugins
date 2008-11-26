@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="MultiClipboard"
 	ProjectGUID="{772EF47C-ACC5-48F8-8B73-BD9656261226}"
+	RootNamespace="MultiClipboard"
 	>
 	<Platforms>
 		<Platform
@@ -102,7 +103,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy debug\*.dll ..\npp\plugins\ /Y&#x0D;&#x0A;xcopy debug\*.pdb ..\npp\plugins\ /Y&#x0D;&#x0A;"
+				CommandLine="xcopy debug\*.dll ..\npp.4.8.2.src\build\plugins\ /Y&#x0D;&#x0A;xcopy debug\$(ProjectName).pdb ..\npp.4.8.2.src\build\plugins\ /Y&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration

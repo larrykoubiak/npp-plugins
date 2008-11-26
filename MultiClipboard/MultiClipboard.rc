@@ -53,8 +53,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,4,1,0
- PRODUCTVERSION 1,4,1,0
+ FILEVERSION 1,4,1,1
+ PRODUCTVERSION 1,4,1,1
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -70,12 +70,12 @@ BEGIN
         BLOCK "480904b0"
         BEGIN
             VALUE "FileDescription", "MultiClipboard plugin for Notepad++"
-            VALUE "FileVersion", "1, 4, 1, 0"
+            VALUE "FileVersion", "1, 4, 1, 1"
             VALUE "InternalName", "MultiClipboard"
             VALUE "LegalCopyright", "Copyright (C) 2008"
             VALUE "OriginalFilename", "MultiClipboard.dll"
             VALUE "ProductName", "MultiClipboard"
-            VALUE "ProductVersion", "1, 4, 1, 0"
+            VALUE "ProductVersion", "1, 4, 1, 1"
         END
     END
     BLOCK "VarFileInfo"
