@@ -37,6 +37,14 @@ class ClipboardListener
 {
 public:
 	virtual void OnNewClipboardText( std::wstring & text ) = 0;
+	virtual void OnTextPasted() = 0;
+};
+
+
+class CyclicPasteEndUndoActionListener
+{
+public:
+	virtual void OnEndUndoAction() = 0;
 };
 
 
@@ -56,20 +64,36 @@ public:
 	void GetTextInSystemClipboard( std::wstring & text );
 
 	// Functions needed by plugin's various MVCs
+	// Returns if npp is the foreground window
 	BOOL IsNppForegroundWindow();
 	// Sets input focus to scintilla document and not the plugin dialog
 	void SetFocusToDocument();
 	// Get the position of caret
 	POINT GetCurrentCaretPosition();
+	// Get the position of current selection
+	void GetCurrentSelectionPosition( int & start, int & end );
+	// Set the position of current selection
+	void SetCurrentSelectionPosition( const int start, const int end );
+	// Replace the currently selected text
+	void ReplaceSelectionText( const std::wstring & text );
+	// Tells scintilla window to begin undo action
+	void CyclicPasteBeginUndoAction( CyclicPasteEndUndoActionListener * pListener );
+	// Tells scintilla window to end undo action
+	void CyclicPasteEndUndoAction();
 
 	// For pasting text to Notepad++'s current document from the plugin's various MVCs
 	void PasteTextToNpp( std::wstring & text );
+
+	// Useful for debugging purposes
+	void PrintText( char * format, ... );
 
 	// To store next clipboard viewer in OS chain
 	HWND hNextClipboardViewer;
 
 private:
 	ClipboardListener * pClipboardListener;
+	CyclicPasteEndUndoActionListener * pEndUndoActionListener;
+	bool isCyclicPasteUndoAction;
 
 	SciSubClassWrp * MultiClipboardProxy::GetCurrentScintilla();
 	UniMode GetCurrentEncoding( SciSubClassWrp * pScintilla );

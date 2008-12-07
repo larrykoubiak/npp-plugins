@@ -89,6 +89,14 @@ LRESULT CALLBACK MCSubClassSciWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 			g_ClipboardProxy.OnTextPastedInNpp();
 		}
 		break;
+
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		if ( wp == VK_SHIFT || wp == VK_CONTROL )
+		{
+			g_ClipboardProxy.CyclicPasteEndUndoAction();
+		}
+		break;
 	}
 
 	// Call scintilla view's window procedure

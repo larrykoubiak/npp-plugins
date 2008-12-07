@@ -53,7 +53,7 @@ void OSClipboardController::OnNewClipboardText( std::wstring & text )
 }
 
 
-void OSClipboardController::OnTextPastedInNpp()
+void OSClipboardController::OnTextPasted()
 {
 	if ( !(bGetClipTextFromOS && bOnlyWhenPastedInNpp) )
 	{

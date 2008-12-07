@@ -18,15 +18,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 #include "MultiClipboardProxy.h"
-#include "OSClipboardController.h"
+#include "stdio.h"
+#include <vector>
 
 extern NppData				g_NppData;
-extern OSClipboardController OSClipboard;
 extern SciSubClassWrp		g_ScintillaMain, g_ScintillaSecond;
 
 
 MultiClipboardProxy::MultiClipboardProxy()
 : pClipboardListener( 0 )
+, pEndUndoActionListener( 0 )
+, isCyclicPasteUndoAction( false )
 {
 }
 
@@ -67,7 +69,7 @@ void MultiClipboardProxy::OnNewClipboardText( std::wstring text )
 
 void MultiClipboardProxy::OnTextPastedInNpp()
 {
-	OSClipboard.OnTextPastedInNpp();
+	pClipboardListener->OnTextPasted();
 }
 
 
@@ -124,13 +126,78 @@ POINT MultiClipboardProxy::GetCurrentCaretPosition()
 }
 
 
-void MultiClipboardProxy::PasteTextToNpp( std::wstring & text )
+void MultiClipboardProxy::GetCurrentSelectionPosition( int & start, int & end )
+{
+	// Get active scintilla
+	SciSubClassWrp * pCurrentScintilla = GetCurrentScintilla();
+
+	start = pCurrentScintilla->execute( SCI_GETSELECTIONSTART, 0, 0 );
+	end = pCurrentScintilla->execute( SCI_GETSELECTIONEND, 0, 0 );
+}
+
+
+void MultiClipboardProxy::SetCurrentSelectionPosition( const int start, const int end )
+{
+	// Get active scintilla
+	SciSubClassWrp * pCurrentScintilla = GetCurrentScintilla();
+
+	pCurrentScintilla->execute( SCI_SETSEL, start, end );
+}
+
+
+void MultiClipboardProxy::ReplaceSelectionText( const std::wstring & text )
 {
 	// Get active scintilla
 	SciSubClassWrp * pCurrentScintilla = GetCurrentScintilla();
 
 	// Get code page of scintilla
-	UniMode CodePage = GetCurrentEncoding( pCurrentScintilla );
+	UINT codePage = ( uni8Bit == GetCurrentEncoding( pCurrentScintilla ) ) ? CP_ACP : CP_UTF8;
+
+	// Find the length of the text after conversion
+	int textLength = ::WideCharToMultiByte( codePage, 0, text.c_str(), -1, 0, 0, 0, 0 );
+	// Create the buffer that will hold the converted text
+	std::vector< char > buffer( textLength );
+	// And fill it up
+	::WideCharToMultiByte( codePage, 0, text.c_str(), -1, &buffer[0], textLength, 0, 0 );
+
+	// Paste the text into the editor
+	pCurrentScintilla->execute( SCI_REPLACESEL, 0, (LPARAM)&buffer[0] );
+}
+
+
+void MultiClipboardProxy::CyclicPasteBeginUndoAction( CyclicPasteEndUndoActionListener * pListener )
+{
+	if ( !isCyclicPasteUndoAction && pListener )
+	{
+		// Get active scintilla
+		SciSubClassWrp * pCurrentScintilla = GetCurrentScintilla();
+		pCurrentScintilla->execute( SCI_BEGINUNDOACTION );
+		isCyclicPasteUndoAction = true;
+		pEndUndoActionListener = pListener;
+	}
+}
+
+
+void MultiClipboardProxy::CyclicPasteEndUndoAction()
+{
+	if ( isCyclicPasteUndoAction && pEndUndoActionListener )
+	{
+		// Get active scintilla
+		SciSubClassWrp * pCurrentScintilla = GetCurrentScintilla();
+		pCurrentScintilla->execute( SCI_ENDUNDOACTION );
+		// Inform the listener
+		pEndUndoActionListener->OnEndUndoAction();
+		isCyclicPasteUndoAction = false;
+		// Unset the listener. This will be set again with a new undo action
+		pEndUndoActionListener = 0;
+	}
+}
+
+
+void MultiClipboardProxy::PasteTextToNpp( std::wstring & text )
+{
+	// Get active scintilla
+	SciSubClassWrp * pCurrentScintilla = GetCurrentScintilla();
 
 	// Put text into system clipboard
 	// First, allocate and copy text to a system memory
@@ -147,6 +214,20 @@ void MultiClipboardProxy::PasteTextToNpp( std::wstring & text )
 
 	// Paste text into scintilla
 	pCurrentScintilla->execute( SCI_PASTE );
+}
+
+
+void MultiClipboardProxy::PrintText( char * format, ... )
+{
+	char textBuffer[1024];
+	va_list args;
+
+	va_start( args, format );
+		vsprintf( textBuffer,format, args );
+		perror( textBuffer );
+	va_end( args );
+
+	GetCurrentScintilla()->execute( SCI_INSERTTEXT, 0, (LPARAM)textBuffer );
 }
 
 

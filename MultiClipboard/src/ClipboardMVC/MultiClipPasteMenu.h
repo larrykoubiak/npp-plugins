@@ -32,6 +32,7 @@ public:
 	MultiClipPasteMenu();
 
 	void ShowPasteMenu();
+	bool IsUsePasteMenu() { return bUsePasteMenu; }
 
 	virtual void OnModelModified();
 
@@ -42,6 +43,8 @@ private:
 	HMENU hPasteMenu;
 	bool bNumberedPasteList;
 	unsigned int MenuTextLength;
+	// Whether MultiClipboard plugin will use this (true) or MultiClipCyclicPaste (false)
+	bool bUsePasteMenu;
 
 	void RecreateCopyMenu();
 	void CreateMenuText( const std::wstring & InClipText, std::wstring & OutMenuString, const int index );

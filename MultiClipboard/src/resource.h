@@ -17,9 +17,10 @@
 #define IDC_TEXT_MAX_CLIPLIST_SIZE      1003
 #define IDC_CHECK_COPY_FROM_OTHER_PROGRAMS 1004
 #define IDC_CHECK_ONLY_WHEN_PASTE_IN_NPP 1005
-#define IDC_CHECK_NUMBERED_PASTE_MENU   1006
-#define IDC_EDIT_PASTE_MENU_WIDTH       1007
-#define IDC_TEXT_PASTE_MENU_WIDTH       1008
+#define IDC_CHECK_USE_PASTE_MENU        1006
+#define IDC_CHECK_NUMBERED_PASTE_MENU   1007
+#define IDC_EDIT_PASTE_MENU_WIDTH       1008
+#define IDC_TEXT_PASTE_MENU_WIDTH       1009
 #define IDM_EX_UP                       2001
 #define IDM_EX_DOWN                     2002
 #define IDM_EX_PASTE                    2003
@@ -46,7 +47,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        119
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1009
+#define _APS_NEXT_CONTROL_VALUE         1010
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

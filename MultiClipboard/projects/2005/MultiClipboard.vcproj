@@ -271,6 +271,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\..\src\ClipboardMVC\MultiClipCyclicPaste.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\..\src\ClipboardMVC\MultiClipPasteMenu.cpp"
 					>
 				</File>
@@ -301,10 +305,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath="..\..\src\mcpdbg.h"
-				>
-			</File>
 			<File
 				RelativePath="..\..\src\MCSubClassWndProc.h"
 				>
@@ -425,11 +425,11 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\ClipboardMVC\ITestView.h"
+					RelativePath="..\..\src\ClipboardMVC\ModelViewController.h"
 					>
 				</File>
 				<File
-					RelativePath="..\..\src\ClipboardMVC\ModelViewController.h"
+					RelativePath="..\..\src\ClipboardMVC\MultiClipCyclicPaste.h"
 					>
 				</File>
 				<File

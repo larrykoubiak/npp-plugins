@@ -30,6 +30,12 @@ Known Issues
 
 Version History
 ---------------
+DD MMM 200? - MultiClipboard 2.0 Preview 3
+-----------
+1. Added cyclic clipboard paste as an alternative to paste menu on Ctrl-Shift-V
+2. Refactored the code for the settings dialog (no user functionalities changed)
+
+
 22 Nov 2008 - MultiClipboard 2.0 Preview 2
 -----------
 1. Added NativeLang support

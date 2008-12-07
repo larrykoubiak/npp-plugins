@@ -80,8 +80,8 @@ void MultiClipboardSettingsDialog::ShowDialog( bool Show )
 	if ( !isCreated() )
 	{
 		create( IDD_OPTIONS_DLG );
+		LoadSettingsControlMap();
 		SubclassAllChildControls();
-		LoadControlHelpMap();
 	}
 	if ( Show )
 	{
@@ -139,28 +139,28 @@ BOOL CALLBACK MultiClipboardSettingsDialog::run_dlgProc( HWND hwnd, UINT message
 }
 
 
-void MultiClipboardSettingsDialog::SetIntValueToDialog( const TCHAR * GroupName, const TCHAR * SettingName, const int DlgItemID )
+void MultiClipboardSettingsDialog::SetIntValueToDialog( const std::wstring & GroupName, const std::wstring & SettingName, const int DlgItemID )
 {
 	int intValue = g_SettingsManager.GetIntSetting( GroupName, SettingName );
 	::SetDlgItemInt( _hSelf, DlgItemID, intValue, FALSE );
 }
 
 
-void MultiClipboardSettingsDialog::SetBoolValueToDialog( const TCHAR * GroupName, const TCHAR * SettingName, const int DlgItemID )
+void MultiClipboardSettingsDialog::SetBoolValueToDialog( const std::wstring & GroupName, const std::wstring & SettingName, const int DlgItemID )
 {
 	bool boolValue = g_SettingsManager.GetBoolSetting( GroupName, SettingName );
 	::CheckDlgButton( _hSelf, DlgItemID, boolValue ? BST_CHECKED : BST_UNCHECKED );
 }
 
 
-void MultiClipboardSettingsDialog::GetIntValueFromDialog( const TCHAR * GroupName, const TCHAR * SettingName, const int DlgItemID )
+void MultiClipboardSettingsDialog::GetIntValueFromDialog( const std::wstring & GroupName, const std::wstring & SettingName, const int DlgItemID )
 {
 	int intValue = ::GetDlgItemInt( _hSelf, DlgItemID, NULL, FALSE );
 	g_SettingsManager.SetIntSetting( GroupName, SettingName, intValue );
 }
 
 
-void MultiClipboardSettingsDialog::GetBoolValueFromDialog( const TCHAR * GroupName, const TCHAR * SettingName, const int DlgItemID )
+void MultiClipboardSettingsDialog::GetBoolValueFromDialog( const std::wstring & GroupName, const std::wstring & SettingName, const int DlgItemID )
 {
 	bool boolValue = BST_CHECKED == ::IsDlgButtonChecked( _hSelf, DlgItemID );
 	g_SettingsManager.SetBoolSetting( GroupName, SettingName, boolValue );
@@ -169,37 +169,43 @@ void MultiClipboardSettingsDialog::GetBoolValueFromDialog( const TCHAR * GroupNa
 
 void MultiClipboardSettingsDialog::LoadMultiClipboardSettings()
 {
-	SetIntValueToDialog( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS, IDC_EDIT_MAX_CLIPLIST_SIZE );
+	for ( unsigned int i = 0; i < SettingsControlMap.size(); ++i )
+	{
+		switch ( SettingsControlMap[i].SettingType )
+		{
+		case SCTE_BOOL:
+			SetBoolValueToDialog( SettingsControlMap[i].GroupName, SettingsControlMap[i].SettingName, SettingsControlMap[i].ControlID );
+			break;
 
-	SetBoolValueToDialog( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS, IDC_CHECK_COPY_FROM_OTHER_PROGRAMS );
-	SetBoolValueToDialog( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP, IDC_CHECK_ONLY_WHEN_PASTE_IN_NPP );
+		case SCTE_INT:
+			SetIntValueToDialog( SettingsControlMap[i].GroupName, SettingsControlMap[i].SettingName, SettingsControlMap[i].ControlID );
+			break;
 
-	SetBoolValueToDialog( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU, IDC_CHECK_NUMBERED_PASTE_MENU );
-	SetIntValueToDialog( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH, IDC_EDIT_PASTE_MENU_WIDTH );
+		default:
+			break;;
+		}
+	}
 }
 
 
 void MultiClipboardSettingsDialog::SaveMultiClipboardSettings()
 {
-	GetIntValueFromDialog( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS, IDC_EDIT_MAX_CLIPLIST_SIZE );
+	for ( unsigned int i = 0; i < SettingsControlMap.size(); ++i )
+	{
+		switch ( SettingsControlMap[i].SettingType )
+		{
+		case SCTE_BOOL:
+			GetBoolValueFromDialog( SettingsControlMap[i].GroupName, SettingsControlMap[i].SettingName, SettingsControlMap[i].ControlID );
+			break;
 
-	GetBoolValueFromDialog( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS, IDC_CHECK_COPY_FROM_OTHER_PROGRAMS );
-	GetBoolValueFromDialog( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP, IDC_CHECK_ONLY_WHEN_PASTE_IN_NPP );
+		case SCTE_INT:
+			GetIntValueFromDialog( SettingsControlMap[i].GroupName, SettingsControlMap[i].SettingName, SettingsControlMap[i].ControlID );
+			break;
 
-	GetBoolValueFromDialog( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU, IDC_CHECK_NUMBERED_PASTE_MENU );
-	GetIntValueFromDialog( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH, IDC_EDIT_PASTE_MENU_WIDTH );
-}
-
-
-void MultiClipboardSettingsDialog::LoadControlHelpMap()
-{
-	ControlHelpMap[ IDC_EDIT_MAX_CLIPLIST_SIZE ] = TEXT("Maximum number of text to be stored in clipboard buffer");
-	ControlHelpMap[ IDC_TEXT_MAX_CLIPLIST_SIZE ] = TEXT("Maximum number of text to be stored in clipboard buffer");
-	ControlHelpMap[ IDC_CHECK_COPY_FROM_OTHER_PROGRAMS ] = TEXT("Get text that are copied from other programs");
-	ControlHelpMap[ IDC_CHECK_ONLY_WHEN_PASTE_IN_NPP ] = TEXT("When 'Copy text from other programs' is true, then text is only copied when it is immediately pasted into Notepad++");
-	ControlHelpMap[ IDC_CHECK_NUMBERED_PASTE_MENU ] = TEXT("Use numbers as shortcut keys for selecting menu items instead of the first character of the text");
-	ControlHelpMap[ IDC_EDIT_PASTE_MENU_WIDTH ] = TEXT("Maximum number of characters to display per text on the paste menu");
-	ControlHelpMap[ IDC_TEXT_PASTE_MENU_WIDTH ] = TEXT("Maximum number of characters to display per text on the paste menu");
+		default:
+			break;;
+		}
+	}
 }
 
 
@@ -213,13 +219,11 @@ void MultiClipboardSettingsDialog::DisplayMouseOverIDHelp( int ControlID )
 
 	std::wostringstream HelpNativeLangIndex;
 	HelpNativeLangIndex << ControlID << TEXT("_HELP");
-	std::vector< TCHAR > HelpTextIndex(512);
-	lstrcpy( &HelpTextIndex[0], HelpNativeLangIndex.str().c_str() );
 	std::vector< TCHAR > HelpText(512);
-	int len = NLGetText( g_hInstance, g_NppData._nppHandle, &HelpTextIndex[0], &HelpText[0], HelpText.capacity() );
+	int len = NLGetText( g_hInstance, g_NppData._nppHandle, HelpNativeLangIndex.str().c_str(), &HelpText[0], HelpText.capacity() );
 	if ( len == 0 )
 	{
-		::SetWindowText( ::GetDlgItem( _hSelf, IDC_OPTION_EXPLANATION ), ControlHelpMap[ ControlID ].c_str() );
+		::SetWindowText( ::GetDlgItem( _hSelf, IDC_OPTION_EXPLANATION ), GetControlHelpText( ControlID ) );
 	}
 	else
 	{
@@ -246,45 +250,75 @@ void MultiClipboardSettingsDialog::SubclassStaticTextChildControl( const int Con
 
 void MultiClipboardSettingsDialog::SubclassAllChildControls()
 {
-	SubclassChildControl( IDC_EDIT_MAX_CLIPLIST_SIZE );
-	SubclassStaticTextChildControl( IDC_TEXT_MAX_CLIPLIST_SIZE );
-	SubclassChildControl( IDC_CHECK_COPY_FROM_OTHER_PROGRAMS );
-	SubclassChildControl( IDC_CHECK_ONLY_WHEN_PASTE_IN_NPP );
-	SubclassChildControl( IDC_CHECK_NUMBERED_PASTE_MENU );
-	SubclassChildControl( IDC_EDIT_PASTE_MENU_WIDTH );
-	SubclassStaticTextChildControl( IDC_TEXT_PASTE_MENU_WIDTH );
+	for ( unsigned int i = 0; i < SettingsControlMap.size(); ++i )
+	{
+		SubclassChildControl( SettingsControlMap[i].ControlID );
+		if ( SettingsControlMap[i].ControlStaticTextID > 0 )
+		{
+			SubclassStaticTextChildControl( SettingsControlMap[i].ControlStaticTextID );
+		}
+	}
 }
 
 
 void MultiClipboardSettingsDialog::GetSettingsGroupAndName( const int Control, std::wstring & GroupName, std::wstring & SettingName )
 {
-	switch ( Control )
+	for ( unsigned int i = 0; i < SettingsControlMap.size(); ++i )
 	{
-	case IDC_EDIT_MAX_CLIPLIST_SIZE:
-	case IDC_TEXT_MAX_CLIPLIST_SIZE:
-		GroupName = SETTINGS_GROUP_CLIPBOARDLIST;
-		SettingName = SETTINGS_MAX_CLIPBOARD_ITEMS;
-		break;
-
-	case IDC_CHECK_COPY_FROM_OTHER_PROGRAMS:
-		GroupName = SETTINGS_GROUP_OSCLIPBOARD;
-		SettingName = SETTINGS_COPY_FROM_OTHER_PROGRAMS;
-		break;
-
-	case IDC_CHECK_ONLY_WHEN_PASTE_IN_NPP:
-		GroupName = SETTINGS_GROUP_OSCLIPBOARD;
-		SettingName = SETTINGS_ONLY_WHEN_PASTED_IN_NPP;
-		break;
-
-	case IDC_CHECK_NUMBERED_PASTE_MENU:
-		GroupName = SETTINGS_GROUP_PASTE_MENU;
-		SettingName = SETTINGS_SHOW_NUMBERED_PASTE_MENU;
-		break;
-
-	case IDC_EDIT_PASTE_MENU_WIDTH:
-	case IDC_TEXT_PASTE_MENU_WIDTH:
-		GroupName = SETTINGS_GROUP_PASTE_MENU;
-		SettingName = SETTINGS_PASTE_MENU_WIDTH;
-		break;
+		if ( Control == SettingsControlMap[i].ControlID ||
+			 Control == SettingsControlMap[i].ControlStaticTextID )
+		{
+			GroupName = SettingsControlMap[i].GroupName;
+			SettingName = SettingsControlMap[i].SettingName;
+		}
 	}
+}
+
+
+LPCTSTR MultiClipboardSettingsDialog::GetControlHelpText( int ControlID )
+{
+	for ( unsigned int i = 0; i < SettingsControlMap.size(); ++i )
+	{
+		if ( ControlID == SettingsControlMap[i].ControlID ||
+			 ControlID == SettingsControlMap[i].ControlStaticTextID )
+		{
+			return SettingsControlMap[i].SettingHelp.c_str();
+		}
+	}
+	return TEXT("");
+}
+
+
+// All settings to be defined here, and the rest of the functions will take care of the rest
+void MultiClipboardSettingsDialog::LoadSettingsControlMap()
+{
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_EDIT_MAX_CLIPLIST_SIZE, IDC_TEXT_MAX_CLIPLIST_SIZE, SCTE_INT,
+		SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS,
+		TEXT("Maximum number of text to be stored in clipboard buffer") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_COPY_FROM_OTHER_PROGRAMS, SCTE_BOOL,
+		SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS,
+		TEXT("Get text that are copied from other programs") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_ONLY_WHEN_PASTE_IN_NPP, SCTE_BOOL,
+		SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP,
+		TEXT("When 'Copy text from other programs' is true, then text is only copied when it is immediately pasted into Notepad++") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_USE_PASTE_MENU, SCTE_BOOL,
+		SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU,
+		TEXT("Use paste menu instead of cyclic paste when Ctrl-Shift-V") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_NUMBERED_PASTE_MENU, SCTE_BOOL,
+		SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU,
+		TEXT("Use numbers as shortcut keys for selecting menu items instead of the first character of the text") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_EDIT_PASTE_MENU_WIDTH, IDC_TEXT_PASTE_MENU_WIDTH, SCTE_INT,
+		SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH,
+		TEXT("Maximum number of characters to display per text on the paste menu") ) );
 }

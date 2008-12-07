@@ -17,33 +17,34 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef OS_CLIPBOARD_CONTROLLER_H
-#define OS_CLIPBOARD_CONTROLLER_H
+#ifndef MULTI_CLIP_CYCLIC_PASTE_H
+#define MULTI_CLIP_CYCLIC_PASTE_H
 
-#include <string>
 #include "ModelViewController.h"
 #include "MultiClipboardProxy.h"
 
 
-class OSClipboardController : public IController, public ClipboardListener
+class MultiClipCyclicPaste : public IView, public IController, public CyclicPasteEndUndoActionListener
 {
 public:
-	OSClipboardController();
+	MultiClipCyclicPaste();
 
-	// ClipboardListener interface
-	void OnNewClipboardText( std::wstring & text );
-	void OnTextPasted();
+	void DoCyclicPaste();
+	void ResetPasteIndex();
+
+	// CyclicPasteEndUndoActionListener interface
+	virtual void OnEndUndoAction();
+
+	virtual void OnModelModified();
 
 	virtual void OnObserverAdded( LoonySettingsManager * SettingsManager );
 	virtual void OnSettingsChanged( const stringType & GroupName, const stringType & SettingName );
 
 private:
-	// True - Get text copied only from N++, False - Get from text all applications
-	BOOL bGetClipTextFromOS;
-	// Valid only when bGetClipTextFromOS is True, get text only when it is pasted into N++
-	BOOL bOnlyWhenPastedInNpp;
-	// Buffer for clipboard text, used when bOnlyWhenPastedInNpp is True
-	std::wstring LastClipboardText;
+	// Where the last used text selection position in the scintilla edit is
+	int selectionPosStart, selectionPosEnd;
+	// The index into the clip list for the next text to paste
+	unsigned int nextPasteIndex;
 };
 
 

@@ -21,10 +21,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "stdafx.h"
 
 #define WIN32_LEAN_AND_MEAN
+#define VC_EXTRA_LEAN
 #include "PluginInterface.h"
-//#include "SysMsg.h"
-//#include "Notepad_plus_rc.h"
-//#include "Scintilla.h"
 
 #include "MultiClipboard.h"
 #include "SciSubClassWrp.h"
@@ -39,7 +37,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "OSClipboardController.h"
 #include "MultiClipViewerDialog.h"
 #include "MultiClipPasteMenu.h"
-#include "ITestView.h"
+#include "MultiClipCyclicPaste.h"
 
 
 // information for notepad++
@@ -68,11 +66,11 @@ TCHAR configPath[MAX_PATH];
 TCHAR SettingsFilePath[MAX_PATH];
 
 // MVC components for plugin
-ClipboardList		clipboardList;
+ClipboardList clipboardList;
 OSClipboardController OSClipboard;
 MultiClipViewerDialog clipViewerDialog;
 MultiClipPasteMenu clipPasteMenu;
-ITestView			testView;
+MultiClipCyclicPaste cyclicPaste;
 
 // Function prototypes for this plugin
 void ShutDownPlugin();
@@ -170,13 +168,14 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	// Initialisation of MVC components
 	clipViewerDialog.Init();
 
-//	clipboardList.AddView( &testView );
 	clipboardList.AddView( &clipViewerDialog );
 	clipboardList.AddView( &clipPasteMenu );
+	clipboardList.AddView( &cyclicPaste );
 
 	clipboardList.AddController( &OSClipboard );
 	clipboardList.AddController( &clipViewerDialog );
 	clipboardList.AddController( &clipPasteMenu );
+	clipboardList.AddController( &cyclicPaste );
 
 	g_SettingsManager.AddSettingsObserver( &clipboardList );
 	g_SettingsManager.AddSettingsObserver( &OSClipboard );
@@ -302,5 +301,12 @@ void ShowOptionsDlg()
 
 void ShowClipPasteMenu()
 {
-	clipPasteMenu.ShowPasteMenu();
+	if ( clipPasteMenu.IsUsePasteMenu() )
+	{
+		clipPasteMenu.ShowPasteMenu();
+	}
+	else
+	{
+		cyclicPaste.DoCyclicPaste();
+	}
 }

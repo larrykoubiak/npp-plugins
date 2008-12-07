@@ -55,24 +55,25 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
 END
 
-IDD_OPTIONS_DLG DIALOGEX 0, 0, 173, 147
+IDD_OPTIONS_DLG DIALOGEX 0, 0, 196, 160
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "MultiClipboard Options"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,59,126,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,116,126,50,14
-    EDITTEXT        IDC_OPTION_EXPLANATION,7,79,159,45,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | NOT WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,84,139,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,139,139,50,14
+    EDITTEXT        IDC_OPTION_EXPLANATION,7,89,182,45,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | NOT WS_TABSTOP
     EDITTEXT        IDC_EDIT_MAX_CLIPLIST_SIZE,7,7,16,12,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_BORDER,WS_EX_STATICEDGE
     CONTROL         "Copy text from other programs",IDC_CHECK_COPY_FROM_OTHER_PROGRAMS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,22,152,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,22,182,10
     CONTROL         "But only when pasted into Notepad++",IDC_CHECK_ONLY_WHEN_PASTE_IN_NPP,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,26,36,140,11
-    LTEXT           "Number of clip texts to store",IDC_TEXT_MAX_CLIPLIST_SIZE,26,8,140,11
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,36,171,11
+    CONTROL         "Use paste menu",IDC_CHECK_USE_PASTE_MENU,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,49,182,10
+    LTEXT           "Number of clip texts to store",IDC_TEXT_MAX_CLIPLIST_SIZE,26,8,163,11
     CONTROL         "Use numbered mnemonics in paste menu",IDC_CHECK_NUMBERED_PASTE_MENU,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,51,152,10
-    EDITTEXT        IDC_EDIT_PASTE_MENU_WIDTH,7,63,16,12,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_BORDER,WS_EX_STATICEDGE
-    LTEXT           "Width of paste menu",IDC_TEXT_PASTE_MENU_WIDTH,26,65,140,11
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,61,171,10
+    EDITTEXT        IDC_EDIT_PASTE_MENU_WIDTH,18,73,16,12,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_BORDER,WS_EX_STATICEDGE
+    LTEXT           "Width of paste menu",IDC_TEXT_PASTE_MENU_WIDTH,37,75,152,11
 END
 
 
@@ -98,9 +99,9 @@ BEGIN
     IDD_OPTIONS_DLG, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 166
+        RIGHTMARGIN, 189
         TOPMARGIN, 7
-        BOTTOMMARGIN, 140
+        BOTTOMMARGIN, 153
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -153,26 +154,26 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_MULTICLIPBOARD      ICON                    "H:\\loonychewy\\programming\\NppPlugins\\MultiClipboard2\\res\\multiclipboard.ico"
+IDI_MULTICLIPBOARD      ICON                    "..\\res\\multiclipboard.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Bitmap
 //
 
-IDB_EX_UP               BITMAP                  "H:\\loonychewy\\programming\\NppPlugins\\MultiClipboard2\\res\\up.bmp"
-IDB_EX_DELETE           BITMAP                  "H:\\loonychewy\\programming\\NppPlugins\\MultiClipboard2\\res\\delete.bmp"
-IDB_EX_DOWN             BITMAP                  "H:\\loonychewy\\programming\\NppPlugins\\MultiClipboard2\\res\\down.bmp"
-IDB_EX_PASTE            BITMAP                  "H:\\loonychewy\\programming\\NppPlugins\\MultiClipboard2\\res\\paste.bmp"
-IDB_EX_MULTICLIPBOARD   BITMAP                  "H:\\loonychewy\\programming\\NppPlugins\\MultiClipboard2\\res\\multiclipboard.bmp"
+IDB_EX_UP               BITMAP                  "..\\res\\up.bmp"
+IDB_EX_DELETE           BITMAP                  "..\\res\\delete.bmp"
+IDB_EX_DOWN             BITMAP                  "..\\res\\down.bmp"
+IDB_EX_PASTE            BITMAP                  "..\\res\\paste.bmp"
+IDB_EX_MULTICLIPBOARD   BITMAP                  "..\\res\\multiclipboard.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Cursor
 //
 
-IDC_LEFTRIGHT           CURSOR                  "H:\\loonychewy\\programming\\NppPlugins\\MultiClipboard2\\res\\leftright.cur"
-IDC_UPDOWN              CURSOR                  "H:\\loonychewy\\programming\\NppPlugins\\MultiClipboard2\\res\\updown.cur"
+IDC_LEFTRIGHT           CURSOR                  "..\\res\\leftright.cur"
+IDC_UPDOWN              CURSOR                  "..\\res\\updown.cur"
 #endif    // Neutral resources
 /////////////////////////////////////////////////////////////////////////////
 

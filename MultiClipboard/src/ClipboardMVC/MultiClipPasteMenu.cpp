@@ -36,6 +36,7 @@ MultiClipPasteMenu::MultiClipPasteMenu()
 : hPasteMenu(0)
 , bNumberedPasteList(true)
 , MenuTextLength(40)
+, bUsePasteMenu( true )
 {
 }
 
@@ -191,6 +192,14 @@ void MultiClipPasteMenu::OnObserverAdded( LoonySettingsManager * SettingsManager
 	SettingsObserver::OnObserverAdded( SettingsManager );
 
 	// Add default settings if it doesn't exists
+	if ( !IView::pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU ) )
+	{
+		IView::pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU, bUsePasteMenu );
+	}
+	else
+	{
+		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU );
+	}
 	if ( !IView::pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU ) )
 	{
 		IView::pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU, bNumberedPasteList );
@@ -217,7 +226,11 @@ void MultiClipPasteMenu::OnSettingsChanged( const stringType & GroupName, const 
 		return;
 	}
 
-	if ( SettingName == SETTINGS_SHOW_NUMBERED_PASTE_MENU )
+	if ( SettingName == SETTINGS_USE_PASTE_MENU )
+	{
+		bUsePasteMenu = IView::pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU );
+	}
+	else if ( SettingName == SETTINGS_SHOW_NUMBERED_PASTE_MENU )
 	{
 		bNumberedPasteList = IView::pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU );
 	}
