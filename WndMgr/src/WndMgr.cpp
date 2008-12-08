@@ -510,19 +510,26 @@ void UpdateCurrUsedDocs(vector<tFileList> & vList, LPCTSTR* pFiles, UINT numFile
 		/* try now to find the given files in old list and if available don't change file state */
 		BOOL	found = FALSE;
 
+		fileList.szPath[0] = '\0';
+		fileList.szType[0] = '\0';
+
 		if ((_tcsstr(pFiles[i], UNTITLED_STR) != &pFiles[i][0]) &&
 			(::GetLongPathName(pFiles[i], pszLongName, MAX_PATH) != 0))
 		{
 			_tcscpy(fileList.szCompletePath, pszLongName);
-			_tcscpy(fileList.szName, _tcsrchr(pszLongName, '\\')+1);
-			_tcscpy(fileList.szType, _tcsrchr(fileList.szName, '.')+1);
+
+			LPTSTR ptr = _tcsrchr(pszLongName, '\\');
+			if (ptr != NULL)
+				_tcscpy(fileList.szName, ptr + 1);
+			ptr = _tcsrchr(fileList.szName, '.');
+			if (ptr != NULL)
+				_tcscpy(fileList.szType, ptr + 1);
+
 			PathRemoveFileSpec(pszLongName);
 			_tcscpy(fileList.szPath, pszLongName);
 		} else {
 			_tcscpy(fileList.szCompletePath, pFiles[i]);
 			_tcscpy(fileList.szName, pFiles[i]);
-			fileList.szPath[0] = '\0';
-			fileList.szType[0] = '\0';
 		}
 		for (UINT j = 0; j < vList.size(); j++) {
 			if (_tcscmp(fileList.szCompletePath, vList[j].szCompletePath) == 0) {
