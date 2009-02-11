@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,33 +17,42 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef OS_CLIPBOARD_CONTROLLER_H
-#define OS_CLIPBOARD_CONTROLLER_H
+#ifndef SELECTED_TEXT_AUTO_COPIER_H
+#define SELECTED_TEXT_AUTO_COPIER_H
 
 #include <string>
 #include "ModelViewController.h"
 #include "MultiClipboardProxy.h"
 
 
-class OSClipboardController : public IController, public ClipboardListener
+class SelectedTextAutoCopier : public IController, public ClipboardListener, public MVCTimer
 {
 public:
-	OSClipboardController();
+	SelectedTextAutoCopier();
+
+	bool IsSelectionOverlapping( const int CurrSelStart, const int CurrSelEnd );
 
 	// ClipboardListener interface
 	void OnNewClipboardText( const std::wstring & text );
 	void OnTextPasted();
 
+	// Timer Interface
+	void OnTimer();
+
 	virtual void OnObserverAdded( LoonySettingsManager * SettingsManager );
 	virtual void OnSettingsChanged( const stringType & GroupName, const stringType & SettingName );
 
 private:
-	// True - Get text copied only from N++, False - Get from text all applications
-	BOOL bGetClipTextFromOS;
-	// Valid only when bGetClipTextFromOS is True, get text only when it is pasted into N++
-	BOOL bOnlyWhenPastedInNpp;
-	// Buffer for clipboard text, used when bOnlyWhenPastedInNpp is True
-	std::wstring LastClipboardText;
+	// Buffer for last selected text, used as a buffer before saving to clipboard buffer
+	std::wstring LastSelectedText;
+	// Start and end of last selected text position
+	int PrevSelStart, PrevSelEnd;
+	// Whether this feature is enabled;
+	bool IsEnableAutoCopy;
+
+	// Call these functions to enable/disable autocopy
+	void EnableAutoCopy();
+	void DisableAutoCopy();
 };
 
 

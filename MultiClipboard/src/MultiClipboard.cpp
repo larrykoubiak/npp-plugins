@@ -38,6 +38,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "MultiClipViewerDialog.h"
 #include "MultiClipPasteMenu.h"
 #include "MultiClipCyclicPaste.h"
+#include "SelectedTextAutoCopier.h"
 
 
 // information for notepad++
@@ -71,6 +72,7 @@ OSClipboardController OSClipboard;
 MultiClipViewerDialog clipViewerDialog;
 MultiClipPasteMenu clipPasteMenu;
 MultiClipCyclicPaste cyclicPaste;
+SelectedTextAutoCopier autoCopier;
 
 // Function prototypes for this plugin
 void ShutDownPlugin();
@@ -151,6 +153,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 
 	g_ClipboardProxy.Init();
 	g_ClipboardProxy.RegisterClipboardListener( &OSClipboard );
+	g_ClipboardProxy.RegisterClipboardListener( &autoCopier );
 
 	// Subclass the Notepad++ windows procedure
 	g_NppWndProc = (WNDPROC) SetWindowLong( g_NppData._nppHandle, GWL_WNDPROC, (LONG) MCSubClassNppWndProc );
@@ -176,10 +179,12 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	clipboardList.AddController( &clipViewerDialog );
 	clipboardList.AddController( &clipPasteMenu );
 	clipboardList.AddController( &cyclicPaste );
+	clipboardList.AddController( &autoCopier );
 
 	g_SettingsManager.AddSettingsObserver( &clipboardList );
 	g_SettingsManager.AddSettingsObserver( &OSClipboard );
 	g_SettingsManager.AddSettingsObserver( (IView*)&clipPasteMenu );
+	g_SettingsManager.AddSettingsObserver( &autoCopier );
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName()

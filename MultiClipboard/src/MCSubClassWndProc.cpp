@@ -31,46 +31,54 @@ LRESULT CALLBACK MCSubClassNppWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 {
 	switch ( msg )
 	{
-		// When clipboard data has changed
-		case WM_DRAWCLIPBOARD:
+	// When clipboard data has changed
+	case WM_DRAWCLIPBOARD:
+		{
+			if ( !::IsClipboardFormatAvailable( CF_UNICODETEXT ) )
 			{
-				if ( !::IsClipboardFormatAvailable( CF_UNICODETEXT ) )
-				{
-					break;
-				}
+				break;
+			}
 
-				if ( !::OpenClipboard( hwnd ) )
-				{
-					break;
-				}
-				// Let OS convert text to unicode format for us
-				HGLOBAL hGlobal = ::GetClipboardData( CF_UNICODETEXT );
-				if ( hGlobal != NULL )
-				{
-					LPWSTR pGlobal = (LPWSTR)::GlobalLock( hGlobal );
-					g_ClipboardProxy.OnNewClipboardText( pGlobal );
-					::GlobalUnlock( hGlobal );
-				}
-				::CloseClipboard();
+			if ( !::OpenClipboard( hwnd ) )
+			{
+				break;
+			}
+			// Let OS convert text to unicode format for us
+			HGLOBAL hGlobal = ::GetClipboardData( CF_UNICODETEXT );
+			if ( hGlobal != NULL )
+			{
+				LPWSTR pGlobal = (LPWSTR)::GlobalLock( hGlobal );
+				g_ClipboardProxy.OnNewClipboardText( pGlobal );
+				::GlobalUnlock( hGlobal );
+			}
+			::CloseClipboard();
 
-			}
-			if ( g_ClipboardProxy.hNextClipboardViewer )
-			{
-				::SendMessage( g_ClipboardProxy.hNextClipboardViewer, msg, wp, lp );
-			}
-			break;
+		}
+		if ( g_ClipboardProxy.hNextClipboardViewer )
+		{
+			::SendMessage( g_ClipboardProxy.hNextClipboardViewer, msg, wp, lp );
+		}
+		break;
 
-		// When clipboard viewer list has changed
-		case WM_CHANGECBCHAIN :
-			if ( (HWND)wp == g_ClipboardProxy.hNextClipboardViewer )
-			{
-				g_ClipboardProxy.hNextClipboardViewer = (HWND)lp ;
-			}
-			else if ( g_ClipboardProxy.hNextClipboardViewer )
-			{
-				::SendMessage( g_ClipboardProxy.hNextClipboardViewer, msg, wp, lp );
-			}
-			break;
+	// When clipboard viewer list has changed
+	case WM_CHANGECBCHAIN:
+		if ( (HWND)wp == g_ClipboardProxy.hNextClipboardViewer )
+		{
+			g_ClipboardProxy.hNextClipboardViewer = (HWND)lp ;
+		}
+		else if ( g_ClipboardProxy.hNextClipboardViewer )
+		{
+			::SendMessage( g_ClipboardProxy.hNextClipboardViewer, msg, wp, lp );
+		}
+		break;
+
+	case WM_TIMER:
+		if ( g_ClipboardProxy.OnTimer( UINT(wp) ) )
+		{
+			// Timer is processed by plugin
+			return TRUE;
+		}
+		break;
 	}
 	// Call Notepad++'s window procedure
 	return CallWindowProc( g_NppWndProc, hwnd, msg, wp, lp );

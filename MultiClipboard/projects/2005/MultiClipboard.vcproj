@@ -286,6 +286,10 @@
 					RelativePath="..\..\src\ClipboardMVC\OSClipboardController.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\..\src\ClipboardMVC\SelectedTextAutoCopier.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="ClipboardSettings"
@@ -442,6 +446,10 @@
 				</File>
 				<File
 					RelativePath="..\..\src\ClipboardMVC\OSClipboardController.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\src\ClipboardMVC\SelectedTextAutoCopier.h"
 					>
 				</File>
 			</Filter>

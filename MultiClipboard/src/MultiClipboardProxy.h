@@ -21,6 +21,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define MULTI_CLIPBOARD_PROXY
 
 #include <string>
+#include <map>
+#include <vector>
 #include "PluginInterface.h"
 #include "SciSubClassWrp.h"
 
@@ -36,7 +38,7 @@ typedef enum UniMode
 class ClipboardListener
 {
 public:
-	virtual void OnNewClipboardText( std::wstring & text ) = 0;
+	virtual void OnNewClipboardText( const std::wstring & text ) = 0;
 	virtual void OnTextPasted() = 0;
 };
 
@@ -47,6 +49,15 @@ public:
 	virtual void OnEndUndoAction() = 0;
 };
 
+
+class MVCTimer
+{
+public:
+	UINT TimerID;
+	UINT Time;
+	MVCTimer( UINT ID, UINT TimeMSec ) : TimerID(ID), Time(TimeMSec) {}
+	virtual void OnTimer() = 0;
+};
 
 class MultiClipboardProxy
 {
@@ -61,7 +72,14 @@ public:
 	void OnNewClipboardText( std::wstring text );
 	// Notifier when text has been pasted into Notepad++
 	void OnTextPastedInNpp();
+	// Get the text currently in the system clipboard
 	void GetTextInSystemClipboard( std::wstring & text );
+	// Set the text to the system clipboard
+	void SetTextToSystemClipboard( const std::wstring & text );
+
+	void AddTimer( MVCTimer * pTimer );
+	void DeleteTimer( MVCTimer * pTimer );
+	BOOL OnTimer( UINT EventID );
 
 	// Functions needed by plugin's various MVCs
 	// Returns if npp is the foreground window
@@ -74,6 +92,8 @@ public:
 	void GetCurrentSelectionPosition( int & start, int & end );
 	// Set the position of current selection
 	void SetCurrentSelectionPosition( const int start, const int end );
+	// Get the currently selected text
+	void GetSelectionText( std::wstring & text );
 	// Replace the currently selected text
 	void ReplaceSelectionText( const std::wstring & text );
 	// Tells scintilla window to begin undo action
@@ -82,7 +102,7 @@ public:
 	void CyclicPasteEndUndoAction();
 
 	// For pasting text to Notepad++'s current document from the plugin's various MVCs
-	void PasteTextToNpp( std::wstring & text );
+	void PasteTextToNpp( const std::wstring & text );
 
 	// Useful for debugging purposes
 	void PrintText( char * format, ... );
@@ -91,9 +111,10 @@ public:
 	HWND hNextClipboardViewer;
 
 private:
-	ClipboardListener * pClipboardListener;
+	std::vector< ClipboardListener * > clipboardListeners;
 	CyclicPasteEndUndoActionListener * pEndUndoActionListener;
 	bool isCyclicPasteUndoAction;
+	std::map< UINT, MVCTimer * > timers;
 
 	SciSubClassWrp * MultiClipboardProxy::GetCurrentScintilla();
 	UniMode GetCurrentEncoding( SciSubClassWrp * pScintilla );

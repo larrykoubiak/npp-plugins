@@ -321,4 +321,9 @@ void MultiClipboardSettingsDialog::LoadSettingsControlMap()
 		IDC_EDIT_PASTE_MENU_WIDTH, IDC_TEXT_PASTE_MENU_WIDTH, SCTE_INT,
 		SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH,
 		TEXT("Maximum number of characters to display per text on the paste menu") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_AUTO_COPY_SELECTION, SCTE_BOOL,
+		SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_TEXT_SELECTION,
+		TEXT("Automatically copies selected text into clipboard") ) );
 }

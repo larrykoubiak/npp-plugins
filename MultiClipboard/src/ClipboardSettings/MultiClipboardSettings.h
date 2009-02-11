@@ -34,5 +34,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define SETTINGS_SHOW_NUMBERED_PASTE_MENU	TEXT("ShowNumberedPasteMenu")
 #define SETTINGS_PASTE_MENU_WIDTH			TEXT("PasteMenuWidth")
 
+#define SETTINGS_GROUP_AUTO_COPY			TEXT("AutoCopy")
+#define SETTINGS_AUTO_COPY_TEXT_SELECTION	TEXT("AutoCopyTextSelection")
+#define SETTINGS_AUTO_COPY_UPDATE_TIME		TEXT("AutoCopyUpdateTime")
 
 #endif

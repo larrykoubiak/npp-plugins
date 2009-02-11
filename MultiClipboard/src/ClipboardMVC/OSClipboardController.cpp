@@ -31,7 +31,7 @@ OSClipboardController::OSClipboardController()
 }
 
 
-void OSClipboardController::OnNewClipboardText( std::wstring & text )
+void OSClipboardController::OnNewClipboardText( const std::wstring & text )
 {
 	BOOL isNppForeground = g_ClipboardProxy.IsNppForegroundWindow();
 	if ( !bGetClipTextFromOS && !isNppForeground )

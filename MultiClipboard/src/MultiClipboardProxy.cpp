@@ -26,8 +26,7 @@ extern SciSubClassWrp		g_ScintillaMain, g_ScintillaSecond;
 
 
 MultiClipboardProxy::MultiClipboardProxy()
-: pClipboardListener( 0 )
-, pEndUndoActionListener( 0 )
+: pEndUndoActionListener( 0 )
 , isCyclicPasteUndoAction( false )
 {
 }
@@ -40,8 +39,9 @@ void MultiClipboardProxy::Init()
 
 void MultiClipboardProxy::Destroy()
 {
-	if ( pClipboardListener )
+	if ( clipboardListeners.size() > 0 )
 	{
+		// Remove Notepad++ from the clipboard chain if it is in it
 		::ChangeClipboardChain( g_NppData._nppHandle, hNextClipboardViewer );
 	}
 }
@@ -49,27 +49,37 @@ void MultiClipboardProxy::Destroy()
 
 void MultiClipboardProxy::RegisterClipboardListener( ClipboardListener * pListener )
 {
-	// Currently restrict to only one clipboard listener because design is not fully thought out
-	if ( !pClipboardListener )
+	if ( !pListener )
 	{
-		hNextClipboardViewer = ::SetClipboardViewer( g_NppData._nppHandle );
-		pClipboardListener = pListener;
+		return;
 	}
+
+	if ( clipboardListeners.size() == 0 )
+	{
+		// Put Notepad++ into the clipboard chain if not already done so
+		hNextClipboardViewer = ::SetClipboardViewer( g_NppData._nppHandle );
+	}
+
+	// Add one more clipboard listener
+	clipboardListeners.push_back( pListener );
 }
 
 
 void MultiClipboardProxy::OnNewClipboardText( std::wstring text )
 {
-	if ( pClipboardListener )
+	for ( unsigned int i = 0; i < clipboardListeners.size(); ++i )
 	{
-		pClipboardListener->OnNewClipboardText( text );
+		clipboardListeners[i]->OnNewClipboardText( text );
 	}
 }
 
 
 void MultiClipboardProxy::OnTextPastedInNpp()
 {
-	pClipboardListener->OnTextPasted();
+	for ( unsigned int i = 0; i < clipboardListeners.size(); ++i )
+	{
+		clipboardListeners[i]->OnTextPasted();
+	}
 }
 
 
@@ -91,6 +101,63 @@ void MultiClipboardProxy::GetTextInSystemClipboard( std::wstring & text )
 		::GlobalUnlock( hglb );
 	}
 	::CloseClipboard();
+}
+
+
+void MultiClipboardProxy::SetTextToSystemClipboard( const std::wstring & text )
+{
+	// First, allocate and copy text to a system memory
+	int DataSize = (text.size()+1) * sizeof( std::wstring::value_type );
+	HGLOBAL hGlobal = GlobalAlloc( GHND | GMEM_SHARE, DataSize );
+	PTSTR pGlobal = (PTSTR)GlobalLock( hGlobal );
+	::CopyMemory( pGlobal, text.c_str(), DataSize );
+	GlobalUnlock( hGlobal );
+	// Clear clipboard and set our text to it
+	OpenClipboard( g_NppData._nppHandle );
+	EmptyClipboard();
+	SetClipboardData( CF_UNICODETEXT, hGlobal );
+	CloseClipboard();
+}
+
+void MultiClipboardProxy::AddTimer( MVCTimer * pTimer )
+{
+	if ( timers.find( pTimer->TimerID ) != timers.end() )
+	{
+		// Timer with this ID already exists.
+		// Assume it is being restarted with a new time value,
+		// so kill it and re-add
+		DeleteTimer( pTimer );
+	}
+
+	SetTimer( g_NppData._nppHandle, pTimer->TimerID, pTimer->Time, 0 );
+	timers[ pTimer->TimerID ] = pTimer;
+}
+
+
+void MultiClipboardProxy::DeleteTimer( MVCTimer * pTimer )
+{
+	if ( timers.find( pTimer->TimerID ) == timers.end() )
+	{
+		// Timer with this ID not found
+		return;
+	}
+
+	::KillTimer( g_NppData._nppHandle, pTimer->TimerID );
+	timers.erase( pTimer->TimerID );
+}
+
+
+BOOL MultiClipboardProxy::OnTimer( UINT EventID )
+{
+	if ( timers.find( EventID ) == timers.end() )
+	{
+		// Timer with this ID not found
+		return FALSE;
+	}
+
+	MVCTimer * pTimer = timers[ EventID ];
+	pTimer->OnTimer();
+	return TRUE;
 }
 
 
@@ -145,6 +212,31 @@ void MultiClipboardProxy::SetCurrentSelectionPosition( const int start, const in
 }
 
 
+void MultiClipboardProxy::GetSelectionText( std::wstring & text )
+{
+	// Get active scintilla
+	SciSubClassWrp * pCurrentScintilla = GetCurrentScintilla();
+
+	// Find the length of the text
+	int textLength = pCurrentScintilla->execute( SCI_GETSELTEXT, 0, 0 );
+
+	// Create the buffer that will hold the selection text
+	std::vector< char > buffer( textLength );
+	// And fill it up
+	pCurrentScintilla->execute( SCI_GETSELTEXT, 0, (LPARAM)&buffer[0] );
+
+	// Get code page of scintilla
+	UINT codePage = ( uni8Bit == GetCurrentEncoding( pCurrentScintilla ) ) ? CP_ACP : CP_UTF8;
+
+	// Create the buffer that will hold the selection text converted into wide char
+	std::vector< wchar_t > wbuffer( textLength );
+	::MultiByteToWideChar( codePage, 0, &buffer[0], -1, &wbuffer[0], textLength );
+
+	// Set the return value
+	text = &wbuffer[0];
+}
+
+
 void MultiClipboardProxy::ReplaceSelectionText( const std::wstring & text )
 {
 	// Get active scintilla
@@ -194,23 +286,13 @@ void MultiClipboardProxy::CyclicPasteEndUndoAction()
 }
 
 
-void MultiClipboardProxy::PasteTextToNpp( std::wstring & text )
+void MultiClipboardProxy::PasteTextToNpp( const std::wstring & text )
 {
 	// Get active scintilla
 	SciSubClassWrp * pCurrentScintilla = GetCurrentScintilla();
 
 	// Put text into system clipboard
-	// First, allocate and copy text to a system memory
-	int DataSize = (text.size()+1) * sizeof( std::wstring::value_type );
-	HGLOBAL hGlobal = GlobalAlloc( GHND | GMEM_SHARE, DataSize );
-	PTSTR pGlobal = (PTSTR)GlobalLock( hGlobal );
-	::CopyMemory( pGlobal, text.c_str(), DataSize );
-	GlobalUnlock( hGlobal );
-	// Clear clipboard and set our text to it
-	OpenClipboard( g_NppData._nppHandle );
-	EmptyClipboard();
-	SetClipboardData( CF_UNICODETEXT, hGlobal );
-	CloseClipboard();
+	SetTextToSystemClipboard( text );
 
 	// Paste text into scintilla
 	pCurrentScintilla->execute( SCI_PASTE );
