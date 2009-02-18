@@ -32,6 +32,13 @@ SelectedTextAutoCopier::SelectedTextAutoCopier()
 }
 
 
+void SelectedTextAutoCopier::Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings )
+{
+	IController::Init( pNewModel, pClipboardProxy, pSettings );
+	pClipboardProxy->RegisterClipboardListener( this );	
+}
+
+
 void SelectedTextAutoCopier::EnableAutoCopy()
 {
 	IsEnableAutoCopy = true;

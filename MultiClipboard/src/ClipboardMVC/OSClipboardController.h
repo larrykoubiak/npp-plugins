@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@ class OSClipboardController : public IController, public ClipboardListener
 {
 public:
 	OSClipboardController();
+	virtual void Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings );
 
 	// ClipboardListener interface
 	void OnNewClipboardText( const std::wstring & text );

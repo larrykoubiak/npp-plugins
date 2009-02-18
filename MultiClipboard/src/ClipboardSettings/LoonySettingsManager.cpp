@@ -1,6 +1,6 @@
 /*
 This file is part of LoonySettingsManager project
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 http://www.peepor.net/loonchew/index.php?p=loonylib
 
 This project is dedicated to the public domain

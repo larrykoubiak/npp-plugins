@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -37,13 +37,23 @@ MultiClipPasteMenu::MultiClipPasteMenu()
 , bNumberedPasteList(true)
 , MenuTextLength(40)
 , bUsePasteMenu( true )
+, bMouseLastUsed( true )
+, bUseMiddleClickPaste( false )
 {
+}
+
+
+void MultiClipPasteMenu::Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings )
+{
+	IController::Init( pNewModel, pClipboardProxy, pSettings );
+	pClipboardProxy->AddMouseListener( this );
+	pClipboardProxy->AddKeyListener( this );
 }
 
 
 void MultiClipPasteMenu::ShowPasteMenu()
 {
-	ClipboardList * pClipboardList = (ClipboardList*)IView::GetModel();
+	ClipboardList * pClipboardList = (ClipboardList*)GetModel();
 	if ( !pClipboardList || pClipboardList->GetNumText() <= 0 )
 	{
 		return;
@@ -52,7 +62,14 @@ void MultiClipPasteMenu::ShowPasteMenu()
 	RecreateCopyMenu();
 
 	POINT pt;	// Point to display pop-up menu
-	pt = g_ClipboardProxy.GetCurrentCaretPosition();
+	if ( bMouseLastUsed )
+	{
+		pt = g_ClipboardProxy.GetMouseCursorPosition();
+	}
+	else
+	{
+		pt = g_ClipboardProxy.GetCurrentCaretPosition();
+	}
 
 	int id = ::TrackPopupMenu( hPasteMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RETURNCMD | TPM_LEFTBUTTON,
 		pt.x, pt.y, 0, g_NppData._nppHandle, 0 );
@@ -68,7 +85,7 @@ void MultiClipPasteMenu::OnModelModified()
 
 void MultiClipPasteMenu::RecreateCopyMenu()
 {
-	ClipboardList * pClipboardList = (ClipboardList*)IView::GetModel();
+	ClipboardList * pClipboardList = (ClipboardList*)GetModel();
 	if ( !pClipboardList || pClipboardList->GetNumText() <= 0 )
 	{
 		return;
@@ -169,7 +186,7 @@ void MultiClipPasteMenu::CreateMenuText( const std::wstring & InClipText, std::w
 
 void MultiClipPasteMenu::PasteClipboardItem( unsigned int MenuItemID )
 {
-	ClipboardList * pClipboardList = (ClipboardList*)IView::GetModel();
+	ClipboardList * pClipboardList = (ClipboardList*)GetModel();
 	if ( !pClipboardList || pClipboardList->GetNumText() <= 0 )
 	{
 		return;
@@ -187,34 +204,81 @@ void MultiClipPasteMenu::PasteClipboardItem( unsigned int MenuItemID )
 }
 
 
+BOOL MultiClipPasteMenu::OnMouseEvent( MouseEventType eventType, MouseEventFlags eventFlags,
+				  INT mouseX, INT mouseY, INT mouseDelta )
+{
+	bMouseLastUsed = true;
+	if ( eventType == EMET_MButtonUp )
+	{
+		return OnMiddleClick( (eventFlags & EMEF_ShiftDown) != 0 );
+	}
+	return FALSE;
+}
+
+
+BOOL MultiClipPasteMenu::OnKeyEvent( KeyEventType eventType, INT keyCode )
+{
+	bMouseLastUsed = false;
+	return FALSE;
+}
+
+
+BOOL MultiClipPasteMenu::OnMiddleClick( bool bIsShift )
+{
+	if ( !bUseMiddleClickPaste )
+	{
+		return FALSE;
+	}
+
+	if ( bIsShift )
+	{
+		ShowPasteMenu();
+	}
+	else
+	{
+		// Paste the first item in the clipboard list
+		PasteClipboardItem( MULTI_COPY_MENU_CMD );
+	}
+	return TRUE;
+}
+
+
 void MultiClipPasteMenu::OnObserverAdded( LoonySettingsManager * SettingsManager )
 {
 	SettingsObserver::OnObserverAdded( SettingsManager );
 
 	// Add default settings if it doesn't exists
-	if ( !IView::pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU ) )
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU ) )
 	{
-		IView::pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU, bUsePasteMenu );
+		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU, bUsePasteMenu );
 	}
 	else
 	{
 		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU );
 	}
-	if ( !IView::pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU ) )
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU ) )
 	{
-		IView::pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU, bNumberedPasteList );
+		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU, bNumberedPasteList );
 	}
 	else
 	{
 		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU );
 	}
-	if ( !IView::pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH ) )
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH ) )
 	{
-		IView::pSettingsManager->SetIntSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH, MenuTextLength );
+		pSettingsManager->SetIntSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH, MenuTextLength );
 	}
 	else
 	{
 		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH );
+	}
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE ) )
+	{
+		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE, bUseMiddleClickPaste );
+	}
+	else
+	{
+		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE );
 	}
 }
 
@@ -228,14 +292,18 @@ void MultiClipPasteMenu::OnSettingsChanged( const stringType & GroupName, const 
 
 	if ( SettingName == SETTINGS_USE_PASTE_MENU )
 	{
-		bUsePasteMenu = IView::pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU );
+		bUsePasteMenu = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU );
 	}
 	else if ( SettingName == SETTINGS_SHOW_NUMBERED_PASTE_MENU )
 	{
-		bNumberedPasteList = IView::pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU );
+		bNumberedPasteList = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU );
 	}
 	else if ( SettingName == SETTINGS_PASTE_MENU_WIDTH )
 	{
-		MenuTextLength = (unsigned int) IView::pSettingsManager->GetIntSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH );
+		MenuTextLength = (unsigned int) pSettingsManager->GetIntSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH );
+	}
+	else if ( SettingName == SETTINGS_MIDDLE_CLICK_PASTE )
+	{
+		bUseMiddleClickPaste = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE );
 	}
 }

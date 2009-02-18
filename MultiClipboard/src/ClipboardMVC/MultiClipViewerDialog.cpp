@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,8 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ClipboardList.h"
 #include "MultiClipboardProxy.h"
 #include "NativeLang_def.h"
-// Try to remove this
-#include "MultiClipboard.h"
 
 
 //************************ define here your toolbar layout *********************
@@ -67,9 +65,10 @@ MultiClipViewerDialog::~MultiClipViewerDialog()
 }
 
 
-void MultiClipViewerDialog::Init()
+void MultiClipViewerDialog::Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings )
 {
 	DockingDlgInterface::init( g_hInstance, g_NppData._nppHandle );
+	IController::Init( pNewModel, pClipboardProxy, pSettings );
 }
 
 
@@ -87,7 +86,7 @@ void MultiClipViewerDialog::ShowDialog( bool Show )
 		TBData.uMask			= DWS_DF_CONT_LEFT | DWS_ICONTAB;
 		TBData.hIconTab		= (HICON)::LoadImage(_hInst, MAKEINTRESOURCE(IDI_MULTICLIPBOARD), IMAGE_ICON, 0, 0, LR_LOADMAP3DCOLORS | LR_LOADTRANSPARENT);
 		TBData.pszModuleName	= getPluginFileName();
-		TBData.dlgID			= TOGGLE_DOCKABLE_WINDOW_INDEX;
+		TBData.dlgID			= MULTICLIPBOARD_DOCKABLE_WINDOW_INDEX;
 		::SendMessage( _hParent, NPPM_DMMREGASDCKDLG, 0, (LPARAM)&TBData );
 	}
 
@@ -276,7 +275,7 @@ void MultiClipViewerDialog::ShowClipText()
 		return;
 	}
 
-	ClipboardList * pClipboardList = (ClipboardList *) IView::GetModel();
+	ClipboardList * pClipboardList = (ClipboardList *)GetModel();
 	if ( !pClipboardList )
 	{
 		return;
@@ -298,7 +297,7 @@ void MultiClipViewerDialog::OnListSelectionChanged()
 		return;
 	}
 
-	ClipboardList * pClipboardList = (ClipboardList *)IView::GetModel();
+	ClipboardList * pClipboardList = (ClipboardList *)GetModel();
 	std::wstring text = pClipboardList->GetText( Index );
 	MultiClipViewerEditBox.SetText( text.c_str() );
 	MultiClipViewerEditBox.EnableEditBox();
@@ -314,7 +313,7 @@ void MultiClipViewerDialog::OnListDoubleClicked()
 		return;
 	}
 
-	ClipboardList * pClipboardList = (ClipboardList *)IView::GetModel();
+	ClipboardList * pClipboardList = (ClipboardList *)GetModel();
 	std::wstring text = pClipboardList->GetText( Index );
 	MultiClipViewerEditBox.EnableEditBox();
 

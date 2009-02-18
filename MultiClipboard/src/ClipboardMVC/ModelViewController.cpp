@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -19,32 +19,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "ModelViewController.h"
 #include <algorithm>
-
-
-void IModel::AddView( IView * pView )
-{
-	ViewsList::iterator iter = FindView( pView );
-	if ( iter != Views.end() )
-	{
-		return;
-	}
-
-	Views.push_back( pView );
-	pView->SetModel( this );
-}
-
-
-void IModel::RemoveView( IView * pView )
-{
-	ViewsList::iterator iter = FindView( pView );
-	if ( iter == Views.end() )
-	{
-		return;
-	}
-
-	Views   		.erase( iter );
-	pView->SetModel( 0 );
-}
 
 
 void IModel::AddController( IController * pController )
@@ -72,18 +46,13 @@ void IModel::RemoveController( IController * pController )
 	pController->SetModel( 0 );
 }
 
-void IModel::NotifyViews()
+
+void IModel::NotifyControllers()
 {
-	for ( ViewsList::iterator iter = Views.begin(); iter != Views.end(); ++iter )
+	for ( ControllersList::iterator iter = Controllers.begin(); iter != Controllers.end(); ++iter )
 	{
 		(*iter)->OnModelModified();
 	}
-}
-
-
-IModel::ViewsList::iterator IModel::FindView( IView * pView )
-{
-	return std::find( Views.begin(), Views.end(), pView );
 }
 
 

@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,14 +28,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "MultiClipboardListbox.h"
 #include "MultiClipboardEditbox.h"
 
+// ID for dockable window
+#define	MULTICLIPBOARD_DOCKABLE_WINDOW_INDEX 0
 
-class MultiClipViewerDialog : public DockingDlgInterface, public IView, public IController
+
+class MultiClipViewerDialog : public DockingDlgInterface, public IController
 {
 public:
 	MultiClipViewerDialog();
 	~MultiClipViewerDialog();
 	// Not inherited from DockingDlgInterface
-	void Init();
+	virtual void Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings );
 	// Inherited from DockingDlgInterface
 	virtual void destroy() {}
 

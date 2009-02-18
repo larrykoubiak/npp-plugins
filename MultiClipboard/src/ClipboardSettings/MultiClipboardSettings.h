@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -33,6 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define SETTINGS_USE_PASTE_MENU				TEXT("UsePasteMenu")
 #define SETTINGS_SHOW_NUMBERED_PASTE_MENU	TEXT("ShowNumberedPasteMenu")
 #define SETTINGS_PASTE_MENU_WIDTH			TEXT("PasteMenuWidth")
+#define SETTINGS_MIDDLE_CLICK_PASTE			TEXT("MiddleClickPaste")
 
 #define SETTINGS_GROUP_AUTO_COPY			TEXT("AutoCopy")
 #define SETTINGS_AUTO_COPY_TEXT_SELECTION	TEXT("AutoCopyTextSelection")

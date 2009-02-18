@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,6 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+
 #include "MCSubClassWndProc.h"
 #include "SciSubClassWrp.h"
 #include "MultiClipboardProxy.h"
@@ -25,6 +26,82 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 extern SciSubClassWrp		g_ScintillaMain, g_ScintillaSecond;
 extern WNDPROC				g_NppWndProc;
 extern MultiClipboardProxy	g_ClipboardProxy;
+
+
+// Function to translate keyboard events to a form the clipboard proxy's key listeners can understand
+BOOL ProcessKeyEvent( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp )
+{
+	KeyListener::KeyEventType ket = (KeyListener::KeyEventType)0;
+	switch ( msg )
+	{
+	case WM_CHAR:
+		ket = KeyListener::KET_Char;
+		break;
+	case WM_KEYUP:
+	case WM_SYSKEYUP:
+		ket = KeyListener::KET_KeyUp;
+		break;
+	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN:
+		ket = KeyListener::KET_KeyDown;
+		break;
+	}
+
+	return g_ClipboardProxy.OnKeyEvent( ket, wp );
+}
+
+
+// Function to translate mouse events to a form the clipboard proxy's mouse listeners can understand
+BOOL ProcessMouseEvent( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp )
+{
+	MouseListener::MouseEventType met = (MouseListener::MouseEventType)0;
+	INT mouseDelta = 0;
+	switch( msg )
+	{
+	case WM_MOUSEMOVE:
+		met = MouseListener::EMET_MouseMove;
+		break;
+	case WM_LBUTTONDOWN:
+		met = MouseListener::EMET_LButtonDown;
+		break;
+	case WM_LBUTTONUP:
+		met = MouseListener::EMET_LButtonUp;
+		break;
+	case WM_LBUTTONDBLCLK:
+		met = MouseListener::EMET_LButtonDblClk;
+		break;
+	case WM_MBUTTONDOWN:
+		met = MouseListener::EMET_MButtonDown;
+		break;
+	case WM_MBUTTONUP:
+		met = MouseListener::EMET_MButtonUp;
+		break;
+	case WM_MBUTTONDBLCLK:
+		met = MouseListener::EMET_MButtonDblClk;
+		break;
+	case WM_RBUTTONDOWN:
+		met = MouseListener::EMET_RButtonDown;
+		break;
+	case WM_RBUTTONUP:
+		met = MouseListener::EMET_RButtonUp;
+		break;
+	case WM_RBUTTONDBLCLK:
+		met = MouseListener::EMET_RButtonDblClk;
+		break;
+	case WM_MOUSEWHEEL:
+		met = MouseListener::EMET_MouseWheel;
+		mouseDelta = HIWORD(wp);
+		break;
+	}
+	int mef = 0;
+	mef |= (wp & MK_CONTROL) ? MouseListener::EMEF_CtrlDown : 0;
+	mef |= (wp & MK_SHIFT) ? MouseListener::EMEF_ShiftDown : 0;
+	mef |= (wp & MK_LBUTTON) ? MouseListener::EMEF_LMBDown : 0;
+	mef |= (wp & MK_MBUTTON) ? MouseListener::EMEF_MMBDown : 0;
+	mef |= (wp & MK_RBUTTON) ? MouseListener::EMEF_RMBDown : 0;
+
+	return g_ClipboardProxy.OnMouseEvent( met, (MouseListener::MouseEventFlags)mef, LOWORD(lp), HIWORD(lp), mouseDelta );
+}
 
 
 LRESULT CALLBACK MCSubClassNppWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp )
@@ -96,6 +173,11 @@ LRESULT CALLBACK MCSubClassSciWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 		{
 			g_ClipboardProxy.OnTextPastedInNpp();
 		}
+		if ( ProcessKeyEvent( hwnd, msg, wp, lp ) )
+		{
+			// Key event is processed by the plugin
+			return TRUE;
+		}
 		break;
 
 	case WM_KEYUP:
@@ -103,6 +185,32 @@ LRESULT CALLBACK MCSubClassSciWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 		if ( wp == VK_SHIFT || wp == VK_CONTROL )
 		{
 			g_ClipboardProxy.CyclicPasteEndUndoAction();
+		}
+		// Fall through
+	case WM_SYSKEYDOWN:
+	case WM_CHAR:
+		if ( ProcessKeyEvent( hwnd, msg, wp, lp ) )
+		{
+			// Key event is processed by the plugin
+			return TRUE;
+		}
+		break;
+
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_LBUTTONDBLCLK:
+	case WM_MBUTTONDOWN:
+	case WM_MBUTTONUP:
+	case WM_MBUTTONDBLCLK:
+	case WM_RBUTTONDOWN:
+	case WM_RBUTTONUP:
+	case WM_RBUTTONDBLCLK:
+	case WM_MOUSEWHEEL:
+		if ( ProcessMouseEvent( hwnd, msg, wp, lp ) )
+		{
+			// Key event is processed by the plugin
+			return true;
 		}
 		break;
 	}

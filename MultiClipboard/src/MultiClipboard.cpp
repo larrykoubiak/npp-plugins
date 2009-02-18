@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define VC_EXTRA_LEAN
 #include "PluginInterface.h"
 
-#include "MultiClipboard.h"
 #include "SciSubClassWrp.h"
 #include "MCSubClassWndProc.h"
 #include "MultiClipboardProxy.h"
@@ -152,8 +151,6 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	g_NppData = notpadPlusData;
 
 	g_ClipboardProxy.Init();
-	g_ClipboardProxy.RegisterClipboardListener( &OSClipboard );
-	g_ClipboardProxy.RegisterClipboardListener( &autoCopier );
 
 	// Subclass the Notepad++ windows procedure
 	g_NppWndProc = (WNDPROC) SetWindowLong( g_NppData._nppHandle, GWL_WNDPROC, (LONG) MCSubClassNppWndProc );
@@ -165,26 +162,16 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 	LoadSettings();
 
 	// initial dialogs
-	AboutDlg.init( g_hInstance, g_NppData );
+	AboutDlg.Init( g_hInstance, g_NppData );
 	OptionsDlg.Init( g_hInstance, g_NppData._nppHandle );
 
 	// Initialisation of MVC components
-	clipViewerDialog.Init();
-
-	clipboardList.AddView( &clipViewerDialog );
-	clipboardList.AddView( &clipPasteMenu );
-	clipboardList.AddView( &cyclicPaste );
-
-	clipboardList.AddController( &OSClipboard );
-	clipboardList.AddController( &clipViewerDialog );
-	clipboardList.AddController( &clipPasteMenu );
-	clipboardList.AddController( &cyclicPaste );
-	clipboardList.AddController( &autoCopier );
-
 	g_SettingsManager.AddSettingsObserver( &clipboardList );
-	g_SettingsManager.AddSettingsObserver( &OSClipboard );
-	g_SettingsManager.AddSettingsObserver( (IView*)&clipPasteMenu );
-	g_SettingsManager.AddSettingsObserver( &autoCopier );
+	OSClipboard.Init( &clipboardList, &g_ClipboardProxy, &g_SettingsManager );
+	clipViewerDialog.Init( &clipboardList, &g_ClipboardProxy, &g_SettingsManager );
+	clipPasteMenu.Init( &clipboardList, &g_ClipboardProxy, &g_SettingsManager );
+	cyclicPaste.Init( &clipboardList, &g_ClipboardProxy, &g_SettingsManager );
+	autoCopier.Init( &clipboardList, &g_ClipboardProxy, &g_SettingsManager );
 }
 
 extern "C" __declspec(dllexport) const TCHAR * getName()
@@ -214,7 +201,7 @@ extern "C" __declspec(dllexport) void beNotified(SCNotification *notifyCode)
 		if (notifyCode->nmhdr.code == NPPN_TBMODIFICATION)
 		{
 			g_TBWndMgr.hToolbarBmp = (HBITMAP)::LoadImage( (HINSTANCE)g_hInstance, MAKEINTRESOURCE(IDB_EX_MULTICLIPBOARD), IMAGE_BITMAP, 0, 0, (LR_LOADMAP3DCOLORS) );
-			::SendMessage( g_NppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[TOGGLE_DOCKABLE_WINDOW_INDEX]._cmdID, (LPARAM)&g_TBWndMgr );
+			::SendMessage( g_NppData._nppHandle, NPPM_ADDTOOLBARICON, (WPARAM)funcItem[MULTICLIPBOARD_DOCKABLE_WINDOW_INDEX]._cmdID, (LPARAM)&g_TBWndMgr );
 		}
 	}
 }
@@ -286,7 +273,7 @@ void ToggleView(void)
 {
 	// get menu and test if dockable dialog is open
 	HMENU hMenu = ::GetMenu(g_NppData._nppHandle);
-	UINT state = ::GetMenuState(hMenu, funcItem[TOGGLE_DOCKABLE_WINDOW_INDEX]._cmdID, MF_BYCOMMAND);
+	UINT state = ::GetMenuState(hMenu, funcItem[MULTICLIPBOARD_DOCKABLE_WINDOW_INDEX]._cmdID, MF_BYCOMMAND);
 
 	clipViewerDialog.ShowDialog( state & MF_CHECKED ? false : true );
 }

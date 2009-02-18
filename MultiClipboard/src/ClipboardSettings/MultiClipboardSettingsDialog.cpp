@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -321,6 +321,11 @@ void MultiClipboardSettingsDialog::LoadSettingsControlMap()
 		IDC_EDIT_PASTE_MENU_WIDTH, IDC_TEXT_PASTE_MENU_WIDTH, SCTE_INT,
 		SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH,
 		TEXT("Maximum number of characters to display per text on the paste menu") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_MIDDLE_CLICK_PASTE, SCTE_BOOL,
+		SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE,
+		TEXT("Click middle mouse button to paste text from clipboard. Shift-middle click will show paste menu") ) );
 
 	SettingsControlMap.push_back( SettingsControlMapStruct(
 		IDC_CHECK_AUTO_COPY_SELECTION, SCTE_BOOL,

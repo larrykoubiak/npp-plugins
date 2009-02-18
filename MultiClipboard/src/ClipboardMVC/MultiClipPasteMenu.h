@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,14 +25,21 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define VC_EXTRA_LEAN
 #include <windows.h>
 
+#include "MultiClipboardProxy.h"
 
-class MultiClipPasteMenu : public IView, public IController
+
+class MultiClipPasteMenu : public IController, public MouseListener, public KeyListener
 {
 public:
 	MultiClipPasteMenu();
+	virtual void Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings );
 
 	void ShowPasteMenu();
 	bool IsUsePasteMenu() { return bUsePasteMenu; }
+
+	virtual BOOL OnMouseEvent( MouseEventType eventType, MouseEventFlags eventFlags,
+		INT mouseX, INT mouseY, INT mouseDelta );
+	virtual BOOL OnKeyEvent( KeyEventType eventType, INT keyCode );
 
 	virtual void OnModelModified();
 
@@ -40,15 +47,24 @@ public:
 	virtual void OnSettingsChanged( const stringType & GroupName, const stringType & SettingName );
 
 private:
+	// For caching the paste menu handle
 	HMENU hPasteMenu;
+	// Whether to used numbered mnemonic in paste menu
 	bool bNumberedPasteList;
+	// Length of text to display in paste menu
 	unsigned int MenuTextLength;
+	// Whether to use middle click for pasting
+	bool bUseMiddleClickPaste;
 	// Whether MultiClipboard plugin will use this (true) or MultiClipCyclicPaste (false)
 	bool bUsePasteMenu;
+	// Whether the user last fired off a keyboard or mouse event. Used to determine whether to position
+	// the menu at the caret or mouse cursor
+	bool bMouseLastUsed;
 
 	void RecreateCopyMenu();
 	void CreateMenuText( const std::wstring & InClipText, std::wstring & OutMenuString, const int index );
 	void PasteClipboardItem( unsigned int MenuItemID );
+	BOOL OnMiddleClick( bool bIsShift );
 };
 
 

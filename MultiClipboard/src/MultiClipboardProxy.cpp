@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -161,6 +161,76 @@ BOOL MultiClipboardProxy::OnTimer( UINT EventID )
 }
 
 
+void MultiClipboardProxy::AddMouseListener( MouseListener * listener )
+{
+	std::vector< MouseListener * >::iterator mouseIter;
+	for ( mouseIter = mouseListeners.begin(); mouseIter != mouseListeners.end(); ++mouseIter )
+	{
+		if ( listener == *mouseIter )
+		{
+			// If mouse listener is already registered, then stop
+			return;
+		}
+	}
+
+	// Add this mouse listener
+	mouseListeners.push_back( listener );
+}
+
+
+BOOL MultiClipboardProxy::OnMouseEvent( MouseListener::MouseEventType eventType, MouseListener::MouseEventFlags eventFlags,
+				  INT mouseX, INT mouseY, INT mouseDelta )
+{
+	BOOL result = FALSE;
+	std::vector< MouseListener * >::iterator mouseIter;
+	for ( mouseIter = mouseListeners.begin(); mouseIter != mouseListeners.end(); ++mouseIter )
+	{
+		BOOL thisResult = (*mouseIter)->OnMouseEvent( eventType, eventFlags, mouseX, mouseY, mouseDelta );
+		if ( thisResult )
+		{
+			// This listener wants to trap the message
+			result = TRUE;
+		}
+	}
+
+	return result;
+}
+
+void MultiClipboardProxy::AddKeyListener( KeyListener * listener )
+{
+	std::vector< KeyListener * >::iterator keyIter;
+	for ( keyIter = keyListeners.begin(); keyIter != keyListeners.end(); ++keyIter )
+	{
+		if ( listener == *keyIter )
+		{
+			// If key listener is already registered, then stop
+			return;
+		}
+	}
+
+	// Add this key listener
+	keyListeners.push_back( listener );
+}
+
+
+BOOL MultiClipboardProxy::OnKeyEvent( KeyListener::KeyEventType eventType, INT keyCode )
+{
+	BOOL result = FALSE;
+	std::vector< KeyListener * >::iterator keyIter;
+	for ( keyIter = keyListeners.begin(); keyIter != keyListeners.end(); ++keyIter )
+	{
+		BOOL thisResult = (*keyIter)->OnKeyEvent( eventType, keyCode );
+		if ( thisResult )
+		{
+			// This listener wants to trap the message
+			result = TRUE;
+		}
+	}
+
+	return result;
+}
+
+
 BOOL MultiClipboardProxy::IsNppForegroundWindow()
 {
 	HWND hForeground = ::GetForegroundWindow();
@@ -175,6 +245,15 @@ BOOL MultiClipboardProxy::IsNppForegroundWindow()
 void MultiClipboardProxy::SetFocusToDocument()
 {
 	::SetFocus( GetCurrentScintilla()->hWnd );
+}
+
+
+POINT MultiClipboardProxy::GetMouseCursorPosition()
+{
+	POINT pt;
+	int currentPos = ::GetCursorPos( &pt );
+
+	return pt;
 }
 
 

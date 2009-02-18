@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,10 +24,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "MultiClipboardProxy.h"
 
 
-class MultiClipCyclicPaste : public IView, public IController, public CyclicPasteEndUndoActionListener
+class MultiClipCyclicPaste : public IController, public CyclicPasteEndUndoActionListener
 {
 public:
 	MultiClipCyclicPaste();
+	virtual void Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings );
 
 	void DoCyclicPaste();
 	void ResetPasteIndex();

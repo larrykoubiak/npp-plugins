@@ -1,6 +1,6 @@
 /*
 This file is part of MultiClipboard Plugin for Notepad++
-Copyright (C) 2008 LoonyChewy
+Copyright (C) 2009 LoonyChewy
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -26,8 +26,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
 class IModel;
-class IView;
 class IController;
+class MultiClipboardProxy;
 
 
 class IModel : public SettingsObserver
@@ -36,40 +36,18 @@ public:
 	IModel() {}
 	~IModel() {}
 
-	void AddView( IView * pView );
-	void RemoveView( IView * pView );
 	void AddController( IController * pController );
 	void RemoveController( IController * pController );
 
 protected:
-	void OnModified() { NotifyViews(); }
-	void NotifyViews();
+	void OnModified() { NotifyControllers(); }
+	void NotifyControllers();
 
 private:
 	// There are private so only the MVC framework here can access these
-	typedef std::vector<IView *> ViewsList;
-	ViewsList Views;
-	ViewsList::iterator FindView( IView * pView );
-
 	typedef std::vector<IController *> ControllersList;
 	ControllersList Controllers;
 	ControllersList::iterator FindController( IController * pController );
-};
-
-
-class IView : public SettingsObserver
-{
-public:
-	IView() : pModel( 0 ) {}
-
-protected:
-	IModel * GetModel() { return pModel; }
-	virtual void OnModelModified() = 0;
-
-private:
-	friend class IModel;
-	IModel * pModel;
-	void SetModel( IModel * pNewModel ) { pModel = pNewModel; }
 };
 
 
@@ -77,9 +55,15 @@ class IController : public SettingsObserver
 {
 public:
 	IController() : pModel( 0 ) {}
+	virtual void Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings )
+	{
+		pNewModel->AddController( this );
+		pSettings->AddSettingsObserver( this );
+	}
 
 protected:
 	IModel * GetModel() { return pModel; }
+	virtual void OnModelModified() {}
 
 private:
 	friend class IModel;
