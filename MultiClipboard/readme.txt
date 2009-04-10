@@ -56,6 +56,9 @@ XX XXX 2009 - MultiClipboard 2.1
    to improve plugin performance. Text size is a hidden option in the config xml
 5. Some internal changes to improve performance a little bit
 6. Rename localisation file to more standard name suffixes, eg _en, _de
+7. Fix issue when Notepad++ is converting text format between ANSI and UTF/Unicode, the
+   entire text is copied into system clipboard during this process, and hence into
+   MultiClipboard. Now the plugin will recognise and ignore this process
 (Technical)
 1. Switch to unity build configuration. Full release build time went down from 27 secs to 8 secs
 2. Use link time code generation in release build to hopefully improve runtime performance

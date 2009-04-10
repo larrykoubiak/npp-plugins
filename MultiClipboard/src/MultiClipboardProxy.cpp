@@ -17,7 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "MultiClipboardProxy.h"
 #include <cstdio>
 #include <vector>
@@ -30,6 +30,7 @@ extern SciSubClassWrp		g_ScintillaMain, g_ScintillaSecond;
 MultiClipboardProxy::MultiClipboardProxy()
 : pEndUndoActionListener( 0 )
 , isCyclicPasteUndoAction( false )
+, ignoreClipTextCount( 0 )
 {
 }
 
@@ -69,6 +70,13 @@ void MultiClipboardProxy::RegisterClipboardListener( ClipboardListener * pListen
 
 void MultiClipboardProxy::OnNewClipboardText( std::wstring text )
 {
+	if ( ignoreClipTextCount > 0 )
+	{
+		// Suppose to ignore this clipboard text, due to Notepad++ text format conversion
+		--ignoreClipTextCount;
+		return;
+	}
+
 	for ( unsigned int i = 0; i < clipboardListeners.size(); ++i )
 	{
 		clipboardListeners[i]->OnNewClipboardText( text );
@@ -120,6 +128,31 @@ void MultiClipboardProxy::SetTextToSystemClipboard( const std::wstring & text )
 	SetClipboardData( CF_UNICODETEXT, hGlobal );
 	CloseClipboard();
 }
+
+
+void MultiClipboardProxy::OnNppTextFormatConversion( UniMode NewFormat )
+{
+	UniMode CurrentUniMode = GetCurrentEncoding( GetCurrentScintilla() );
+	if ( NewFormat == CurrentUniMode )
+	{
+		// Not converting between Ansi and Unicode/UTF, ignore
+		return;
+	}
+
+	// Notepad++ uses the system clipboard to hold text temporary when converting
+	// So we must ignore the next clipboard text change
+	if ( ::IsClipboardFormatAvailable( CF_UNICODETEXT ) )
+	{
+		// Already contain text in system clipboard, Notepad++ will restore back this text
+		// So must ignore two clipboard text changes instead
+		ignoreClipTextCount = 2;
+	}
+	else
+	{
+		ignoreClipTextCount = 1;
+	}
+}
+
 
 void MultiClipboardProxy::AddTimer( MVCTimer * pTimer )
 {
@@ -386,7 +419,7 @@ void MultiClipboardProxy::PrintText( char * format, ... )
 	va_list args;
 
 	va_start( args, format );
-		vsprintf( textBuffer,format, args );
+		vsprintf( textBuffer, format, args );
 		perror( textBuffer );
 	va_end( args );
 
@@ -404,6 +437,10 @@ SciSubClassWrp * MultiClipboardProxy::GetCurrentScintilla()
 
 UniMode MultiClipboardProxy::GetCurrentEncoding( SciSubClassWrp * pScintilla )
 {
+	if ( !pScintilla )
+	{
+		return uniEnd;
+	}
 	if ( pScintilla->execute( SCI_GETCODEPAGE ) == 0 )
 	{
 		return uni8Bit;

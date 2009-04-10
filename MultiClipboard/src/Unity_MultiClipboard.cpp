@@ -24,14 +24,15 @@ for faster compilation time. Note that while it improves compile time when compi
 is required for many .cpp files, it may actually worsen compile time when a single
 small cpp file compile is needed, due to the fact that it always compile all cpp files
 
-In this file, all headers includes in all source and header files
-are included only in this file, but not in their respective header/source file.
-This is actually a bit unnecessary because modern compilers should be able to
-cache header files during compilation, and hence there should be no difference
-in compilation time. Just trying it out
+In this file, there is a #define option to include all headers in all source and
+header files are only once in this file, but not in their respective header/source
+file. This is actually a bit unnecessary because modern compilers should be able
+to cache header files during compilation, and hence there should be no difference
+in compilation time. Just trying it out. It does get rid of some compile warnings though
 */
 
 #define UNITY_BUILD_MULTICLIPBOARD
+#define UNITY_BUILD_SINGLE_INCLUDE
 
 #ifdef UNITY_BUILD_MULTICLIPBOARD
 
@@ -43,6 +44,9 @@ in compilation time. Just trying it out
 #include <windows.h>
 #include <ShellAPI.h>
 #include <windowsx.h>
+
+
+#ifdef UNITY_BUILD_SINGLE_INCLUDE
 
 // C++ standard library headers
 #include <algorithm>
@@ -61,6 +65,7 @@ in compilation time. Just trying it out
 #include "LoonySettingsManager.h"
 
 // Notepad++ plugin interface headers
+#include "Notepad_plus_rc.h"
 #include "PluginInterface.h"
 
 // NativeLang headers
@@ -116,6 +121,8 @@ in compilation time. Just trying it out
 // ClipboardSettings headers
 #include "MultiClipboardSettingsDialog.h"
 
+#endif	// UNITY_BUILD_SINGLE_INCLUDE
+
 
 // AboutDlg
 #include "AboutDialog.cpp"
@@ -152,4 +159,4 @@ in compilation time. Just trying it out
 #include "MultiClipboard.cpp"
 #include "MultiClipboardProxy.cpp"
 
-#endif
+#endif	// UNITY_BUILD_MULTICLIPBOARD

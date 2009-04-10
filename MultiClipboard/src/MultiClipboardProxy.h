@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef MULTI_CLIPBOARD_PROXY
 #define MULTI_CLIPBOARD_PROXY
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include <string>
 #include <map>
 #include <vector>
@@ -123,6 +123,8 @@ public:
 	void GetTextInSystemClipboard( std::wstring & text );
 	// Set the text to the system clipboard
 	void SetTextToSystemClipboard( const std::wstring & text );
+	// Text format conversion by Npp may result in text copied to system clipboard. Handle it here
+	void OnNppTextFormatConversion( UniMode NewFormat );
 
 	// Adds a timer. If a timer with the same ID already exists, that one is removed first
 	void AddTimer( MVCTimer * pTimer );
@@ -180,6 +182,8 @@ private:
 	std::map< UINT, MVCTimer * > timers;
 	std::vector< MouseListener * > mouseListeners;
 	std::vector< KeyListener * > keyListeners;
+	// Use to handle the case that the clipboard is used by Npp for text format conversion
+	int ignoreClipTextCount;
 
 	SciSubClassWrp * MultiClipboardProxy::GetCurrentScintilla();
 	UniMode GetCurrentEncoding( SciSubClassWrp * pScintilla );

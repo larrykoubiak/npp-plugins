@@ -7,7 +7,7 @@ This project is dedicated to the public domain
 For details, see http://creativecommons.org/licenses/publicdomain/
 */
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "LoonySettingsManager.h"
 #include "../TinyXML/tinyxml.h"
 #include <vector>

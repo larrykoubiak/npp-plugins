@@ -19,7 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef MULTI_CLIPBOARD_STRING_TYPE
 #define MULTI_CLIPBOARD_STRING_TYPE
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include <string>
 #endif
 

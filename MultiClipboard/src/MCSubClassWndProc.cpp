@@ -18,10 +18,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "MCSubClassWndProc.h"
 #include "SciSubClassWrp.h"
 #include "MultiClipboardProxy.h"
+#include "Notepad_plus_rc.h"
 #endif
 
 
@@ -156,6 +157,24 @@ LRESULT CALLBACK MCSubClassNppWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 		{
 			// Timer is processed by plugin
 			return TRUE;
+		}
+		break;
+
+	case WM_COMMAND:
+		switch ( LOWORD( wp ) )
+		{
+		case IDM_FORMAT_CONV2_ANSI:
+			// Handle converting Notepad++ text format to ANSI
+			g_ClipboardProxy.OnNppTextFormatConversion( uni8Bit );
+			break;
+
+		case IDM_FORMAT_CONV2_AS_UTF_8:
+		case IDM_FORMAT_CONV2_UTF_8:
+		case IDM_FORMAT_CONV2_UCS_2BE: 
+		case IDM_FORMAT_CONV2_UCS_2LE:
+			// Handle converting Notepad++ text format to UTF/Unicode
+			g_ClipboardProxy.OnNppTextFormatConversion( uniUTF8 );
+			break;
 		}
 		break;
 	}

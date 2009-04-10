@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef ABOUT_DIALOG_H
 #define ABOUT_DIALOG_H
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "PluginInterface.h"
 #include "StaticDialog.h"
 #include "URLCtrl.h"

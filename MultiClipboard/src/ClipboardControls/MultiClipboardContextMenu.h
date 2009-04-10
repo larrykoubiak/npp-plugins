@@ -29,7 +29,7 @@ http://www.mvps.org/user32/rc/FakeMenu.zip
 #define MULTI_CLIPBOARD_CONTEXT_MENU_H
 
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "Window.h"
 #include <string>
 #endif

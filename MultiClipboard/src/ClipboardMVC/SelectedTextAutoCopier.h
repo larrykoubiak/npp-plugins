@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef SELECTED_TEXT_AUTO_COPIER_H
 #define SELECTED_TEXT_AUTO_COPIER_H
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include <string>
 #include "ModelViewController.h"
 #include "MultiClipboardProxy.h"

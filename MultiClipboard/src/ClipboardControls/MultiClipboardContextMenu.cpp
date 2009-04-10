@@ -24,7 +24,7 @@ Direct download of the code is from "FakeMenu.zip"
 http://www.mvps.org/user32/rc/FakeMenu.zip
 */
 
-#ifndef UNITY_BUILD_MULTICLIPBOARD
+#ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "MultiClipboardContextMenu.h"
 #endif
 
