@@ -41,10 +41,23 @@ Known Issues
 ------------
 - When the document is converted from one encoding to another in Notepad++, the text is added
   to the MultiClipboard
+- Doesn't respect pasting of column-selection text. Text are pasted as normal multi-line text
+- When keymapping of paste is changed from Ctrl-V or Shift-Insert to something else, MultiClipboard will not be able to hook into the paste operation. This is a limitation of Notepad++, because it does not notify plugins of paste operations nor expose its shortcut mappings to plugins
 
 Version History
 ---------------
-20 Feb 2009 - MultiClipboard 2.0 Preview 3
+XX XXX 2009 - MultiClipboard 2.1
+-----------
+1. Limit text entries in the listbox of MultiClip Viewer to 100 chars if text is too long.
+2. Allow 'Delete' key to delete selected item in MultiClip Viewer
+3. Option to ignore text greater than a certain size to improve plugin performance.
+   Text size is a hidden option in the config xml
+4. Option to not allow text greater than a certain size to be edited in MultiClip Viewer,
+   to improve plugin performance. Text size is a hidden option in the config xml
+5. Some internal changes to improve performance a little bit
+6. Rename localisation file to more standard name suffixes, eg _en, _de
+
+20 Feb 2009 - MultiClipboard 2.0
 -----------
 1. Added cyclic clipboard paste as an alternative to paste menu on Ctrl-Shift-V
 2. Added auto copying of selected text to clipboard
