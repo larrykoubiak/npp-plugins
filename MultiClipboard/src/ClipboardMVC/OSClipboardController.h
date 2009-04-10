@@ -20,9 +20,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef OS_CLIPBOARD_CONTROLLER_H
 #define OS_CLIPBOARD_CONTROLLER_H
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include <string>
 #include "ModelViewController.h"
 #include "MultiClipboardProxy.h"
+#endif
 
 
 class OSClipboardController : public IController, public ClipboardListener

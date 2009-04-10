@@ -20,12 +20,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef MULTI_CLIP_PASTE_MENU_H
 #define MULTI_CLIP_PASTE_MENU_H
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "ModelViewController.h"
 #define WIN32_LEAN_AND_MEAN
 #define VC_EXTRA_LEAN
 #include <windows.h>
 
 #include "MultiClipboardProxy.h"
+#endif
 
 
 class MultiClipPasteMenu : public IController, public MouseListener, public KeyListener

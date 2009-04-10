@@ -21,8 +21,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define MODEL_VIEW_CONTROLLER_H
 
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include <vector>
 #include "LoonySettingsManager.h"
+#endif
 
 
 class IModel;

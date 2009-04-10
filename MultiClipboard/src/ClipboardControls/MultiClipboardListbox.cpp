@@ -17,7 +17,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "MultiClipboardListbox.h"
+#endif
 
 
 void MultiClipboardListbox::init(HINSTANCE hInst, HWND parent)

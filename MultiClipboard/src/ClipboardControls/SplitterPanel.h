@@ -20,9 +20,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #ifndef SPLITTER_PANEL_H
 #define SPLITTER_PANEL_H
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include <windows.h>
 #include "Window.h"
-#include "ToolBar.h"
+#endif
 
 enum ESplitterPanelOrientation
 {

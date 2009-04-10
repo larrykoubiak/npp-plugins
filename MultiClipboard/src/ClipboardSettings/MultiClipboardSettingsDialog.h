@@ -20,9 +20,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef MULTI_CLIPBOARD_SETTINGS_DIALOG
 #define MULTI_CLIPBOARD_SETTINGS_DIALOG
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "StaticDialog.h"
 #include <string>
 #include <vector>
+#endif
 
 
 class MultiClipboardSettingsDialog : public StaticDialog

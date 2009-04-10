@@ -18,9 +18,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "MCSubClassWndProc.h"
 #include "SciSubClassWrp.h"
 #include "MultiClipboardProxy.h"
+#endif
 
 
 extern SciSubClassWrp		g_ScintillaMain, g_ScintillaSecond;

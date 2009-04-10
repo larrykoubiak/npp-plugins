@@ -21,8 +21,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #define MULTI_CLIPBOARD_EDIT_BOX_H
 
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "Window.h"
 #include <string>
+#endif
 
 
 class MultiClipboardEditbox : public Window

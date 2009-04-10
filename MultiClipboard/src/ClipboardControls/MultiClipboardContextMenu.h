@@ -29,8 +29,10 @@ http://www.mvps.org/user32/rc/FakeMenu.zip
 #define MULTI_CLIPBOARD_CONTEXT_MENU_H
 
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "Window.h"
 #include <string>
+#endif
 
 
 class MultiClipboardContextMenu : public Window

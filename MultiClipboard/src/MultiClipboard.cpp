@@ -18,6 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
 // include files
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "stdafx.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -38,6 +39,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "MultiClipPasteMenu.h"
 #include "MultiClipCyclicPaste.h"
 #include "SelectedTextAutoCopier.h"
+#endif
 
 
 // information for notepad++

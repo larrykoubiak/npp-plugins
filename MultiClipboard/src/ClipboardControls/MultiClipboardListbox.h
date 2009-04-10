@@ -21,8 +21,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #define MULTI_CLIPBOARD_LIST_BOX_H
 
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "Window.h"
 #include <string>
+#endif
 
 
 // Notification to parent that delete key is pressed

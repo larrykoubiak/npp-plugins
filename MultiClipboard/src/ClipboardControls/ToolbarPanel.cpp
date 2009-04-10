@@ -17,8 +17,10 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "ToolbarPanel.h"
 #include <windowsx.h>
+#endif
 
 #define TOOLBAR_PANEL_CLASS_NAME TEXT( "ToolbarPanel" )
 

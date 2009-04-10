@@ -20,11 +20,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #ifndef MULTI_CLIPBOARD_PROXY
 #define MULTI_CLIPBOARD_PROXY
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include <string>
 #include <map>
 #include <vector>
 #include "PluginInterface.h"
 #include "SciSubClassWrp.h"
+#endif
 
 
 typedef enum UniMode

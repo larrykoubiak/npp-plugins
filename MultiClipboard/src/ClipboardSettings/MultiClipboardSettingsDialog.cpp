@@ -17,6 +17,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#ifndef UNITY_BUILD_MULTICLIPBOARD
 #include "MultiClipboardSettingsDialog.h"
 #include "LoonySettingsManager.h"
 #include "MultiClipboardSettings.h"
@@ -26,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <windowsx.h>
 #include <sstream>
 #include <vector>
+#endif
 
 extern HINSTANCE g_hInstance;
 extern LoonySettingsManager g_SettingsManager;
