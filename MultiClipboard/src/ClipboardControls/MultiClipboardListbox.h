@@ -25,6 +25,10 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include <string>
 
 
+// Notification to parent that delete key is pressed
+#define LBN_DELETEITEM LB_MSGMAX+0x100
+
+
 class MultiClipboardListbox : public Window
 {
 public:
@@ -43,6 +47,14 @@ public:
 
 private:
 	HFONT hNewFont;
+
+	WNDPROC oldWndProc;
+	// Subclass the list box's wnd proc for customised behavior
+	static LRESULT CALLBACK StaticListboxProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam )
+	{
+		return ((MultiClipboardListbox *)(::GetWindowLongPtr(hwnd, GWL_USERDATA)))->runProc( hwnd, message, wParam, lParam );
+	};
+	LRESULT runProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam );
 };
 
 

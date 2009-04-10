@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ClipboardList.h"
 #include "MultiClipboardProxy.h"
 #include "NativeLang_def.h"
+#include "MultiClipboardSettings.h"
 
 
 //************************ define here your toolbar layout *********************
@@ -56,6 +57,9 @@ extern MultiClipboardProxy g_ClipboardProxy;
 MultiClipViewerDialog::MultiClipViewerDialog()
 : DockingDlgInterface(IDD_DOCK_DLG)
 , IsShown( false )
+, bNoEditLargeText( TRUE )
+, NoEditLargeTextSize( 10000 )
+, LargeTextDisplaySize( 2048 )
 {
 }
 
@@ -125,6 +129,10 @@ BOOL CALLBACK MultiClipViewerDialog::run_dlgProc( HWND hWnd, UINT msg, WPARAM wp
 
 				case LBN_DBLCLK:
 					OnListDoubleClicked();
+					return 0;
+
+				case LBN_DELETEITEM:
+					DeleteSelectedItem();
 					return 0;
 				}
 			}
@@ -284,7 +292,12 @@ void MultiClipViewerDialog::ShowClipText()
 	MultiClipViewerListbox.ClearAll();
 	for ( unsigned int i = 0; i < pClipboardList->GetNumText(); ++i )
 	{
-		MultiClipViewerListbox.AddItem( pClipboardList->GetText( i ) );
+		std::wstring textToAdd = pClipboardList->GetText( i );
+		if ( textToAdd.size() > 100 )
+		{
+			textToAdd.resize( 100 );
+		}
+		MultiClipViewerListbox.AddItem( textToAdd );
 	}
 }
 
@@ -299,26 +312,41 @@ void MultiClipViewerDialog::OnListSelectionChanged()
 
 	ClipboardList * pClipboardList = (ClipboardList *)GetModel();
 	std::wstring text = pClipboardList->GetText( Index );
-	MultiClipViewerEditBox.SetText( text.c_str() );
-	MultiClipViewerEditBox.EnableEditBox();
-	g_ClipboardProxy.SetFocusToDocument();
+	// Check if text is too large, and we only want to display a bit of it, read-only
+	if ( bNoEditLargeText && text.size() > NoEditLargeTextSize )
+	{
+		// Get internationalised string for large text
+		std::wstring largeTextDisplay( TEXT("*** Large Text ***\r\n") );
+		std::vector< TCHAR > largeText(512);
+		int len = NLGetText( g_hInstance, g_NppData._nppHandle, TEXT("Large Text"), &largeText[0], largeText.capacity() );
+		if ( len > 0 )
+		{
+			largeTextDisplay = std::wstring( TEXT("***") ) + &largeText[0] + std::wstring( TEXT("***\r\n") );
+		}
+
+		// Append snippet of text to edit box, up to 1024 chars long
+		unsigned int textSize = text.size() > LargeTextDisplaySize ? LargeTextDisplaySize : text.size();
+		largeTextDisplay += text.substr( 0, textSize );
+		MultiClipViewerEditBox.SetText( largeTextDisplay.c_str() );
+		// And make it enabled, but read-only
+		MultiClipViewerEditBox.EnableEditBox();
+		MultiClipViewerEditBox.SetEditBoxReadOnly( TRUE );
+	}
+	else
+	{
+		// Else, just display all the text and make it editable
+		MultiClipViewerEditBox.SetText( text.c_str() );
+		MultiClipViewerEditBox.EnableEditBox();
+		// And make it read-write
+		MultiClipViewerEditBox.SetEditBoxReadOnly( FALSE );
+	}
+	//g_ClipboardProxy.SetFocusToDocument();
 }
 
 
 void MultiClipViewerDialog::OnListDoubleClicked()
 {
-	INT Index = MultiClipViewerListbox.GetCurrentSelectionIndex();
-	if ( Index == LB_ERR )
-	{
-		return;
-	}
-
-	ClipboardList * pClipboardList = (ClipboardList *)GetModel();
-	std::wstring text = pClipboardList->GetText( Index );
-	MultiClipViewerEditBox.EnableEditBox();
-
-	g_ClipboardProxy.PasteTextToNpp( text );
-	g_ClipboardProxy.SetFocusToDocument();
+	PasteSelectedItem();
 }
 
 
@@ -396,25 +424,113 @@ void MultiClipViewerDialog::OnToolBarCommand( UINT Cmd )
 		break;
 
 	case IDM_EX_PASTE:
-		OnListDoubleClicked();
+		PasteSelectedItem();
 		break;
 
 	case IDM_EX_DELETE:
-		pClipboardList->RemoveText( SelIndex );
-		// Select the next item in the list
-		MultiClipViewerListbox.SetCurrentSelectedItem( SelIndex, FALSE );
-		// Check whether selection is successful
-		SelIndex = MultiClipViewerListbox.GetCurrentSelectionIndex();
-		if ( SelIndex < 0 || SelIndex >= (int)pClipboardList->GetNumText() )
-		{
-			// Not successful, clear and disable textbox
-			MultiClipViewerEditBox.SetText( std::wstring() );
-			MultiClipViewerEditBox.EnableEditBox( FALSE );
-		}
-		else
-		{
-			OnListSelectionChanged();
-		}
+		DeleteSelectedItem();
 		break;
+	}
+}
+
+
+void MultiClipViewerDialog::PasteSelectedItem()
+{
+	INT Index = MultiClipViewerListbox.GetCurrentSelectionIndex();
+	if ( Index == LB_ERR )
+	{
+		return;
+	}
+
+	ClipboardList * pClipboardList = (ClipboardList *)GetModel();
+	std::wstring text = pClipboardList->GetText( Index );
+	MultiClipViewerEditBox.EnableEditBox();
+
+	g_ClipboardProxy.PasteTextToNpp( text );
+	g_ClipboardProxy.SetFocusToDocument();
+}
+
+
+void MultiClipViewerDialog::DeleteSelectedItem()
+{
+	ClipboardList * pClipboardList = (ClipboardList *)IController::GetModel();
+	if ( !pClipboardList )
+	{
+		return;
+	}
+	int SelIndex = MultiClipViewerListbox.GetCurrentSelectionIndex();
+	if ( SelIndex < 0 || SelIndex >= (int)pClipboardList->GetNumText() )
+	{
+		return;
+	}
+
+	pClipboardList->RemoveText( SelIndex );
+	// Select the next item in the list
+	MultiClipViewerListbox.SetCurrentSelectedItem( SelIndex, FALSE );
+	// Check whether selection is successful
+	SelIndex = MultiClipViewerListbox.GetCurrentSelectionIndex();
+	if ( SelIndex < 0 || SelIndex >= (int)pClipboardList->GetNumText() )
+	{
+		// Not successful, clear and disable textbox
+		MultiClipViewerEditBox.SetText( std::wstring() );
+		MultiClipViewerEditBox.EnableEditBox( FALSE );
+	}
+	else
+	{
+		OnListSelectionChanged();
+	}
+}
+
+
+void MultiClipViewerDialog::OnObserverAdded( LoonySettingsManager * SettingsManager )
+{
+	SettingsObserver::OnObserverAdded( SettingsManager );
+
+	// Add default settings if it doesn't exists
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT ) )
+	{
+		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT, bNoEditLargeText != FALSE );
+	}
+	else
+	{
+		OnSettingsChanged( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT );
+	}
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT_SIZE ) )
+	{
+		pSettingsManager->SetIntSetting( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT_SIZE, NoEditLargeTextSize );
+	}
+	else
+	{
+		OnSettingsChanged( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT_SIZE );
+	}
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_LARGE_TEXT_DISPLAY_SIZE ) )
+	{
+		pSettingsManager->SetIntSetting( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_LARGE_TEXT_DISPLAY_SIZE, LargeTextDisplaySize );
+	}
+	else
+	{
+		OnSettingsChanged( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_LARGE_TEXT_DISPLAY_SIZE );
+	}
+}
+
+
+void MultiClipViewerDialog::OnSettingsChanged( const stringType & GroupName, const stringType & SettingName )
+{
+	if ( GroupName != SETTINGS_GROUP_MULTI_CLIP_VIEWER )
+	{
+		return;
+	}
+
+	if ( SettingName == SETTINGS_NO_EDIT_LARGE_TEXT )
+	{
+		bNoEditLargeText = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT );
+	}
+	else if ( SettingName == SETTINGS_NO_EDIT_LARGE_TEXT_SIZE )
+	{
+		NoEditLargeTextSize = pSettingsManager->GetIntSetting( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT_SIZE );
+	}
+	else if ( SettingName == SETTINGS_LARGE_TEXT_DISPLAY_SIZE )
+	{
+		LargeTextDisplaySize = pSettingsManager->GetIntSetting( SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_LARGE_TEXT_DISPLAY_SIZE );
 	}
 }

@@ -331,4 +331,14 @@ void MultiClipboardSettingsDialog::LoadSettingsControlMap()
 		IDC_CHECK_AUTO_COPY_SELECTION, SCTE_BOOL,
 		SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_TEXT_SELECTION,
 		TEXT("Automatically copies selected text into clipboard") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_NO_COPY_LARGE_TEXT, SCTE_BOOL,
+		SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT,
+		TEXT("Do not store large text into MultiClipboard plugin. Improves performance when copy and pasting very large text files") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_NO_LARGE_TEXT_EDIT, SCTE_BOOL,
+		SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT,
+		TEXT("Do not allow editing of large text in MultiClip Viewer. Improves performance when using the MultiClip Viewer") ) );
 }

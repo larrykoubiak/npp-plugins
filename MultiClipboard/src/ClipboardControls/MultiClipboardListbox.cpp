@@ -35,6 +35,12 @@ void MultiClipboardListbox::init(HINSTANCE hInst, HWND parent)
 		return;
 	}
 
+	// subclass the listbox control
+	oldWndProc = (WNDPROC)::SetWindowLong( _hSelf, GWL_WNDPROC, (LONG)StaticListboxProc );
+
+	// associate this class instance with the listbox instance
+	::SetWindowLongPtr( _hSelf, GWL_USERDATA, (LONG)this );
+
 	hNewFont = (HFONT)::SendMessage( _hSelf, WM_GETFONT, 0, 0 );
 	if ( hNewFont == NULL )
 	{
@@ -106,4 +112,21 @@ void MultiClipboardListbox::SetCurrentSelectedItem( INT NewSelectionIndex, BOOL 
 			::SendMessage( _hSelf, LB_SETCURSEL, ItemCount-1, 0 );
 		}
 	}
+}
+
+
+LRESULT MultiClipboardListbox::runProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam )
+{
+	switch ( message )
+	{
+	case WM_KEYUP:
+		switch ( wParam )
+		{
+		case VK_DELETE:
+			SendMessage( _hParent, WM_COMMAND, MAKEWPARAM(0, LBN_DELETEITEM), (LPARAM)_hSelf );
+			return 0;
+		}
+	}
+
+	return ::CallWindowProc( oldWndProc, hwnd, message, wParam, lParam );
 }

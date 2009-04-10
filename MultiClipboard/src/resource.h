@@ -23,6 +23,8 @@
 #define IDC_TEXT_PASTE_MENU_WIDTH       1009
 #define IDC_CHECK_AUTO_COPY_SELECTION   1010
 #define IDC_CHECK_MIDDLE_CLICK_PASTE    1011
+#define IDC_CHECK_NO_COPY_LARGE_TEXT    1012
+#define IDC_CHECK_NO_LARGE_TEXT_EDIT    1013
 #define IDM_EX_UP                       2001
 #define IDM_EX_DOWN                     2002
 #define IDM_EX_PASTE                    2003

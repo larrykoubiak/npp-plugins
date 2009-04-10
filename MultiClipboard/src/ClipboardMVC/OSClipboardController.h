@@ -45,6 +45,10 @@ private:
 	BOOL bOnlyWhenPastedInNpp;
 	// Buffer for clipboard text, used when bOnlyWhenPastedInNpp is True
 	std::wstring LastClipboardText;
+	// True - Do not store text greater than LargeClipboardTextSize in plugin
+	BOOL bIgnoreLargeClipboardText;
+	// Size of text in kilobyte to be considered as large clipboard text
+	UINT LargeClipboardTextSize;
 };
 
 

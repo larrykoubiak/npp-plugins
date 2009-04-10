@@ -94,7 +94,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy $(IntDir)\*.dll ..\..\..\npp\plugins\ /Y&#x0D;&#x0A;xcopy $(IntDir)\*.pdb ..\..\..\npp\plugins\ /Y&#x0D;&#x0A;copy ..\..\lang\MultiClipboard_template.ini ..\..\..\npp\plugins\Config\NativeLang.ini&#x0D;&#x0A;"
+				CommandLine="xcopy $(IntDir)\*.dll ..\..\..\npp\plugins\ /Y&#x0D;&#x0A;xcopy $(IntDir)\*.pdb ..\..\..\npp\plugins\ /Y&#x0D;&#x0A;copy ..\..\lang\MultiClipboard_en.ini ..\..\..\npp\plugins\Config\NativeLang.ini&#x0D;&#x0A;"
 			/>
 		</Configuration>
 		<Configuration
@@ -175,7 +175,7 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
-				CommandLine="xcopy $(IntDir)\*.dll ..\..\..\npp\plugins\ /Y&#x0D;&#x0A;xcopy $(IntDir)\*.pdb ..\..\..\npp\plugins\ /Y&#x0D;&#x0A;copy ..\..\lang\MultiClipboard_template.ini ..\..\..\npp\plugins\Config\NativeLang.ini&#x0D;&#x0A;"
+				CommandLine="xcopy $(IntDir)\*.dll ..\..\..\npp\plugins\ /Y&#x0D;&#x0A;xcopy $(IntDir)\*.pdb ..\..\..\npp\plugins\ /Y&#x0D;&#x0A;copy ..\..\lang\MultiClipboard_en.ini ..\..\..\npp\plugins\Config\NativeLang.ini&#x0D;&#x0A;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -516,7 +516,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\lang\MultiClipboard_template.ini"
+				RelativePath="..\..\lang\MultiClipboard_en.ini"
 				>
 			</File>
 			<File

@@ -62,24 +62,24 @@ void ClipboardList::RemoveText( const unsigned int index )
 }
 
 
-std::wstring ClipboardList::GetText( const unsigned int index )
+const std::wstring & ClipboardList::GetText( const unsigned int index )
 {
 	TextListIterator iter = GetIterAtIndex( index );
 	if ( iter == textList.end() )
 	{
-		return std::wstring();
+		return NullString;
 	}
 
 	return *iter;
 }
 
 
-std::wstring ClipboardList::PasteText( const unsigned int index )
+const std::wstring & ClipboardList::PasteText( const unsigned int index )
 {
 	TextListIterator iter = GetIterAtIndex( index );
 	if ( iter == textList.end() )
 	{
-		return std::wstring();
+		return NullString;
 	}
 
 	// Cut it and move it to the front of the list

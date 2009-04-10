@@ -36,6 +36,7 @@ public:
 	// This should be slightly more efficient due to not pass text around too much
 	virtual void GetText( std::wstring & text );
 
+	virtual void SetEditBoxReadOnly( const BOOL bReadOnly = TRUE );
 	virtual void EnableEditBox( const BOOL bEnable = TRUE );
 	virtual BOOL IsEditBoxEnabled();
 

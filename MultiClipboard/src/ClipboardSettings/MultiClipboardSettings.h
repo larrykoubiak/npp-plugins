@@ -28,6 +28,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define SETTINGS_GROUP_OSCLIPBOARD			TEXT("OSClipboard")
 #define SETTINGS_COPY_FROM_OTHER_PROGRAMS	TEXT("CopyFromOtherPrograms")
 #define SETTINGS_ONLY_WHEN_PASTED_IN_NPP	TEXT("OnlyWhenPastedInNpp")
+#define SETTINGS_IGNORE_LARGE_TEXT			TEXT("IgnoreLargeText")
+#define SETTINGS_LARGE_TEXT_SIZE			TEXT("IgnoreLargeTextSize")
 
 #define SETTINGS_GROUP_PASTE_MENU			TEXT("PasteMenu")
 #define SETTINGS_USE_PASTE_MENU				TEXT("UsePasteMenu")
@@ -38,5 +40,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define SETTINGS_GROUP_AUTO_COPY			TEXT("AutoCopy")
 #define SETTINGS_AUTO_COPY_TEXT_SELECTION	TEXT("AutoCopyTextSelection")
 #define SETTINGS_AUTO_COPY_UPDATE_TIME		TEXT("AutoCopyUpdateTime")
+
+#define SETTINGS_GROUP_MULTI_CLIP_VIEWER	TEXT("MultiClipViewer")
+#define SETTINGS_NO_EDIT_LARGE_TEXT			TEXT("NoEditLargeText")
+#define SETTINGS_NO_EDIT_LARGE_TEXT_SIZE	TEXT("NoEditLargeTextSize")
+#define SETTINGS_LARGE_TEXT_DISPLAY_SIZE	TEXT("LargeTextDisplaySize")
 
 #endif

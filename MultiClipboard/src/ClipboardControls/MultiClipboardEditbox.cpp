@@ -103,6 +103,12 @@ void MultiClipboardEditbox::GetText( std::wstring & text )
 }
 
 
+void MultiClipboardEditbox::SetEditBoxReadOnly( const BOOL bReadOnly )
+{
+	::SendMessage( _hSelf, EM_SETREADONLY, (WPARAM) bReadOnly, 0 );
+}
+
+
 void MultiClipboardEditbox::EnableEditBox( const BOOL bEnable )
 {
 	::EnableWindow( _hSelf, bEnable );

@@ -27,6 +27,8 @@ extern MultiClipboardProxy	g_ClipboardProxy;
 OSClipboardController::OSClipboardController()
 : bGetClipTextFromOS( FALSE )
 , bOnlyWhenPastedInNpp( FALSE )
+, bIgnoreLargeClipboardText( FALSE )
+, LargeClipboardTextSize( 10000 )
 {
 }
 
@@ -44,6 +46,12 @@ void OSClipboardController::OnNewClipboardText( const std::wstring & text )
 	if ( !bGetClipTextFromOS && !isNppForeground )
 	{
 		// Get text only when N++ is active application when bGetClipTextFromOS is FALSE
+		return;
+	}
+
+	if ( bIgnoreLargeClipboardText && text.size() > LargeClipboardTextSize )
+	{
+		// Don't store text larger than this size in clipboard list.
 		return;
 	}
 
@@ -107,6 +115,22 @@ void OSClipboardController::OnObserverAdded( LoonySettingsManager * SettingsMana
 	{
 		OnSettingsChanged( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP );
 	}
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT ) )
+	{
+		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT, bIgnoreLargeClipboardText != FALSE );
+	}
+	else
+	{
+		OnSettingsChanged( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT );
+	}
+	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE ) )
+	{
+		pSettingsManager->SetIntSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE, LargeClipboardTextSize );
+	}
+	else
+	{
+		OnSettingsChanged( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE );
+	}
 }
 
 
@@ -124,5 +148,13 @@ void OSClipboardController::OnSettingsChanged( const stringType & GroupName, con
 	else if ( SettingName == SETTINGS_ONLY_WHEN_PASTED_IN_NPP )
 	{
 		bOnlyWhenPastedInNpp = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP );
+	}
+	else if ( SettingName == SETTINGS_IGNORE_LARGE_TEXT )
+	{
+		bIgnoreLargeClipboardText = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT );
+	}
+	else if ( SettingName == SETTINGS_LARGE_TEXT_SIZE )
+	{
+		LargeClipboardTextSize = pSettingsManager->GetIntSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE );
 	}
 }

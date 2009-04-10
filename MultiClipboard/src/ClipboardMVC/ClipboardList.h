@@ -32,8 +32,8 @@ public:
 
 	bool AddText( const std::wstring & text );
 	void RemoveText( const unsigned int index );
-	std::wstring GetText( const unsigned int index );
-	std::wstring PasteText( const unsigned int index );	// Returns text at index, and also move it to the front of the list
+	const std::wstring & GetText( const unsigned int index );
+	const std::wstring & PasteText( const unsigned int index );	// Returns text at index, and also move it to the front of the list
 	bool EditText( const int index, const std::wstring & newText );
 	void SetTextNewIndex( const unsigned int index, const unsigned int newIndex );
 
@@ -50,6 +50,9 @@ private:
 	typedef std::list< std::wstring > TextListType;
 	typedef TextListType::iterator TextListIterator;
 	TextListType textList;
+
+	// Empty string to return when text invalid index is requested
+	std::wstring NullString;
 
 	// The max number of entry in text list
 	unsigned int MaxListSize;

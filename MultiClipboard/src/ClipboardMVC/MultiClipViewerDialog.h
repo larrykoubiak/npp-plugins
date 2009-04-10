@@ -62,6 +62,11 @@ private:
 	tTbData TBData;
 	bool IsShown;
 
+	// Don't allow display and editing of text greater than NoEditLargeTextSize
+	BOOL bNoEditLargeText;
+	UINT NoEditLargeTextSize;
+	UINT LargeTextDisplaySize;
+
 	SplitterPanel MultiClipViewerPanel;
 	ToolbarPanel ListBoxPanel;
 	ToolbarPanel EditBoxPanel;
@@ -76,6 +81,12 @@ private:
 	// Get toolbar tooltips
 	void OnToolBarRequestToolTip( LPNMHDR nmhdr );
 	void OnToolBarCommand( UINT Cmd );
+
+	void PasteSelectedItem();
+	void DeleteSelectedItem();
+
+	virtual void OnObserverAdded( LoonySettingsManager * SettingsManager );
+	virtual void OnSettingsChanged( const stringType & GroupName, const stringType & SettingName );
 };
 
 
