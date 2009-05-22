@@ -254,6 +254,9 @@
 				RelativePath="..\..\res\updown.cur">
 			</File>
 		</Filter>
+		<File
+			RelativePath="..\..\change.log">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
