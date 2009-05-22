@@ -43,7 +43,9 @@ bool		active=false;
 blankLineList *lastEmptyLines=NULL;
 int topLine=0;
 
-bool		panelsOpened=false;
+bool panelsOpened = false;
+
+bool CompareRunning = false;
 
 const TCHAR SVN_BASE[]=TEXT(".svn\\text-base");
 const TCHAR SVN_END[]=TEXT(".svn-base");
@@ -499,16 +501,10 @@ void openFile(TCHAR *file){
 
 }
 
-
-
-
-
-
-
-void reset(){
-
-
-	
+void reset()
+{
+    if (active == true)
+    {
 	int doc1=SendMessageA(nppData._scintillaMainHandle, SCI_GETDOCPOINTER, 0,0);
 	int doc2=SendMessageA(nppData._scintillaSecondHandle, SCI_GETDOCPOINTER, 0,0);
 	/*if(doc1a!=doc1 || doc2a!=doc2){
@@ -559,7 +555,7 @@ void reset(){
 	
 	panelsOpened=false;
 	active=false;
-	
+    }
 }
 
 //

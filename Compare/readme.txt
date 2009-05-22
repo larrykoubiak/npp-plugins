@@ -1,14 +1,9 @@
-To install copy ComparePlugin.dll into the plugins directory
-c:\Program Files\Notepad++\Plugins
+To install copy ComparePlugin.dll into the plugins directory C:\Program Files\Notepad++\Plugins
 
 A couple of notes:
+
 	Using or clearing the compare plugin will cause the undo buffer to be cleared. Unfortuntely, by adding lines, the editor no longer knows where the edit was, and would put it in a random spot
 
-	4.5 or higher is required in order to line up the matches. If you don't have 4.5 this feature will be disabled the first time you try to use it
-	
-	The various colors can be modified by editing the Compare.ini which will either be in the Notepad++ install directory, or %appdata%\Notepad++
-	(Don't use notepad++ to change it, or it'll be overwritten when its closed!)
-	
 	When you save a file during a compare, all of the extra lines are removed before the save starts and added back in after the save is done. This may cause a delay, and slight movement in the scrollbar.
 	
 	In order to clear the change indicators, the entire document style is cleared, and than refreshed by unfolding all the lines. So all lines will be unfolded after a compare or clear.
@@ -16,16 +11,19 @@ A couple of notes:
 	
 Change Log:
 
-1.5.1 New colors. Thanks to Mark Baines for the suggestions
+1.5.3
+    New Option and About menu entry, thanks to Jens.
+    Colors used for comparison results are now configurable in Option menu (there is now no need to edit Compare.ini).
+    
+
+1.5.1 
+    New colors. Thanks to Mark Baines for the suggestions
 	Fixes ( Thanks to Todd Schmitt for the excellent QA):	
 	Memory leak fixed
 	Letters were getting cut off if the Formats weren't Windows
 	Occasionaly the some letters were cut off at the end of the file
 	Crash bug if there was a blank line at the beginning of the document
-		
 	
-
-
 1.5
 	"Align Matches", "Detect Moves", and "Ignore spaces" are now options
 	"Show Changes since last save" option added in case you want to see the differences since you last saved, or if the file is modified outside of Notepad++ and you want to see those changes
