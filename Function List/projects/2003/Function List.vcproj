@@ -15,15 +15,15 @@
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
 			ConfigurationType="2"
-			CharacterSet="2">
+			CharacterSet="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\src\,..\..\src\HelpDlg\,..\..\src\MISC\,..\..\src\UserDefineDlg\,..\..\src\Toolbar\"
+				AdditionalIncludeDirectories="..\..\src\,..\..\src\HelpDlg\,..\..\src\MISC\,..\..\src\UserDefineDlg\,..\..\src\Toolbar\,..\..\src\ViewCtrl\,..\..\src\IconEditCtrl\,..\..\src\FileDlg\,..\..\src\IconSelectDlg\,..\..\..\Common\ccpp\,..\..\..\Common\Ccpp\tinyxml\,..\..\..\NativeLang\src\"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FUNCTIONLIST_EXPORTS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
@@ -32,8 +32,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="shlwapi.lib comctl32.lib"
-				OutputFile="C:\Programme\Notepad++\plugins\FunctionList.dll"
+				AdditionalDependencies="shlwapi.lib comctl32.lib dbghelp.lib"
+				OutputFile="C:\Program Files\Notepad++\plugins\FunctionList.dll"
 				LinkIncremental="2"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/Function List.pdb"
@@ -60,17 +60,17 @@
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
 			ConfigurationType="2"
-			CharacterSet="2">
+			CharacterSet="1">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				InlineFunctionExpansion="1"
 				FavorSizeOrSpeed="2"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="..\..\src\,..\..\src\HelpDlg\,..\..\src\MISC\,..\..\src\UserDefineDlg\,..\..\src\Toolbar\"
+				AdditionalIncludeDirectories="..\..\src\,..\..\src\HelpDlg\,..\..\src\MISC\,..\..\src\UserDefineDlg\,..\..\src\Toolbar\,..\..\src\ViewCtrl\,..\..\src\IconEditCtrl\,..\..\src\FileDlg\,..\..\src\IconSelectDlg\,..\..\..\Common\ccpp\,..\..\..\Common\Ccpp\tinyxml\,..\..\..\NativeLang\src\"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FUNCTIONLIST_EXPORTS"
 				StringPooling="TRUE"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -81,9 +81,10 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="shlwapi.lib comctl32.lib"
-				OutputFile="C:\Programme\Notepad++\plugins\FunctionList.dll"
+				OutputFile="C:\Program Files\Notepad++\plugins\FunctionList.dll"
 				LinkIncremental="1"
 				GenerateDebugInformation="TRUE"
+				GenerateMapFile="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -113,41 +114,208 @@
 				RelativePath="..\..\src\MISC\CommentList.cpp">
 			</File>
 			<File
+				RelativePath="..\..\src\MISC\DoParsing.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\FileDlg\FileDlg.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\MISC\FunctionInfo.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\FunctionList.cpp">
+			</File>
+			<File
 				RelativePath="..\..\src\FunctionListDialog.cpp">
 			</File>
 			<File
 				RelativePath="..\..\src\HelpDlg\HelpDialog.cpp">
 			</File>
 			<File
-				RelativePath="..\..\src\Toolbar\ImageListSet.cpp">
+				RelativePath="..\..\src\IconEditCtrl\IconEditCtrl.cpp">
 			</File>
 			<File
-				RelativePath="..\..\src\PluginInterface.cpp">
+				RelativePath="..\..\src\IconSelectDlg\IconSelectDialog.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\MISC\LangPreferences.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\ViewCtrl\ListCtrl.cpp">
 			</File>
 			<File
 				RelativePath="..\..\src\MISC\PosReminder.cpp">
 			</File>
 			<File
-				RelativePath="..\..\src\StaticDialog.cpp">
-			</File>
-			<File
-				RelativePath="..\..\src\SysMsg.cpp">
-			</File>
-			<File
-				RelativePath="..\..\src\Toolbar\ToolBar.cpp">
-			</File>
-			<File
 				RelativePath="..\..\src\MISC\ToolTip.cpp">
 			</File>
 			<File
-				RelativePath="..\..\src\HelpDlg\URLCtrl.cpp">
+				RelativePath="..\..\src\ViewCtrl\TreeCtrl.cpp">
+			</File>
+			<File
+				RelativePath="..\..\src\MISC\TreeHelperClass.cpp">
 			</File>
 			<File
 				RelativePath="..\..\src\UserDefineDlg\UserDefineDialog.cpp">
 			</File>
-			<File
-				RelativePath="..\..\src\stdafx.cpp">
-			</File>
+			<Filter
+				Name="Common"
+				Filter="">
+				<File
+					RelativePath="..\..\..\Common\Ccpp\ImageListSet.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\StaticDialog.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\SysMsg.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\ToolBar.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\URLCtrl.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\stdafx.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+			</Filter>
+			<Filter
+				Name="TinyXML"
+				Filter="">
+				<File
+					RelativePath="..\..\..\Common\Ccpp\TinyXml\tinystr.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\TinyXml\tinyxml.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\TinyXml\tinyxmlerror.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\TinyXml\tinyxmlparser.cpp">
+					<FileConfiguration
+						Name="Debug|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)/$(InputName)1.obj"/>
+					</FileConfiguration>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -156,13 +324,16 @@
 				RelativePath="..\..\src\MISC\CommentList.h">
 			</File>
 			<File
-				RelativePath="..\..\src\Docking.h">
+				RelativePath="..\..\src\MISC\DoParsing.h">
 			</File>
 			<File
-				RelativePath="..\..\src\DockingDlgInterface.h">
+				RelativePath="..\..\src\FileDlg\FileDlg.h">
 			</File>
 			<File
-				RelativePath="..\..\src\MISC\FunctionList.h">
+				RelativePath="..\..\src\MISC\FunctionInfo.h">
+			</File>
+			<File
+				RelativePath="..\..\src\FunctionList.h">
 			</File>
 			<File
 				RelativePath="..\..\src\FunctionListDialog.h">
@@ -171,37 +342,37 @@
 				RelativePath="..\..\src\FunctionListResource.h">
 			</File>
 			<File
+				RelativePath="..\..\src\MISC\FunctionRules.h">
+			</File>
+			<File
 				RelativePath="..\..\src\HelpDlg\HelpDialog.h">
 			</File>
 			<File
 				RelativePath="..\..\src\HelpDlg\HelpTxt.h">
 			</File>
 			<File
-				RelativePath="..\..\src\Toolbar\ImageListSet.h">
+				RelativePath="..\..\src\IconEditCtrl\IconEditCtrl.h">
 			</File>
 			<File
-				RelativePath="..\..\src\PluginInterface.h">
+				RelativePath="..\..\src\IconSelectDlg\IconSelectDialog.h">
+			</File>
+			<File
+				RelativePath="..\..\src\MISC\LangPreferences.h">
+			</File>
+			<File
+				RelativePath="..\..\src\ViewCtrl\ListCtrl.h">
 			</File>
 			<File
 				RelativePath="..\..\src\MISC\PosReminder.h">
 			</File>
 			<File
-				RelativePath="..\..\src\Scintilla.h">
-			</File>
-			<File
-				RelativePath="..\..\src\StaticDialog.h">
-			</File>
-			<File
-				RelativePath="..\..\src\SysMsg.h">
-			</File>
-			<File
-				RelativePath="..\..\src\Toolbar\ToolBar.h">
-			</File>
-			<File
 				RelativePath="..\..\src\MISC\ToolTip.h">
 			</File>
 			<File
-				RelativePath="..\..\src\HelpDlg\URLCtrl.h">
+				RelativePath="..\..\src\ViewCtrl\TreeCtrl.h">
+			</File>
+			<File
+				RelativePath="..\..\src\MISC\TreeHelperClass.h">
 			</File>
 			<File
 				RelativePath="..\..\src\MISC\UndoRedoTB.h">
@@ -210,10 +381,7 @@
 				RelativePath="..\..\src\UserDefineDlg\UserDefineDialog.h">
 			</File>
 			<File
-				RelativePath="..\..\src\Window.h">
-			</File>
-			<File
-				RelativePath="..\..\src\rcNotepad.h">
+				RelativePath="..\..\src\ViewCtrl\ViewCtrl.h">
 			</File>
 			<File
 				RelativePath="..\..\src\rcUserDefine.h">
@@ -221,9 +389,62 @@
 			<File
 				RelativePath="..\..\src\resource.h">
 			</File>
-			<File
-				RelativePath="..\..\src\stdafx.h">
-			</File>
+			<Filter
+				Name="Common"
+				Filter="">
+				<File
+					RelativePath="..\..\..\Common\Ccpp\Docking.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\DockingDlgInterface.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\ImageListSet.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\Notepad_plus_msgs.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\Notepad_plus_rc.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\PluginInterface.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\SciSubClassWrp.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\Scintilla.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\StaticDialog.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\SysMsg.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\ToolBar.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\URLCtrl.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\Window.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\stdafx.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="TinyXML"
+				Filter="">
+				<File
+					RelativePath="..\..\..\Common\Ccpp\TinyXml\tinystr.h">
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\TinyXml\tinyxml.h">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -235,7 +456,37 @@
 				RelativePath="..\..\res\Tab.ico">
 			</File>
 			<File
+				RelativePath="..\..\res\bitmap1.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\bitmap2.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\bmp00001.bmp">
+			</File>
+			<File
 				RelativePath="..\..\res\copy.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\editCancel.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\editFldDown.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\editFldHover.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\editFldStd.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\editSpy.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\icon1.ico">
+			</File>
+			<File
+				RelativePath="..\..\res\icon2.ico">
 			</File>
 			<File
 				RelativePath="..\..\res\redo.bmp">
@@ -251,6 +502,12 @@
 			</File>
 			<File
 				RelativePath="..\..\res\undo.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\viewList.bmp">
+			</File>
+			<File
+				RelativePath="..\..\res\viewTree.bmp">
 			</File>
 		</Filter>
 	</Files>
