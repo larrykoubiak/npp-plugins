@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
+#include "TCHAR.h"
 #include "URLCtrl.h"
 
 static BYTE XORMask[128] =
@@ -99,7 +100,7 @@ void URLCtrl::create(HWND itemHandle, LPTSTR link, COLORREF linkColor)
 
 	// set the URL text (not the display text)
 	if (link)
-		lstrcpy(_URL, link);
+		_tcscpy(_URL, link);
 
 	// set the hyperlink colour
     _linkColor = linkColor;
@@ -206,13 +207,13 @@ LRESULT URLCtrl::runProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 			    // Open a browser
 			    if(_URL[0])
 			    {
-                    ::ShellExecute(NULL, TEXT("open"), _URL, NULL, NULL, SW_SHOWNORMAL);
+                    ::ShellExecute(NULL, _T("open"), _URL, NULL, NULL, SW_SHOWNORMAL);
 			    }
 			    else
 			    {
                     TCHAR szWinText[_MAX_PATH];
                     ::GetWindowText(hwnd, szWinText, sizeof szWinText);
-                    ::ShellExecute(NULL, TEXT("open"), szWinText, NULL, NULL, SW_SHOWNORMAL);
+                    ::ShellExecute(NULL, _T("open"), szWinText, NULL, NULL, SW_SHOWNORMAL);
 			    }
 		    }
 
