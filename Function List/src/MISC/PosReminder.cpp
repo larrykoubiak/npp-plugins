@@ -23,11 +23,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 PosReminder::PosReminder()
 {
-	for (int i = 0; i < _docList.size(); i++)
-	{
-		delete _docList[i].stack;
-	}
-	_docList.clear();
+	clear();
+}
+
+PosReminder::~PosReminder()
+{
+	clear();
 }
 
 void PosReminder::init(ToolBar *pToolBar, UINT idUndo, UINT idRedo)
@@ -38,23 +39,23 @@ void PosReminder::init(ToolBar *pToolBar, UINT idUndo, UINT idRedo)
 }
 
 //		posReminder.setFuncVar(SCI_GETCURRENTPOS);
-void PosReminder::updateDocs(const char **pFiles, UINT numFiles)
+void PosReminder::updateDocs(LPCTSTR *pFiles, UINT numFiles)
 {
 	vector<DocCBInfo>	tmpList;
-	UINT				size	= _docList.size();
+	size_t				size	= _docList.size();
 	BOOL*				used	= (BOOL*)new BOOL[size];
 
 	/* initialize used array */
 	memset(used, 0, size);
 
 	/* attach (un)known files */
-	for (int i = 0; i < numFiles; i++)
+	for (UINT i = 0; i < numFiles; i++)
 	{
 		BOOL isCopy = FALSE;
 
-		for (int j = 0; j < size; j++)
+		for (UINT j = 0; j < size; j++)
 		{
-			if (strcmp(pFiles[i], _docList[j].name.c_str()) == 0)
+			if (_tcscmp(pFiles[i], _docList[j].name.c_str()) == 0)
 			{
 				tmpList.push_back(_docList[j]);
 				used[j]		= TRUE;
@@ -85,11 +86,14 @@ void PosReminder::updateDocs(const char **pFiles, UINT numFiles)
 	}
 	delete [] used;
 
+	/* clear old list */
+	_docList.clear();
+
 	/* copy information into member list */
 	_docList = tmpList;
 }
 
-void PosReminder::select(const char *pFile)
+void PosReminder::select(LPCTSTR pFile)
 {
 	vector<DocCBInfo>::iterator iCurDoc = findItem(pFile);
 
@@ -100,11 +104,11 @@ void PosReminder::select(const char *pFile)
 	}
 }
 
-vector<DocCBInfo>::iterator PosReminder::findItem(const char *pFile)
+vector<DocCBInfo>::iterator PosReminder::findItem(LPCTSTR pFile)
 {
 	for (vector<DocCBInfo>::iterator i = _docList.begin(); i != _docList.end(); i++)
 	{
-		if (strcmp((*i).name.c_str(), pFile) == 0)
+		if (_tcscmp((*i).name.c_str(), pFile) == 0)
 		{
 			return i;
 		}
@@ -115,6 +119,10 @@ vector<DocCBInfo>::iterator PosReminder::findItem(const char *pFile)
 
 void PosReminder::clear(void)
 {
+	for (size_t i = 0; i < _docList.size(); i++)
+	{
+		delete _docList[i].stack;
+	}
 	_docList.clear();
 	_iCurDoc = NULL;
 }

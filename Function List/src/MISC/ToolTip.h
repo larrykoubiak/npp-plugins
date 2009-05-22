@@ -21,7 +21,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #define __TOOLTIP_H__
 
 #include <string>
-#include "PluginInterface.h"
+#include "FunctionList.h"
 #include "Window.h"
 
 
@@ -31,7 +31,7 @@ using namespace std;
 class ToolTip : public Window
 {
 public :
-	ToolTip(){};
+	ToolTip() : _isLeftBtnDown(FALSE), _bTrackMouse(FALSE) {};
 	void destroy(void){
 		if (_hSelf)
 		{
@@ -51,11 +51,15 @@ public:
 protected:
 	POINT		_startPt;
     WNDPROC		_defaultProc;
+	TOOLINFOA	_ti;
+	BOOL		_isLeftBtnDown;
+	BOOL		_bTrackMouse;
 
     static LRESULT CALLBACK staticWinProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
         return (((ToolTip *)(::GetWindowLong(hwnd, GWL_USERDATA)))->runProc(Message, wParam, lParam));
     };
 	LRESULT runProc(UINT Message, WPARAM wParam, LPARAM lParam);
+	void SendMessageToParent(UINT message, WPARAM wParam);
 };
 
 #endif // __TOOLTIP_H__

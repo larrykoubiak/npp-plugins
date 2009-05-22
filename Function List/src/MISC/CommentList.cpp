@@ -22,27 +22,29 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "CommentList.h"
 
 
-BOOL Comments::getComments(void)
+void CommentsList::createList(void)
 {
+	_isParsing = TRUE;
+
 	vector<CommentList> tempList		= _resultList;
-	int					sourceLength	= _sourceParams.size();
+	size_t				sourceLength	= _sourceParams.size();
 
 	if (sourceLength != 0)
 	{
 		int				error		= 0;
 		CommentList		commentList = {0,0};
 		int				endPosition = ScintillaMsg(SCI_GETLENGTH);
-		unsigned int	flags       = SCFIND_REGEXP | SCFIND_POSIX | SCFIND_WHOLEWORD;
+		UINT	flags       = SCFIND_REGEXP | SCFIND_POSIX | SCFIND_WHOLEWORD;
 
 		if (endPosition == 0)
-			return FALSE;
+			return;
 
 		ScintillaMsg(SCI_SETSEARCHFLAGS, flags);
 
 		_resultList.clear();
 
 		/* get the first params for every CommentInfo */
-		for (int i = 0; i < sourceLength; i++)
+		for (size_t i = 0; i < sourceLength; i++)
 		{
 			ScintillaMsg(SCI_SETTARGETSTART, 0);
 			ScintillaMsg(SCI_SETTARGETEND, endPosition);    
@@ -51,7 +53,7 @@ BOOL Comments::getComments(void)
 												(LPARAM)_sourceParams[i].commBegin.c_str());
 		}
 		
-		while ((error == FALSE) && (bInterupt == FALSE))
+		while ((error == FALSE) && (_bStop == FALSE))
 		{
 			/* sort the list in order of the next position */
 			sort(_sourceParams.begin(),_sourceParams.end());
@@ -94,7 +96,7 @@ BOOL Comments::getComments(void)
 			
 			/* still there exists any open entry */
 			error = TRUE;
-			for (int i = 0; i < sourceLength; i++)
+			for (size_t i = 0; i < sourceLength; i++)
 			{
 				if (_sourceParams[i].pos != -1)
 					error = FALSE;
@@ -104,39 +106,41 @@ BOOL Comments::getComments(void)
 		}
 	}
 
-	if (bInterupt == TRUE)
+	if (_bStop == TRUE) {
 		_resultList = tempList;
+		_bStop = FALSE;
+	}
 
-	return bInterupt;
+	_isParsing = FALSE;
 }
 
 
-bool Comments::testIfComment(FuncInfo functionInfo)
+bool CommentsList::testIfComment(CFuncInfo & functionInfo)
 {
-	int maxElements = _resultList.size();
+	size_t maxElements = _resultList.size();
 
-    for (int iEle = 0; iEle < maxElements; iEle++)
+    for (size_t iEle = 0; iEle < maxElements; iEle++)
     {
         if ((int) _resultList[iEle].posBeg <= functionInfo.nameBegin &&
-			(int) _resultList[iEle].posEnd >= functionInfo.nameEnd)
+			(int) _resultList[iEle].posEnd > functionInfo.nameBegin)
 			return TRUE;
-		if (functionInfo.nameEnd < (int) _resultList[iEle].posBeg)
+		if (functionInfo.nameBegin < (int)_resultList[iEle].posBeg)
 			return FALSE;
     }
 
 	return FALSE;
 }
 
-bool Comments::testIfComment(int posBegin, int posEnd)
+bool CommentsList::testIfComment(int posBegin)
 {
-	int maxElements = _resultList.size();
+	size_t maxElements = _resultList.size();
 
-    for (int iEle = 0; iEle < maxElements; iEle++)
+    for (size_t iEle = 0; iEle < maxElements; iEle++)
     {
         if ((int) _resultList[iEle].posBeg <= posBegin &&
-			(int) _resultList[iEle].posEnd >= posEnd)
+			(int) _resultList[iEle].posEnd > posBegin)
 			return TRUE;
-		if (posEnd < (int) _resultList[iEle].posBeg)
+		if (posBegin < (int) _resultList[iEle].posBeg)
 			return FALSE;
     }
 

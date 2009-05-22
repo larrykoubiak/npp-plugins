@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define COMMLIST_DEFINE_H
 
 #include "FunctionList.h"
+#include "FunctionInfo.h"
 #include <vector>
 #include <string>
 
@@ -31,8 +32,8 @@ using namespace std;
 
 
 typedef struct {
-    unsigned int posBeg;
-    unsigned int posEnd;
+    UINT posBeg;
+    UINT posEnd;
 } CommentList;
 
 
@@ -40,7 +41,7 @@ typedef struct {
 class CommentInfo
 {
 public:
-	int		pos;
+	INT		pos;
     string  commBegin;
 	string	commEnd;
     
@@ -56,52 +57,64 @@ public:
     
     friend bool operator<(const CommentInfo& x, const CommentInfo& y)
     {
-		bool	ret;
-
-		if ((x.pos == -1) && (y.pos != -1))
-			ret = FALSE;
-		else if ((x.pos != -1) && (y.pos == -1))
-			ret = TRUE;
-		else
-			ret = (x.pos < y.pos);
-
-		return ret;
+		return ((UINT)x.pos < (UINT)y.pos);
     }
 };
 
 
 
-class Comments
+class CommentsList
 {
 public:
-	Comments(void)
+	CommentsList(void) : _bStop(FALSE)
 	{
 		_resultList.clear();
 		_sourceParams.clear();
 	};
 
-	BOOL getComments();
-    bool testIfComment(FuncInfo functionInfo);
-    bool testIfComment(int posBegin, int posEnd);
-
+	/* 1. set rules */
 	void addParam(string commBegin, string commEnd = "")
 	{
 		CommentInfo	sourceParam(commBegin, commEnd);
 		_sourceParams.push_back(sourceParam);
 	};
+	void addParam(tCommData commData)
+	{
+		CommentInfo	sourceParam(commData.param1, commData.param2);
+		_sourceParams.push_back(sourceParam);
+	};
 
-	void deleteList( void )
+	/* 2. create the list */
+	void createList(void);
+
+	/* 3. test if position is within a comment */
+	bool testIfComment(CFuncInfo & functionInfo);
+    bool testIfComment(int posBegin);
+
+	/* delete list */
+	void deleteList(void)
 	{
 		_resultList.clear();
 		_sourceParams.clear();
-	}
+	};
+
+	/* interrupt parsing */
+	void stop(void) {
+		if (_isParsing == TRUE) _bStop = TRUE;
+	};
 
 private:
-	/* Result */
+	/* Source params set by addParam() */
+	vector<CommentInfo> _sourceParams;
+
+	/* Result List filled after createList() */
     vector<CommentList> _resultList;
 
-	/* Source params */
-	vector<CommentInfo> _sourceParams;
+	/* parsing is running */
+	BOOL				_isParsing;
+
+	/* interrupt caused from extern */
+	BOOL				_bStop;
 };
 
 

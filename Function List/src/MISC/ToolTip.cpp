@@ -31,75 +31,143 @@ void ToolTip::init(HINSTANCE hInst, HWND hParent)
 	{
 		Window::init(hInst, hParent);
 
-		_hSelf = CreateWindowEx( WS_EX_TOOLWINDOW | WS_EX_TOPMOST, TITLETIP_CLASSNAME, NULL, WS_BORDER | WS_POPUP,
-		   0, 0, 0, 0, NULL, NULL, NULL, NULL );
+		_hSelf = CreateWindowEx( 0, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP, 
+             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, NULL, NULL );
 		if (!_hSelf)
 		{
-			systemMessage("System Err");
+			systemMessage(_T("System Err"));
 			throw int(6969);
 		}
     
-		::SetWindowLong(_hSelf, GWL_USERDATA, reinterpret_cast<LONG>(this));
-		_defaultProc = reinterpret_cast<WNDPROC>(::SetWindowLong(_hSelf, GWL_WNDPROC, reinterpret_cast<LONG>(staticWinProc)));
+		::SetWindowLongPtr(_hSelf, GWL_USERDATA, reinterpret_cast<LONG>(this));
+		_defaultProc = reinterpret_cast<WNDPROC>(::SetWindowLongPtr(_hSelf, GWL_WNDPROC, reinterpret_cast<LONG>(staticWinProc)));
 	}
 }
 
 
 void ToolTip::Show(RECT rectTitle, string strTitle, int iXOff, int iWidthOff)
 {
-	/* If titletip is already displayed, don't do anything. */
-	if( ::IsWindowVisible(_hSelf))
-		return;
+	if (isVisible())
+		destroy();
 
 	if( strTitle.size() == 0 )
 		return;
 
+	// INITIALIZE MEMBERS OF THE TOOLINFO STRUCTURE
+	_ti.cbSize		= sizeof(TOOLINFO);
+	_ti.uFlags		= TTF_TRACK | TTF_ABSOLUTE;
+	_ti.hwnd		= _hParent;
+	_ti.hinst		= _hInst;
+	_ti.uId			= 0;
+
 	/* Determine the width of the text */
 	ClientToScreen(_hParent, &rectTitle);
 
-	/* Select window standard font */
-	HDC hDc	= ::GetDC(_hSelf);
-	::SelectObject(hDc,GetStockObject(ANSI_VAR_FONT));
-
-	/* Calculate box size for font length */
-	SIZE	size;
-	RECT	rectDisplay	= rectTitle;
-
-	::GetTextExtentPoint(hDc, strTitle.c_str(), strTitle.size(), &size);
-	rectDisplay.left   += iXOff + iWidthOff - 2;
-	rectDisplay.right   = rectDisplay.left + size.cx + 3 + 4;
-
 	/* Calc new position if box is outside the screen */
-	if (rectDisplay.right > GetSystemMetrics(SM_CXSCREEN))
+	INT	screenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+	if (rectTitle.right > screenWidth)
 	{
-		rectDisplay.left -= rectDisplay.right - GetSystemMetrics(SM_CXSCREEN);
-		rectDisplay.right = GetSystemMetrics(SM_CXSCREEN);
+		rectTitle.left -= rectTitle.right - screenWidth;
+		rectTitle.right = screenWidth;
 	}
 
 	/* Offset for tooltip. It should displayed under the cursor */
-	if ((rectDisplay.bottom + 40) < GetSystemMetrics(SM_CYSCREEN))
+	INT screenHeigth = GetSystemMetrics(SM_CYVIRTUALSCREEN) - GetSystemMetrics(SM_CYMENU);
+	if (rectTitle.bottom > screenHeigth)
 	{
-		rectDisplay.top	   += 40 - 2;
-		rectDisplay.bottom += 40 + 2;
+		INT	diff = rectTitle.bottom - screenHeigth;
+		rectTitle.top	   -= diff;
+		rectTitle.bottom   -= diff;
 	}
-	else
-	{
-		rectDisplay.top	   -= 10 - 2;
-		rectDisplay.bottom -= 10 + 2;
-	}
+	rectTitle.bottom += 50;
+	_ti.rect = rectTitle;
 
-	/* Show the titletip */
-	SetWindowPos( _hSelf, NULL, rectDisplay.left, rectDisplay.top, 
-				  rectDisplay.right-rectDisplay.left, rectDisplay.bottom-rectDisplay.top, 
-				  SWP_SHOWWINDOW|SWP_NOACTIVATE );
-	::SetBkMode(hDc, TRANSPARENT );
-	::TextOut(hDc, 2, (rectTitle.bottom-rectTitle.top)/2-5, strTitle.c_str(), strTitle.size());
+	HFONT	_hFont = (HFONT)::SendMessage(_hParent, WM_GETFONT, 0, 0);	
+	::SendMessage(_hSelf, WM_SETFONT, reinterpret_cast<WPARAM>(_hFont), TRUE);
 
-	::ReleaseDC(_hSelf, hDc);
+	_ti.lpszText	= (LPSTR)strTitle.c_str();
+	::SendMessage(_hSelf, TTM_SETMAXTIPWIDTH, 0, 500);
+	::SendMessage(_hSelf, TTM_ADDTOOLA, 0, (LPARAM) (LPTOOLINFO) &_ti);
+	::SendMessage(_hSelf, TTM_TRACKPOSITION, 0, (LPARAM)(DWORD) MAKELONG(_ti.rect.left + iXOff, _ti.rect.top + iWidthOff));
+	::SendMessage(_hSelf, TTM_TRACKACTIVATE, true, (LPARAM)(LPTOOLINFO) &_ti);
 }
 
 
 LRESULT ToolTip::runProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
+    switch (message)
+    {
+		case WM_MOUSEACTIVATE:
+		{
+			return MA_NOACTIVATE;
+		}
+		case WM_CREATE:
+		{
+			TRACKMOUSEEVENT tme;
+			tme.cbSize = sizeof(tme);
+			tme.hwndTrack = _hSelf;
+			tme.dwFlags = TME_LEAVE | TME_HOVER;
+			tme.dwHoverTime = 5000;
+			_bTrackMouse = _TrackMouseEvent(&tme);
+			break;
+		}
+    	case WM_LBUTTONDOWN:
+		{
+			_isLeftBtnDown = TRUE;
+			SendMessageToParent(WM_LBUTTONDOWN, wParam);
+			return TRUE;
+		}
+		case WM_LBUTTONUP:
+		{
+			_isLeftBtnDown = FALSE;
+			SendMessageToParent(message, wParam);
+			return TRUE;
+		}    	
+		case WM_RBUTTONUP:
+		case WM_RBUTTONDOWN:
+		case WM_LBUTTONDBLCLK:
+		{
+			SendMessageToParent(message, wParam);
+			return TRUE;
+		}
+		case WM_MOUSEMOVE:
+		{
+			SendMessageToParent(message, -1);
+
+			if (!_bTrackMouse)
+			{
+				TRACKMOUSEEVENT tme;
+				tme.cbSize = sizeof(tme);
+				tme.hwndTrack = _hSelf;
+				tme.dwFlags = TME_LEAVE | TME_HOVER;
+				tme.dwHoverTime = 5000;
+				_bTrackMouse = _TrackMouseEvent(&tme);
+			}
+			else
+				_bTrackMouse = FALSE;
+			return TRUE;
+		}
+ 		case WM_MOUSEHOVER:
+		{
+			destroy();
+			return TRUE;
+		}
+		case WM_MOUSELEAVE:
+		{
+			destroy();
+			return TRUE;
+		}
+	}
+
 	return ::CallWindowProc(_defaultProc, _hSelf, message, wParam, lParam);
+}
+
+
+void ToolTip::SendMessageToParent(UINT message, WPARAM wParam)
+{
+	LVHITTESTINFO	hittest		= {0};
+
+	::GetCursorPos(&hittest.pt);
+	ScreenToClient(_hParent, &hittest.pt);
+	::SendMessage(_hParent, message, wParam, MAKELONG(hittest.pt.x, hittest.pt.y));
 }

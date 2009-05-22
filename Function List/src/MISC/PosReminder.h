@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #include "stdafx.h"
 #include <vector>
+#include "FunctionList.h"
 #include "UndoRedoTB.h"
 #include "ToolBar.h"
 
@@ -31,7 +32,11 @@ using namespace std;
 
 
 typedef struct {
+#ifdef _UNICODE
+	wstring				name;
+#else
 	string				name;
+#endif
 	UndoRedoTB<UINT>*	stack;
 } DocCBInfo;
 
@@ -40,12 +45,13 @@ class PosReminder
 {
 public:
 	PosReminder();
+	~PosReminder();
 
 	/* wrapper for init of toolbar */
 	void init(ToolBar *pToolBar, UINT idRedo, UINT idUndo);
 
-	void select(const char *pFile);
-	void updateDocs(const char **pFiles, UINT numFiles);
+	void select(LPCTSTR pFile);
+	void updateDocs(LPCTSTR* pFiles, UINT numFiles);
 	void clear(void);
 
 	void toggleStackRec(void) {
@@ -72,7 +78,7 @@ public:
 	};
 
 private:
-	vector<DocCBInfo>::iterator		findItem(const char *pFile);
+	vector<DocCBInfo>::iterator		findItem(LPCTSTR pFile);
 
 private:
 	vector<DocCBInfo>::iterator		_iCurDoc;

@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define HELP_DEFINE_H
 
 #include "StaticDialog.h"
-#include "PluginInterface.h"
+#include "FunctionList.h"
 #include "URLCtrl.h"
 
 #include "FunctionListResource.h"
@@ -50,7 +50,7 @@ public:
 
 
 protected :
-	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
+	virtual BOOL CALLBACK run_dlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
 	/* Handles */
@@ -84,7 +84,7 @@ public:
 
 
 protected :
-	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
+	virtual BOOL CALLBACK run_dlgProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
 	/* Handles */

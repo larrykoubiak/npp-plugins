@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
 #include "HelpDialog.h"
-#include "PluginInterface.h"
+#include "FunctionList.h"
 #include "HelpTxt.h"
 
 
@@ -33,17 +33,17 @@ void HelpDlg::doDialog()
 }
 
 
-BOOL CALLBACK HelpDlg::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK HelpDlg::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	switch (Message) 
 	{
         case WM_INITDIALOG :
 		{
             _emailLink.init(_hInst, _hSelf);
-            _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), "mailto:jens.plugin.npp@gmx.de");
+            _emailLink.create(::GetDlgItem(_hSelf, IDC_EMAIL_LINK), _T("mailto:jens.plugin.npp@gmx.de"));
 
             _urlNppPlugins.init(_hInst, _hSelf);
-            _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), "http://sourceforge.net/projects/npp-plugins/");
+            _urlNppPlugins.create(::GetDlgItem(_hSelf, IDC_NPP_PLUGINS_URL), _T("http://sourceforge.net/projects/npp-plugins/"));
 
 			return TRUE;
 		}
@@ -79,7 +79,7 @@ void UserHelpDlg::doDialog(bool willBeShown)
 }
 
 
-BOOL CALLBACK UserHelpDlg::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK UserHelpDlg::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	switch (Message) 
 	{
@@ -87,7 +87,7 @@ BOOL CALLBACK UserHelpDlg::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lPara
 		{
 			::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_HELP), helpTxt);
 			_urlLink.init(_hInst, _hSelf);
-			_urlLink.create(::GetDlgItem(_hSelf, IDC_SCINTILLA_URL), "http://scintilla.sourceforge.net/ScintillaDoc.html#Searching");
+			_urlLink.create(::GetDlgItem(_hSelf, IDC_SCINTILLA_URL), _T("http://scintilla.sourceforge.net/ScintillaDoc.html#Searching"));
 			return TRUE;
 		}
 		case WM_CLOSE :
