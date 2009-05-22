@@ -2,9 +2,24 @@
 Change-log for FunctionList.dll
 
 ------------------------------------------------------------------------------------
+09/05/23  v2.0 Beta :
+------------------------------------------------------------------------------------
+    Restructure of FunctionList with new development parts:
+     - UNICODE version for latest Notepad++
+     - Now tree with classes supported and still lists
+     - Icon for each group could be a subgroup defined
+     - To ignore language specific keywords a list could be defined for each group
+     - Filter of items possible
+     - Better tooltip support of e.g. C/C++ function params
+     - ... and a lot more
+     
+     Restrictions:
+     - Scintilla RegEx
+
+------------------------------------------------------------------------------------
 07/03/13  v1.2 :
 ------------------------------------------------------------------------------------
-	Fix: Resourc leak removed
+	Fix: Resource leak removed
 	Fix: Thread parsing freezed when user switched fast between documents
 	Fix: Flickering/Dancing on list update
 	Fix: C++ constructor now detects correctly
