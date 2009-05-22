@@ -2,9 +2,17 @@
 Change-log for Compare.dll
 
 ------------------------------------------------------------------------------------
-07/XX/XX  v1.2 :
+19/05/17  v1.5.3 :
 ------------------------------------------------------------------------------------
-    Fix: 
-    New: 
-    Change: 
+    Fix:    - Update common folder (was using the same as with v1.1)
+	    - Update message (IDC_DOC_GOTO_ANOTHER_VIEW -> IDM_VIEW_GOTO_ANOTHER_VIEW)
+
+    New:    - new about dialog
+            - new option dialog
+
+    Change: - Compare to last save shortcut move to Alt+S
+            - Compare against SVN base shortcut move to Alt+B
+            - Because of option dialog, there is now no need to edit Compare.ini to change colors.
+ 
+
 

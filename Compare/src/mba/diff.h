@@ -34,10 +34,26 @@ typedef enum {
 	DIFF_MOVE
 } diff_op;
 
+struct diff_change{
+	int off;
+	int len;
+	int line;
+	int matchedLine;
+	
+};
+
 struct diff_edit {
 	short op;
 	int off; /* off into s1 if MATCH or DELETE but s2 if INSERT */
 	int len;
+
+	//added lines for Notepad++ use
+	int set;
+	int matchedLine;
+	int altLocation;
+	struct varray* changes;
+	int changeCount;
+	int* moves;
 };
 
 /* consider alternate behavior for each NULL parameter

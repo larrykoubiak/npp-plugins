@@ -22,45 +22,120 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define COMPARE_H
 
 #define WIN32_LEAN_AND_MEAN
+#include <math.h>
+#include <shlobj.h>
+#include <shlwapi.h>
+#include <string>
+#include <stdio.h>
+#include <assert.h>
+#include "diff.h"
+#include "msgno.h"
 #include "PluginInterface.h"
 #include "Scintilla.h"
 #include "Notepad_plus_rc.h"
+#include "Notepad_plus_msgs.h"
+#include <iostream>
+#include <fstream>
+#include "Resource.h"
+#include "CompareResource.h"
+#include "AboutDialog.h"
+#include "OptionDialog.h"
+#include <window.h>
+#include <Commdlg.h>
 
+#define CLEANUP 1
 
-
+using namespace std;
 /* store name for ini file */
-const char PLUGIN_NAME[] = "Compare";
-const int nbFunc = 3;
-char iniFilePath[MAX_PATH];
-const char sectionName[] = "Insert Extesion";
-const char keyName[] = "doCloseTag";
-const char localConfFile[] = "doLocalConf.xml";
 
-enum eEOL {
+#define DEFAULT_ADDED_COLOR     0xe0e0ff
+#define DEFAULT_DELETED_COLOR   0xfff0e0
+#define DEFAULT_CHANGED_COLOR   0xe0ffe0
+#define DEFAULT_MOVED_COLOR     0xc8c8c8
+#define DEFAULT_BLANK_COLOR     0xe4e4e4
+
+struct blankLineList
+{
+	int line;
+	int length;
+	struct blankLineList *next;
+};
+
+struct chunk_info
+{
+	int *linePos;
+	int *lineEndPos;
+	int lineCount;
+	int lineStart;
+	struct varray *changes;
+	struct varray *words;
+	int changeCount;
+	char *text;
+	int count;
+	//int *mappings;
+	int *lineMappings;
+};
+
+struct sColorSettings
+{
+    int added;
+    int deleted;
+    int changed;
+    int moved;
+    int blank;
+};
+
+struct sUserSettings
+{
+    bool           AddLine;
+    bool           IncludeSpace;
+    bool           DetectMove;
+    sColorSettings ColorSettings; 
+};
+
+enum eEOL 
+{
 	EOF_WIN,
 	EOF_LINUX,
 	EOF_MAC
 };
+enum wordType 
+{
+	SPACECHAR,ALPHANUMCHAR,OTHERCHAR
+};
 
-const CHAR strEOL[3][3] = {
+struct Word
+{
+	int line;
+	int pos;
+	int length;
+	wordType type;
+	string text;
+	unsigned int hash;
+};
+
+const CHAR strEOL[3][3] = 
+{
 	"\r\n",
-	"\n",
-	"\r"
+	"\r",
+	"\n"
 };
 
 const UINT lenEOL[3] = {2,1,1};
 
-
-
 void compare();
-void compareText();
-void clear();
-void about();
-
-
+void compareWithoutLines();
+void reset();
+void openAboutDlg(void);
+void openOptionDlg(void);
+void openFile(TCHAR *file);
+HWND openTempFile();
 void addEmptyLines(HWND hSci, int offset, int length);
-UINT getEOLtype(void);
+bool startCompare();
+void saveSettings(void);
+void loadSettings(void);
 
+//BOOL CALLBACK AboutDlgProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 #if 0
 /* Extended Window Funcions */
