@@ -184,7 +184,7 @@
 			/>
 		</Configuration>
 		<Configuration
-			Name="Debug with N++ 5.4 RC2|Win32"
+			Name="Debug 5.4 RC2|Win32"
 			OutputDirectory="C:\Program Files\Notepad++ 5.4 RC2\plugins"
 			IntermediateDirectory="Debug"
 			ConfigurationType="2"
@@ -376,7 +376,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\OptionDlg\OptionDialog.cpp"
+				RelativePath="..\..\src\OptionDialog.cpp"
 				>
 			</File>
 			<File
@@ -461,7 +461,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\OptionDlg\OptionDialog.h"
+				RelativePath="..\..\src\OptionDialog.h"
 				>
 			</File>
 			<File
