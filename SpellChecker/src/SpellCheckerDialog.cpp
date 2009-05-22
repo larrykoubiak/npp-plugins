@@ -209,8 +209,9 @@ RTHR SpellCheckerDialog::NotifyEvent(DWORD event)
 			ScintillaMsg(SCI_TARGETFROMSELECTION);
 			ScintillaMsg(SCI_REPLACETARGET, strlen(pszReplaceWord), (LPARAM)pszReplaceWord);
 
-			_iLineDiff += (INT)(strlen(pszReplaceWord) - strlen(_szWord));
-			_iEndPos   += _iLineDiff;
+			INT	diff = (INT)(strlen(pszReplaceWord) - strlen(_szWord));
+			_iLineDiff += diff;
+			_iEndPos   += diff;
             break;
         }
         case EID_LERN :
@@ -333,7 +334,14 @@ void SpellCheckerDialog::InitialDialog(void)
 		{
 			LRESULT	lResult = 0;
 			lResult	= ::SendMessage(_hLang, CB_FINDSTRINGEXACT, -1, (LPARAM)_pSCProp->szLang);
-			if (lResult >= 0) ::SendMessage(_hLang, CB_SETCURSEL, lResult, 0);
+			if (lResult >= 0)
+			{
+				::SendMessage(_hLang, CB_SETCURSEL, lResult, 0);
+			}
+			else
+			{
+				::SendMessage(_hLang, CB_SETCURSEL, 0, 0);
+			}
 		}
 
 		/* Note: Creates aspell config and speller */
@@ -429,6 +437,7 @@ void SpellCheckerDialog::UpdateLanguage(void)
 	_uniMode = GetCurrentEncoding();
 	aspell_config_replace(aspCfg, "encoding", szEnc[_uniMode]);
 
+#if 0
 	/* set filter */
 	LangType	langType = L_EXTERNAL;
 	::SendMessage(_hParent, NPPM_GETCURRENTLANGTYPE, 0, (LPARAM)&langType);
@@ -440,6 +449,7 @@ void SpellCheckerDialog::UpdateLanguage(void)
 			aspell_config_replace(aspCfg, "mode", "tex");
 			break;
 	}
+#endif
 
 	aspRet = new_aspell_speller(aspCfg);
 	delete_aspell_config(aspCfg);
