@@ -21,62 +21,53 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <windows.h>
 #include "UserDefineDialog.h"
 #include "PluginInterface.h"
+#include "IconSelectDialog.h"
 #include "FunctionListDialog.h"
+#include "FileDlg.h"
 #include "resource.h"
 
 
+
+
 UserDefineDialog::UserDefineDialog(void) : 
-		_transFuncAddr(NULL), _curName(""),
-		_curItem(0), _isValid(FALSE)
+		_transFuncAddr(NULL), _curName(_T("")),
+		_curLang(L_TXT), _isTest(FALSE), _bmpIconList(NULL),
+		_bmpFileSel(NULL), _bmpFileSelHover(NULL), _bmpFileSelDown(NULL)
 {
+	_hTreeCtrl	= NULL;
 }
+
 
 UserDefineDialog::~UserDefineDialog(void)
 {
 }
 
 
-void UserDefineDialog::init(HINSTANCE hInst, NppData nppData, const char* iniFilePath)
+void UserDefineDialog::init(HINSTANCE hInst, NppData nppData, LPCTSTR iniFilePath)
 {
 	extern FunctionListDialog functionDlg;
 
 	_nppData = nppData;
 	Window::init(hInst, nppData._nppHandle);
 	_helpDlg.init(hInst, nppData);
-	strcpy(_iniFilePath, iniFilePath);
-
-	/* load list of rules */
-	loadList();
-
-	/* update internal menu name list */
-	updateMenuInfo();
+	_tcscpy(_iniFilePath, iniFilePath);
 }
 
 
 void UserDefineDialog::destroy(void)
 {
-	UINT	i = 0;
-	UINT	cnt = _synList.size();
-
-	/* save and destroy list */
-	saveList();
-	for (i = 0; i < cnt; i++)
-	{
-		_synList[0].comments.clear();
-		_synList[0].syntax.clear();
-		_synList.erase((vector<UserList>::iterator)_synList.begin());
-	}
+	::SetWindowLong(_hSelf, GWL_WNDPROC, (LONG)_hDefaultListProc);
 }
 
 
-BOOL CALLBACK UserDefineDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM lParam)
+BOOL CALLBACK UserDefineDialog::run_dlgProc(HWND hWnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
 	switch (Message) 
 	{
 		case WM_INITDIALOG:
 		{
 			initDialog();
-			break;
+			return TRUE;
 		}
 		case WM_ACTIVATE :
         {
@@ -87,22 +78,78 @@ BOOL CALLBACK UserDefineDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM 
 		{
 			switch (LOWORD(wParam))
 			{
-				case IDC_COMBO_LANG:
+				case IDC_LIST_LANG:
 				{
-					if (HIWORD(wParam) == CBN_SELCHANGE)
+					if (HIWORD(wParam) == LBN_SELCHANGE)
 					{
 						saveDialog();
+						updateCurLang();
 						updateDialog();
 						::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETPOS, 0, MAKELONG(1,0));
 						::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(1,0));
 					}
 					break;
 				}
-				case IDC_ADD_RULES:
+				case IDC_EDIT_FILE:
+				{
+					if (HIWORD(wParam) == IECN_LBUTTONUP)
+					{
+						onOpenFile();
+					}
+					break;
+				}
+				case IDC_EDIT_GROUP:
+				{
+					if ((HIWORD(wParam) == EN_CHANGE) && (_isGroup == TRUE))
+					{
+						CHAR	name[256];
+						INT		iCurSel = getSelectedGroup();
+
+						::GetDlgItemTextA(_hSelf, IDC_EDIT_GROUP, name, sizeof(name)); 
+						_pParseGroupRules->strName = name;
+						updateGroupList(iCurSel);
+					}
+					if (HIWORD(wParam) == IECN_LBUTTONUP)
+					{
+						IconSelectDialog dlg;
+						dlg.init(_hInst, (HWND)lParam);
+						if (dlg.doDialog(_himlIconList, &_pParseGroupRules->iIcon) == TRUE)
+						{
+							TVITEM	item		= {0};
+							item.hItem			= TreeView_GetSelection(::GetDlgItem(_hSelf, IDC_LIST_GROUP));
+							item.mask			= TVIF_IMAGE | TVIF_SELECTEDIMAGE;
+							item.iImage			= _pParseGroupRules->iIcon;
+							item.iSelectedImage	= item.iImage;
+							TreeView_SetItem(::GetDlgItem(_hSelf, IDC_LIST_GROUP), &item);
+							_IconGroupSelect.setImgStd(_pParseGroupRules->iIcon);
+						}
+					}
+					break;
+				}
+				case IDC_EDIT_FUNCN:
+				{
+					if (HIWORD(wParam) == IECN_LBUTTONUP)
+					{
+						IconSelectDialog dlg;
+						dlg.init(_hInst, (HWND)lParam);
+						if (dlg.doDialog(_himlIconList, &_pParseGroupRules->iChildIcon) == TRUE)
+							_IconFunctionSelect.setImgStd(_pParseGroupRules->iChildIcon);
+					}
+					break;
+				}
+				case IDC_ADD_GROUP:
 				{
 					if (HIWORD(wParam) == BN_CLICKED)
 					{
-						onEditLang();
+						onAddGroup();
+					}
+					break;
+				}
+				case IDC_DEL_GROUP:
+				{
+					if (HIWORD(wParam) == BN_CLICKED)
+					{
+						onDelGroup();
 					}
 					break;
 				}
@@ -126,13 +173,25 @@ BOOL CALLBACK UserDefineDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM 
 					onDelSyn();
 					break;
 				}
-				case IDC_EDIT_COMNUM :
 				case IDC_EDIT_SECNUM :
+				{
+					if (HIWORD(wParam) == EN_CHANGE)
+					{
+						updateGroup();
+					}
+					break;
+				}
+				case IDC_EDIT_COMNUM :
 				{
 					if (HIWORD(wParam) == EN_CHANGE)
 					{
 						updateDialog();
 					}
+					break;
+				}
+				case IDC_CHECK_ICON :
+				{
+					onCheckIcon();
 					break;
 				}
 				case IDC_TRANSPARENT_CHECK :
@@ -148,18 +207,39 @@ BOOL CALLBACK UserDefineDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM 
 				case IDC_TEST :
 				{
 					onTest();
+					::SetEvent(hEvent[EID_STARTSIGNAL]);
 					break;
 				}
 				case IDCANCEL :
 				{
-					loadList();
+					LangPreferences::InitData();
+
+					/* reload function list database */
+					extern FunctionListDialog	functionDlg;
+					::SendMessage(functionDlg.getHSelf(), FLWM_REINITLIB, 0, 0);
+
+					/* update notepad when test was done before */
+					if (_isTest == TRUE)
+					{
+						::SetEvent(hEvent[EID_STARTSIGNAL]);
+					}
 					doDialog(FALSE);
+					_helpDlg.doDialog(FALSE);
 					break;
 				}
 				case IDOK :
 				{
 					saveDialog();
-					saveList();
+
+					LangPreferences::CreateBackup();
+					LangPreferences::SaveData();
+
+					/* reload function list database */
+					extern FunctionListDialog	functionDlg;
+					::SendMessage(functionDlg.getHSelf() , FLWM_REINITLIB, 0, 0);
+
+					/* start reparsing */
+					::SetEvent(hEvent[EID_STARTSIGNAL]);
 					doDialog(FALSE);
 					break;
 				}
@@ -171,13 +251,53 @@ BOOL CALLBACK UserDefineDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM 
 		}
 		case WM_NOTIFY :
 		{
-			if (wParam == IDC_SPIN_COM || wParam == IDC_SPIN_SEC)
+			switch (wParam)
 			{
-				LPNMUPDOWN lpnmud = (LPNMUPDOWN)lParam;
-				if (lpnmud->hdr.code == UDN_DELTAPOS)
+				case IDC_SPIN_COM:
+				case IDC_SPIN_SEC:
 				{
-					saveDialog();
+					LPNMUPDOWN lpnmud = (LPNMUPDOWN)lParam;
+					if (lpnmud->hdr.code == UDN_DELTAPOS)
+					{
+						saveDialog();
+					}
+					break;
 				}
+				case IDC_SPIN_MOVE:
+				{
+					LPNMUPDOWN lpnmud = (LPNMUPDOWN)lParam;
+					if (lpnmud->hdr.code == UDN_DELTAPOS)
+					{
+						if (lpnmud->iDelta < 0)
+							onBtnUp();
+						else
+							onBtnDown();
+					}
+					break;
+				}
+				case IDC_LIST_GROUP:
+				{
+					LPNMHDR lpnmh = (LPNMHDR) lParam;
+					if (lpnmh->code == NM_CLICK)
+					{
+						/* get clicked item */
+						TVHITTESTINFO	tvht;
+						::GetCursorPos(&tvht.pt);
+						::ScreenToClient(lpnmh->hwndFrom, &tvht.pt);
+						HTREEITEM hItem	= TreeView_HitTest(lpnmh->hwndFrom, &tvht);
+
+						if (hItem != NULL)
+						{
+							saveDialog();
+							TreeView_SelectItem(lpnmh->hwndFrom, hItem);
+							updateGroup();
+							::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(1,0));
+						}
+					}
+					break;
+				}
+				default:
+					break;
 			}
 			break;
 		}
@@ -189,11 +309,13 @@ BOOL CALLBACK UserDefineDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM 
 			}
 			return TRUE;
 		}
-		case WM_CLOSE :
+		case WM_DESTROY:
 		{
-			loadList();
-			doDialog(FALSE);
-			_helpDlg.doDialog(FALSE);
+			/* delete icon resources */
+			::DeleteObject(_bmpFileSel);
+			::DeleteObject(_bmpFileSelHover);
+			::DeleteObject(_bmpFileSelDown);
+			::DeleteObject(_bmpIconList);
 			break;
 		}
 	}
@@ -201,54 +323,65 @@ BOOL CALLBACK UserDefineDialog::run_dlgProc(UINT Message, WPARAM wParam, LPARAM 
 }	
 
 
+LRESULT UserDefineDialog::runProcList(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+		case LVM_INSERTITEM:
+		case LVM_DELETEITEM:
+		{
+			::PostMessage(_hSelf, LVM_SETCOLUMNWIDTH, 0, LVSCW_AUTOSIZE);
+			break;
+		}
+		default:
+			break;
+	}
+
+	return CallWindowProc(_hDefaultListProc, hwnd, message, wParam, lParam);
+}
+
 void UserDefineDialog::doUpdateLang(void)
 {
-	int		oldSize	= 0;
-	int		newSize	= 0;
-	vector<MenuInfo>	oldInfo = _menuInfo;
+	size_t	oldSize	= 0;
+	size_t	newSize	= 0;
+	vector<MenuInfo>	oldInfo = vMenuInfo;
 
 	updateMenuInfo();
 
 	oldSize = oldInfo.size();
-	newSize = _menuInfo.size();
+	newSize = vMenuInfo.size();
 
 	if (oldSize < newSize)			/* new entry */
 	{
-		bool isAdd = false;
-
-		for (int i = 0; i < oldSize; i++)
+		for (size_t i = 0; i < oldSize; i++)
 		{
-			if (strcmp(oldInfo[i].name.c_str(), _menuInfo[i].name.c_str()) != 0)
+			if (_tcscmp(oldInfo[i].name.c_str(), vMenuInfo[i].name.c_str()) != 0)
 			{
-				newLang(_menuInfo[i].name.c_str());
-				isAdd = true;
-				break;
+				newLang(vMenuInfo[i].name.c_str());
+				return;
 			}
 		}
-
-		if (isAdd == false)
-		{
-			newLang(_menuInfo[i].name.c_str());
-		}
+		newLang(vMenuInfo[i].name.c_str());
 	}
 	else if (oldSize > newSize)		/* delete entry */
 	{
-		for (int i = 0; i < oldSize; i++)
+		for (size_t i = 0; i < newSize; i++)
 		{
-			if (strcmp(oldInfo[i].name.c_str(), _menuInfo[i].name.c_str()) != 0)
+			if (_tcscmp(oldInfo[i].name.c_str(), vMenuInfo[i].name.c_str()) != 0)
 			{
 				deleteLang(oldInfo[i].name.c_str());
-				break;
+				return;
 			}
 		}
+		deleteLang(oldInfo[oldSize-1].name.c_str());
 	}
 	else							/* rename entry or nothing happend */
 	{
-		for (int i = 0; i < newSize; i++)
+		for (size_t i = 0; i < newSize; i++)
 		{
-			if (strcmp(oldInfo[i].name.c_str(), _menuInfo[i].name.c_str()) != 0)
+			if (_tcscmp(oldInfo[i].name.c_str(), vMenuInfo[i].name.c_str()) != 0)
 			{
-				renameLang(oldInfo[i].name.c_str(), _menuInfo[i].name.c_str());
+				renameLang(oldInfo[i].name.c_str(), vMenuInfo[i].name.c_str());
 				break;
 			}
 		}
@@ -256,205 +389,57 @@ void UserDefineDialog::doUpdateLang(void)
 }
 
 
-void UserDefineDialog::newLang(const char* newName)
+void UserDefineDialog::newLang(LPCTSTR newName)
 {
 	if (isVisible() == TRUE)
 	{
 		saveDialog();
-		updateCombo();
-		::SendDlgItemMessage(_hSelf, 
-							 IDC_COMBO_LANG, 
-							 CB_SETCURSEL, 
-							 ::SendDlgItemMessage(_hSelf, IDC_COMBO_LANG, CB_FINDSTRING, 0, (LPARAM)newName),
-							 0);
+		updateLangList((INT)::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_GETCOUNT, 0, 0));
+		_isLang = FALSE;
 		updateDialog();
-		::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETPOS, 0, MAKELONG(1,0));
-		::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(1,0));
 	}
 }
 
 
-void UserDefineDialog::deleteLang(const char* delName)
+void UserDefineDialog::deleteLang(LPCTSTR delName)
 {
-	int		count		= 0;
-	int		langCount	= 0;
-	int		curSel		= ::SendDlgItemMessage(_hSelf, IDC_COMBO_LANG, CB_GETCURSEL, 0, 0);
-	int		delStrPos	= ::SendDlgItemMessage(_hSelf, IDC_COMBO_LANG, CB_FINDSTRING, 0, (LPARAM)delName);
+	INT		curSel		= (INT)::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_GETCURSEL, 0, 0);
+	INT		delStrPos	= (INT)::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_FINDSTRING, 0, (LPARAM)delName);
 
 	saveDialog();
-	updateCombo(curSel - ((curSel < delStrPos)? 0:1));
-
-	for (UINT i = 0; i < _synList.size(); i++)
-	{
-		if (strcmp(delName, _synList[i].name.c_str()) == 0)
-		{
-			vector<UserList>::iterator itr = _synList.begin() + i;
-			_synList.erase(itr);
-			saveList();
-			break;
-		}
-	}
+#ifdef _UNICODE
+	LangPreferences::DeleteParseData((wstring)delName);
+#else
+	LangPreferences::DeleteParseData((string)delName);
+#endif
+	updateLangList(curSel - ((curSel < delStrPos)? 0:1));
+	updateCurLang();
 	updateDialog();
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETPOS, 0, MAKELONG(1,0));
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(1,0));
 }
 
 
-void UserDefineDialog::renameLang(const char* curName, const char* newName)
+void UserDefineDialog::renameLang(LPCTSTR curName, LPCTSTR newName)
 {
-	updateCombo(::SendDlgItemMessage(_hSelf, IDC_COMBO_LANG, CB_GETCURSEL, 0, 0));
-
-	for (UINT i = 0; i < _synList.size(); i++)
-	{
-		if (strcmp(curName, _synList[i].name.c_str()) == 0)
-		{
-			_synList[i].name = newName;
-			saveList();
-			break;
-		}
-	}
+#ifdef _UNICODE
+	LangPreferences::RenameParseData((wstring)curName, (wstring)newName);
+#else
+	LangPreferences::RenameParseData((string)curName, (string)newName);
+#endif
+	updateLangList((INT)::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_GETCURSEL, 0, 0));
+	updateDialog();
 }
-
-
-int UserDefineDialog::getCurLangID(void)
-{
-	int			ret			= -1;
-	int			itemCnt		= 0;
-	UINT		baseCmdID	= 0;
-	HMENU		hMenu		= ::GetMenu(_hParent);
-
-	itemCnt = ::SendMessage(_hParent, WM_GETNBUSERLANG, 0, (LPARAM)&baseCmdID);
-
-	for (int i = 0; i < itemCnt + 1 ; i++)
-	{
-		if (::GetMenuState(hMenu, baseCmdID + i, MF_BYCOMMAND) & MF_CHECKED)
-		{
-			char	name[32] = "";
-
-			::GetMenuString(hMenu, baseCmdID + i, name, sizeof(name), MF_BYCOMMAND);
-			for (UINT i = 0; i < _synList.size(); i++)
-			{
-				if (strcmp(_synList[i].name.c_str(), name) == 0)
-				{
-					ret = i;
-				}
-			}
-
-			break;
-		}
-	}
-
-	return ret;
-}
-
-
-string UserDefineDialog::getKeyWordsBBeg(int listPos)
-{
-	string	ret = "";
-
-	if ((UINT)listPos < _synList.size())
-	{
-		ret = _synList[listPos].strKeyWBBeg;
-	}
-
-	return ret;
-}
-
-
-string UserDefineDialog::getKeyWordsBEnd(int listPos)
-{
-	string	ret = "";
-
-	if ((UINT)listPos < _synList.size())
-	{
-		ret = _synList[listPos].strKeyWBEnd;
-	}
-
-	return ret;
-}
-
-
-UINT UserDefineDialog::getMatchCase(int listPos)
-{
-	UINT	ret = 0;
-
-	if ((UINT)listPos < _synList.size())
-	{
-		ret = _synList[listPos].matchCase;
-	}
-
-	return ret;
-}
-
-
-UINT UserDefineDialog::getCommCnt(int listPos)
-{
-	UINT	ret = 0;
-
-	if ((UINT)listPos < _synList.size())
-	{
-		ret = _synList[listPos].comments.size();
-	}
-
-	return ret;
-}
-
-
-bool UserDefineDialog::getComm(int listPos, UINT pos, CommList *commList)
-{
-	bool	ret = FALSE;
-
-	if ((UINT)listPos < _synList.size())
-	{
-		if (pos < _synList[listPos].comments.size())
-		{
-			*commList = _synList[listPos].comments[pos];
-			ret = TRUE;
-		}
-	}
-
-	return ret;
-}
-
-
-UINT UserDefineDialog::getSyntaxCnt(int listPos)
-{
-	UINT	ret = 0;
-
-	if ((UINT)listPos < _synList.size())
-	{
-		ret = _synList[listPos].syntax.size();
-	}
-
-	return ret;
-}
-
-
-bool UserDefineDialog::getSyntax(int listPos, UINT pos, SyntaxList *syntaxList)
-{
-	bool	ret = FALSE;
-
-	if ((UINT)listPos < _synList.size())
-	{
-		if (pos < _synList[listPos].syntax.size())
-		{
-			*syntaxList = _synList[listPos].syntax[pos];
-			ret = TRUE;
-		}
-	}
-
-	return ret;
-}
-
-
-
 
 void UserDefineDialog::doDialog(bool willBeShown)
 {
     if (!isCreated())
 	{
+		/* load bitmaps for edit field */
+		_bmpFileSel			= (HBITMAP)::LoadImage(_hInst, MAKEINTRESOURCE(IDB_FLD_STD), IMAGE_BITMAP, 0, 0, LR_LOADTRANSPARENT);
+		_bmpFileSelDown		= (HBITMAP)::LoadImage(_hInst, MAKEINTRESOURCE(IDB_FLD_DOWN), IMAGE_BITMAP, 0, 0, LR_LOADTRANSPARENT);
+		_bmpFileSelHover	= (HBITMAP)::LoadImage(_hInst, MAKEINTRESOURCE(IDB_FLD_HOVER), IMAGE_BITMAP, 0, 0, LR_LOADTRANSPARENT);
+
         create(IDD_USER_DLG);
-		::SendMessage(_hParent, WM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_hSelf);
+		::SendMessage(_hParent, NPPM_MODELESSDIALOG, MODELESSDIALOGADD, (LPARAM)_hSelf);
 		goToCenter();
 	}
 	display(willBeShown);
@@ -465,17 +450,31 @@ void UserDefineDialog::initDialog(void)
 {
 	HMODULE hUser32;
 
+	_hTreeCtrl		= ::GetDlgItem(_hSelf, IDC_LIST_GROUP);
+
+	SIZE	sz = {17, 19};
+	_IconFileSelect.init(::GetDlgItem(_hSelf, IDC_EDIT_FILE), _bmpFileSel, sz, IED_SET_ICON_RIGHT);
+	_IconFileSelect.setBmpDown(_bmpFileSelDown);
+	_IconFileSelect.setBmpHover(_bmpFileSelHover);
+
+	sz.cx = sz.cy = 16;
+	_IconGroupSelect.init(::GetDlgItem(_hSelf, IDC_EDIT_GROUP), _himlIconList, -1, sz, IED_SET_ICON_RIGHT);
+	_IconFunctionSelect.init(::GetDlgItem(_hSelf, IDC_EDIT_FUNCN), _himlIconList, -1, sz, IED_SET_ICON_RIGHT);
+
+	/* initial subclassing and add column */
+	LVCOLUMN	clm = {0};
+	::SetWindowLong(::GetDlgItem(_hSelf, IDC_LIST_GROUP), GWL_USERDATA, (LONG)this);
+	_hDefaultListProc = (WNDPROC)(::SetWindowLong(::GetDlgItem(_hSelf, IDC_LIST_GROUP), GWL_WNDPROC, (LONG)wndListProc));
+
 	/* init lang combo box */
-	updateCombo();
+	updateLangList();
 
 	/* set spins dependency */
 	::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETBUDDY, (WPARAM)::GetDlgItem(_hSelf, IDC_EDIT_COMNUM), 0);
 	::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETBUDDY, (WPARAM)::GetDlgItem(_hSelf, IDC_EDIT_SECNUM), 0);
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETPOS, 0, MAKELONG(1,0));
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(1,0));
 
 	/* is transparent mode available? */
-	hUser32 = ::GetModuleHandle("User32");
+	hUser32 = ::GetModuleHandle(_T("User32"));
 	if (hUser32)
 	{
 		/* set transparency */
@@ -489,129 +488,205 @@ void UserDefineDialog::initDialog(void)
 		::ShowWindow(::GetDlgItem(_hSelf, IDC_TRANSPARENT_CHECK), SW_HIDE);
 		::ShowWindow(::GetDlgItem(_hSelf, IDC_PERCENTAGE_SLIDER), SW_HIDE);
 	}
-
-	/* update dialog */
-	updateDialog();
 }
 
 
-void UserDefineDialog::updateDialog()
+void UserDefineDialog::updateDialog(int sel)
 {
-	UINT		iItem = 0;
-	UserList	userList;
-	SyntaxList	synList;
-	CommList	commList;
+	UINT	iItem		= 0;
 
-	updateCurLang();
-
-	if (_isValid == TRUE)
+	if ((_isLang == TRUE) && (_parseRules.vCommList.size() != 0))
 	{
 		::SendDlgItemMessage(_hSelf, 
-							 IDC_CHECK_MC, 
-							 BM_SETCHECK, 
-							 (_synList[_curItem].matchCase)? BST_CHECKED:BST_UNCHECKED, 
-							 0);
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_KWBB), _synList[_curItem].strKeyWBBeg.c_str());
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_KWBE), _synList[_curItem].strKeyWBEnd.c_str());
-		if (_synList[_curItem].comments.size() != 0)
+							IDC_CHECK_ICON, 
+							BM_SETCHECK, 
+							(_parseRules.strImageListPath.size())? BST_CHECKED:BST_UNCHECKED, 
+							0);
+
+		LoadImages(_parseRules.strImageListPath.c_str(), &_bmpIconList, &_himlIconList);
+		TreeView_SetImageList(_hTreeCtrl, _himlIconList, TVSIL_NORMAL);
+		::SetDlgItemText(_hSelf, IDC_EDIT_FILE, _parseRules.strImageListPath.c_str());
+
+		iItem = (UINT)::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_GETPOS, 0, 0) - 1;
+		if (HIWORD(iItem) == 0)
 		{
-			iItem = ::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_GETPOS, 0, 0) - 1;
-			::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_COMMB), _synList[_curItem].comments[iItem].param1.c_str());
-			::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_COMME), _synList[_curItem].comments[iItem].param2.c_str());
+			::SetDlgItemTextA(_hSelf, IDC_EDIT_COMMB, _parseRules.vCommList[iItem].param1.c_str());
+			::SetDlgItemTextA(_hSelf, IDC_EDIT_COMME, _parseRules.vCommList[iItem].param2.c_str());
 		}
-		else
-		{
-			::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_COMMB), "");
-			::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_COMME), "");
-		}
-		iItem = ::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_GETPOS, 0, 0) - 1;
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCB), _synList[_curItem].syntax[iItem].strRegExBegin.c_str());
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCN), _synList[_curItem].syntax[iItem].strRegExFunc.c_str());
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCE), _synList[_curItem].syntax[iItem].strRegExEnd.c_str());
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_BB)   , _synList[_curItem].syntax[iItem].strBodyBegin.c_str());
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_BE)   , _synList[_curItem].syntax[iItem].strBodyEnd.c_str());
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_SEP)  , _synList[_curItem].syntax[iItem].strSep.c_str());
-		setSpins(_synList[_curItem].comments.size(), _synList[_curItem].syntax.size());
+		setSpin((UINT)_parseRules.vCommList.size(), IDC_SPIN_COM);
 	}
 	else
 	{
-		::SendDlgItemMessage(_hSelf, IDC_CHECK_MC, BM_SETCHECK, BST_UNCHECKED, 0);
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_KWBB) , "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_KWBE) , "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_COMMB), "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_COMME), "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCB), "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCN), "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCE), "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_BB)   , "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_BE)   , "");
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_SEP)  , "");
-		setSpins(0, 1);
+		::SendDlgItemMessage(_hSelf, IDC_CHECK_ICON, BM_SETCHECK, BST_UNCHECKED, 0);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_FILE, EMPTY_STR);
+		ImageList_Destroy(_himlIconList);
+		TreeView_SetImageList(::GetDlgItem(_hSelf, IDC_LIST_GROUP), _himlIconList, TVSIL_NORMAL);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_COMMB, EMPTY_STR);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_COMME, EMPTY_STR);
+		setSpin(1, IDC_SPIN_COM);
 	}
-	
+
+	/* update for every specific Group */
+	updateGroupList(sel);
+	updateGroup();
+}
+
+void UserDefineDialog::updateGroup(void)
+{
+	UINT			iItem	= 0;
+
+	updateCurGroup();
+
+	if ((_isLang == TRUE) && (_isGroup == TRUE))
+	{
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_GROUP, _pParseGroupRules->strName.c_str());
+		updateSubGroupList();
+		::SendDlgItemMessage(_hSelf, 
+			IDC_CHECK_EXP,
+			BM_SETCHECK, 
+			(_pParseGroupRules->isAutoExp)? BST_CHECKED:BST_UNCHECKED, 
+			0);
+		::SendDlgItemMessage(_hSelf, 
+			IDC_CHECK_MC, 
+			BM_SETCHECK, 
+			(_pParseGroupRules->uMatchCase)? BST_CHECKED:BST_UNCHECKED, 
+			0);
+
+		iItem = (UINT)::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_GETPOS, 0, 0) - 1;
+
+		_IconGroupSelect.setImageList(_himlIconList, _pParseGroupRules->iIcon);
+		_IconFunctionSelect.setImageList(_himlIconList, _pParseGroupRules->iChildIcon);
+
+		if (HIWORD(iItem) == 0)
+		{
+			::SetDlgItemTextA(_hSelf, IDC_EDIT_FUNCB, _pParseGroupRules->vParseRules[iItem].strRegExBegin.c_str());
+			::SetDlgItemTextA(_hSelf, IDC_EDIT_FUNCN, _pParseGroupRules->vParseRules[iItem].strRegExFunc.c_str());
+			::SetDlgItemTextA(_hSelf, IDC_EDIT_FUNCE, _pParseGroupRules->vParseRules[iItem].strRegExEnd.c_str());
+			::SetDlgItemTextA(_hSelf, IDC_EDIT_BB   , _pParseGroupRules->vParseRules[iItem].strBodyBegin.c_str());
+			::SetDlgItemTextA(_hSelf, IDC_EDIT_BE   , _pParseGroupRules->vParseRules[iItem].strBodyEnd.c_str());
+			::SetDlgItemTextA(_hSelf, IDC_EDIT_SEP  , _pParseGroupRules->vParseRules[iItem].strSep.c_str());
+		}
+		setSpin((UINT)_pParseGroupRules->vParseRules.size(), IDC_SPIN_SEC);
+
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_KWBB, _pParseGroupRules->strFEndToBBeg.c_str());
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_KWBE, _pParseGroupRules->strBBegToBEnd.c_str());
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_KEYWO, _pParseGroupRules->strKeywords.c_str());
+	}
+	else
+	{
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_GROUP, EMPTY_STR);
+		updateSubGroupList();
+		::SendDlgItemMessage(_hSelf, IDC_CHECK_EXP, BM_SETCHECK, BST_UNCHECKED, 0);
+		::SendDlgItemMessage(_hSelf, IDC_CHECK_MC, BM_SETCHECK, BST_UNCHECKED, 0);
+
+		_IconGroupSelect.setImgStd(-1);
+		_IconFunctionSelect.setImgStd(-1);
+
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_FUNCB, EMPTY_STR);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_FUNCN, EMPTY_STR);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_FUNCE, EMPTY_STR);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_BB   , EMPTY_STR);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_BE   , EMPTY_STR);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_SEP  , EMPTY_STR);
+		setSpin(1, IDC_SPIN_SEC);
+
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_KWBB , EMPTY_STR);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_KWBE , EMPTY_STR);
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_KEYWO , EMPTY_STR);
+	}
 	enableItems();
 }
 
-
 void UserDefineDialog::saveDialog(void)
 {
-	UINT		iItem		= 0;
-	char		itemName[256];
-
-	if (_isValid == TRUE)
+	if (_isLang == TRUE)
 	{
-		_synList[_curItem].matchCase = (::SendDlgItemMessage(_hSelf, IDC_CHECK_MC, BM_GETCHECK, 0, 0) == BST_CHECKED)? SCFIND_MATCHCASE:0;
-		::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_KWBB) , itemName, sizeof(itemName));
-		_synList[_curItem].strKeyWBBeg = itemName;
-		::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_KWBE) , itemName, sizeof(itemName));
-		_synList[_curItem].strKeyWBEnd = itemName;
-		if (_synList[_curItem].comments.size() > 0)
+		UINT		iItem				= 0;
+		CHAR		itemName[256]		= "\0";
+		TCHAR		strPath[MAX_PATH]	= _T("\0");
+
+		::GetDlgItemText(_hSelf, IDC_EDIT_FILE, strPath, sizeof(strPath) / sizeof(TCHAR));
+		_parseRules.strImageListPath = strPath;
+
+		if (_parseRules.vCommList.size() > 0)
 		{
-			iItem = ::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_GETPOS, 0, 0) - 1;
-			::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_COMMB), itemName, sizeof(itemName));
-			_synList[_curItem].comments[iItem].param1 = itemName;
-			::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_COMME), itemName, sizeof(itemName));
-			_synList[_curItem].comments[iItem].param2 = itemName;
+			iItem = (UINT)::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_GETPOS, 0, 0) - 1;
+			if (HIWORD(iItem) == 0)
+			{
+				::GetDlgItemTextA(_hSelf, IDC_EDIT_COMMB, itemName, sizeof(itemName));
+				_parseRules.vCommList[iItem].param1 = itemName;
+				::GetDlgItemTextA(_hSelf, IDC_EDIT_COMME, itemName, sizeof(itemName));
+				_parseRules.vCommList[iItem].param2 = itemName;
+			}
 		}
-		iItem = ::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_GETPOS, 0, 0) - 1;
-		::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCB), itemName, sizeof(itemName));
-		_synList[_curItem].syntax[iItem].strRegExBegin = itemName;
-		::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCN), itemName, sizeof(itemName));
-		_synList[_curItem].syntax[iItem].strRegExFunc = itemName;
-		::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FUNCE), itemName, sizeof(itemName));
-		_synList[_curItem].syntax[iItem].strRegExEnd = itemName;
-		::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_BB)   , itemName, sizeof(itemName));
-		_synList[_curItem].syntax[iItem].strBodyBegin = itemName;
-		::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_BE)   , itemName, sizeof(itemName));
-		_synList[_curItem].syntax[iItem].strBodyEnd = itemName;
-		::GetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_SEP)  , itemName, sizeof(itemName));
-		_synList[_curItem].syntax[iItem].strSep = itemName;
+
+		if ((_isGroup == TRUE) && (_pParseGroupRules != NULL))
+		{
+			updateCurSubGroup();
+			_pParseGroupRules->isAutoExp = (::SendDlgItemMessage(_hSelf, IDC_CHECK_EXP, BM_GETCHECK, 0, 0) == BST_CHECKED)? SCFIND_MATCHCASE:0;
+			_pParseGroupRules->uMatchCase = (::SendDlgItemMessage(_hSelf, IDC_CHECK_MC, BM_GETCHECK, 0, 0) == BST_CHECKED)? SCFIND_MATCHCASE:0;
+			::GetDlgItemTextA(_hSelf, IDC_EDIT_GROUP, itemName, sizeof(itemName));
+			_pParseGroupRules->strName = itemName;
+			::GetDlgItemTextA(_hSelf, IDC_EDIT_KWBB , itemName, sizeof(itemName));
+			_pParseGroupRules->strFEndToBBeg = itemName;
+			::GetDlgItemTextA(_hSelf, IDC_EDIT_KWBE , itemName, sizeof(itemName));
+			_pParseGroupRules->strBBegToBEnd = itemName;
+			::GetDlgItemTextA(_hSelf, IDC_EDIT_KEYWO , itemName, sizeof(itemName));
+			_pParseGroupRules->strKeywords = itemName;
+
+			iItem = (UINT)::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_GETPOS, 0, 0) - 1;
+			if (HIWORD(iItem) == 0)
+			{
+				::GetDlgItemTextA(_hSelf, IDC_EDIT_FUNCB, itemName, sizeof(itemName));
+				_pParseGroupRules->vParseRules[iItem].strRegExBegin = itemName;
+				::GetDlgItemTextA(_hSelf, IDC_EDIT_FUNCN, itemName, sizeof(itemName));
+				_pParseGroupRules->vParseRules[iItem].strRegExFunc = itemName;
+				::GetDlgItemTextA(_hSelf, IDC_EDIT_FUNCE, itemName, sizeof(itemName));
+				_pParseGroupRules->vParseRules[iItem].strRegExEnd = itemName;
+				::GetDlgItemTextA(_hSelf, IDC_EDIT_BB   , itemName, sizeof(itemName));
+				_pParseGroupRules->vParseRules[iItem].strBodyBegin = itemName;
+				::GetDlgItemTextA(_hSelf, IDC_EDIT_BE   , itemName, sizeof(itemName));
+				_pParseGroupRules->vParseRules[iItem].strBodyEnd = itemName;
+				::GetDlgItemTextA(_hSelf, IDC_EDIT_SEP  , itemName, sizeof(itemName));
+				_pParseGroupRules->vParseRules[iItem].strSep = itemName;
+			}
+		}
+		LangPreferences::SetParseData(_parseRules, _curName);
 	}
 }
 
-
-void UserDefineDialog::enableItems()
+void UserDefineDialog::enableItems(void)
 {
-	for (UINT i = IDC_STATIC_0; i <= IDC_STATIC_9; i++)
+	BOOL	isGroup = (_isGroup & _isLang);
+
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_GROUP) , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_COMBO_SUB)  , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_CHECK_ICON) , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_ADD_SECRULE), isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_CHECK_EXP)  , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_CHECK_MC)   , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_KWBB)  , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_KWBE)  , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_KEYWO) , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_SPIN_SEC)   , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_SECNUM), isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_FUNCB) , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_FUNCN) , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_FUNCE) , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_SEP)   , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_BB)    , isGroup);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_BE)    , isGroup);
+
+	for (UINT i = IDC_STATIC_2; i <= IDC_STATIC_12; i++)
 	{
-		::EnableWindow(::GetDlgItem(_hSelf, i), _isValid);
+		::EnableWindow(::GetDlgItem(_hSelf, i), isGroup);
 	}
 
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_CHECK_MC)   , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_KWBB)  , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_KWBE)  , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_ADD_COMRULE), _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_SPIN_SEC)   , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_SECNUM), _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_ADD_SECRULE), _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_FUNCB) , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_FUNCN) , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_FUNCE) , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_SEP)   , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_BB)    , _isValid);
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_BE)    , _isValid);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_DEL_GROUP), (isGroup)? TRUE:FALSE);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_DEL_SECRULE), (isGroup && (_pParseGroupRules->vParseRules.size() > 1))? TRUE:FALSE);
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_FILE), (::SendDlgItemMessage(_hSelf, IDC_CHECK_ICON, BM_GETCHECK, 0, 0) == BST_CHECKED)? TRUE:FALSE);
 
-	if (_isValid && (_synList[_curItem].comments.size() > 0))
+	if (_isLang && (_parseRules.vCommList.size() > 0))
 	{
 		::ShowWindow(  ::GetDlgItem(_hSelf, IDC_SPIN_COM)   , SW_SHOW);
 		::EnableWindow(::GetDlgItem(_hSelf, IDC_SPIN_COM)   , TRUE);
@@ -620,6 +695,9 @@ void UserDefineDialog::enableItems()
 		::EnableWindow(::GetDlgItem(_hSelf, IDC_DEL_COMRULE), TRUE);
 		::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_COMMB) , TRUE);
 		::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_COMME) , TRUE);
+		::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_COMME) , TRUE);
+		::EnableWindow(::GetDlgItem(_hSelf, IDC_STATIC_0)   , TRUE);
+		::EnableWindow(::GetDlgItem(_hSelf, IDC_STATIC_1)   , TRUE);
 	}
 	else
 	{
@@ -630,258 +708,359 @@ void UserDefineDialog::enableItems()
 		::EnableWindow(::GetDlgItem(_hSelf, IDC_DEL_COMRULE), FALSE);
 		::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_COMMB) , FALSE);
 		::EnableWindow(::GetDlgItem(_hSelf, IDC_EDIT_COMME) , FALSE);
+		::EnableWindow(::GetDlgItem(_hSelf, IDC_STATIC_0)   , FALSE);
+		::EnableWindow(::GetDlgItem(_hSelf, IDC_STATIC_1)   , FALSE);
 	}
 
-	::EnableWindow(::GetDlgItem(_hSelf, IDC_DEL_SECRULE), (_isValid && (_synList[_curItem].syntax.size() > 1))? TRUE:FALSE);
-
-	if (_isValid == TRUE)
-	{
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_ADD_RULES), "Remove rule");
-		::ShowWindow(::GetDlgItem(_hSelf, IDC_TEST), SW_SHOW);
-	}
-	else
-	{
-		::SetWindowText(::GetDlgItem(_hSelf, IDC_ADD_RULES), "Edit rule");
-		::ShowWindow(::GetDlgItem(_hSelf, IDC_TEST), SW_HIDE);
-	}
+	::EnableWindow(::GetDlgItem(_hSelf, IDC_TEST), _isLang);
 }
 
 
-void UserDefineDialog::setSpins(UINT maxComm, UINT maxSyn)
+void UserDefineDialog::setSpin(UINT max, UINT id)
 {
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETRANGE, 0, MAKELONG(maxComm, 1));
-	::InvalidateRect(::GetDlgItem(_hSelf, IDC_SPIN_COM), NULL, TRUE);
-
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETRANGE, 0, MAKELONG(maxSyn, 1));
-	::InvalidateRect(::GetDlgItem(_hSelf, IDC_SPIN_SEC), NULL, TRUE);
+	::SendDlgItemMessage(_hSelf, id, UDM_SETRANGE, 0, MAKELONG(max, 1));
+	::InvalidateRect(::GetDlgItem(_hSelf, id), NULL, TRUE);
 }
 
 
-void UserDefineDialog::onEditLang(void)
+void UserDefineDialog::onAddGroup(void)
 {
-	if (_isValid == TRUE)
-	{
-		deleteListEntry();
-	}
-	else
-	{
-		newListEntry();
-	}
+	tParseGroupRules	parseGroupRules;
+	parseGroupRules.strName			= "newGroup";
+	parseGroupRules.iIcon			= 0;
+	parseGroupRules.iChildIcon		= 0;
+	parseGroupRules.uMatchCase		= FALSE;
+	parseGroupRules.isAutoExp		= FALSE;
+	parseGroupRules.strSubGroupOf.clear();
+	parseGroupRules.strFEndToBBeg.clear();
+	parseGroupRules.strBBegToBEnd.clear();
+	parseGroupRules.strKeywords.clear();
 
-	updateDialog();
+	tParseFuncRules		parseFuncRules;
+	parseFuncRules.strRegExBegin.clear();
+	parseFuncRules.strRegExEnd.clear();
+	parseFuncRules.strRegExFunc.clear();
+	parseFuncRules.strSep.clear();
+	parseFuncRules.strBodyBegin.clear();
+	parseFuncRules.strBodyEnd.clear();
+
+	parseGroupRules.vParseRules.push_back(parseFuncRules);
+	_parseRules.vParseList.push_back(parseGroupRules);
+
+	HTREEITEM hItem = InsertItem((LPSTR)parseGroupRules.strName.c_str(), 0, 0, -1, FALSE, TVI_ROOT);
+
+	_isLang = TRUE;
+	updateDialog(_parseRules.vParseList.size()-1);
 }
 
+void UserDefineDialog::onDelGroup(void)
+{
+	INT sel		= getSelectedGroup();
+	INT count	= TreeView_GetCount(_hTreeCtrl);
+
+	/* delete of current selected Group the function parsing rules */
+	_pParseGroupRules->vParseRules.clear();
+	_parseRules.vParseList.erase(_pParseGroupRules);
+
+	if (sel < (count - 1))
+		updateDialog(sel);
+	else
+		updateDialog(sel - 1);
+}
+
+void UserDefineDialog::onBtnUp(void)
+{
+	UINT iCntElem	= TreeView_GetCount(_hTreeCtrl);
+	if (iCntElem == 0)
+		return;
+	UINT iCurSel	= getSelectedGroup();
+	if (iCurSel == 0)
+		return;
+
+	saveDialog();
+	tParseGroupRules tmpParseRule = _parseRules.vParseList[iCurSel - 1];
+	_parseRules.vParseList[iCurSel - 1] = _parseRules.vParseList[iCurSel];
+	_parseRules.vParseList[iCurSel] = tmpParseRule;
+	updateGroupList(iCurSel - 1);
+	updateGroup();
+}
+
+void UserDefineDialog::onBtnDown(void)
+{
+	UINT iCntElem	= TreeView_GetCount(_hTreeCtrl);
+	if (iCntElem == 0)
+		return;
+	UINT iCurSel	= getSelectedGroup();
+	if (iCurSel == iCntElem-1)
+		return;
+
+	saveDialog();
+	tParseGroupRules tmpParseRule		= _parseRules.vParseList[iCurSel + 1];
+	_parseRules.vParseList[iCurSel + 1] = _parseRules.vParseList[iCurSel];
+	_parseRules.vParseList[iCurSel]		= tmpParseRule;
+	updateGroupList(iCurSel + 1);
+	updateGroup();
+}
 
 void UserDefineDialog::onAddComm(void)
 {
-	CommList	commList;
+	tCommData	commData;
 
-	_synList[_curItem].comments.push_back(commList);
-	setSpins(_synList[_curItem].comments.size(), _synList[_curItem].syntax.size());
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETPOS, 0, MAKELONG(_synList[_curItem].comments.size(),0));
+	saveDialog();
+	_parseRules.vCommList.push_back(commData);
+	size_t max = _parseRules.vCommList.size();
+	setSpin(max, IDC_SPIN_COM);
+	::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETPOS, 0, MAKELONG(_parseRules.vCommList.size(),0));
 	updateDialog();
 }
 
-
 void UserDefineDialog::onDelComm(void)
 {
-	UINT	item = ::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_GETPOS, 0, 0) - 1;
-	vector<CommList>::iterator itr = _synList[_curItem].comments.begin() + item;
-	_synList[_curItem].comments.erase(itr);
+	UINT	item = (UINT)::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_GETPOS, 0, 0) - 1;
+
+	saveDialog();
+	vector<tCommData>::iterator itr = _parseRules.vCommList.begin() + item;
+	_parseRules.vCommList.erase(itr);
 	::SendDlgItemMessage(_hSelf, IDC_SPIN_COM, UDM_SETPOS, 0, MAKELONG(item, 0));
 	updateDialog();
 }
 
-
 void UserDefineDialog::onAddSyn(void)
 {
-	SyntaxList	synList;
+	tParseFuncRules	synList;
 
-	_synList[_curItem].syntax.push_back(synList);
-	setSpins(_synList[_curItem].comments.size(), _synList[_curItem].syntax.size());
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(_synList[_curItem].syntax.size(),0));
-	updateDialog();
+	saveDialog();
+	_pParseGroupRules->vParseRules.push_back(synList);
+	setSpin((UINT)_pParseGroupRules->vParseRules.size(), IDC_SPIN_SEC);
+	::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(_pParseGroupRules->vParseRules.size(),0));
+	updateGroup();
 }
-
 
 void UserDefineDialog::onDelSyn(void)
 {
-	UINT	item = ::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_GETPOS, 0, 0) - 1;
-	vector<SyntaxList>::iterator itr = _synList[_curItem].syntax.begin() + item;
-	_synList[_curItem].syntax.erase(itr);
-	::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(item, 0));
-	updateDialog();
-}
+	UINT	item = (UINT)::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_GETPOS, 0, 0) - 1;
 
+	saveDialog();
+	vector<tParseFuncRules>::iterator itr = _pParseGroupRules->vParseRules.begin() + item;
+	_pParseGroupRules->vParseRules.erase(itr);
+	::SendDlgItemMessage(_hSelf, IDC_SPIN_SEC, UDM_SETPOS, 0, MAKELONG(item, 0));
+	updateGroup();
+}
 
 void UserDefineDialog::onTest( void )
 {
+	UINT i = 0;
+
 	saveDialog();
 
-	vector<MenuInfo>::iterator itr = _menuInfo.begin() +
-		::SendDlgItemMessage(_hSelf, IDC_COMBO_LANG, CB_GETCURSEL, 0, 0);
-	::SendMessage(_hParent, WM_COMMAND, itr->id, 0);
-}
+	/* set parsing rules in function list */
+	extern FunctionListDialog	functionDlg;
+	::SendMessage(functionDlg.getHSelf(), FLWM_SETPARSER, (WPARAM)&_parseRules, (LPARAM)&_curName);
 
-
-void UserDefineDialog::newListEntry(void)
-{
-	UserList	userList;
-	SyntaxList	synList;
-
-	userList.name = _curName;
-	userList.syntax.push_back(synList);
-	userList.matchCase = FALSE;
-	_synList.push_back(userList);
-}
-
-
-void UserDefineDialog::deleteListEntry(void)
-{
-	_synList[_curItem].comments.clear();
-	_synList[_curItem].syntax.clear();
-	vector<UserList>::iterator itr = _synList.begin() + _curItem;
-	_synList.erase(itr);
-	updateDialog();
-}
-
-
-void UserDefineDialog::loadList(void)
-{
-	UINT		i;
-	UINT		numLang;
-	UserList	entry;
-	string		name;
-
-	/* delete all data first */
-	numLang = _synList.size();
-	if (numLang != 0)
+	/* set language in Notepad++ */
+	for (i = 0; i < vMenuInfo.size(); i++)
 	{
-		for (i = 0; i < numLang; i++)
+		if (vMenuInfo[i].name == _curName)
 		{
-			_synList[i].comments.clear();
-			_synList[i].syntax.clear();
-		}
-		_synList.clear();
-	}
-
-	/* create language informations */
-	numLang  = ::GetPrivateProfileInt(userLang, userLangCnt, 0, _iniFilePath);
-	for (i = 0; i < numLang; i++)
-	{
-		entry.name = getPrivateString(userLangName, i+1);
-		_synList.push_back(entry);
-	}
-
-	if (numLang != 0)
-	{
-		for (i = 0; i < numLang; i++)
-		{
-			UINT		numComm;
-			UINT		numSyn;
-			UINT		j, k;
-			CommList	comm;
-			SyntaxList	syn;
-
-			_synList[i].strKeyWBBeg = getPrivateString(userLangKeyWBB, i+1);
-			_synList[i].strKeyWBEnd = getPrivateString(userLangKeyWBE, i+1);
-			_synList[i].matchCase = getPrivateInt(userLangMatchC, i+1);
-
-			numComm = getPrivateInt(userLangCntComm, i+1);
-			for (j = 0; j < numComm; j++)
-			{
-				for (k = 0; k < 2; k++)
-				{
-					name = getPrivateString(userLangComm[k], j+1, i+1);
-					if (k == 0)
-					{
-						comm.param1 = name;
-					}
-					else
-					{
-						comm.param2 = name;
-					}
-				}
-				_synList[i].comments.push_back(comm);
-			}
-
-			numSyn = getPrivateInt(userLangCntSyn, i+1);
-			for (j = 0; j < numSyn; j++)
-			{
-				for (k = 0; k < 6; k++)
-				{
-					name = getPrivateString(userLangSyn[k], j+1, i+1);
-					switch (k)
-					{
-						case 0:	syn.strRegExBegin	= name; break;
-						case 1: syn.strRegExEnd		= name;	break;
-						case 2:	syn.strRegExFunc	= name;	break;
-						case 3:	syn.strBodyBegin	= name;	break;
-						case 4: syn.strBodyEnd		= name;	break;
-						case 5:	syn.strSep			= name;	break;
-						default:	DEBUG("Error");			break;
-					}
-				}
-				_synList[i].syntax.push_back(syn);
-			}
+			::SendMessage(_hParent, WM_COMMAND, vMenuInfo[i].id, 0);
 		}
 	}
-}
-
-
-void UserDefineDialog::saveList(void)
-{
-	UINT	i;
-	UINT	numLang = _synList.size();
-	char	temp[64];
-
-	::WritePrivateProfileString(userLang, userLangCnt, itoa(numLang, temp, 10), _iniFilePath);
-	if (numLang != 0)
+	for (i = 0; i < L_EXTERNAL; i++)
 	{
-		for (i = 0; i < numLang; i++)
+		if (_tcscmp(szLangType[i], _curName.c_str()) == 0)
 		{
-			UINT	numComm	= _synList[i].comments.size();
-			UINT	numSyn	= _synList[i].syntax.size();
-			UINT	j, k;
-
-			setPrivateString(userLangName, _synList[i].name, i+1);
-			setPrivateString(userLangKeyWBB, _synList[i].strKeyWBBeg, i+1);
-			setPrivateString(userLangKeyWBE, _synList[i].strKeyWBEnd, i+1);
-			setPrivateString(userLangMatchC, (_synList[i].matchCase)?"1":"0", i+1);
-
-			setPrivateInt(userLangCntComm, numComm, i+1);
-			for (j = 0; j < numComm; j++)
-			{
-				for (k = 0; k < 2; k++)
-				{
-					if (k == 0)
-					{
-						setPrivateString(userLangComm[k], _synList[i].comments[j].param1, j+1, i+1);
-					}
-					else
-					{
-						setPrivateString(userLangComm[k], _synList[i].comments[j].param2, j+1, i+1);
-					}
-				}
-			}
-
-			setPrivateInt(userLangCntSyn, numSyn, i+1);
-			for (j = 0; j < numSyn; j++)
-			{
-				for (k = 0; k < 6; k++)
-				{
-					switch (k)
-					{
-						case 0:	setPrivateString(userLangSyn[k], _synList[i].syntax[j].strRegExBegin, j+1, i+1); break;
-						case 1:	setPrivateString(userLangSyn[k], _synList[i].syntax[j].strRegExEnd, j+1, i+1); break;
-						case 2:	setPrivateString(userLangSyn[k], _synList[i].syntax[j].strRegExFunc, j+1, i+1); break;
-						case 3:	setPrivateString(userLangSyn[k], _synList[i].syntax[j].strBodyBegin, j+1, i+1); break;
-						case 4:	setPrivateString(userLangSyn[k], _synList[i].syntax[j].strBodyEnd, j+1, i+1); break;
-						case 5:	setPrivateString(userLangSyn[k], _synList[i].syntax[j].strSep, j+1, i+1); break;
-						default:	DEBUG("Error");			break;
-					}
-				}
-			}
+			::SendMessage(_hParent, NPPM_SETCURRENTLANGTYPE, 0, i);
 		}
 	}
+	_isTest = TRUE;
 }
+
+void UserDefineDialog::onCheckIcon(void)
+{
+	if (::SendDlgItemMessage(_hSelf, IDC_CHECK_ICON, BM_GETCHECK, 0, 0) == BST_UNCHECKED)
+	{
+		_parseRules.strImageListPath = _T("EMPTY_STR");
+		::SetDlgItemTextA(_hSelf, IDC_EDIT_FILE, EMPTY_STR);
+		ImageList_Destroy(_himlIconList);
+		TreeView_SetImageList(_hTreeCtrl, _himlIconList, TVSIL_NORMAL);
+		_IconGroupSelect.setImgStd(-1);
+		_IconFunctionSelect.setImgStd(-1);
+	}
+	enableItems();
+}
+
+void UserDefineDialog::onOpenFile(void)
+{
+	extern TCHAR	configPath[MAX_PATH];
+	TCHAR			path[MAX_PATH];
+	LPTSTR			pszLink	= NULL;
+
+	_tcscpy(path, configPath);
+	_tcscat(path, _T("\\*.flb"));
+
+	FileDlg dlg(_hInst, _hSelf);
+
+	if (_parseRules.strImageListPath.size() != 0)
+		dlg.setDefFileName(_parseRules.strImageListPath.c_str());
+	else
+		dlg.setDefFileName(path);
+	dlg.setExtFilter(_T("Function List Bitmap File"), _T(".flb"), NULL);
+	dlg.setExtFilter(_T("All types"), _T(".*"), NULL);
+	
+	pszLink = dlg.doOpenSingleFileDlg();
+	if (pszLink != NULL)
+	{
+		/* try to load the image list */
+		if (LoadImages(pszLink, &_bmpIconList, &_himlIconList) == TRUE)
+		{
+			/* Set edit control to the directory path */
+			_parseRules.strImageListPath = pszLink;
+			::SetWindowText(::GetDlgItem(_hSelf, IDC_EDIT_FILE), pszLink);
+		}
+		else
+		{
+			/* throw how to */
+			::MessageBox(_hSelf, _T("Select a bitmap which is 16px*X width and 16px hight."), _T("Function List"), MB_OK);
+		}
+		/* attach to "list" view */
+		TreeView_SetImageList(_hTreeCtrl, _himlIconList, TVSIL_NORMAL);
+		_IconGroupSelect.setImgStd(_pParseGroupRules->iIcon);
+		_IconFunctionSelect.setImgStd(_pParseGroupRules->iChildIcon);
+	}
+}
+
+/* internal update of language name, if combo box is changed */
+void UserDefineDialog::updateCurLang(void)
+{
+	TCHAR		name[32];
+	INT			iCurSel = (INT)::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_GETCURSEL, 0, 0);
+
+	::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_GETTEXT, iCurSel, (LPARAM)name);
+	
+	/* load list of rules */
+	_curName = name;
+	ZeroMemory(&_parseRules, sizeof(tParseRules));
+	_isLang  = LangPreferences::GetParseData(_parseRules, _curName);
+}
+
+void UserDefineDialog::updateCurGroup(void)
+{
+	INT			iCurSel = getSelectedGroup();
+
+	/* get group rules of current selected item */
+	if ((_parseRules.vParseList.size() != 0) && (iCurSel != -1))
+	{
+		_pParseGroupRules = &_parseRules.vParseList[iCurSel];
+		_isGroup = TRUE;
+		return;
+	}
+	_isGroup = FALSE;
+}
+
+void UserDefineDialog::updateCurSubGroup(void)
+{
+	if (_isGroup == FALSE)
+		return;
+
+	CHAR		name[256]	= "\0";
+	INT			iCurSel = (INT)::SendDlgItemMessage(_hSelf, IDC_COMBO_SUB, CB_GETCURSEL, 0, 0);
+
+	/* get selected combo text */
+	::SendDlgItemMessageA(_hSelf, IDC_COMBO_SUB, CB_GETLBTEXT, iCurSel, (LPARAM)name);
+	_pParseGroupRules->strSubGroupOf = name;
+}
+
+/* on create/delete or remove a new name UDL dialog */
+void UserDefineDialog::updateLangList(int sel)
+{
+	::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_RESETCONTENT, 0, 0);
+
+	/* add standard languages except user lang */
+	for (UINT i = 0; i < L_EXTERNAL; i++)
+	{
+		if ((i != L_USER) && (i != L_SEARCHRESULT))
+			::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_ADDSTRING, 0, (LPARAM)szLangType[i]);
+	}
+	/* add user languages */
+	for (; i < (vMenuInfo.size() + L_EXTERNAL); i++)
+	{
+		::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_ADDSTRING, 0, (LPARAM)vMenuInfo[i-L_EXTERNAL].name.c_str());
+	}
+	::SendDlgItemMessage(_hSelf, IDC_LIST_LANG, LB_SETCURSEL, sel, 0);
+}
+
+void UserDefineDialog::updateGroupList(int sel)
+{
+	if (_isLang == TRUE)
+	{
+		HTREEITEM	hItemSel = NULL;
+		HTREEITEM	hCurItem = TreeView_GetNextItem(_hTreeCtrl, TVI_ROOT, TVGN_CHILD);
+
+		/* add groop names in list */
+		for (UINT i = 0; i < _parseRules.vParseList.size(); i++)
+		{
+			/* update or add new item */
+			if (hCurItem != NULL)
+			{
+				UpdateItem(hCurItem, (LPSTR)_parseRules.vParseList[i].strName.c_str(),
+					_parseRules.vParseList[i].iIcon, _parseRules.vParseList[i].iIcon, -1, FALSE);
+			}
+			else
+			{
+				hCurItem = InsertItem((LPSTR)_parseRules.vParseList[i].strName.c_str(),
+					_parseRules.vParseList[i].iIcon, _parseRules.vParseList[i].iIcon, -1, FALSE, TVI_ROOT);
+			}
+
+			/* when the current selection is updated remember the item handle */
+			if (i == sel)
+			{
+				hItemSel = hCurItem;
+			}
+
+			hCurItem = TreeView_GetNextItem(_hTreeCtrl, hCurItem, TVGN_NEXT);
+		}
+
+		/* delete possible not existed items */
+		while (hCurItem != NULL)
+		{
+			HTREEITEM	pPrevItem	= hCurItem;
+			hCurItem				= TreeView_GetNextItem(_hTreeCtrl, hCurItem, TVGN_NEXT);
+			TreeView_DeleteItem(_hTreeCtrl, pPrevItem);
+		}
+
+		TreeView_SelectItem(_hTreeCtrl, hItemSel);
+	}
+	else
+	{
+		TreeView_DeleteAllItems(_hTreeCtrl);
+	}
+}
+
+void UserDefineDialog::updateSubGroupList(void)
+{
+	UINT offset = 1;
+
+	::SendDlgItemMessage(_hSelf, IDC_COMBO_SUB, CB_RESETCONTENT, 0, 0);
+	::SendDlgItemMessage(_hSelf, IDC_COMBO_SUB, CB_INSERTSTRING, 0, (LPARAM)EMPTY_STR);
+
+	if (_isGroup == TRUE)
+	{
+		/* add in combo box every groop name except the current selected group */
+		for (UINT i = 0; i < _parseRules.vParseList.size(); i++)
+		{
+			if (_parseRules.vParseList[i].strName != _pParseGroupRules->strName)
+			{
+				::SendDlgItemMessageA(_hSelf, IDC_COMBO_SUB, CB_INSERTSTRING, i+offset, (LPARAM)_parseRules.vParseList[i].strName.c_str());
+			}
+			else
+			{
+				--offset;
+			}
+		}
+		/* add one special solution for documents like XML/HTML */
+		::SendDlgItemMessageA(_hSelf, IDC_COMBO_SUB, CB_INSERTSTRING, i+offset, (LPARAM)"XML-/HTML-Style");
+		::SendDlgItemMessage(_hSelf, IDC_COMBO_SUB, CB_SETMINVISIBLE, i+1, 0);
+		::SendDlgItemMessageA(_hSelf, IDC_COMBO_SUB, CB_SELECTSTRING, 0, (LPARAM)_pParseGroupRules->strSubGroupOf.c_str());
+	}
+}
+
