@@ -2,6 +2,13 @@
 Change-log for SpellChecker.dll
 
 ------------------------------------------------------------------------------------
+09/03/03  v1.3.3 :
+------------------------------------------------------------------------------------
+    Fix: Spell-Checker causes Notepad++ to crash [NPP-P-B-2538396]
+    Fix: Spell Checking fails with LaTeX highlighting [NPP-P-B-2686292]
+	Fix: Recalculating of document size now correct.
+
+------------------------------------------------------------------------------------
 08/11/15  v1.3.2 :
 ------------------------------------------------------------------------------------
     Fix: UNICODE support for Notepad++ 5.1
