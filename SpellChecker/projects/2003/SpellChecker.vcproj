@@ -207,6 +207,9 @@
 				RelativePath="..\..\src\SpellChecker.rc">
 			</File>
 		</Filter>
+		<File
+			RelativePath="..\..\change.log">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
