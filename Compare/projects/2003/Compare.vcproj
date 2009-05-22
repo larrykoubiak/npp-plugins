@@ -1,236 +1,414 @@
-<?xml version="1.0" encoding = "Windows-1252"?>
+<?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="7.00"
+	Version="8,00"
 	Name="Compare"
 	ProjectGUID="{73C0A930-C2F5-45D2-9795-8EFE62E2F4C6}"
-	Keyword="Win32Proj">
+	RootNamespace="Compare"
+	Keyword="Win32Proj"
+	>
 	<Platforms>
 		<Platform
-			Name="Win32"/>
+			Name="Win32"
+		/>
 	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
+			OutputDirectory="c:\Program Files\Notepad++\plugins"
 			IntermediateDirectory="Debug"
 			ConfigurationType="2"
-			CharacterSet="2">
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				EnableIntrinsicFunctions="false"
+				FavorSizeOrSpeed="1"
 				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/HelpDlg;../../../Common/Ccpp"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="0"
 				RuntimeLibrary="1"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="C:\Programme\Notepad++\plugins\Compare.dll"
+				AdditionalDependencies="shlwapi.lib"
+				OutputFile="$(OutDir)/ComparePlugin.dll"
 				LinkIncremental="2"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/Compare.pdb"
 				SubSystem="2"
 				ImportLibrary="$(OutDir)/Compare.lib"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
+			OutputDirectory="C:\Program Files\Notepad++\plugins"
 			IntermediateDirectory="Release"
 			ConfigurationType="2"
-			CharacterSet="2">
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC70.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="1"
-				OmitFramePointers="TRUE"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				OmitFramePointers="false"
 				AdditionalIncludeDirectories="../../src;../../src/MBA;../../src/HelpDlg;../../../Common/Ccpp"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;COMPARE_EXPORTS"
-				StringPooling="TRUE"
+				StringPooling="true"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
+				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="0"
+			/>
 			<Tool
-				Name="VCCustomBuildTool"/>
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
 			<Tool
 				Name="VCLinkerTool"
-				OutputFile="C:\Programme\Notepad++\plugins\Compare.dll"
+				AdditionalDependencies="shlwapi.lib"
+				OutputFile="$(OutDir)\ComparePlugin.dll"
 				LinkIncremental="1"
-				GenerateDebugInformation="TRUE"
+				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				ImportLibrary="$(OutDir)/Compare.lib"
-				TargetMachine="1"/>
+				TargetMachine="1"
+			/>
 			<Tool
-				Name="VCMIDLTool"/>
+				Name="VCALinkTool"
+			/>
 			<Tool
-				Name="VCPostBuildEventTool"/>
+				Name="VCManifestTool"
+			/>
 			<Tool
-				Name="VCPreBuildEventTool"/>
+				Name="VCXDCMakeTool"
+			/>
 			<Tool
-				Name="VCPreLinkEventTool"/>
+				Name="VCBscMakeTool"
+			/>
 			<Tool
-				Name="VCResourceCompilerTool"/>
+				Name="VCFxCopTool"
+			/>
 			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
+				Name="VCAppVerifierTool"
+			/>
 			<Tool
-				Name="VCWebDeploymentTool"/>
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 	</Configurations>
+	<References>
+	</References>
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm"
+			>
 			<File
-				RelativePath="..\..\src\Compare.cpp">
+				RelativePath="..\..\src\HelpDlg\AboutDialog.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ColorCombo.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ColorPopup.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\Compare.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\NPPHelpers.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\OptionDialog.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\HelpDlg\URLCtrl.cpp"
+				>
 			</File>
 			<Filter
 				Name="Common"
-				Filter="">
+				>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\StaticDialog.cpp">
+					RelativePath="..\..\..\Common\Ccpp\StaticDialog.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\SysMsg.cpp">
+					RelativePath="..\..\..\Common\Ccpp\stdafx.cpp"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\stdafx.cpp">
+					RelativePath="..\..\..\Common\Ccpp\SysMsg.cpp"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="MBA"
-				Filter="">
+				>
 				<File
-					RelativePath="..\..\src\mba\allocator.c">
+					RelativePath="..\..\src\mba\allocator.c"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\dbug.c">
+					RelativePath="..\..\src\mba\dbug.c"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\diff.c">
+					RelativePath="..\..\src\mba\diff.c"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\hashmap.c">
+					RelativePath="..\..\src\mba\hashmap.c"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\msgno.c">
+					RelativePath="..\..\src\mba\msgno.c"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\suba.c">
+					RelativePath="..\..\src\mba\suba.c"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\varray.c">
+					RelativePath="..\..\src\mba\varray.c"
+					>
 				</File>
 			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;inc">
+			Filter="h;hpp;hxx;hm;inl;inc"
+			>
 			<File
-				RelativePath="..\..\src\Compare.h">
+				RelativePath="..\..\src\HelpDlg\AboutDialog.h"
+				>
 			</File>
 			<File
-				RelativePath="..\..\src\Resource.h">
+				RelativePath="..\..\src\ColorCombo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\ColorPopup.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\Compare.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\CompareResource.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\NPPHelpers.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\OptionDialog.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\Resource.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\HelpDlg\URLCtrl.h"
+				>
 			</File>
 			<Filter
 				Name="Common"
-				Filter="">
+				>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\Docking.h">
+					RelativePath="..\..\..\Common\Ccpp\Docking.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\DockingDlgInterface.h">
+					RelativePath="..\..\..\Common\Ccpp\DockingDlgInterface.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\ImageListSet.h">
+					RelativePath="..\..\..\Common\Ccpp\ImageListSet.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\Notepad_plus_msgs.h">
+					RelativePath="..\..\..\Common\Ccpp\menuCmdID.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\Notepad_plus_rc.h">
+					RelativePath="..\..\..\Common\Ccpp\Notepad_plus_msgs.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\PluginInterface.h">
+					RelativePath="..\..\..\Common\Ccpp\Notepad_plus_rc.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\Scintilla.h">
+					RelativePath="..\..\..\Common\Ccpp\PluginInterface.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\StaticDialog.h">
+					RelativePath="..\..\..\Common\Ccpp\Scintilla.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\SysMsg.h">
+					RelativePath="..\..\..\Common\Ccpp\StaticDialog.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\ToolBar.h">
+					RelativePath="..\..\..\Common\Ccpp\stdafx.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\Window.h">
+					RelativePath="..\..\..\Common\Ccpp\SysMsg.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\..\Common\Ccpp\stdafx.h">
+					RelativePath="..\..\..\Common\Ccpp\ToolBar.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\..\Common\Ccpp\Window.h"
+					>
 				</File>
 			</Filter>
 			<Filter
 				Name="MBA"
-				Filter="">
+				>
 				<File
-					RelativePath="..\..\src\mba\allocator.h">
+					RelativePath="..\..\src\mba\allocator.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\dbug.h">
+					RelativePath="..\..\src\mba\dbug.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\diff.h">
+					RelativePath="..\..\src\mba\diff.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\hashmap.h">
+					RelativePath="..\..\src\mba\hashmap.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\iterator.h">
+					RelativePath="..\..\src\mba\iterator.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\msgno.h">
+					RelativePath="..\..\src\mba\msgno.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\suba.h">
+					RelativePath="..\..\src\mba\suba.h"
+					>
 				</File>
 				<File
-					RelativePath="..\..\src\mba\varray.h">
+					RelativePath="..\..\src\mba\varray.h"
+					>
 				</File>
 			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"
+			>
 			<File
-				RelativePath="..\..\src\Compare.rc">
+				RelativePath="..\..\src\Compare.rc"
+				>
 			</File>
 		</Filter>
 	</Files>
