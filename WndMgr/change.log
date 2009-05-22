@@ -2,6 +2,14 @@
 Change-log for WindowManager.dll
 
 ------------------------------------------------------------------------------------
+09/05/23  v1.2.2 :
+------------------------------------------------------------------------------------
+    Fix: WinMgr crashes while using (Thx to "calexblock" for fix):
+          - [Full file path to Clipboard]
+          - [File name to Clipboard]
+          - [Current dir path to Clipboard]
+
+------------------------------------------------------------------------------------
 08/11/08  v1.2.1 :
 ------------------------------------------------------------------------------------
     Fix: WinMgr crashes opening a file name without dots ('.') [NPP-P-B-2354274]
