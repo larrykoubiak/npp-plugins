@@ -504,7 +504,7 @@ BOOL FileList::isRBtnTrigg(UINT Message, WPARAM wParam, LPARAM lParam)
 						case IDM_EDIT_FILENAMETOCLIP :
 						{
 							UINT	size	= 1;
-							HLOCAL	hLoc	= ::LocalAlloc(LHND, size);
+							HLOCAL	hLoc	= ::LocalAlloc(LHND, size * sizeof(TCHAR));
 							if (hLoc == NULL)
 								break;
 
@@ -524,7 +524,7 @@ BOOL FileList::isRBtnTrigg(UINT Message, WPARAM wParam, LPARAM lParam)
 										size += _tcslen(_vFileList[i].szName) + 1;
 										pStr = _vFileList[i].szName;
 									}
-									hLoc = ::LocalReAlloc(hLoc, size, LHND);
+									hLoc = ::LocalReAlloc(hLoc, size * sizeof(TCHAR), LHND);
 									if (hLoc == NULL)
 										break;
 									pStrLoc	= (LPTSTR)::GlobalLock(hLoc);
@@ -854,8 +854,12 @@ bool FileList::Str2CB(LPCTSTR str2cpy)
 	_tcscpy(pStr, str2cpy);
 	::GlobalUnlock(hglbCopy); 
 
-	// Place the handle on the clipboard. 
+	// Place the handle on the clipboard.
+#ifdef _UNICODE
+	::SetClipboardData(CF_UNICODETEXT, hglbCopy);
+#else
 	::SetClipboardData(CF_TEXT, hglbCopy);
+#endif
 	::CloseClipboard();
 	return true;
 }
