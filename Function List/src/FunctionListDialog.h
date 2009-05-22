@@ -22,23 +22,24 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define FUNCLISTDLG_DEFINE_H
 
 #include "DockingDlgInterface.h"
+#include "LangPreferences.h"
 #include <string>
 #include <vector>
 #include <algorithm>
 #include <shlwapi.h>
 
-#include "PluginInterface.h"
-#include "CommentList.h"
+#include "DoParsing.h"
 #include "FunctionList.h"
 #include "ToolBar.h"
 #include "ImageListSet.h"
+#include "ListCtrl.h"
+#include "TreeCtrl.h"
+#include "ViewCtrl.h"
+#include "IconEditCtrl.h"
 
 using namespace std;
 
 #include "FunctionListResource.h"
-
-#define DOCK    true
-#define UNDOCK  false
 
 
 typedef enum {
@@ -49,175 +50,171 @@ typedef enum {
 } eEventID;
 
 
-
 extern	HANDLE	hThread[2];
 extern	HANDLE	hEvent[EID_MAX_EVENTS];
 extern	BOOL	bThreadRun;
-extern	BOOL	bInterupt;
 
 
-class FunctionListDialog : public DockingDlgInterface
+
+class FunctionListDialog : public DockingDlgInterface, public LangPreferences
 {
-friend class ScintillaEditView;
 public:
 	FunctionListDialog(void);
 	~FunctionListDialog(void);
-    void init(HINSTANCE hInst, NppData nppData, bool listAllFunc, bool sortByNames);
+    void init(HINSTANCE hInst, NppData nppData, tFlProp* pFlProp);
 
-    void setBoxSelection(void);
-	string getFunctionParams(unsigned int iVec);
-    void usedDocTypeChanged(LangType typeDoc) {
-		_typeDoc = typeDoc;
-	};
-
-	void destroy(void)
+	/* interface for tree */
+	void select(LPCTSTR pFile)
 	{
+		_TreeCtrl.select(pFile);
+	};
+	void updateDocs(LPCTSTR *pFiles, UINT numFiles) 
+	{
+		_TreeCtrl.updateDocs(pFiles, numFiles);
 	};
 
-	int getWidth() const {
-		return _dlgPos.right - _dlgPos.left;
+	/* interface for function dialog */
+	void SetBoxSelection(void);
+
+    void usedDocTypeChanged(LangType langType)
+	{
+		_langType = langType;
 	};
 
-	int getHeight() const {
-		return _dlgPos.bottom - _dlgPos.top;
-	};
+	void destroy(void) {};
 
-	unsigned int getElementPos(unsigned int elem) {
-		return _funcList[elem].beginPos;
-	}
-    
    	void doDialog(bool willBeShown = true);
-	
-  	void reSizeTo(RECT & rc) // should NEVER be const !!!
-	{ 
-		Window::reSizeTo(rc);
-		display(false);
-		display();
-	};
 
-	void listAllFunc(bool listAllFunc)
+	void toggleFunctionView(void)
 	{
-		_listAllFunc = listAllFunc;
+		_pFlProp->bListAllFunc = !_pFlProp->bListAllFunc;
 		processList();
+		initMenu();
 	};
 
-	void sortByNames(bool sortByNames)
+	void toggleSortByNames(void)
 	{
-		_sortByNames = sortByNames;
-		_ToolBar.setCheck(IDM_EX_SORTDOC, !sortByNames);
-		_ToolBar.setCheck(IDM_EX_SORTNAME, sortByNames);
-		sortList();
-		updateBox();
-		setBoxSelection();
+		_pFlProp->bSortByNames = !_pFlProp->bSortByNames;
+		_ToolBar.setCheck(IDM_EX_SORTDOC, !_pFlProp->bSortByNames);
+		_ToolBar.setCheck(IDM_EX_SORTNAME, _pFlProp->bSortByNames);
+		_doParsing.sortList();
+		UpdateBox();
+		SetBoxSelection();
+		initMenu();
 	};
 
+	void toggleViewCtrl(void)
+	{
+		if (_pFlProp->eCtrlState == SHOW_LIST)
+		{
+			_pFlProp->eCtrlState = SHOW_TREE;
+			_pCurCtrl = &_TreeCtrl;
+		}
+		else
+		{
+			_pFlProp->eCtrlState = SHOW_LIST;
+			_pCurCtrl = &_ListCtrl;
+		}
+
+		/* update window */
+		::SendMessage(_hSelf, WM_SIZE, 0, 0);
+		_pCurCtrl->SetImageList(_hImageList);
+
+		_ToolBar.setCheck(IDM_EX_LIST, !(BOOL)_pFlProp->eCtrlState);
+		_ToolBar.setCheck(IDM_EX_TREE, (BOOL)_pFlProp->eCtrlState);
+		initMenu();
+
+		/* update list */
+		if (_noProcess == FALSE) 
+		{
+			_doParsing.sortList();
+			UpdateBox();
+			SetBoxSelection();
+		}
+	};
 
 	BOOL parsingList(void)
 	{
-		BOOL	bRet = TRUE;
-
 		if (!_noProcess && isVisible())
 		{
-			if (_commList.getComments() == FALSE)
+			if (_doParsing.parsingList() == TRUE)
 			{
-				setProgress(50);
-				if (updateFuncList() == FALSE)
-				{
-					setProgress(100);
-					sortList();
-                    ::SendMessage(_hSelf, FLWM_UPDATE, 0, 0);
-				}
-				else
-				{
-					bRet = FALSE;
-				}
-			}
-			else
-			{
-				bRet = FALSE;
+				::SendMessage(_hSelf, FLWM_UPDATEBOX, 0, 0);
+				return TRUE;
 			}
 		}
-		return bRet;
-	}
+		return FALSE;
+	};
+
+	void stopParsing(void)
+	{
+		_doParsing.stop();
+	};
 
 	void processList(UINT uDelay = 10)
 	{
-	   ::KillTimer(_hSelf, IDC_FUNCTION_LIST_TIMER);
-	   ::SetTimer(_hSelf, IDC_FUNCTION_LIST_TIMER, uDelay, NULL);
+		::KillTimer(_hSelf, IDC_FUNCTION_LIST_TIMER);
+		if (isVisible())
+		{
+			::SetTimer(_hSelf, IDC_FUNCTION_LIST_TIMER, uDelay, NULL);
+		}
 	};
 
-	void setCaptionText(char* pszAddInfo)
+	void setCaptionText(LPTSTR pszAddInfo)
 	{
-		strcpy(_pszAddInfo, pszAddInfo);
-		updateDockingDlg();
+		if (isVisible())
+		{
+			_tcscpy(_pszAddInfo, pszAddInfo);
+			updateDockingDlg();
+		}
 	};
 
 	void setParsingRules(void);
 
 protected :
-	virtual BOOL CALLBACK run_dlgProc(UINT message, WPARAM wParam, LPARAM lParam);
-	/* Subclassing list */
-	LRESULT runProcList(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
-	static LRESULT CALLBACK wndListProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
-		return (((FunctionListDialog *)(::GetWindowLong(hwnd, GWL_USERDATA)))->runProcList(hwnd, Message, wParam, lParam));
-	};
-	static BOOL CALLBACK PropEnumProcEx(HWND hwnd, LPTSTR lpszString, HANDLE hData, DWORD dwData);
+	virtual BOOL CALLBACK run_dlgProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
 
+	void initDialog(void);
 
-	void sortList(void);
-	BOOL updateFuncList(void);
-	void updateBox(void);
-	bool testFunctionBrace(unsigned int iVec, string strRegEx, unsigned int posOpBRC, unsigned int posClBRC);
-	unsigned int getCntKeyword(string keyWordList, int beginPos, int endPos, bool withComm);
-	unsigned int NextBraceEndPoint(unsigned int iVecSearchSyn, bool withComm);
-	string getFuncName(SyntaxList searchSyn, unsigned int startPos, unsigned int endPos);
+	string getFuncName(tParseFuncRules searchSyn, UINT startPos, UINT endPos);
 
-	void GetNameStrFromCmd(UINT resID, char** tip);
+	void GetNameStrFromCmd(UINT resID, LPTSTR * tip);
 	void tb_cmd(UINT message);
 
+	void UpdateBox(void);
 
 private:
 	/* Handles */
-	NppData				_nppData;
-    RECT				_dlgPos;
-	tTbData				_data;
+	NppData						_nppData;
+    RECT						_dlgPos;
+	tTbData						_data;
+	HWND						_hTreeCtrl;
 
 	/* additional information */
-	char				_pszAddInfo[6];
+	TCHAR						_pszAddInfo[6];
 
 	/* classes */
-	ToolBar				_ToolBar;
-	ReBar				_Rebar;
-	Comments			_commList;
+	CDoParsing					_doParsing;
+	ToolBar						_ToolBar;
+	ReBar						_Rebar;
+	ListCtrl					_ListCtrl;
+	TreeCtrl					_TreeCtrl;
+	ViewCtrl*					_pCurCtrl;
+	IconEditCtrl				_FilterCtrl;
 
-	/* original prcess function of list box */
-	WNDPROC				_hDefaultListProc;						
-    vector<FuncInfo>    _funcList;
+	/* image list for both lists */
+	HIMAGELIST					_hImageList;
 
-	/* old find settings from scintilla */
-	unsigned int		_oldParamStart;
-	unsigned int		_oldParamEnd;
-	unsigned int		_oldParamSearch;
-	
-    /* for searching strings */
-	int					_matchCase;
-	string				_strKeyWBBeg;
-	string				_strKeyWBEnd;
-	vector<SyntaxList>	_searchSyn;
-
-	/* lists of interest */
-	vector<FuncInfo>    _funcListParse;
-	bool				_listAllFunc;
-	bool				_sortByNames;
+	LangType					_langType;
+	tFlProp*					_pFlProp;
 	
 	/* window params */
-	bool				_status;
-	bool				_noProcess;
-	bool				_isMenu;
+	BOOL						_noProcess;
+	BOOL						_isMenu;
 
-	unsigned int		_fontWidth;
-
-	LangType			_typeDoc;
+	/* owner drawn bitmaps in edit */
+	HBITMAP						_bitSpy;
+	HBITMAP						_bitCnl;
 };
 
 

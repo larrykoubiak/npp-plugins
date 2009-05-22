@@ -29,15 +29,21 @@ LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 // Dialog
 //
 
-IDD_FUNCTION_LIST_DLG DIALOGEX 64536, 0, 162, 358
+IDD_FUNCTION_LIST_DLG DIALOGEX 64536, 0, 162, 279
 STYLE DS_SETFONT | DS_3DLOOK | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | 
-    WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+    WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 EXSTYLE WS_EX_TOOLWINDOW
 CAPTION "Function List"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    LISTBOX         IDC_FUNCTION_LIST,6,6,150,345,LBS_NOINTEGRALHEIGHT | 
-                    WS_VSCROLL | WS_HSCROLL | WS_TABSTOP
+    EDITTEXT        IDC_EDIT_FILTER,6,6,150,12,ES_MULTILINE | ES_LOWERCASE | 
+                    ES_AUTOHSCROLL
+    CONTROL         "",IDC_FUNCTION_LIST,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_SHOWSELALWAYS | TVS_NOTOOLTIPS | 
+                    WS_BORDER | WS_TABSTOP,6,20,150,122
+    CONTROL         "",IDC_FUNCTION_TREE,"SysTreeView32",TVS_HASBUTTONS | 
+                    TVS_HASLINES | TVS_SHOWSELALWAYS | TVS_NOTOOLTIPS | 
+                    WS_BORDER | WS_TABSTOP,6,145,150,127
 END
 
 IDD_HELP_DLG DIALOGEX 0, 0, 230, 208
@@ -53,7 +59,7 @@ BEGIN
                     IDC_STATIC,7,67,216,18
     LTEXT           "List...\t\t\tViews the Function List Box.\nGoto previous position\tSteps to the previous cursor positions.\nGoto next position\tSteps to the next cursor positions.",
                     IDC_STATIC,15,105,203,24
-    CTEXT           "Function List Plugin for Notepad++ v4.0                        v1.2",
+    CTEXT           "Function List Plugin for Notepad++ v4.1                   v2.0 Beta",
                     IDC_STATIC,7,7,216,17,SS_CENTERIMAGE,WS_EX_DLGMODALFRAME | 
                     WS_EX_TRANSPARENT
     LTEXT           "View all functions\tViews all functions. Also commented\n\t\t\tfunctions.\nSort by names\t\tSorts the list in alphabeticaly order.\nUser Rules...\t\tPossibility to set his own Function List\n\t\t\tParsing Rules.\nHelp...\t\t\tShows this help dialog.",
@@ -63,84 +69,108 @@ BEGIN
                     IDC_NPP_PLUGINS_URL,65,52,158,8
 END
 
-IDD_USER_DLG DIALOGEX 0, 0, 314, 342
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-EXSTYLE WS_EX_TOOLWINDOW
-CAPTION "Function List Parsing Rules"
+IDD_USER_DLG DIALOGEX 0, 0, 551, 307
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | 
+    WS_SYSMENU
+CAPTION "Language Parsing Rules"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    COMBOBOX        IDC_COMBO_LANG,49,11,163,58,CBS_DROPDOWNLIST | 
-                    CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
-    DEFPUSHBUTTON   "Edit Rule",IDC_ADD_RULES,224,10,83,14
+    LISTBOX         IDC_LIST_LANG,7,7,111,273,LBS_HASSTRINGS | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Add",IDC_ADD_GROUP,129,19,30,13
+    PUSHBUTTON      "Delete",IDC_DEL_GROUP,164,19,29,13
+    CONTROL         "",IDC_SPIN_MOVE,"msctls_updown32",UDS_ARROWKEYS,227,19,
+                    10,12
+    EDITTEXT        IDC_EDIT_FILE,356,17,179,13,ES_MULTILINE | 
+                    ES_AUTOHSCROLL | WS_DISABLED
+    CONTROL         "Bitmap List",IDC_CHECK_ICON,"Button",BS_AUTOCHECKBOX | 
+                    BS_LEFTTEXT | WS_DISABLED | WS_TABSTOP,251,18,102,12
+    EDITTEXT        IDC_EDIT_GROUP,344,43,112,12,ES_MULTILINE | 
+                    ES_AUTOHSCROLL | WS_DISABLED
+    COMBOBOX        IDC_COMBO_SUB,344,59,112,30,CBS_DROPDOWN | CBS_SORT | 
+                    WS_DISABLED | WS_VSCROLL | WS_TABSTOP
     CONTROL         "&Match Case",IDC_CHECK_MC,"Button",BS_AUTOCHECKBOX | 
-                    BS_LEFTTEXT | BS_RIGHT | WS_DISABLED | WS_TABSTOP,134,32,
-                    77,10
-    EDITTEXT        IDC_EDIT_SECNUM,107,62,28,13,ES_CENTER | ES_READONLY | 
+                    WS_DISABLED | WS_TABSTOP,457,59,77,12,WS_EX_RIGHT
+    EDITTEXT        IDC_EDIT_SECNUM,344,83,28,13,ES_CENTER | ES_READONLY | 
                     ES_NUMBER | WS_DISABLED
     CONTROL         "Spin1",IDC_SPIN_SEC,"msctls_updown32",UDS_SETBUDDYINT | 
                     UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS | 
-                    WS_DISABLED | WS_TABSTOP,135,62,11,13
-    PUSHBUTTON      "&Add Rule",IDC_ADD_SECRULE,176,61,58,14,WS_DISABLED
-    PUSHBUTTON      "&Delete Rule",IDC_DEL_SECRULE,241,61,58,14,WS_DISABLED
-    EDITTEXT        IDC_EDIT_FUNCB,107,84,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_TABSTOP,372,83,11,13
+    PUSHBUTTON      "&Add Rule",IDC_ADD_SECRULE,413,83,58,13,WS_DISABLED
+    PUSHBUTTON      "&Delete Rule",IDC_DEL_SECRULE,477,83,58,13,WS_DISABLED
+    EDITTEXT        IDC_EDIT_FUNCB,344,100,191,13,ES_AUTOHSCROLL | 
                     WS_DISABLED
-    EDITTEXT        IDC_EDIT_FUNCN,107,100,192,12,ES_AUTOHSCROLL | 
+    EDITTEXT        IDC_EDIT_FUNCN,344,114,191,12,ES_MULTILINE | 
+                    ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDIT_FUNCE,344,127,191,12,ES_AUTOHSCROLL | 
                     WS_DISABLED
-    EDITTEXT        IDC_EDIT_FUNCE,107,116,192,12,ES_AUTOHSCROLL | 
+    EDITTEXT        IDC_EDIT_SEP,344,143,77,12,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDIT_BB,344,158,77,12,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDIT_BE,344,171,77,12,ES_AUTOHSCROLL | WS_DISABLED
+    EDITTEXT        IDC_EDIT_KWBB,344,197,191,12,ES_AUTOHSCROLL | 
                     WS_DISABLED
-    EDITTEXT        IDC_EDIT_SEP,107,132,192,12,ES_AUTOHSCROLL | WS_DISABLED
-    EDITTEXT        IDC_EDIT_BB,107,148,192,12,ES_AUTOHSCROLL | WS_DISABLED
-    EDITTEXT        IDC_EDIT_BE,107,164,192,12,ES_AUTOHSCROLL | WS_DISABLED
-    EDITTEXT        IDC_EDIT_COMNUM,107,200,28,13,ES_CENTER | ES_READONLY | 
+    EDITTEXT        IDC_EDIT_KWBE,344,212,191,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED
+    PUSHBUTTON      "Add &Rule",IDC_ADD_COMRULE,129,245,54,13
+    PUSHBUTTON      "D&elete Rule",IDC_DEL_COMRULE,187,245,54,13,WS_DISABLED
+    EDITTEXT        IDC_EDIT_COMNUM,130,262,28,13,ES_CENTER | ES_READONLY | 
                     ES_NUMBER | WS_DISABLED
     CONTROL         "Spin1",IDC_SPIN_COM,"msctls_updown32",UDS_SETBUDDYINT | 
                     UDS_ALIGNRIGHT | UDS_ARROWKEYS | UDS_NOTHOUSANDS | 
-                    WS_DISABLED | WS_TABSTOP,135,200,11,13
-    PUSHBUTTON      "Add &Rule",IDC_ADD_COMRULE,176,199,58,14,WS_DISABLED
-    PUSHBUTTON      "D&elete Rule",IDC_DEL_COMRULE,241,199,58,14,WS_DISABLED
-    EDITTEXT        IDC_EDIT_COMMB,107,221,192,12,ES_AUTOHSCROLL | 
+                    WS_DISABLED | WS_TABSTOP,158,262,11,13
+    EDITTEXT        IDC_EDIT_COMMB,344,246,191,12,ES_AUTOHSCROLL | 
                     WS_DISABLED
-    EDITTEXT        IDC_EDIT_COMME,107,237,192,12,ES_AUTOHSCROLL | 
+    EDITTEXT        IDC_EDIT_COMME,344,262,191,12,ES_AUTOHSCROLL | 
                     WS_DISABLED
-    EDITTEXT        IDC_EDIT_KWBB,107,279,192,12,ES_AUTOHSCROLL | 
-                    WS_DISABLED
-    EDITTEXT        IDC_EDIT_KWBE,107,295,192,12,ES_AUTOHSCROLL | 
-                    WS_DISABLED
-    PUSHBUTTON      "&Try!",IDC_TEST,146,321,50,14
-    PUSHBUTTON      "&Ok",IDOK,202,321,50,14
-    PUSHBUTTON      "&Cancel",IDCANCEL,257,321,50,14
-    PUSHBUTTON      "&Help",IDC_USERHELP,224,30,83,14
-    CONTROL         "T&ransparency",IDC_TRANSPARENT_CHECK,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,7,325,58,10
+    DEFPUSHBUTTON   "&Ok",IDOK,332,286,50,14
+    PUSHBUTTON      "&Cancel",IDCANCEL,386,286,50,14
+    PUSHBUTTON      "Tr&y!",IDC_TEST,440,286,50,14
+    PUSHBUTTON      "&Help",IDC_USERHELP,494,286,50,14
+    CONTROL         "&Transparency",IDC_TRANSPARENT_CHECK,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,7,290,58,10
     CONTROL         "",IDC_PERCENTAGE_SLIDER,"msctls_trackbar32",TBS_BOTH | 
-                    TBS_NOTICKS | WS_TABSTOP,67,325,53,10
-    LTEXT           "Language",IDC_STATIC,7,13,33,8
-    GROUPBOX        "Keyword forwarding",IDC_STATIC,7,260,300,54,BS_LEFT | 
-                    BS_NOTIFY | WS_DISABLED
-    LTEXT           "Function End to Body Begin",IDC_STATIC_0,15,279,92,12,
+                    TBS_NOTICKS | WS_TABSTOP,67,290,53,10
+    GROUPBOX        "Group",IDC_STATIC,123,7,122,225,WS_DISABLED
+    GROUPBOX        "MISC Settings",IDC_STATIC,244,7,300,30,BS_LEFT | 
+                    WS_DISABLED
+    GROUPBOX        "Group Properties",IDC_STATIC,244,32,300,46,WS_DISABLED
+    GROUPBOX        "Group Rules",IDC_STATIC,244,73,300,117,BS_LEFT | 
+                    WS_DISABLED
+    GROUPBOX        "Keyword Forwarding of Group",IDC_STATIC,244,185,300,47,
+                    BS_LEFT | BS_NOTIFY | WS_DISABLED
+    LTEXT           "Function Begin",IDC_STATIC_4,252,100,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
-    LTEXT           "Body Begin to Body End",IDC_STATIC_1,15,295,92,12,
+    LTEXT           "Function List Name",IDC_STATIC_5,252,114,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
-    GROUPBOX        "Comment Rules",IDC_STATIC,7,186,300,71,BS_LEFT | 
+    LTEXT           "Function End",IDC_STATIC_6,252,127,92,12,SS_CENTERIMAGE | 
                     WS_DISABLED
-    LTEXT           "Multiline Begin / Singleline",IDC_STATIC_2,15,221,92,12,
+    LTEXT           "Body Begin",IDC_STATIC_7,252,158,92,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    LTEXT           "Body End",IDC_STATIC_8,252,171,92,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    LTEXT           "Seperator Between",IDC_STATIC_9,252,143,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
-    LTEXT           "Multiline End",IDC_STATIC_3,15,237,92,12,SS_CENTERIMAGE | 
-                    WS_DISABLED
-    GROUPBOX        "Section Rules",IDC_STATIC,7,48,300,135,BS_LEFT | 
-                    WS_DISABLED
-    LTEXT           "Function Begin",IDC_STATIC_4,15,84,92,12,SS_CENTERIMAGE | 
-                    WS_DISABLED
-    LTEXT           "Function List Name",IDC_STATIC_5,15,100,92,12,
+    LTEXT           "Function End to Body Begin",IDC_STATIC_2,252,197,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
-    LTEXT           "Function End",IDC_STATIC_6,15,116,92,12,SS_CENTERIMAGE | 
-                    WS_DISABLED
-    LTEXT           "Body Begin",IDC_STATIC_7,15,148,92,12,SS_CENTERIMAGE | 
-                    WS_DISABLED
-    LTEXT           "Body End",IDC_STATIC_8,15,164,92,12,SS_CENTERIMAGE | 
-                    WS_DISABLED
-    LTEXT           "Seperator Between",IDC_STATIC_9,15,132,92,12,
+    GROUPBOX        "Comment Rules of Language",IDC_STATIC,123,233,421,47,
+                    BS_LEFT | WS_DISABLED
+    LTEXT           "Multiline Begin / Singleline",IDC_STATIC_0,252,246,92,
+                    12,SS_CENTERIMAGE | WS_DISABLED
+    LTEXT           "Multiline End",IDC_STATIC_1,252,262,92,12,
                     SS_CENTERIMAGE | WS_DISABLED
+    LTEXT           "Body Begin to Body End",IDC_STATIC_3,252,212,92,12,
+                    SS_CENTERIMAGE | WS_DISABLED
+    LTEXT           "Subgroup",IDC_STATIC_10,251,59,92,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    LTEXT           "Name",IDC_STATIC_11,251,43,92,12,SS_CENTERIMAGE | 
+                    WS_DISABLED
+    LTEXT           "Move",IDC_STATIC,206,21,18,8
+    CONTROL         "Auto Ex&pand",IDC_CHECK_EXP,"Button",BS_AUTOCHECKBOX | 
+                    WS_DISABLED | WS_TABSTOP,457,43,77,12,WS_EX_RIGHT
+    CONTROL         "",IDC_LIST_GROUP,"SysTreeView32",TVS_SHOWSELALWAYS | 
+                    WS_BORDER | WS_TABSTOP,129,35,109,191
+    EDITTEXT        IDC_EDIT_KEYWO,428,151,107,32,ES_MULTILINE | WS_DISABLED
+    LTEXT           "Keywords",IDC_STATIC_12,429,142,104,8,WS_DISABLED
 END
 
 IDD_HELP_USERDLG DIALOGEX 0, 0, 321, 222
@@ -157,6 +187,16 @@ BEGIN
     EDITTEXT        IDC_EDIT_HELP,14,64,293,144,ES_MULTILINE | 
                     ES_AUTOVSCROLL | ES_READONLY | ES_WANTRETURN | NOT 
                     WS_BORDER | WS_VSCROLL | NOT WS_TABSTOP
+END
+
+IDD_ICON_DLG DIALOGEX 0, 0, 185, 71
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_LIST_ICONSEL,"SysListView32",LVS_REPORT | 
+                    LVS_SHAREIMAGELISTS | LVS_ALIGNLEFT | LVS_OWNERDATA | 
+                    LVS_NOCOLUMNHEADER | WS_BORDER | WS_TABSTOP,0,0,185,71
 END
 
 
@@ -202,8 +242,7 @@ BEGIN
         LEFTMARGIN, 6
         RIGHTMARGIN, 156
         TOPMARGIN, 6
-        BOTTOMMARGIN, 351
-        HORZGUIDE, 351
+        BOTTOMMARGIN, 272
     END
 
     IDD_HELP_DLG, DIALOG
@@ -218,15 +257,9 @@ BEGIN
     IDD_USER_DLG, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 307
-        VERTGUIDE, 15
-        VERTGUIDE, 107
-        VERTGUIDE, 135
-        VERTGUIDE, 212
-        VERTGUIDE, 224
-        VERTGUIDE, 299
+        RIGHTMARGIN, 544
         TOPMARGIN, 7
-        BOTTOMMARGIN, 335
+        BOTTOMMARGIN, 300
     END
 
     IDD_HELP_USERDLG, DIALOG
@@ -249,13 +282,13 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,0,0
- PRODUCTVERSION 1,2,0,0
+ FILEVERSION 2,0,0,0
+ PRODUCTVERSION 2,0,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
- FILEFLAGS 0x1L
+ FILEFLAGS 0x21L
 #else
- FILEFLAGS 0x0L
+ FILEFLAGS 0x20L
 #endif
  FILEOS 0x40004L
  FILETYPE 0x2L
@@ -268,12 +301,13 @@ BEGIN
             VALUE "Comments", "Visit https://sourceforge.net/projects/npp-plugins"
             VALUE "CompanyName", "jens.plugin.npp@gmx.de"
             VALUE "FileDescription", "Notepad++ : a free (GNU) source code editor"
-            VALUE "FileVersion", "1.2"
+            VALUE "FileVersion", "2. 0"
             VALUE "InternalName", "Function List for npp.exe"
-            VALUE "LegalCopyright", "Copyright 2005-2007 by Jens Lorenz"
+            VALUE "LegalCopyright", "Copyright 2005-2009 by Jens Lorenz"
             VALUE "OriginalFilename", "FunctionList.dll"
             VALUE "ProductName", "Function List Plugin"
-            VALUE "ProductVersion", "1.2"
+            VALUE "ProductVersion", "2. 0"
+            VALUE "SpecialBuild", "Beta"
         END
     END
     BLOCK "VarFileInfo"
@@ -292,8 +326,14 @@ IDB_EX_UNDO             BITMAP                  "..\\res\\undo.bmp"
 IDB_EX_REDO             BITMAP                  "..\\res\\redo.bmp"
 IDB_EX_SORTDOC          BITMAP                  "..\\res\\sortDoc.bmp"
 IDB_EX_SORTNAME         BITMAP                  "..\\res\\sortName.bmp"
-IDB_EX_COPY             BITMAP                  "..\\res\\copy.bmp"
+IDB_EX_LIST             BITMAP                  "..\\res\\viewList.bmp"
+IDB_EX_TREE             BITMAP                  "..\\res\\viewTree.bmp"
 IDB_TB_LIST             BITMAP                  "..\\res\\toolbar.bmp"
+IDB_EDIT_SPY            BITMAP                  "..\\res\\editSpy.bmp"
+IDB_EDIT_CANCEL         BITMAP                  "..\\res\\editCancel.bmp"
+IDB_FLD_STD             BITMAP                  "..\\res\\editFldStd.bmp"
+IDB_FLD_HOVER           BITMAP                  "..\\res\\editFldHover.bmp"
+IDB_FLD_DOWN            BITMAP                  "..\\res\\editFldDown.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
