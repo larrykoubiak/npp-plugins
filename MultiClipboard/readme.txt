@@ -39,10 +39,17 @@ To show the multiclipboard paste menu via (right click) context menu, add the fo
 
 Known Issues
 ------------
-- When the document is converted from one encoding to another in Notepad++, the text is added
-  to the MultiClipboard
-- Doesn't respect pasting of column-selection text. Text are pasted as normal multi-line text
+- When the document is converted from one EOL type to another in Notepad++, the clipboard text aren't updated
+- Drag and drop of text from MultiClip Viewer could do with better visual cues
 - When keymapping of paste is changed from Ctrl-V or Shift-Insert to something else, MultiClipboard will not be able to hook into the paste operation. This is a limitation of Notepad++, because it does not notify plugins of paste operations nor expose its shortcut mappings to plugins
+- For auto copy selected text, text is only copied after text is selected, then deselected. This is the current implementation logic to allow for pasting over selected text. Should make it more intuitive instead
+
+Possible Todos
+--------------
+- Persist clipboard texts across editing sessions
+- For paste all, allow customisable text in between items
+- Improve the options dialog. It doesn't scale well when more options are added
+- Create a custom made paste menu, so that 2nd item can be automatically selected
 
 Acknowledgements
 ----------------
