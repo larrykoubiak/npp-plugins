@@ -2,15 +2,19 @@
 // Microsoft Visual C++ generated include file.
 // Used by MultiClipboard.rc
 //
-#define IDB_EX_UP                       110
-#define IDB_EX_DOWN                     111
-#define IDB_EX_PASTE                    112
-#define IDB_EX_DELETE                   113
-#define IDB_EX_MULTICLIPBOARD           114
-#define IDI_MULTICLIPBOARD              115
-#define IDC_LEFTRIGHT                   116
-#define IDC_UPDOWN                      117
-#define IDD_OPTIONS_DLG                 118
+#define IDB_EX_MULTICLIPBOARD           110
+#define IDB_EX_UP                       111
+#define IDB_EX_DOWN                     112
+#define IDB_EX_PASTE                    113
+#define IDB_EX_PASTE_ALL                114
+#define IDB_EX_COPY_TO_CLIPBOARD        115
+#define IDB_EX_DELETE                   116
+#define IDB_EX_DELETE_ALL               117
+#define IDB_EX_OPTIONS                  118
+#define IDI_MULTICLIPBOARD              119
+#define IDC_LEFTRIGHT                   120
+#define IDC_UPDOWN                      121
+#define IDD_OPTIONS_DLG                 122
 #define IDC_OPTION_GROUPS               1000
 #define IDC_OPTION_EXPLANATION          1001
 #define IDC_EDIT_MAX_CLIPLIST_SIZE      1002
@@ -25,10 +29,16 @@
 #define IDC_CHECK_MIDDLE_CLICK_PASTE    1011
 #define IDC_CHECK_NO_COPY_LARGE_TEXT    1012
 #define IDC_CHECK_NO_LARGE_TEXT_EDIT    1013
+#define IDC_CHECK_PASTE_ALL_REVERSE     1014
+#define IDC_CHECK_PASTE_ALL_NEWLINE_BETWEEN 1015
 #define IDM_EX_UP                       2001
 #define IDM_EX_DOWN                     2002
 #define IDM_EX_PASTE                    2003
-#define IDM_EX_DELETE                   2004
+#define IDM_EX_PASTE_ALL                2004
+#define IDM_EX_COPY_TO_CLIPBOARD        2005
+#define IDM_EX_DELETE                   2006
+#define IDM_EX_DELETE_ALL               2007
+#define IDM_EX_OPTIONS		            2008
 #define IDD_DOCK_DLG                    30500
 #define IDD_ABOUT_DLG                   30550
 #define IDC_ABOUT_TITLE                 30551
@@ -49,9 +59,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        119
+#define _APS_NEXT_RESOURCE_VALUE        123
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1012
+#define _APS_NEXT_CONTROL_VALUE         1016
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

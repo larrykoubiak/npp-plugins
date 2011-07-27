@@ -36,7 +36,8 @@ in compilation time. Just trying it out. It does get rid of some compile warning
 
 #ifdef UNITY_BUILD_MULTICLIPBOARD
 
-#define _WIN32_WINNT 0x0400
+#define WINVER 0x0500
+#define _WIN32_IE 0x0501
 #define WIN32_LEAN_AND_MEAN
 #define VC_EXTRA_LEAN
 
@@ -65,6 +66,7 @@ in compilation time. Just trying it out. It does get rid of some compile warning
 #include "LoonySettingsManager.h"
 
 // Notepad++ plugin interface headers
+#include "Scintilla.h"
 #include "Notepad_plus_rc.h"
 #include "PluginInterface.h"
 

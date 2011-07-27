@@ -19,10 +19,8 @@
 // Neutral resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
-#ifdef _WIN32
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -55,14 +53,14 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
 END
 
-IDD_OPTIONS_DLG DIALOGEX 0, 0, 196, 210
+IDD_OPTIONS_DLG DIALOGEX 0, 0, 196, 255
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "MultiClipboard Options"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,84,189,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,139,189,50,14
-    EDITTEXT        IDC_OPTION_EXPLANATION,7,140,182,45,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | NOT WS_TABSTOP
+    DEFPUSHBUTTON   "OK",IDOK,84,234,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,139,234,50,14
+    EDITTEXT        IDC_OPTION_EXPLANATION,7,167,182,45,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | NOT WS_TABSTOP
     EDITTEXT        IDC_EDIT_MAX_CLIPLIST_SIZE,7,7,16,12,ES_AUTOHSCROLL | ES_NUMBER | NOT WS_BORDER,WS_EX_STATICEDGE
     CONTROL         "Copy text from other programs",IDC_CHECK_COPY_FROM_OTHER_PROGRAMS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,22,182,10
@@ -83,6 +81,10 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,112,182,10
     CONTROL         "No editing of large text",IDC_CHECK_NO_LARGE_TEXT_EDIT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,125,182,10
+    CONTROL         "Paste All: Items in reverse order",IDC_CHECK_PASTE_ALL_REVERSE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,137,182,10
+    CONTROL         "Paste All: Newline between items",IDC_CHECK_PASTE_ALL_NEWLINE_BETWEEN,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,150,182,10
 END
 
 
@@ -92,7 +94,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ABOUT_DLG, DIALOG
     BEGIN
@@ -110,7 +112,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 189
         TOPMARGIN, 7
-        BOTTOMMARGIN, 203
+        BOTTOMMARGIN, 248
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -142,7 +144,7 @@ BEGIN
             VALUE "FileDescription", "MultiClipboard plugin (unicode) for Notepad++"
             VALUE "FileVersion", "2, 1, 0, 0"
             VALUE "InternalName", "MultiClipboard"
-            VALUE "LegalCopyright", "Copyright (C) 2009"
+            VALUE "LegalCopyright", "Copyright © 2011"
             VALUE "OriginalFilename", "MultiClipboard.dll"
             VALUE "ProductName", "MultiClipboard"
             VALUE "ProductVersion", "2, 1, 0, 0"
@@ -169,11 +171,15 @@ IDI_MULTICLIPBOARD      ICON                    "..\\res\\multiclipboard.ico"
 // Bitmap
 //
 
+IDB_EX_MULTICLIPBOARD   BITMAP                  "..\\res\\multiclipboard.bmp"
 IDB_EX_UP               BITMAP                  "..\\res\\up.bmp"
-IDB_EX_DELETE           BITMAP                  "..\\res\\delete.bmp"
 IDB_EX_DOWN             BITMAP                  "..\\res\\down.bmp"
 IDB_EX_PASTE            BITMAP                  "..\\res\\paste.bmp"
-IDB_EX_MULTICLIPBOARD   BITMAP                  "..\\res\\multiclipboard.bmp"
+IDB_EX_PASTE_ALL        BITMAP                  "..\\res\\page_white_stack.bmp"
+IDB_EX_COPY_TO_CLIPBOARD BITMAP                  "..\\res\\brick_go.bmp"
+IDB_EX_DELETE           BITMAP                  "..\\res\\delete.bmp"
+IDB_EX_DELETE_ALL       BITMAP                  "..\\res\\bin_empty.bmp"
+IDB_EX_OPTIONS          BITMAP                  "..\\res\\cog.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -183,47 +189,6 @@ IDB_EX_MULTICLIPBOARD   BITMAP                  "..\\res\\multiclipboard.bmp"
 IDC_LEFTRIGHT           CURSOR                  "..\\res\\leftright.cur"
 IDC_UPDOWN              CURSOR                  "..\\res\\updown.cur"
 #endif    // Neutral resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// German (Germany) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
-#ifdef _WIN32
-LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
-#pragma code_page(1252)
-#endif //_WIN32
-
-#ifdef APSTUDIO_INVOKED
-/////////////////////////////////////////////////////////////////////////////
-//
-// TEXTINCLUDE
-//
-
-1 TEXTINCLUDE 
-BEGIN
-    "resource.h\0"
-END
-
-2 TEXTINCLUDE 
-BEGIN
-    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "#include ""windows.h""\r\n"
-    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
-    "#include ""resource.h""\r\n"
-    "\0"
-END
-
-3 TEXTINCLUDE 
-BEGIN
-    "\r\n"
-    "\0"
-END
-
-#endif    // APSTUDIO_INVOKED
-
-#endif    // German (Germany) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

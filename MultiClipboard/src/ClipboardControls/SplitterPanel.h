@@ -53,6 +53,8 @@ private :
 	HCURSOR hSplitterCursorLeftRight;
 	HBRUSH hSplitterBrush;
 	HPEN hSplitterPen;
+	// For passing through drag list box messages
+	UINT DragListMessage;
 
 	void GetSplitterBarRect( RECT &SplitterPosRect );
 	void GetPanel1Rect( RECT &Panel1Rect );

@@ -22,9 +22,21 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "ModelViewController.h"
+#include "MultiClipboardProxy.h"
 #include <list>
 #include <string>
 #endif
+
+
+// Extends from TextItem, so we can store other things we need for the list
+class ClipboardListItem : public TextItem
+{
+public:
+	ClipboardListItem();
+	ClipboardListItem( const TextItem & textItem );
+
+	void UpdateColumnText();
+};
 
 
 class ClipboardList : public IModel
@@ -32,10 +44,11 @@ class ClipboardList : public IModel
 public:
 	ClipboardList();
 
-	bool AddText( const std::wstring & text );
+	bool AddText( const TextItem & textItem );
 	void RemoveText( const unsigned int index );
-	const std::wstring & GetText( const unsigned int index );
-	const std::wstring & PasteText( const unsigned int index );	// Returns text at index, and also move it to the front of the list
+	void RemoveAllTexts();
+	const ClipboardListItem & GetText( const unsigned int index );
+	const ClipboardListItem & PasteText( const unsigned int index );	// Returns text at index, and also move it to the front of the list
 	bool EditText( const int index, const std::wstring & newText );
 	void SetTextNewIndex( const unsigned int index, const unsigned int newIndex );
 
@@ -49,12 +62,12 @@ public:
 	virtual void OnSettingsChanged( const stringType & GroupName, const stringType & SettingName );
 
 private:
-	typedef std::list< std::wstring > TextListType;
+	typedef std::list< ClipboardListItem > TextListType;
 	typedef TextListType::iterator TextListIterator;
 	TextListType textList;
 
-	// Empty string to return when text invalid index is requested
-	std::wstring NullString;
+	// Empty struct to return when text invalid index is requested
+	ClipboardListItem NullStruct;
 
 	// The max number of entry in text list
 	unsigned int MaxListSize;

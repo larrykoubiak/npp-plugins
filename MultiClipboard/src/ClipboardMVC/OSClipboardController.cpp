@@ -42,7 +42,7 @@ void OSClipboardController::Init( IModel * pNewModel, MultiClipboardProxy * pCli
 }
 
 
-void OSClipboardController::OnNewClipboardText( const std::wstring & text )
+void OSClipboardController::OnNewClipboardText( const TextItem & textItem )
 {
 	BOOL isNppForeground = g_ClipboardProxy.IsNppForegroundWindow();
 	if ( !bGetClipTextFromOS && !isNppForeground )
@@ -51,7 +51,7 @@ void OSClipboardController::OnNewClipboardText( const std::wstring & text )
 		return;
 	}
 
-	if ( bIgnoreLargeClipboardText && text.size() > LargeClipboardTextSize )
+	if ( bIgnoreLargeClipboardText && textItem.text.size() > LargeClipboardTextSize )
 	{
 		// Don't store text larger than this size in clipboard list.
 		return;
@@ -65,7 +65,7 @@ void OSClipboardController::OnNewClipboardText( const std::wstring & text )
 			return;
 		}
 		// Add text to clipboard list
-		pClipboardList->AddText( text );
+		pClipboardList->AddText( textItem );
 	}
 }
 
@@ -85,13 +85,13 @@ void OSClipboardController::OnTextPasted()
 		return;
 	}
 
-	std::wstring text;
-	g_ClipboardProxy.GetTextInSystemClipboard( text );
+	TextItem textItem;
+	g_ClipboardProxy.GetTextInSystemClipboard( textItem );
 
-	if ( text.size() > 0 )
+	if ( textItem.text.size() > 0 )
 	{
 		// Add text to clipboard list
-		pClipboardList->AddText( text );
+		pClipboardList->AddText( textItem );
 	}
 }
 
@@ -101,38 +101,10 @@ void OSClipboardController::OnObserverAdded( LoonySettingsManager * SettingsMana
 	SettingsObserver::OnObserverAdded( SettingsManager );
 
 	// Add default settings if it doesn't exists
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS ) )
-	{
-		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS, bGetClipTextFromOS != FALSE );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS );
-	}
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP ) )
-	{
-		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP, bOnlyWhenPastedInNpp != FALSE );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP );
-	}
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT ) )
-	{
-		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT, bIgnoreLargeClipboardText != FALSE );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT );
-	}
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE ) )
-	{
-		pSettingsManager->SetIntSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE, LargeClipboardTextSize );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE );
-	}
+	SET_SETTINGS_BOOL( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS, bGetClipTextFromOS )
+	SET_SETTINGS_BOOL( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP, bOnlyWhenPastedInNpp )
+	SET_SETTINGS_BOOL( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT, bIgnoreLargeClipboardText )
+	SET_SETTINGS_INT( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE, LargeClipboardTextSize )
 }
 
 
@@ -143,20 +115,8 @@ void OSClipboardController::OnSettingsChanged( const stringType & GroupName, con
 		return;
 	}
 
-	if ( SettingName == SETTINGS_COPY_FROM_OTHER_PROGRAMS )
-	{
-		bGetClipTextFromOS = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS );
-	}
-	else if ( SettingName == SETTINGS_ONLY_WHEN_PASTED_IN_NPP )
-	{
-		bOnlyWhenPastedInNpp = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP );
-	}
-	else if ( SettingName == SETTINGS_IGNORE_LARGE_TEXT )
-	{
-		bIgnoreLargeClipboardText = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT );
-	}
-	else if ( SettingName == SETTINGS_LARGE_TEXT_SIZE )
-	{
-		LargeClipboardTextSize = pSettingsManager->GetIntSetting( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE );
-	}
+	IF_SETTING_CHANGED_BOOL( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_COPY_FROM_OTHER_PROGRAMS, bGetClipTextFromOS )
+	else IF_SETTING_CHANGED_BOOL( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_ONLY_WHEN_PASTED_IN_NPP, bOnlyWhenPastedInNpp )
+	else IF_SETTING_CHANGED_BOOL( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT, bIgnoreLargeClipboardText )
+	else IF_SETTING_CHANGED_INT( SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_LARGE_TEXT_SIZE, LargeClipboardTextSize )
 }

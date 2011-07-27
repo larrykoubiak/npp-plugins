@@ -21,7 +21,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define MC_SUBCLASS_WNDPROC_H
 
 #ifndef UNITY_BUILD_SINGLE_INCLUDE
-#define _WIN32_WINNT 0x0400
 #define WIN32_LEAN_AND_MEAN
 #define VC_EXTRA_LEAN
 #include <windows.h>

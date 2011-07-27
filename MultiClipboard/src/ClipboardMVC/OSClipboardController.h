@@ -34,7 +34,7 @@ public:
 	virtual void Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings );
 
 	// ClipboardListener interface
-	void OnNewClipboardText( const std::wstring & text );
+	void OnNewClipboardText( const TextItem & textItem );
 	void OnTextPasted();
 
 	virtual void OnObserverAdded( LoonySettingsManager * SettingsManager );

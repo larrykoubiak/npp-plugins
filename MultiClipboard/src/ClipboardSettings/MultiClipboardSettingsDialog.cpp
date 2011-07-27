@@ -337,10 +337,20 @@ void MultiClipboardSettingsDialog::LoadSettingsControlMap()
 	SettingsControlMap.push_back( SettingsControlMapStruct(
 		IDC_CHECK_NO_COPY_LARGE_TEXT, SCTE_BOOL,
 		SETTINGS_GROUP_OSCLIPBOARD, SETTINGS_IGNORE_LARGE_TEXT,
-		TEXT("Do not store large text into MultiClipboard plugin. Improves performance when copy and pasting very large text files") ) );
+		TEXT("Do not store large text into MultiClipboard plugin. Improves performance when copy and pasting very large text") ) );
 
 	SettingsControlMap.push_back( SettingsControlMapStruct(
 		IDC_CHECK_NO_LARGE_TEXT_EDIT, SCTE_BOOL,
 		SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_NO_EDIT_LARGE_TEXT,
 		TEXT("Do not allow editing of large text in MultiClip Viewer. Improves performance when using the MultiClip Viewer") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_PASTE_ALL_REVERSE, SCTE_BOOL,
+		SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_PASTE_ALL_REVERSE,
+		TEXT("When pasting all items, paste them in reverse order of the clipboard list") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_PASTE_ALL_NEWLINE_BETWEEN, SCTE_BOOL,
+		SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_PASTE_ALL_NEWLINE_BETWEEN,
+		TEXT("When pasting all items, append a newline between each item") ) );
 }

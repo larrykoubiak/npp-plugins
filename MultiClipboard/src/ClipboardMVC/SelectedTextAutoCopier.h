@@ -36,7 +36,7 @@ public:
 	bool IsSelectionOverlapping( const int CurrSelStart, const int CurrSelEnd );
 
 	// ClipboardListener interface
-	void OnNewClipboardText( const std::wstring & text );
+	void OnNewClipboardText( const TextItem & textItem );
 	void OnTextPasted();
 
 	// Timer Interface
@@ -47,7 +47,7 @@ public:
 
 private:
 	// Buffer for last selected text, used as a buffer before saving to clipboard buffer
-	std::wstring LastSelectedText;
+	TextItem LastSelectedTextItem;
 	// Start and end of last selected text position
 	int PrevSelStart, PrevSelEnd;
 	// Whether this feature is enabled;

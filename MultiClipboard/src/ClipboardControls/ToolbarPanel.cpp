@@ -29,6 +29,7 @@ ToolbarPanel::ToolbarPanel()
 : pToolbar( 0 )
 , pChildWin( 0 )
 , hChildWindowPen( 0 )
+, DragListMessage( 0 )
 {
 }
 
@@ -74,6 +75,8 @@ void ToolbarPanel::init( HINSTANCE hInst, HWND parent )
 
 	hChildWindowPen = ::CreatePen( PS_SOLID, 0, RGB(130,135,144) );
 	//hChildWindowPen = ::CreatePen( PS_SOLID, 0, ::GetSysColor(COLOR_WINDOWFRAME) );
+
+	DragListMessage = ::RegisterWindowMessage( DRAGLISTMSGSTRING );
 }
 
 void ToolbarPanel::SetToolbar( ToolBar * pNewToolBar )
@@ -155,6 +158,13 @@ void ToolbarPanel::ResizeChildren()
 
 LRESULT ToolbarPanel::ToolbarPanelProc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
 {
+	if ( Message == DragListMessage )
+	{
+		// Being a container window which doesn't care about child window control notifications,
+		// forward the child window controls' notifications to the parent window for processing
+		return ::SendMessage( _hParent, Message, wParam, lParam );
+	}
+
 	switch ( Message )
 	{
 	case WM_MOVE:

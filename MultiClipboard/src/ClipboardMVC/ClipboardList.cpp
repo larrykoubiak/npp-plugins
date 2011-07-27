@@ -19,10 +19,27 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "ClipboardList.h"
-#include <algorithm>
 #include <iterator>
 #include "MultiClipboardSettings.h"
 #endif
+
+
+ClipboardListItem::ClipboardListItem()
+{
+}
+
+
+ClipboardListItem::ClipboardListItem( const TextItem & textItem )
+: TextItem( textItem )
+{
+	UpdateColumnText();
+}
+
+
+void ClipboardListItem::UpdateColumnText()
+{
+	MakeColumnText( columnText );
+}
 
 
 ClipboardList::ClipboardList()
@@ -30,15 +47,16 @@ ClipboardList::ClipboardList()
 {
 }
 
-bool ClipboardList::AddText( const std::wstring & text )
+bool ClipboardList::AddText( const TextItem & textItem )
 {
-	if ( IsTextAvailable( text ) )
+	if ( IsTextAvailable( textItem.text ) )
 	{
 		// Text already in list, don't add double entry
 		return false;
 	}
 
-	textList.push_front( text );
+	ClipboardListItem clipboardItem( textItem );
+	textList.push_front( clipboardItem );
 
 	// Check if max list size is exceeded
 	while ( GetNumText() > GetMaxListSize() )
@@ -64,24 +82,31 @@ void ClipboardList::RemoveText( const unsigned int index )
 }
 
 
-const std::wstring & ClipboardList::GetText( const unsigned int index )
+void ClipboardList::RemoveAllTexts()
+{
+	textList.clear();
+	OnModified();
+}
+
+
+const ClipboardListItem & ClipboardList::GetText( const unsigned int index )
 {
 	TextListIterator iter = GetIterAtIndex( index );
 	if ( iter == textList.end() )
 	{
-		return NullString;
+		return NullStruct;
 	}
 
 	return *iter;
 }
 
 
-const std::wstring & ClipboardList::PasteText( const unsigned int index )
+const ClipboardListItem & ClipboardList::PasteText( const unsigned int index )
 {
 	TextListIterator iter = GetIterAtIndex( index );
 	if ( iter == textList.end() )
 	{
-		return NullString;
+		return NullStruct;
 	}
 
 	// Cut it and move it to the front of the list
@@ -101,7 +126,8 @@ bool ClipboardList::EditText( const int index, const std::wstring & newText )
 		return false;
 	}
 
-	*iter = newText;
+	iter->text = newText;
+	iter->UpdateColumnText();
 	OnModified();
 	return true;
 }
@@ -134,12 +160,15 @@ void ClipboardList::SetTextNewIndex( const unsigned int index, const unsigned in
 
 bool ClipboardList::IsTextAvailable( const std::wstring & text )
 {
-	TextListIterator iter = std::find( textList.begin(), textList.end(), text );
-	if ( iter == textList.end() )
+	TextListIterator iter;
+	for ( iter = textList.begin(); iter != textList.end(); ++iter )
 	{
-		return false;
+		if ( iter->text == text )
+		{
+			return true;
+		}
 	}
-	return true;
+	return false;
 }
 
 
@@ -191,25 +220,19 @@ void ClipboardList::OnObserverAdded( LoonySettingsManager * SettingsManager )
 	SettingsObserver::OnObserverAdded( SettingsManager );
 
 	// Add default settings if it doesn't exists
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS ) )
-	{
-		pSettingsManager->SetIntSetting( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS, MaxListSize );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS );
-	}
+	SET_SETTINGS_INT( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS, MaxListSize )
 }
 
 
 void ClipboardList::OnSettingsChanged( const stringType & GroupName, const stringType & SettingName )
 {
-	if ( GroupName != SETTINGS_GROUP_CLIPBOARDLIST || SettingName != SETTINGS_MAX_CLIPBOARD_ITEMS )
+	if ( GroupName != SETTINGS_GROUP_CLIPBOARDLIST )
 	{
 		return;
 	}
 
-	int NewMaxClipboardItems = pSettingsManager->GetIntSetting( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS );
+	int NewMaxClipboardItems = 0;
+	IF_SETTING_CHANGED_INT( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS, NewMaxClipboardItems )
 	if ( NewMaxClipboardItems > 0 )
 	{
 		SetMaxListSize( NewMaxClipboardItems );

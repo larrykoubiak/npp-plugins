@@ -55,7 +55,7 @@ void SelectedTextAutoCopier::DisableAutoCopy()
 }
 
 
-void SelectedTextAutoCopier::OnNewClipboardText( const std::wstring & text )
+void SelectedTextAutoCopier::OnNewClipboardText( const TextItem & textItem )
 {
 	// Do nothing
 }
@@ -64,7 +64,7 @@ void SelectedTextAutoCopier::OnNewClipboardText( const std::wstring & text )
 void SelectedTextAutoCopier::OnTextPasted()
 {
 	// Pasting of text, so may be overwriting current text selection, so we don't store this selection
-	LastSelectedText.clear();
+	LastSelectedTextItem.text.clear();
 }
 
 
@@ -112,17 +112,17 @@ void SelectedTextAutoCopier::OnTimer()
 		if ( IsSelectionOverlapping( CurrSelStart, CurrSelEnd ) )
 		{
 			// Yes, overlapping, so could be a drag selection in progress, so just overwrite the stored text
-			g_ClipboardProxy.GetSelectionText( LastSelectedText );
+			g_ClipboardProxy.GetSelectionText( LastSelectedTextItem );
 		}
 		else
 		{
-			if ( LastSelectedText.size() > 0 )
+			if ( LastSelectedTextItem.text.size() > 0 )
 			{
 				// No overlapping, so selection has changed. Copy the previous selection to clipboard
-				g_ClipboardProxy.SetTextToSystemClipboard( LastSelectedText );
+				g_ClipboardProxy.SetTextToSystemClipboard( LastSelectedTextItem );
 			}
 			// Also save the current text selection
-			g_ClipboardProxy.GetSelectionText( LastSelectedText );
+			g_ClipboardProxy.GetSelectionText( LastSelectedTextItem );
 		}
 
 		// Save selection position
@@ -138,23 +138,8 @@ void SelectedTextAutoCopier::OnObserverAdded( LoonySettingsManager * SettingsMan
 	SettingsObserver::OnObserverAdded( SettingsManager );
 
 	// Add default settings if it doesn't exists
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_TEXT_SELECTION ) )
-	{
-		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_TEXT_SELECTION, false );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_TEXT_SELECTION );
-	}
-
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_UPDATE_TIME ) )
-	{
-		pSettingsManager->SetIntSetting( SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_UPDATE_TIME, Time );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_UPDATE_TIME );
-	}
+	SET_SETTINGS_BOOL( SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_TEXT_SELECTION, IsEnableAutoCopy )
+	SET_SETTINGS_INT( SETTINGS_GROUP_AUTO_COPY, SETTINGS_AUTO_COPY_UPDATE_TIME, Time )
 }
 
 

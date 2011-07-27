@@ -29,6 +29,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif
 
 
+enum TextCopyModeEnum
+{
+	TCM_NORMAL,
+	TCM_COLUMN,
+	TCM_LINE
+};
+
+
 typedef enum UniMode
 {
 	uni8Bit,
@@ -37,10 +45,43 @@ typedef enum UniMode
 };
 
 
+typedef enum EolMode
+{
+	eolCR,
+	eolLF,
+	eolCRLF
+};
+
+
+class ColumnModeText
+{
+public:
+	std::vector< std::wstring > rowTexts;
+	unsigned int GetNumRows() const;
+	unsigned int GetNumColumns() const;
+};
+
+
+class TextItem
+{
+public:
+	std::wstring text;
+	TextCopyModeEnum textMode;
+	ColumnModeText columnText;
+
+	TextItem();
+	TextItem( std::wstring inText, TextCopyModeEnum inMode=TCM_NORMAL );
+	void MakeColumnText( ColumnModeText & columnText ) const;
+
+protected:
+	void SplitTextIntoRows( std::vector< std::wstring > & rowTexts ) const;
+};
+
+
 class ClipboardListener
 {
 public:
-	virtual void OnNewClipboardText( const std::wstring & text ) = 0;
+	virtual void OnNewClipboardText( const TextItem & textItem ) = 0;
 	virtual void OnTextPasted() = 0;
 };
 
@@ -116,15 +157,17 @@ public:
 	// Set up specified listener into the system clipboard chain
 	void RegisterClipboardListener( ClipboardListener * pListener );
 	// Notifier when text has been added to the system clipboard
-	void OnNewClipboardText( std::wstring text );
+	void OnNewClipboardText( const TextItem & textItem );
 	// Notifier when text has been pasted into Notepad++
 	void OnTextPastedInNpp();
 	// Get the text currently in the system clipboard
-	void GetTextInSystemClipboard( std::wstring & text );
+	void GetTextInSystemClipboard( TextItem & textItem );
 	// Set the text to the system clipboard
-	void SetTextToSystemClipboard( const std::wstring & text );
+	void SetTextToSystemClipboard( const TextItem & textItem );
 	// Text format conversion by Npp may result in text copied to system clipboard. Handle it here
 	void OnNppTextFormatConversion( UniMode NewFormat );
+	// Gets the clipboard format used by the text in the system clipboard
+	TextCopyModeEnum GetCurrentClipboardFormat();
 
 	// Adds a timer. If a timer with the same ID already exists, that one is removed first
 	void AddTimer( MVCTimer * pTimer );
@@ -153,21 +196,41 @@ public:
 	POINT GetMouseCursorPosition();
 	// Get the position of caret, in screen coordinates
 	POINT GetCurrentCaretPosition();
+	// Set the position of caret
+	void SetCaretPosition( int pos, HWND hwnd = NULL );
+	// Get the position of the document from the point, in screen coordinates
+	int GetPositionFromPoint( const POINT & point, HWND hwnd = NULL );
 	// Get the position of current selection
 	void GetCurrentSelectionPosition( int & start, int & end );
 	// Set the position of current selection
-	void SetCurrentSelectionPosition( const int start, const int end );
+	void SetCurrentSelectionPosition( int start, int end, HWND hwnd = NULL );
+	// Set the position of current selection using rectangular selection
+	int SetRectangularSelection( int start, int width, int rows, HWND hwnd = NULL );
 	// Get the currently selected text
-	void GetSelectionText( std::wstring & text );
+	void GetSelectionText( TextItem & textItem );
 	// Replace the currently selected text
-	void ReplaceSelectionText( const std::wstring & text );
+	void ReplaceSelectionText( const TextItem & textItem );
+	// Replace the currently selected text with a column mode text.
+	void ReplaceSelectionWithColumnText( const ColumnModeText & columnText );
+	// Insert text at specific position
+	void InsertTextAtPos( const TextItem & textItem, int pos, HWND hwnd = NULL );
+	// Insert text at specific position
+	void InsertColumnTextAtPos( const ColumnModeText & columnText, int pos, HWND hwnd = NULL );
 	// Tells scintilla window to begin undo action
-	void CyclicPasteBeginUndoAction( CyclicPasteEndUndoActionListener * pListener );
+	void BeginUndoAction();
 	// Tells scintilla window to end undo action
-	void CyclicPasteEndUndoAction();
+	void EndUndoAction();
+	// Setup the beginning of cyclic pasting
+	void CyclicPasteBegin( CyclicPasteEndUndoActionListener * pListener );
+	// Setup the end of cyclic pasting
+	void CyclicPasteEnd();
+	// Get the EOL mode of the specified scintilla window
+	EolMode GetEOLMode( HWND hwnd = NULL );
+	// Get the EOL mode of the specified scintilla window
+	std::wstring GetEOLString( HWND hwnd = NULL );
 
 	// For pasting text to Notepad++'s current document from the plugin's various MVCs
-	void PasteTextToNpp( const std::wstring & text );
+	void PasteTextToNpp( const TextItem & textItem );
 
 	// Useful for debugging purposes
 	void PrintText( char * format, ... );
@@ -184,9 +247,14 @@ private:
 	std::vector< KeyListener * > keyListeners;
 	// Use to handle the case that the clipboard is used by Npp for text format conversion
 	int ignoreClipTextCount;
+	// Use for detecting the text copy mode
+	UINT cfColumnSelect;
+	UINT cfLineSelect;
 
-	SciSubClassWrp * MultiClipboardProxy::GetCurrentScintilla();
+	SciSubClassWrp * GetCurrentScintilla();
+	SciSubClassWrp * GetScintillaFromHwnd( HWND hwnd = NULL );
 	UniMode GetCurrentEncoding( SciSubClassWrp * pScintilla );
+	void ConvertWideCharToMultiByte( const std::wstring & wideCharText, std::vector<char> & multiByteText );
 };
 
 

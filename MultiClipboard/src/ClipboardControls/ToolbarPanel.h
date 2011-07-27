@@ -44,6 +44,8 @@ protected:
 	ReBar Rebar;
 	Window * pChildWin;
 	HPEN hChildWindowPen;
+	// For passing through drag list box messages
+	UINT DragListMessage;
 
 	void GetPanelRect( RECT &PanelRect );
 	void GetToolbarRect( RECT &ToolbarRect );

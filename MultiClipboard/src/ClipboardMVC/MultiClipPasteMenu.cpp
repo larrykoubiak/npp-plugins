@@ -112,7 +112,7 @@ void MultiClipPasteMenu::RecreateCopyMenu()
 	{
 		// Create a menu ID based on the its location in the list
 		unsigned int menuId = MULTI_COPY_MENU_CMD + index;
-		CreateMenuText( pClipboardList->GetText( index ), MenuText, index );
+		CreateMenuText( pClipboardList->GetText( index ).text, MenuText, index );
 		BOOL result = AppendMenu( hPasteMenu, MF_STRING, menuId, MenuText.c_str() );
 		if ( !result )
 		{
@@ -200,8 +200,7 @@ void MultiClipPasteMenu::PasteClipboardItem( unsigned int MenuItemID )
 		// Get selected item
 		unsigned int index = MenuItemID - MULTI_COPY_MENU_CMD;
 
-		std::wstring text = pClipboardList->PasteText( index );
-		g_ClipboardProxy.PasteTextToNpp( text );
+		g_ClipboardProxy.PasteTextToNpp( pClipboardList->PasteText( index ) );
 	}
 }
 
@@ -250,38 +249,10 @@ void MultiClipPasteMenu::OnObserverAdded( LoonySettingsManager * SettingsManager
 	SettingsObserver::OnObserverAdded( SettingsManager );
 
 	// Add default settings if it doesn't exists
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU ) )
-	{
-		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU, bUsePasteMenu );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU );
-	}
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU ) )
-	{
-		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU, bNumberedPasteList );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU );
-	}
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH ) )
-	{
-		pSettingsManager->SetIntSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH, MenuTextLength );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH );
-	}
-	if ( !pSettingsManager->IsSettingExists( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE ) )
-	{
-		pSettingsManager->SetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE, bUseMiddleClickPaste );
-	}
-	else
-	{
-		OnSettingsChanged( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE );
-	}
+	SET_SETTINGS_BOOL( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU, bUsePasteMenu )
+	SET_SETTINGS_BOOL( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU, bNumberedPasteList )
+	SET_SETTINGS_INT( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH, MenuTextLength )
+	SET_SETTINGS_BOOL( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE, bUseMiddleClickPaste )
 }
 
 
@@ -292,20 +263,8 @@ void MultiClipPasteMenu::OnSettingsChanged( const stringType & GroupName, const 
 		return;
 	}
 
-	if ( SettingName == SETTINGS_USE_PASTE_MENU )
-	{
-		bUsePasteMenu = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU );
-	}
-	else if ( SettingName == SETTINGS_SHOW_NUMBERED_PASTE_MENU )
-	{
-		bNumberedPasteList = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU );
-	}
-	else if ( SettingName == SETTINGS_PASTE_MENU_WIDTH )
-	{
-		MenuTextLength = (unsigned int) pSettingsManager->GetIntSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH );
-	}
-	else if ( SettingName == SETTINGS_MIDDLE_CLICK_PASTE )
-	{
-		bUseMiddleClickPaste = pSettingsManager->GetBoolSetting( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE );
-	}
+	IF_SETTING_CHANGED_BOOL( SETTINGS_GROUP_PASTE_MENU, SETTINGS_USE_PASTE_MENU, bUsePasteMenu )
+	else IF_SETTING_CHANGED_BOOL( SETTINGS_GROUP_PASTE_MENU, SETTINGS_SHOW_NUMBERED_PASTE_MENU, bNumberedPasteList )
+	else IF_SETTING_CHANGED_INT( SETTINGS_GROUP_PASTE_MENU, SETTINGS_PASTE_MENU_WIDTH, MenuTextLength )
+	else IF_SETTING_CHANGED_BOOL( SETTINGS_GROUP_PASTE_MENU, SETTINGS_MIDDLE_CLICK_PASTE, bUseMiddleClickPaste )
 }

@@ -51,10 +51,10 @@ void MultiClipCyclicPaste::DoCyclicPaste()
 	}
 
 	// begin the undo action if not already so, to prevent unnecessary undos for the cyclic pastes
-	g_ClipboardProxy.CyclicPasteBeginUndoAction( this );
+	g_ClipboardProxy.CyclicPasteBegin( this );
 
 	// get scintilla selection pos
-	int currentPosStart, currentPosEnd;
+	int currentPosStart = 0, currentPosEnd = 0;
 	g_ClipboardProxy.GetCurrentSelectionPosition( currentPosStart, currentPosEnd );
 
 	// compare with current pos
@@ -65,10 +65,19 @@ void MultiClipCyclicPaste::DoCyclicPaste()
 	}
 
 	// paste text into current selection pos
-	g_ClipboardProxy.ReplaceSelectionText( pClipboardList->GetText( nextPasteIndex ) );
+	const ClipboardListItem & itemToPaste = pClipboardList->GetText( nextPasteIndex );
+	g_ClipboardProxy.ReplaceSelectionText( itemToPaste );
+
 	// Select this newly pasted text
-	currentPosEnd = currentPosStart + pClipboardList->GetText( nextPasteIndex ).size();
-	g_ClipboardProxy.SetCurrentSelectionPosition( currentPosStart, currentPosEnd );
+	if ( itemToPaste.textMode == TCM_COLUMN )
+	{
+		currentPosEnd = g_ClipboardProxy.SetRectangularSelection( currentPosStart, itemToPaste.columnText.GetNumColumns(), itemToPaste.columnText.GetNumRows() );
+	}
+	else
+	{
+		currentPosEnd = currentPosStart + pClipboardList->GetText( nextPasteIndex ).text.size();
+		g_ClipboardProxy.SetCurrentSelectionPosition( currentPosStart, currentPosEnd );
+	}
 
 	// Update next paste index
 	++nextPasteIndex;
@@ -105,6 +114,8 @@ void MultiClipCyclicPaste::OnEndUndoAction()
 		currPasteIndex = pClipboardList->GetNumText() - 1;
 	}
 	pClipboardList->PasteText( (unsigned int)currPasteIndex );
+	selectionPosStart = -1;
+	selectionPosEnd = -1;
 }
 
 

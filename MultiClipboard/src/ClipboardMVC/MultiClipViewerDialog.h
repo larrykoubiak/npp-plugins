@@ -63,11 +63,15 @@ protected:
 private:
 	tTbData TBData;
 	bool IsShown;
+	UINT DragListMessage;
+	INT DraggedListItem;
 
 	// Don't allow display and editing of text greater than NoEditLargeTextSize
 	BOOL bNoEditLargeText;
 	UINT NoEditLargeTextSize;
 	UINT LargeTextDisplaySize;
+	BOOL bPasteAllReverseOrder;
+	BOOL bPasteAllEOLBetweenItems;
 
 	SplitterPanel MultiClipViewerPanel;
 	ToolbarPanel ListBoxPanel;
@@ -83,9 +87,13 @@ private:
 	// Get toolbar tooltips
 	void OnToolBarRequestToolTip( LPNMHDR nmhdr );
 	void OnToolBarCommand( UINT Cmd );
+	BOOL OnDragListMessage( LPDRAGLISTINFO pDragListInfo );
 
 	void PasteSelectedItem();
+	void PasteAllItems();
 	void DeleteSelectedItem();
+	void DeleteAllItems();
+	void CopySelectedItemToClipboard();
 
 	virtual void OnObserverAdded( LoonySettingsManager * SettingsManager );
 	virtual void OnSettingsChanged( const stringType & GroupName, const stringType & SettingName );

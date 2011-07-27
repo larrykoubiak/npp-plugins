@@ -128,7 +128,8 @@ LRESULT CALLBACK MCSubClassNppWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 			if ( hGlobal != NULL )
 			{
 				LPWSTR pGlobal = (LPWSTR)::GlobalLock( hGlobal );
-				g_ClipboardProxy.OnNewClipboardText( pGlobal );
+				TextItem textItem( pGlobal, g_ClipboardProxy.GetCurrentClipboardFormat() );
+				g_ClipboardProxy.OnNewClipboardText( textItem );
 				::GlobalUnlock( hGlobal );
 			}
 			::CloseClipboard();
@@ -205,7 +206,7 @@ LRESULT CALLBACK MCSubClassSciWndProc( HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
 	case WM_SYSKEYUP:
 		if ( wp == VK_SHIFT || wp == VK_CONTROL )
 		{
-			g_ClipboardProxy.CyclicPasteEndUndoAction();
+			g_ClipboardProxy.CyclicPasteEnd();
 		}
 		// Fall through
 	case WM_SYSKEYDOWN:

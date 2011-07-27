@@ -19,6 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "MultiClipboardListbox.h"
+#include <commctrl.h>
 #endif
 
 
@@ -42,6 +43,9 @@ void MultiClipboardListbox::init(HINSTANCE hInst, HWND parent)
 
 	// associate this class instance with the listbox instance
 	::SetWindowLongPtr( _hSelf, GWL_USERDATA, (LONG)this );
+
+	// Make items draggable
+	MakeDragList( _hSelf );
 
 	hNewFont = (HFONT)::SendMessage( _hSelf, WM_GETFONT, 0, 0 );
 	if ( hNewFont == NULL )

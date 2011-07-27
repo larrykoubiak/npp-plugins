@@ -45,5 +45,29 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define SETTINGS_NO_EDIT_LARGE_TEXT			TEXT("NoEditLargeText")
 #define SETTINGS_NO_EDIT_LARGE_TEXT_SIZE	TEXT("NoEditLargeTextSize")
 #define SETTINGS_LARGE_TEXT_DISPLAY_SIZE	TEXT("LargeTextDisplaySize")
+#define SETTINGS_PASTE_ALL_REVERSE			TEXT("PasteAllReverse")
+#define SETTINGS_PASTE_ALL_NEWLINE_BETWEEN	TEXT("PasteAllNewLine")
+
+
+#define SET_SETTINGS_BOOL( SETTING_GROUP, SETTING_NAME, SETTING_VARIABLE ) \
+	if ( !pSettingsManager->IsSettingExists( SETTING_GROUP, SETTING_NAME ) ) \
+		pSettingsManager->SetBoolSetting( SETTING_GROUP, SETTING_NAME, SETTING_VARIABLE != FALSE ); \
+	else \
+		OnSettingsChanged( SETTING_GROUP, SETTING_NAME );
+
+#define SET_SETTINGS_INT( SETTING_GROUP, SETTING_NAME, SETTING_VARIABLE ) \
+	if ( !pSettingsManager->IsSettingExists( SETTING_GROUP, SETTING_NAME ) ) \
+		pSettingsManager->SetIntSetting( SETTING_GROUP, SETTING_NAME, SETTING_VARIABLE ); \
+	else \
+		OnSettingsChanged( SETTING_GROUP, SETTING_NAME );
+
+#define IF_SETTING_CHANGED_BOOL( SETTING_GROUP, SETTING_NAME, SETTING_VARIABLE ) \
+	if ( SettingName == SETTING_NAME ) \
+		SETTING_VARIABLE = pSettingsManager->GetBoolSetting( SETTING_GROUP, SETTING_NAME );
+
+#define IF_SETTING_CHANGED_INT( SETTING_GROUP, SETTING_NAME, SETTING_VARIABLE ) \
+	if ( SettingName == SETTING_NAME ) \
+		SETTING_VARIABLE = pSettingsManager->GetIntSetting( SETTING_GROUP, SETTING_NAME );
+
 
 #endif

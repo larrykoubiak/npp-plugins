@@ -44,24 +44,41 @@ Known Issues
 - Doesn't respect pasting of column-selection text. Text are pasted as normal multi-line text
 - When keymapping of paste is changed from Ctrl-V or Shift-Insert to something else, MultiClipboard will not be able to hook into the paste operation. This is a limitation of Notepad++, because it does not notify plugins of paste operations nor expose its shortcut mappings to plugins
 
+Acknowledgements
+----------------
+Icons taken from http://www.famfamfam.com/lab/icons/silk/preview.php
+
 Version History
 ---------------
-XX XXX 2009 - MultiClipboard 2.1
+XX XXX 2011 - MultiClipboard 2.1
 -----------
-1. Limit text entries in the listbox of MultiClip Viewer to 100 chars if text is too long.
-2. Allow 'Delete' key to delete selected item in MultiClip Viewer
-3. Option to ignore text greater than a certain size to improve plugin performance.
-   Text size is a hidden option in the config xml
-4. Option to not allow text greater than a certain size to be edited in MultiClip Viewer,
-   to improve plugin performance. Text size is a hidden option in the config xml
-5. Some internal changes to improve performance a little bit
-6. Rename localisation file to more standard name suffixes, eg _en, _de
-7. Fix issue when Notepad++ is converting text format between ANSI and UTF/Unicode, the
-   entire text is copied into system clipboard during this process, and hence into
-   MultiClipboard. Now the plugin will recognise and ignore this process
+1.  Limit text entries in the listbox of MultiClip Viewer to 100 chars if text is too long.
+2.  Allow 'Delete' key to delete selected item in MultiClip Viewer
+3.  Option to ignore text greater than a certain size to improve plugin performance.
+    Text size is a hidden option in the config xml
+4.  Option to not allow text greater than a certain size to be edited in MultiClip Viewer,
+    to improve plugin performance. Text size is a hidden option in the config xml
+5.  Some internal changes to improve performance a little bit
+6.  Rename localisation file to more standard name suffixes, eg _en, _de
+7.  Fix issue when Notepad++ is converting text format between ANSI and UTF/Unicode, the
+    entire text is copied into system clipboard during this process, and hence into
+    MultiClipboard. Now the plugin will recognise and ignore this process
+8.  Added toolbar button to delete selected item in MultiClip Viewer
+9.  Added toolbar button to copy selected item to OS clipboard in MultiClip Viewer
+10. Added toolbar button to paste all item from the clipboard
+11. When pasting all items, add option to paste them in reverse order
+12. When pasting all items, add option to add newline character between items
+13. Added toolbar button to show MultiClipboard options dialog
+14. Make items in listbox of MultiClip Viewer draggable.
+    Drag within listbox to rearrange, drag onto editor to insert text
+15. Remembers whether the clipboard item is a column mode selection
+    and paste it accordingly.
+    Requires Notepad++ 5.5 for rectangular selection to work properly.
 (Technical)
 1. Switch to unity build configuration. Full release build time went down from 27 secs to 8 secs
 2. Use link time code generation in release build to hopefully improve runtime performance
+3. Updated project file to Visual Studio 2010
+4. Use scintilla header from Scintilla version 2.01, which comes with Notepad++ 5.5
 
 20 Feb 2009 - MultiClipboard 2.0
 -----------

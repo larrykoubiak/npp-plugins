@@ -20,6 +20,7 @@ Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #ifndef UNITY_BUILD_SINGLE_INCLUDE
 #include "SplitterPanel.h"
 #include <windowsx.h>
+#include <commctrl.h>
 #include "resource.h"
 #endif
 
@@ -36,6 +37,7 @@ SplitterPanel::SplitterPanel()
 , hSplitterCursorLeftRight( 0 )
 , hSplitterBrush( 0 )
 , hSplitterPen( 0 )
+, DragListMessage( 0 )
 {
 }
 
@@ -85,6 +87,8 @@ void SplitterPanel::init( HINSTANCE hInst, HWND parent )
 	// Make splitter same colour as the dialog pane
 	hSplitterBrush = ::CreateSolidBrush( ::GetSysColor(COLOR_BTNFACE) );
 	hSplitterPen = ::CreatePen( PS_SOLID, 0, ::GetSysColor(COLOR_BTNFACE) );
+
+	DragListMessage = ::RegisterWindowMessage( DRAGLISTMSGSTRING );
 }
 
 void SplitterPanel::SetSplitterPanelOrientation( ESplitterPanelOrientation NewOrientation )
@@ -229,6 +233,13 @@ void SplitterPanel::SetCurrentCursor()
 
 LRESULT SplitterPanel::SplitterPanelProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam )
 {
+	if ( message == DragListMessage )
+	{
+		// Being a container window which doesn't care about child window control notifications,
+		// forward the child window controls' notifications to the parent window for processing
+		return ::SendMessage( _hParent, message, wParam, lParam );
+	}
+
 	switch ( message )
 	{
 	case WM_MOUSEMOVE:
