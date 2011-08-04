@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif
 
 
-class SelectedTextAutoCopier : public IController, public ClipboardListener, public MVCTimer
+class SelectedTextAutoCopier : public IController, public ClipboardListener, public MVCTimer, public CyclicPasteListener
 {
 public:
 	SelectedTextAutoCopier();
@@ -36,22 +36,30 @@ public:
 	bool IsSelectionOverlapping( const int CurrSelStart, const int CurrSelEnd );
 
 	// ClipboardListener interface
-	void OnNewClipboardText( const TextItem & textItem );
-	void OnTextPasted();
+	virtual void OnNewClipboardText( const TextItem & textItem );
+	virtual void OnTextPasted();
 
 	// Timer Interface
-	void OnTimer();
+	virtual void OnTimer();
+
+	// CyclicPasteListener interface
+	virtual void OnCyclicPasteBegin();
+	virtual void OnCyclicPasteEnd();
 
 	virtual void OnObserverAdded( LoonySettingsManager * SettingsManager );
 	virtual void OnSettingsChanged( const stringType & GroupName, const stringType & SettingName );
 
 private:
-	// Buffer for last selected text, used as a buffer before saving to clipboard buffer
-	TextItem LastSelectedTextItem;
+	// Buffer for System clipboard before the current selection was made, restore when pasting over current text selection
+	TextItem SystemClipboardBackup;
+	// Last timer tick's selected text, used for updating the correct entry in clipboard buffer when current selection changes
+	TextItem PreviousSelectionText;
 	// Start and end of last selected text position
 	int PrevSelStart, PrevSelEnd;
 	// Whether this feature is enabled;
 	bool IsEnableAutoCopy;
+	// Whether cyclic paste is currently active
+	bool IsCyclicPasteActive;
 
 	// Call these functions to enable/disable autocopy
 	void EnableAutoCopy();

@@ -30,6 +30,7 @@ SelectedTextAutoCopier::SelectedTextAutoCopier()
 : PrevSelStart(-1)
 , PrevSelEnd(-1)
 , MVCTimer(15000, 250)
+, IsCyclicPasteActive(false)
 {
 }
 
@@ -37,7 +38,8 @@ SelectedTextAutoCopier::SelectedTextAutoCopier()
 void SelectedTextAutoCopier::Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings )
 {
 	IController::Init( pNewModel, pClipboardProxy, pSettings );
-	pClipboardProxy->RegisterClipboardListener( this );	
+	pClipboardProxy->RegisterClipboardListener( this );
+	pClipboardProxy->AddCyclicPasteListener( this );
 }
 
 
@@ -63,8 +65,31 @@ void SelectedTextAutoCopier::OnNewClipboardText( const TextItem & textItem )
 
 void SelectedTextAutoCopier::OnTextPasted()
 {
-	// Pasting of text, so may be overwriting current text selection, so we don't store this selection
-	LastSelectedTextItem.text.clear();
+	if ( IsCyclicPasteActive )
+	{
+		// Don't do anything when cyclic paste is in action
+		return;
+	}
+
+	// Get the current text selection position
+	int CurrSelStart = -1, CurrSelEnd = -1;
+	g_ClipboardProxy.GetCurrentSelectionPosition( CurrSelStart, CurrSelEnd );
+	// If pasting over the current selection...
+	if ( IsEnableAutoCopy && CurrSelStart != CurrSelEnd )
+	{
+		// ...then restore the backup clipboard entry to paste over
+		g_ClipboardProxy.SetTextToSystemClipboard( SystemClipboardBackup );
+
+		// Move the corresponding clipboard list entry to the top
+		ClipboardList * pClipboardList = (ClipboardList*)GetModel();
+		int clipboardItemIndex = pClipboardList->GetTextItemIndex( SystemClipboardBackup );
+		if ( clipboardItemIndex >= 0 )
+		{
+			pClipboardList->PasteText( clipboardItemIndex );
+		}
+
+		// Actual pasting will be done after this function returns
+	}
 }
 
 
@@ -101,6 +126,12 @@ bool SelectedTextAutoCopier::IsSelectionOverlapping( const int CurrSelStart, con
 
 void SelectedTextAutoCopier::OnTimer()
 {
+	if ( IsCyclicPasteActive )
+	{
+		// Don't do anything when cyclic paste is in action
+		return;
+	}
+
 	// Get the current text selection position
 	int CurrSelStart = -1, CurrSelEnd = -1;
 	g_ClipboardProxy.GetCurrentSelectionPosition( CurrSelStart, CurrSelEnd );
@@ -111,25 +142,45 @@ void SelectedTextAutoCopier::OnTimer()
 		// Yes, there is a change, check if the change overlaps with the current selection
 		if ( IsSelectionOverlapping( CurrSelStart, CurrSelEnd ) )
 		{
-			// Yes, overlapping, so could be a drag selection in progress, so just overwrite the stored text
-			g_ClipboardProxy.GetSelectionText( LastSelectedTextItem );
+			TextItem CurrentSelectionText;
+			g_ClipboardProxy.GetSelectionText( CurrentSelectionText );
+			ClipboardList * pClipboardList = (ClipboardList*)GetModel();
+			// Update the clipboard list entry with the new selection
+			if ( pClipboardList->ModifyTextItem( PreviousSelectionText, CurrentSelectionText ) )
+			{
+				PreviousSelectionText = CurrentSelectionText;
+			}
+			// Set the new selection to the system clipboard
+			g_ClipboardProxy.SetTextToSystemClipboard( CurrentSelectionText );
 		}
 		else
 		{
-			if ( LastSelectedTextItem.text.size() > 0 )
+			if ( CurrSelStart != CurrSelEnd )
 			{
-				// No overlapping, so selection has changed. Copy the previous selection to clipboard
-				g_ClipboardProxy.SetTextToSystemClipboard( LastSelectedTextItem );
+				// Backup system clipboard in case of implicit pasting of selection text
+				g_ClipboardProxy.GetTextInSystemClipboard( SystemClipboardBackup );
+				// Copy selection text, set it to the system clipboard too
+				g_ClipboardProxy.GetSelectionText( PreviousSelectionText );
+				g_ClipboardProxy.SetTextToSystemClipboard( PreviousSelectionText );
 			}
-			// Also save the current text selection
-			g_ClipboardProxy.GetSelectionText( LastSelectedTextItem );
 		}
 
 		// Save selection position
 		PrevSelStart = CurrSelStart;
 		PrevSelEnd   = CurrSelEnd;
 	}
+}
 
+
+void SelectedTextAutoCopier::OnCyclicPasteBegin()
+{
+	IsCyclicPasteActive = true;
+}
+
+
+void SelectedTextAutoCopier::OnCyclicPasteEnd()
+{
+	IsCyclicPasteActive = false;
 }
 
 

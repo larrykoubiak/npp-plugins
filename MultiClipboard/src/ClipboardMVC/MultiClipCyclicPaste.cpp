@@ -39,6 +39,7 @@ MultiClipCyclicPaste::MultiClipCyclicPaste()
 void MultiClipCyclicPaste::Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings )
 {
 	IController::Init( pNewModel, pClipboardProxy, pSettings );
+	pClipboardProxy->AddCyclicPasteListener( this );
 }
 
 
@@ -51,7 +52,7 @@ void MultiClipCyclicPaste::DoCyclicPaste()
 	}
 
 	// begin the undo action if not already so, to prevent unnecessary undos for the cyclic pastes
-	g_ClipboardProxy.CyclicPasteBegin( this );
+	g_ClipboardProxy.CyclicPasteBegin();
 
 	// get scintilla selection pos
 	int currentPosStart = 0, currentPosEnd = 0;
@@ -98,7 +99,12 @@ void MultiClipCyclicPaste::ResetPasteIndex()
 }
 
 
-void MultiClipCyclicPaste::OnEndUndoAction()
+void MultiClipCyclicPaste::OnCyclicPasteBegin()
+{
+}
+
+
+void MultiClipCyclicPaste::OnCyclicPasteEnd()
 {
 	int currPasteIndex = nextPasteIndex - 1;
 	ResetPasteIndex();

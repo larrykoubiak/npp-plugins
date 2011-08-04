@@ -86,10 +86,11 @@ public:
 };
 
 
-class CyclicPasteEndUndoActionListener
+class CyclicPasteListener
 {
 public:
-	virtual void OnEndUndoAction() = 0;
+	virtual void OnCyclicPasteBegin() = 0;
+	virtual void OnCyclicPasteEnd() = 0;
 };
 
 
@@ -186,6 +187,12 @@ public:
 	void AddKeyListener( KeyListener * listener );
 	// Notification that a keyboard event has occurred. All registered keyboard event listeners are called
 	BOOL OnKeyEvent( KeyListener::KeyEventType eventType, INT keyCode );
+	// Add a cyclic paste listener
+	void AddCyclicPasteListener( CyclicPasteListener * listener );
+	// Setup the beginning of cyclic pasting
+	void CyclicPasteBegin();
+	// Setup the end of cyclic pasting
+	void CyclicPasteEnd();
 
 	// Functions needed by plugin's various MVCs
 	// Returns if npp is the foreground window
@@ -220,10 +227,6 @@ public:
 	void BeginUndoAction();
 	// Tells scintilla window to end undo action
 	void EndUndoAction();
-	// Setup the beginning of cyclic pasting
-	void CyclicPasteBegin( CyclicPasteEndUndoActionListener * pListener );
-	// Setup the end of cyclic pasting
-	void CyclicPasteEnd();
 	// Get the EOL mode of the specified scintilla window
 	EolMode GetEOLMode( HWND hwnd = NULL );
 	// Get the EOL mode of the specified scintilla window
@@ -240,7 +243,7 @@ public:
 
 private:
 	std::vector< ClipboardListener * > clipboardListeners;
-	CyclicPasteEndUndoActionListener * pEndUndoActionListener;
+	std::vector< CyclicPasteListener * > cyclicPasteListeners;
 	bool isCyclicPasteUndoAction;
 	std::map< UINT, MVCTimer * > timers;
 	std::vector< MouseListener * > mouseListeners;

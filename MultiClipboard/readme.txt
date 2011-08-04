@@ -31,6 +31,7 @@ Features
 + Option to use middle mouse button click to paste last stored text from clipboard
    1. Shift-Middle click to show paste menu
 + Option to auto copy selected text from document to clipboard
++ Supports native language customisation via NativeLang plugin
 
 Useful Tips
 -----------
@@ -40,9 +41,8 @@ To show the multiclipboard paste menu via (right click) context menu, add the fo
 Known Issues
 ------------
 - When the document is converted from one EOL type to another in Notepad++, the clipboard text aren't updated
-- Drag and drop of text from MultiClip Viewer could do with better visual cues
+- Drag and drop of text from MultiClip Viewer could do with better visual cues. Use OLE drag/drop as per scintilla's ScintillaWin.cxx::startDrag()
 - When keymapping of paste is changed from Ctrl-V or Shift-Insert to something else, MultiClipboard will not be able to hook into the paste operation. This is a limitation of Notepad++, because it does not notify plugins of paste operations nor expose its shortcut mappings to plugins
-- For auto copy selected text, text is only copied after text is selected, then deselected. This is the current implementation logic to allow for pasting over selected text. Should make it more intuitive instead
 
 Possible Todos
 --------------
@@ -81,6 +81,8 @@ XX XXX 2011 - MultiClipboard 2.1
 15. Remembers whether the clipboard item is a column mode selection
     and paste it accordingly.
     Requires Notepad++ 5.5 for rectangular selection to work properly.
+16. When auto copying selected text, text is copied immediately after selection.
+    When paste is done on selected text, the previous text in the system clipboard is pasted over the selection instead.
 (Technical)
 1. Switch to unity build configuration. Full release build time went down from 27 secs to 8 secs
 2. Use link time code generation in release build to hopefully improve runtime performance

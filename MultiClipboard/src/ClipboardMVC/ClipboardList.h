@@ -34,6 +34,7 @@ class ClipboardListItem : public TextItem
 public:
 	ClipboardListItem();
 	ClipboardListItem( const TextItem & textItem );
+	bool operator==( const TextItem & rhs ) const;
 
 	void UpdateColumnText();
 };
@@ -50,9 +51,11 @@ public:
 	const ClipboardListItem & GetText( const unsigned int index );
 	const ClipboardListItem & PasteText( const unsigned int index );	// Returns text at index, and also move it to the front of the list
 	bool EditText( const int index, const std::wstring & newText );
+	bool ModifyTextItem( const TextItem & fromTextItem, const TextItem & toTextItem );
 	void SetTextNewIndex( const unsigned int index, const unsigned int newIndex );
 
-	bool IsTextAvailable( const std::wstring & text );
+	bool IsTextAvailable( const std::wstring & text ) const;
+	int GetTextItemIndex( const TextItem & text ) const;
 	unsigned int GetNumText() const;
 
 	const unsigned int GetMaxListSize() const { return MaxListSize; }
@@ -64,6 +67,7 @@ public:
 private:
 	typedef std::list< ClipboardListItem > TextListType;
 	typedef TextListType::iterator TextListIterator;
+	typedef TextListType::const_iterator ConstTextListIterator;
 	TextListType textList;
 
 	// Empty struct to return when text invalid index is requested

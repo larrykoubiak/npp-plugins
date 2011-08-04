@@ -88,8 +88,7 @@ void TextItem::SplitTextIntoRows( std::vector< std::wstring > & rowTexts ) const
 
 
 MultiClipboardProxy::MultiClipboardProxy()
-: pEndUndoActionListener( 0 )
-, isCyclicPasteUndoAction( false )
+: isCyclicPasteUndoAction( false )
 , ignoreClipTextCount( 0 )
 {
 }
@@ -627,28 +626,54 @@ void MultiClipboardProxy::EndUndoAction()
 }
 
 
-void MultiClipboardProxy::CyclicPasteBegin( CyclicPasteEndUndoActionListener * pListener )
+void MultiClipboardProxy::AddCyclicPasteListener( CyclicPasteListener * listener )
 {
-	if ( !isCyclicPasteUndoAction && pListener )
+	std::vector< CyclicPasteListener * >::iterator cyclicPasteIter;
+	for ( cyclicPasteIter = cyclicPasteListeners.begin(); cyclicPasteIter != cyclicPasteListeners.end(); ++cyclicPasteIter )
+	{
+		if ( listener == *cyclicPasteIter )
+		{
+			// If cyclic paste listener is already registered, then stop
+			return;
+		}
+	}
+
+	// Add this mouse listener
+	cyclicPasteListeners.push_back( listener );
+}
+
+
+void MultiClipboardProxy::CyclicPasteBegin()
+{
+	if ( !isCyclicPasteUndoAction )
 	{
 		// Get active scintilla
 		BeginUndoAction();
 		isCyclicPasteUndoAction = true;
-		pEndUndoActionListener = pListener;
+
+		// Notify the listeners
+		std::vector< CyclicPasteListener * >::iterator cyclicPasteIter;
+		for ( cyclicPasteIter = cyclicPasteListeners.begin(); cyclicPasteIter != cyclicPasteListeners.end(); ++cyclicPasteIter )
+		{
+			(*cyclicPasteIter)->OnCyclicPasteBegin();
+		}
 	}
 }
 
 
 void MultiClipboardProxy::CyclicPasteEnd()
 {
-	if ( isCyclicPasteUndoAction && pEndUndoActionListener )
+	if ( isCyclicPasteUndoAction )
 	{
 		EndUndoAction();
-		// Inform the listener
-		pEndUndoActionListener->OnEndUndoAction();
 		isCyclicPasteUndoAction = false;
-		// Unset the listener. This will be set again with a new undo action
-		pEndUndoActionListener = 0;
+
+		// Notify the listeners
+		std::vector< CyclicPasteListener * >::iterator cyclicPasteIter;
+		for ( cyclicPasteIter = cyclicPasteListeners.begin(); cyclicPasteIter != cyclicPasteListeners.end(); ++cyclicPasteIter )
+		{
+			(*cyclicPasteIter)->OnCyclicPasteEnd();
+		}
 	}
 }
 

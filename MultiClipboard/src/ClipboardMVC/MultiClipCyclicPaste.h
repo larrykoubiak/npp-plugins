@@ -26,7 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif
 
 
-class MultiClipCyclicPaste : public IController, public CyclicPasteEndUndoActionListener
+class MultiClipCyclicPaste : public IController, public CyclicPasteListener
 {
 public:
 	MultiClipCyclicPaste();
@@ -35,8 +35,9 @@ public:
 	void DoCyclicPaste();
 	void ResetPasteIndex();
 
-	// CyclicPasteEndUndoActionListener interface
-	virtual void OnEndUndoAction();
+	// CyclicPasteListener interface
+	virtual void OnCyclicPasteBegin();
+	virtual void OnCyclicPasteEnd();
 
 	virtual void OnModelModified();
 

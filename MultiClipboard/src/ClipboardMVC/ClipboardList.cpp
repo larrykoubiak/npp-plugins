@@ -36,6 +36,12 @@ ClipboardListItem::ClipboardListItem( const TextItem & textItem )
 }
 
 
+bool ClipboardListItem::operator==( const TextItem & rhs ) const
+{
+	return text == rhs.text && textMode == rhs.textMode;
+}
+
+
 void ClipboardListItem::UpdateColumnText()
 {
 	MakeColumnText( columnText );
@@ -133,6 +139,23 @@ bool ClipboardList::EditText( const int index, const std::wstring & newText )
 }
 
 
+bool ClipboardList::ModifyTextItem( const TextItem & fromTextItem, const TextItem & toTextItem )
+{
+	TextListIterator iter;
+	for ( iter = textList.begin(); iter != textList.end(); ++iter )
+	{
+		if ( *iter == fromTextItem )
+		{
+			*iter = toTextItem;
+			iter->UpdateColumnText();
+			OnModified();
+			return true;
+		}
+	}
+	return false;
+}
+
+
 void ClipboardList::SetTextNewIndex( const unsigned int index, const unsigned int newIndex )
 {
 	if ( index    < 0 || index    >= GetNumText() ||
@@ -158,9 +181,9 @@ void ClipboardList::SetTextNewIndex( const unsigned int index, const unsigned in
 }
 
 
-bool ClipboardList::IsTextAvailable( const std::wstring & text )
+bool ClipboardList::IsTextAvailable( const std::wstring & text ) const
 {
-	TextListIterator iter;
+	ConstTextListIterator iter;
 	for ( iter = textList.begin(); iter != textList.end(); ++iter )
 	{
 		if ( iter->text == text )
@@ -169,6 +192,21 @@ bool ClipboardList::IsTextAvailable( const std::wstring & text )
 		}
 	}
 	return false;
+}
+
+
+int ClipboardList::GetTextItemIndex( const TextItem & text ) const
+{
+	int textIndex = 0;
+	ConstTextListIterator iter;
+	for ( iter = textList.begin(); iter != textList.end(); ++iter, ++textIndex )
+	{
+		if ( *iter == text )
+		{
+			return textIndex;
+		}
+	}
+	return -1;
 }
 
 
