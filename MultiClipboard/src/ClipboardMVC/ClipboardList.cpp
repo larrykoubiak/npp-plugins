@@ -24,6 +24,26 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #endif
 
 
+#define MULTICLIPBOARD_SESSION_FILENAME TEXT("\\MultiClipboardSession.dat")
+#define MULTICLIPBOARD_SESSION_FILE_VERSION 1
+
+extern TCHAR configPath[MAX_PATH];
+
+
+struct SessionFileHeader
+{
+	unsigned int FileHeaderSize;
+	unsigned int Version;
+	unsigned int NumberClipboardListItem;
+
+	SessionFileHeader( unsigned int inNumberClipboardListItem = 0 )
+		: FileHeaderSize( sizeof(SessionFileHeader) )
+		, Version( MULTICLIPBOARD_SESSION_FILE_VERSION )
+		, NumberClipboardListItem( inNumberClipboardListItem )
+	{}
+};
+
+
 ClipboardListItem::ClipboardListItem()
 {
 }
@@ -50,6 +70,7 @@ void ClipboardListItem::UpdateColumnText()
 
 ClipboardList::ClipboardList()
 : MaxListSize( 10 )
+, bSaveClipboardSession( false )
 {
 }
 
@@ -240,6 +261,75 @@ void ClipboardList::SetMaxListSize( const int NewSize )
 }
 
 
+void ClipboardList::SaveClipboardSession()
+{
+	if ( bSaveClipboardSession )
+	{
+		TCHAR SessionFilePath[MAX_PATH];
+		lstrcpy( SessionFilePath, configPath );
+		lstrcat( SessionFilePath, MULTICLIPBOARD_SESSION_FILENAME );
+
+		HANDLE hSessionFile = ::CreateFile( SessionFilePath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+		if ( hSessionFile != INVALID_HANDLE_VALUE )
+		{
+			SessionFileHeader header( GetNumText() );
+			DWORD BytesWritten = 0;
+			::WriteFile( hSessionFile, &header, header.FileHeaderSize, &BytesWritten, NULL );
+
+			// Use a reverse iterator here because when loading, items will be added in reverse order
+			ConstReverseTextListIterator iter;
+			for ( iter = textList.rbegin(); iter != textList.rend(); ++iter )
+			{
+				unsigned int textSize = iter->text.size();
+				unsigned int textMode = iter->textMode;
+				::WriteFile( hSessionFile, &textSize, sizeof(textSize), &BytesWritten, NULL );
+				::WriteFile( hSessionFile, &textMode, sizeof(textMode), &BytesWritten, NULL );
+				::WriteFile( hSessionFile, iter->text.c_str(), sizeof(std::wstring::value_type)*textSize, &BytesWritten, NULL );
+			}
+
+			::CloseHandle( hSessionFile );
+		}
+	}
+}
+
+
+void ClipboardList::LoadClipboardSession()
+{
+	if ( bSaveClipboardSession )
+	{
+		TCHAR SessionFilePath[MAX_PATH];
+		lstrcpy( SessionFilePath, configPath );
+		lstrcat( SessionFilePath, MULTICLIPBOARD_SESSION_FILENAME );
+
+		HANDLE hSessionFile = ::CreateFile( SessionFilePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
+		if ( hSessionFile != INVALID_HANDLE_VALUE )
+		{
+			SessionFileHeader header;
+			DWORD BytesRead = 0;
+			::ReadFile( hSessionFile, &header, header.FileHeaderSize, &BytesRead, NULL );
+
+			for ( unsigned int textIndex = 0; textIndex < header.NumberClipboardListItem; ++textIndex )
+			{
+				unsigned int textSize = 0;
+				unsigned int textMode = 0;
+				::ReadFile( hSessionFile, &textSize, sizeof(textSize), &BytesRead, NULL );
+				::ReadFile( hSessionFile, &textMode, sizeof(textMode), &BytesRead, NULL );
+				// Copy the text item to a buffer
+				std::vector< unsigned char > buffer( sizeof(std::wstring::value_type)*textSize );
+				::ReadFile( hSessionFile, &buffer[0], buffer.size(), &BytesRead, NULL );
+				// Add the text to the clipboard list
+				TextItem textItem;
+				textItem.textMode = (TextCopyModeEnum) textMode;
+				textItem.text.assign( (std::wstring::value_type*) &buffer[0], textSize );
+				AddText( textItem );
+			}
+
+			::CloseHandle( hSessionFile );
+		}
+	}
+}
+
+
 ClipboardList::TextListType::iterator ClipboardList::GetIterAtIndex( const unsigned int index )
 {
 	if ( index >= GetNumText() )
@@ -259,6 +349,7 @@ void ClipboardList::OnObserverAdded( LoonySettingsManager * SettingsManager )
 
 	// Add default settings if it doesn't exists
 	SET_SETTINGS_INT( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS, MaxListSize )
+	SET_SETTINGS_BOOL( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_SAVE_CLIPBOARD_SESSION, bSaveClipboardSession )
 }
 
 
@@ -271,6 +362,7 @@ void ClipboardList::OnSettingsChanged( const stringType & GroupName, const strin
 
 	int NewMaxClipboardItems = 0;
 	IF_SETTING_CHANGED_INT( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_MAX_CLIPBOARD_ITEMS, NewMaxClipboardItems )
+	else IF_SETTING_CHANGED_BOOL( SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_SAVE_CLIPBOARD_SESSION, bSaveClipboardSession )
 	if ( NewMaxClipboardItems > 0 )
 	{
 		SetMaxListSize( NewMaxClipboardItems );

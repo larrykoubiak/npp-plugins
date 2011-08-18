@@ -32,6 +32,7 @@ Features
    1. Shift-Middle click to show paste menu
 + Option to auto copy selected text from document to clipboard
 + Supports native language customisation via NativeLang plugin
++ Option to persist clipboard texts across editing sessions
 
 Useful Tips
 -----------
@@ -46,7 +47,6 @@ Known Issues
 
 Possible Todos
 --------------
-- Persist clipboard texts across editing sessions
 - For paste all, allow customisable text in between items
 - Improve the options dialog. It doesn't scale well when more options are added
 - Create a custom made paste menu, so that 2nd item can be automatically selected
@@ -83,6 +83,7 @@ XX XXX 2011 - MultiClipboard 2.1
     Requires Notepad++ 5.5 for rectangular selection to work properly.
 16. When auto copying selected text, text is copied immediately after selection.
     When paste is done on selected text, the previous text in the system clipboard is pasted over the selection instead.
+17. Added option to persist clipboard texts across editing sessions
 (Technical)
 1. Switch to unity build configuration. Full release build time went down from 27 secs to 8 secs
 2. Use link time code generation in release build to hopefully improve runtime performance

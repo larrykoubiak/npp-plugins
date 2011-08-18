@@ -61,6 +61,9 @@ public:
 	const unsigned int GetMaxListSize() const { return MaxListSize; }
 	void SetMaxListSize( const int NewSize );
 
+	void SaveClipboardSession();
+	void LoadClipboardSession();
+
 	virtual void OnObserverAdded( LoonySettingsManager * SettingsManager );
 	virtual void OnSettingsChanged( const stringType & GroupName, const stringType & SettingName );
 
@@ -68,6 +71,7 @@ private:
 	typedef std::list< ClipboardListItem > TextListType;
 	typedef TextListType::iterator TextListIterator;
 	typedef TextListType::const_iterator ConstTextListIterator;
+	typedef TextListType::const_reverse_iterator ConstReverseTextListIterator;
 	TextListType textList;
 
 	// Empty struct to return when text invalid index is requested
@@ -75,6 +79,9 @@ private:
 
 	// The max number of entry in text list
 	unsigned int MaxListSize;
+
+	// Whether to save clipboard item to disk for next session
+	bool bSaveClipboardSession;
 
 	TextListType::iterator GetIterAtIndex( const unsigned int index );
 };

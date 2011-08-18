@@ -353,4 +353,9 @@ void MultiClipboardSettingsDialog::LoadSettingsControlMap()
 		IDC_CHECK_PASTE_ALL_NEWLINE_BETWEEN, SCTE_BOOL,
 		SETTINGS_GROUP_MULTI_CLIP_VIEWER, SETTINGS_PASTE_ALL_NEWLINE_BETWEEN,
 		TEXT("When pasting all items, append a newline between each item") ) );
+
+	SettingsControlMap.push_back( SettingsControlMapStruct(
+		IDC_CHECK_PERSIST_CLIPBOARD_LIST, SCTE_BOOL,
+		SETTINGS_GROUP_CLIPBOARDLIST, SETTINGS_SAVE_CLIPBOARD_SESSION,
+		TEXT("Persist the clipboard list across Notepad++ sessions") ) );
 }

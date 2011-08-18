@@ -31,6 +31,7 @@
 #define IDC_CHECK_NO_LARGE_TEXT_EDIT    1013
 #define IDC_CHECK_PASTE_ALL_REVERSE     1014
 #define IDC_CHECK_PASTE_ALL_NEWLINE_BETWEEN 1015
+#define IDC_CHECK_PERSIST_CLIPBOARD_LIST 1016
 #define IDM_EX_UP                       2001
 #define IDM_EX_DOWN                     2002
 #define IDM_EX_PASTE                    2003
@@ -38,7 +39,7 @@
 #define IDM_EX_COPY_TO_CLIPBOARD        2005
 #define IDM_EX_DELETE                   2006
 #define IDM_EX_DELETE_ALL               2007
-#define IDM_EX_OPTIONS		            2008
+#define IDM_EX_OPTIONS                  2008
 #define IDD_DOCK_DLG                    30500
 #define IDD_ABOUT_DLG                   30550
 #define IDC_ABOUT_TITLE                 30551
@@ -61,7 +62,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        123
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1016
+#define _APS_NEXT_CONTROL_VALUE         1017
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

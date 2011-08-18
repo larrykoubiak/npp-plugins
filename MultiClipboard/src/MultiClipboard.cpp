@@ -169,6 +169,7 @@ extern "C" __declspec(dllexport) void setInfo(NppData notpadPlusData)
 
 	// Initialisation of MVC components
 	g_SettingsManager.AddSettingsObserver( &clipboardList );
+	clipboardList.LoadClipboardSession();
 	OSClipboard.Init( &clipboardList, &g_ClipboardProxy, &g_SettingsManager );
 	clipViewerDialog.Init( &clipboardList, &g_ClipboardProxy, &g_SettingsManager );
 	clipPasteMenu.Init( &clipboardList, &g_ClipboardProxy, &g_SettingsManager );
@@ -261,6 +262,8 @@ void LoadSettings(void)
 void SaveSettings(void)
 {
 	g_SettingsManager.SaveSettings( SettingsFilePath );
+
+	clipboardList.SaveClipboardSession();
 }
 
 void ShutDownPlugin()
