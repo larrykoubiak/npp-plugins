@@ -67,12 +67,13 @@ MultiClipViewerDialog::MultiClipViewerDialog()
 : DockingDlgInterface(IDD_DOCK_DLG)
 , IsShown( false )
 , DragListMessage( 0 )
-, DraggedListItem( -1 )
 , bNoEditLargeText( TRUE )
 , NoEditLargeTextSize( 10000 )
 , LargeTextDisplaySize( 2048 )
 , bPasteAllReverseOrder( TRUE )
 , bPasteAllEOLBetweenItems( TRUE )
+, pDataObject( NULL )
+, pDropSource( NULL )
 {
 }
 
@@ -87,6 +88,16 @@ void MultiClipViewerDialog::Init( IModel * pNewModel, MultiClipboardProxy * pCli
 	DockingDlgInterface::init( g_hInstance, g_NppData._nppHandle );
 	IController::Init( pNewModel, pClipboardProxy, pSettings );
 	DragListMessage = ::RegisterWindowMessage( DRAGLISTMSGSTRING );
+
+	MultiClipOLEDataObject::CreateDataObject( &pDataObject );
+	MultiClipOLEDropSource::CreateDropSource( &pDropSource );
+}
+
+
+void MultiClipViewerDialog::Shutdown()
+{
+	pDataObject->Release();
+	pDropSource->Release();
 }
 
 
@@ -477,71 +488,28 @@ void MultiClipViewerDialog::OnToolBarCommand( UINT Cmd )
 
 BOOL MultiClipViewerDialog::OnDragListMessage( LPDRAGLISTINFO pDragListInfo )
 {
-	int listBoxItem = LBItemFromPt( MultiClipViewerListbox.getHSelf(), pDragListInfo->ptCursor, FALSE );
-	HWND hwndUnderCursor = ::WindowFromPoint( pDragListInfo->ptCursor );
 
-	switch ( pDragListInfo->uNotification )
+	if ( pDragListInfo->uNotification == DL_BEGINDRAG )
 	{
-	case DL_BEGINDRAG:
+		int listBoxItem = LBItemFromPt( MultiClipViewerListbox.getHSelf(), pDragListInfo->ptCursor, FALSE );
 		if ( listBoxItem >= 0 )
 		{
-			DraggedListItem = listBoxItem;
-			// Store the return value in DWL_MSGRESULT.
-			// http://support.microsoft.com/kb/183115
-			SetWindowLong( getHSelf(), DWL_MSGRESULT, TRUE );
-		}
-		break;
 
-	case DL_DRAGGING:
-		if ( listBoxItem >= 0 )
-		{
-			DrawInsert( MultiClipViewerListbox.getHParent(), MultiClipViewerListbox.getHSelf(), listBoxItem );
-			SetWindowLong( getHSelf(), DWL_MSGRESULT, DL_MOVECURSOR );
-		}
-		else if ( hwndUnderCursor == g_NppData._scintillaMainHandle || hwndUnderCursor == g_NppData._scintillaSecondHandle )
-		{
-			SetWindowLong( getHSelf(), DWL_MSGRESULT, DL_COPYCURSOR );
-		}
-		else
-		{
-			SetWindowLong( getHSelf(), DWL_MSGRESULT, DL_STOPCURSOR );
-		}
-		break;
-
-	case DL_DROPPED:
-		if ( listBoxItem >= 0 )
-		{
-			ClipboardList * pClipboardList = (ClipboardList *)IController::GetModel();
-			if ( DraggedListItem != listBoxItem && pClipboardList )
-			{
-				pClipboardList->SetTextNewIndex( DraggedListItem, listBoxItem );
-				MultiClipViewerListbox.SetCurrentSelectedItem( listBoxItem );
-			}
-		}
-		else if ( hwndUnderCursor == g_NppData._scintillaMainHandle || hwndUnderCursor == g_NppData._scintillaSecondHandle )
-		{
 			ClipboardList * pClipboardList = (ClipboardList *)IController::GetModel();
 			if ( pClipboardList )
 			{
-				int nearestPos = g_ClipboardProxy.GetPositionFromPoint( pDragListInfo->ptCursor, hwndUnderCursor );
-				const ClipboardListItem & textItem = pClipboardList->GetText( DraggedListItem );
-				g_ClipboardProxy.InsertTextAtPos( textItem, nearestPos, hwndUnderCursor );
-				// Select the newly inserted text
-				if ( textItem.textMode == TCM_COLUMN )
-				{
-					g_ClipboardProxy.SetRectangularSelection( nearestPos, textItem.columnText.GetNumColumns(), textItem.columnText.GetNumRows(), hwndUnderCursor );
-				}
-				else
-				{
-					g_ClipboardProxy.SetCurrentSelectionPosition( nearestPos, nearestPos + textItem.text.size(), hwndUnderCursor );
-				}
+				const ClipboardListItem & textItem = pClipboardList->GetText( listBoxItem );
+				unsigned int textSizeInBytes = (textItem.text.size() + 1) * 2;	// Wide char = 2 bytes + null terminator
+
+				pDataObject->SetMultiClipDragData( textItem.text.c_str(), textSizeInBytes, textItem.textMode == TCM_COLUMN );
+				DWORD dwEffect = 0;
+				::DoDragDrop( pDataObject, pDropSource, DROPEFFECT_COPY, &dwEffect );
 			}
-			g_ClipboardProxy.SetFocusToDocument();
 		}
-		// fall through
-	case DL_CANCELDRAG:
-		DraggedListItem = -1;
-		break;
+
+		// Store the return value in DWL_MSGRESULT. Set to false so we don't receive the rest of the drag messages
+		// http://support.microsoft.com/kb/183115
+		SetWindowLong( getHSelf(), DWL_MSGRESULT, FALSE );
 	}
 	return TRUE;
 }

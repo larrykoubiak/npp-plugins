@@ -28,6 +28,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "ToolBar.h"
 #include "MultiClipboardListbox.h"
 #include "MultiClipboardEditbox.h"
+#include "MultiClipOLEDragDrop.h"
 #endif
 
 // ID for dockable window
@@ -41,6 +42,7 @@ public:
 	~MultiClipViewerDialog();
 	// Not inherited from DockingDlgInterface
 	virtual void Init( IModel * pNewModel, MultiClipboardProxy * pClipboardProxy, LoonySettingsManager * pSettings );
+	virtual void Shutdown();
 	// Inherited from DockingDlgInterface
 	virtual void destroy() {}
 
@@ -64,7 +66,8 @@ private:
 	tTbData TBData;
 	bool IsShown;
 	UINT DragListMessage;
-	INT DraggedListItem;
+	MultiClipOLEDataObject * pDataObject;
+	MultiClipOLEDropSource * pDropSource;
 
 	// Don't allow display and editing of text greater than NoEditLargeTextSize
 	BOOL bNoEditLargeText;

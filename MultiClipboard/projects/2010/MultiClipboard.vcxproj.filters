@@ -76,6 +76,9 @@
     <ClCompile Include="..\..\src\MultiClipboard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ClipboardMVC\MultiClipOLEDragDrop.cpp">
+      <Filter>Source Files\ClipboardMVC</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\MCSubClassWndProc.h">
@@ -188,6 +191,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\Scintilla.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ClipboardMVC\MultiClipOLEDragDrop.h">
+      <Filter>Header Files\ClipboardMVC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

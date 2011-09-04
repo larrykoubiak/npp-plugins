@@ -196,6 +196,10 @@ xcopy ..\..\lang\MultiClipboard_en.ini ..\..\..\Notepad++\plugins\Config\NativeL
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\ClipboardMVC\MultiClipOLEDragDrop.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugUnity|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseUnity|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\MCSubClassWndProc.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='DebugUnity|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseUnity|Win32'">true</ExcludedFromBuild>
@@ -298,6 +302,7 @@ xcopy ..\..\lang\MultiClipboard_en.ini ..\..\..\Notepad++\plugins\Config\NativeL
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\ClipboardMVC\MultiClipOLEDragDrop.h" />
     <ClInclude Include="..\..\src\MCSubClassWndProc.h" />
     <ClInclude Include="..\..\src\MultiClipboardProxy.h" />
     <ClInclude Include="..\..\src\MultiClipboardStringType.h" />

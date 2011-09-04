@@ -22,6 +22,8 @@ Features
    2. Delete the text
    3. Paste the text by double-clicking it, or clicking the paste icon
    4. An edit box in the sidebar to edit the current selected text in the list
+   5. Paste all clipboard items into the document
+   6. Drag and drop clipboard items from the list to the document
 + A pop-up paste menu that displays the stored text selecting text to paste
    1. Ctrl-Shift-V (customisable) to activate
    2. Customisable width
@@ -42,7 +44,6 @@ To show the multiclipboard paste menu via (right click) context menu, add the fo
 Known Issues
 ------------
 - When the document is converted from one EOL type to another in Notepad++, the clipboard text aren't updated
-- Drag and drop of text from MultiClip Viewer could do with better visual cues. Use OLE drag/drop as per scintilla's ScintillaWin.cxx::startDrag()
 - When keymapping of paste is changed from Ctrl-V or Shift-Insert to something else, MultiClipboard will not be able to hook into the paste operation. This is a limitation of Notepad++, because it does not notify plugins of paste operations nor expose its shortcut mappings to plugins
 
 Possible Todos
@@ -50,6 +51,7 @@ Possible Todos
 - For paste all, allow customisable text in between items
 - Improve the options dialog. It doesn't scale well when more options are added
 - Create a custom made paste menu, so that 2nd item can be automatically selected
+- Allow drag and drop to reorder clipboard list. Implement listbox as OLE drop target
 
 Acknowledgements
 ----------------
@@ -76,8 +78,7 @@ XX XXX 2011 - MultiClipboard 2.1
 11. When pasting all items, add option to paste them in reverse order
 12. When pasting all items, add option to add newline character between items
 13. Added toolbar button to show MultiClipboard options dialog
-14. Make items in listbox of MultiClip Viewer draggable.
-    Drag within listbox to rearrange, drag onto editor to insert text
+14. Make items in listbox of MultiClip Viewer draggable onto editor to insert text
 15. Remembers whether the clipboard item is a column mode selection
     and paste it accordingly.
     Requires Notepad++ 5.5 for rectangular selection to work properly.
