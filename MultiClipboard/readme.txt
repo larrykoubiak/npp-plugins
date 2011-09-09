@@ -51,7 +51,9 @@ Possible Todos
 - For paste all, allow customisable text in between items
 - Improve the options dialog. It doesn't scale well when more options are added
 - Create a custom made paste menu, so that 2nd item can be automatically selected
+  As well as popup tooltip to display all the entire text
 - Allow drag and drop to reorder clipboard list. Implement listbox as OLE drop target
+- Remember the position of the splitter in the MultiClip Viewer across sessions
 
 Acknowledgements
 ----------------
@@ -59,7 +61,7 @@ Icons taken from http://www.famfamfam.com/lab/icons/silk/preview.php
 
 Version History
 ---------------
-XX XXX 2011 - MultiClipboard 2.1
+9 Sep 2011 - MultiClipboard 2.1
 -----------
 1.  Limit text entries in the listbox of MultiClip Viewer to 100 chars if text is too long.
 2.  Allow 'Delete' key to delete selected item in MultiClip Viewer
