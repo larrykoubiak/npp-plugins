@@ -43,7 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 
 // information for notepad++
-CONST INT	nbFunc	= 4;
+CONST INT	nbFunc	= 6;
 CONST TCHAR	PLUGIN_NAME[] = TEXT("&MultiClipboard");
 
 // global values
@@ -87,6 +87,8 @@ void ToggleView();
 void ShowClipPasteMenu();
 void ShowAboutDlg();
 void ShowOptionsDlg();
+void PasteAllItems();
+void DeleteAllItems();
 
 // main function of dll
 BOOL APIENTRY DllMain( HINSTANCE hModule,
@@ -102,14 +104,18 @@ BOOL APIENTRY DllMain( HINSTANCE hModule,
 			// Set function pointers
 			funcItem[0]._pFunc = ToggleView;
 			funcItem[1]._pFunc = ShowClipPasteMenu;
-			funcItem[2]._pFunc = ShowOptionsDlg;
-			funcItem[3]._pFunc = ShowAboutDlg;
+			funcItem[2]._pFunc = PasteAllItems;
+			funcItem[3]._pFunc = DeleteAllItems;
+			funcItem[4]._pFunc = ShowOptionsDlg;
+			funcItem[5]._pFunc = ShowAboutDlg;
 
 			// Fill menu names
 			lstrcpy( funcItem[0]._itemName, TEXT("&MultiClip Viewer...") );
 			lstrcpy( funcItem[1]._itemName, TEXT("MultiClipboard &Paste") );
-			lstrcpy( funcItem[2]._itemName, TEXT("&Options...") );
-			lstrcpy( funcItem[3]._itemName, TEXT("&About...") );
+			lstrcpy( funcItem[2]._itemName, TEXT("Paste All &Items") );
+			lstrcpy( funcItem[3]._itemName, TEXT("&Delete All Items") );
+			lstrcpy( funcItem[4]._itemName, TEXT("&Options...") );
+			lstrcpy( funcItem[5]._itemName, TEXT("&About...") );
 
 			// Set shortcuts
 			funcItem[0]._pShKey = new ShortcutKey;
@@ -124,6 +130,8 @@ BOOL APIENTRY DllMain( HINSTANCE hModule,
 			funcItem[1]._pShKey->_key		= 'V';
 			funcItem[2]._pShKey = NULL;
 			funcItem[3]._pShKey = NULL;
+			funcItem[4]._pShKey = NULL;
+			funcItem[5]._pShKey = NULL;
 			break;
 		}
 		case DLL_PROCESS_DETACH:
@@ -312,4 +320,14 @@ void ShowClipPasteMenu()
 	{
 		cyclicPaste.DoCyclicPaste();
 	}
+}
+
+void PasteAllItems()
+{
+	clipViewerDialog.PasteAllItems();
+}
+
+void DeleteAllItems()
+{
+	clipboardList.RemoveAllTexts();
 }

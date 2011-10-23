@@ -61,6 +61,11 @@ Icons taken from http://www.famfamfam.com/lab/icons/silk/preview.php
 
 Version History
 ---------------
+xx xxx 201x - MultiClipboard 2.2
+-----------
+1. Expose "Paste All Items" and "Delete All Items" as plugin commands, so that they can be
+   mapped to keyboard shortcuts, context menu. (User request)
+
 9 Sep 2011 - MultiClipboard 2.1
 -----------
 1.  Limit text entries in the listbox of MultiClip Viewer to 100 chars if text is too long.

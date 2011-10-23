@@ -50,6 +50,8 @@ public:
 
 	virtual void OnModelModified();
 
+	void PasteAllItems();
+
 protected:
 	// Overload DockingDlgInterface's dialog procedure
 	virtual BOOL CALLBACK run_dlgProc( HWND hWnd, UINT msg, WPARAM wp, LPARAM lp );
@@ -93,7 +95,6 @@ private:
 	BOOL OnDragListMessage( LPDRAGLISTINFO pDragListInfo );
 
 	void PasteSelectedItem();
-	void PasteAllItems();
 	void DeleteSelectedItem();
 	void DeleteAllItems();
 	void CopySelectedItemToClipboard();
