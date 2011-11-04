@@ -39,7 +39,7 @@ Features
 Useful Tips
 -----------
 To show the multiclipboard paste menu via (right click) context menu, add the following line to %Notepad++Directory%\contextMenu.xml 
-<Item PluginEntryName="MultiClipboard" pluginCommandItemName="MultiClipboard Paste"/>
+<Item PluginEntryName="MultiClipboard" PluginCommandItemName="MultiClipboard Paste"/>
 
 Known Issues
 ------------
