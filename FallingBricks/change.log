@@ -1,0 +1,9 @@
+Change-log for FallingBricks.dll
+
+Version 1.1 (24 Sep 2008)
+  * Unicode version of plugin, compatible with Notepad++ 5.1 or higher only
+  * Fix a bug with the first game always starting with square brick
+  * Change default shortcut to Alt-Shift-F to avoid conflict with default Notepad++ shortcut
+
+Version 1.0 (1 Jul 2008):
+  * Initial version. Works only with Notepad++ 4.3 and higher (based on Notepad++ PluginTemplate).
