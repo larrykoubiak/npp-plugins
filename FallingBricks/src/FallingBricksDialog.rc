@@ -19,10 +19,8 @@
 // Neutral resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
-#ifdef _WIN32
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -59,7 +57,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_FALLING_BRICKS_DLG, DIALOG
     BEGIN
@@ -75,8 +73,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,0,0
- PRODUCTVERSION 1,1,0,0
+ FILEVERSION 1,1,1,0
+ PRODUCTVERSION 1,1,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -93,12 +91,12 @@ BEGIN
         BEGIN
             VALUE "Comments", "Visit https://sourceforge.net/projects/npp-plugins"
             VALUE "FileDescription", "Falling Bricks: A game plugin for Notepad++"
-            VALUE "FileVersion", "1, 1, 0, 0"
+            VALUE "FileVersion", "1.1.1.0"
             VALUE "InternalName", "Falling Bricks Plugin"
-            VALUE "LegalCopyright", "Copyright © 2008"
+            VALUE "LegalCopyright", "Copyright © 2012"
             VALUE "OriginalFilename", "FallingBricks.dll"
             VALUE "ProductName", "Falling Bricks Plugin"
-            VALUE "ProductVersion", "1, 1, 0, 0"
+            VALUE "ProductVersion", "1.1.1.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -131,10 +129,8 @@ IDB_TOOLBAR             BITMAP                  "..\\res\\FallingBricks.bmp"
 // German (Germany) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_DEU)
-#ifdef _WIN32
 LANGUAGE LANG_GERMAN, SUBLANG_GERMAN
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////

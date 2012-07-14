@@ -43,7 +43,7 @@ public:
    	void doDialog();
 
 protected:
-	virtual BOOL CALLBACK run_dlgProc( UINT message, WPARAM wParam, LPARAM lParam );
+	virtual BOOL CALLBACK run_dlgProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam );
 
 	// initial dialog here
 	void InitialDialog(void);

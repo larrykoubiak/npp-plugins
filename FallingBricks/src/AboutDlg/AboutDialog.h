@@ -49,7 +49,7 @@ public:
 
 
 protected :
-	virtual BOOL CALLBACK run_dlgProc( UINT message, WPARAM wParam, LPARAM lParam );
+	virtual BOOL CALLBACK run_dlgProc( HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam );
 
 private:
 	/* Handles */

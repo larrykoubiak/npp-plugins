@@ -1,5 +1,11 @@
 Change-log for FallingBricks.dll
 
+Version 1.2 Xx Xxx 201X
+  * Changed rotation of falling pieces to counterclockwise order (from clockwise), from user request to make it more like the original game
+  * Updated solution files to VS 2010
+  * Slightly modified icon files
+  * Updated classes inherited from StaticDialog class for API compatibility
+
 Version 1.1 (24 Sep 2008)
   * Unicode version of plugin, compatible with Notepad++ 5.1 or higher only
   * Fix a bug with the first game always starting with square brick

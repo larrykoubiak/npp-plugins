@@ -1,6 +1,6 @@
-Microsoft Visual Studio Solution File, Format Version 9.00
-# Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FallingBricks", "FallingBricks.vcproj", "{0A9F9D63-C282-4AE8-9F80-B6D5F541AD12}"
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FallingBricks", "FallingBricks.vcxproj", "{0A9F9D63-C282-4AE8-9F80-B6D5F541AD12}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

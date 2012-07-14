@@ -53,7 +53,7 @@ void FallingBricksDialog::doDialog()
 }
 
 
-BOOL CALLBACK FallingBricksDialog::run_dlgProc( UINT Message, WPARAM wParam, LPARAM lParam )
+BOOL CALLBACK FallingBricksDialog::run_dlgProc( HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam )
 {
 	switch (Message) 
 	{

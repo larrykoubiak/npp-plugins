@@ -518,16 +518,20 @@ void FallingBricksChildWindow::rotateBrick()
 		switch ( brick.orient )
 		{
 		case 0:
+			// 0     3
+			// 1   012
+			// 23
 			if ( (brick.pt[1].x > 0) &&
-				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) && // 0
-				 (grid[brick.pt[2].x-1][brick.pt[2].y] == WHITE) && // 1  210
-				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) )  // 23 3
+				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) &&
+				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) &&
+				 (grid[brick.pt[0].x+1][brick.pt[0].y] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x += 1; brick.pt[0].y += 1;
-				brick.pt[2].x -= 1; brick.pt[2].y -= 1;
-				brick.pt[3].x -= 2;
+				brick.pt[0].x -= 1;
+				brick.pt[2].x += 1;
+				brick.pt[0].y = brick.pt[2].y = brick.pt[1].y;
+				brick.pt[3].y -= 2;
 				brick.orient = 1;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = brick.col;
@@ -535,15 +539,20 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 1:
-			if ( (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) && //     32
-				 (grid[brick.pt[2].x][brick.pt[2].y-1] == WHITE) && // 210  1
-				 (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) )  // 3    0
+			//   3  32
+			// 012   1
+			//       0
+			if ( (brick.pt[1].y < 19) &&
+				 (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) &&
+				 (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) &&
+				 (grid[brick.pt[0].x][brick.pt[0].y-1] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x -= 1; brick.pt[0].y += 1;
-				brick.pt[2].x += 1; brick.pt[2].y -= 1;
-				brick.pt[3].y -= 2;
+				brick.pt[0].y += 1;
+				brick.pt[2].y -= 1;
+				brick.pt[0].x = brick.pt[2].x = brick.pt[1].x;
+				brick.pt[3].x -= 2;
 				brick.orient = 2;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = brick.col;
@@ -551,16 +560,20 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 2:
+			// 32
+			//  1  210
+			//  0  3
 			if ( (brick.pt[1].x < 9) &&
-				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) && // 32    3
-				 (grid[brick.pt[2].x+1][brick.pt[2].y] == WHITE) && //  1  012
-				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) )  //  0
+				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) &&
+				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) &&
+				 (grid[brick.pt[0].x-1][brick.pt[0].y] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x -= 1; brick.pt[0].y -= 1;
-				brick.pt[2].x += 1; brick.pt[2].y += 1;
-				brick.pt[3].x += 2;
+				brick.pt[0].x += 1;
+				brick.pt[2].x -= 1;
+				brick.pt[0].y = brick.pt[2].y = brick.pt[1].y;
+				brick.pt[3].y += 2;
 				brick.orient = 3;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = brick.col;
@@ -568,16 +581,19 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 3:
-			if ( (brick.pt[1].y < 19) &&
-				 (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) && //   3 0
-				 (grid[brick.pt[2].x][brick.pt[2].y+1] == WHITE) && // 012 1
-				 (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) )  //     23
+			//      0
+			// 210  1
+			// 3    23
+			if ( (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) &&
+				 (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) &&
+				 (grid[brick.pt[0].x][brick.pt[0].y+1] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x += 1; brick.pt[0].y -= 1;
-				brick.pt[2].x -= 1; brick.pt[2].y += 1;
-				brick.pt[3].y += 2;
+				brick.pt[0].y -= 1;
+				brick.pt[2].y += 1;
+				brick.pt[0].x = brick.pt[2].x = brick.pt[1].x;
+				brick.pt[3].x += 2;
 				brick.orient = 0;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = brick.col;
@@ -590,16 +606,20 @@ void FallingBricksChildWindow::rotateBrick()
 		switch ( brick.orient )
 		{
 		case 0:
+			//  0
+			//  1  012
+			// 32    3
 			if ( (brick.pt[1].x < 9) &&
-				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) && //  0 3
-				 (grid[brick.pt[0].x-1][brick.pt[0].y] == WHITE) && //  1 210
-				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) )  // 32
+				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) &&
+				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) &&
+				 (grid[brick.pt[2].x+1][brick.pt[2].y] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x += 1; brick.pt[0].y += 1;
-				brick.pt[2].x -= 1; brick.pt[2].y -= 1;
-				brick.pt[3].y -= 2;
+				brick.pt[0].x -= 1;
+				brick.pt[2].x += 1;
+				brick.pt[0].y = brick.pt[2].y = brick.pt[1].y;
+				brick.pt[3].x += 2;
 				brick.orient = 1;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = brick.col;
@@ -607,16 +627,19 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 1:
-			if ( (brick.pt[1].y < 19) &&
-				 (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) && // 3   23
-				 (grid[brick.pt[0].x][brick.pt[0].y-1] == WHITE) && // 210 1
-				 (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) )  //     0
+			//      23
+			// 012  1
+			//   3  0
+			if ( (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) &&
+				 (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) &&
+				 (grid[brick.pt[2].x][brick.pt[2].y-1] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x -= 1; brick.pt[0].y += 1;
-				brick.pt[2].x += 1; brick.pt[2].y -= 1;
-				brick.pt[3].x += 2;
+				brick.pt[0].y += 1;
+				brick.pt[2].y -= 1;
+				brick.pt[0].x = brick.pt[2].x = brick.pt[1].x;
+				brick.pt[3].y -= 2;
 				brick.orient = 2;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = brick.col;
@@ -624,16 +647,20 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 2:
+			// 23  3
+			// 1   210
+			// 0
 			if ( (brick.pt[1].x > 0) &&
-				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) && // 23
-				 (grid[brick.pt[0].x+1][brick.pt[0].y] == WHITE) && // 1  012
-				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) )  // 0    3
+				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) &&
+				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) &&
+				 (grid[brick.pt[2].x-1][brick.pt[2].y] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x -= 1; brick.pt[0].y -= 1;
-				brick.pt[2].x += 1; brick.pt[2].y += 1;
-				brick.pt[3].y += 2;
+				brick.pt[0].x += 1;
+				brick.pt[2].x -= 1;
+				brick.pt[0].y = brick.pt[2].y = brick.pt[1].y;
+				brick.pt[3].x -= 2;
 				brick.orient = 3;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = brick.col;
@@ -641,15 +668,20 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 3:
-			if ( (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) && //      0
-				 (grid[brick.pt[0].x][brick.pt[0].y+1] == WHITE) && // 012  1
-				 (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) )  //   3 32
+			// 3     0
+			// 210   1
+			//      32
+			if ( (brick.pt[1].y < 19) &&
+				 (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) &&
+				 (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) &&
+				 (grid[brick.pt[2].x][brick.pt[2].y+1] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x += 1; brick.pt[0].y -= 1;
-				brick.pt[2].x -= 1; brick.pt[2].y += 1;
-				brick.pt[3].x -= 2;
+				brick.pt[0].y -= 1;
+				brick.pt[2].y += 1;
+				brick.pt[0].x = brick.pt[2].x = brick.pt[1].x;
+				brick.pt[3].y += 2;
 				brick.orient = 0;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[2].x][brick.pt[2].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = brick.col;
@@ -726,17 +758,17 @@ void FallingBricksChildWindow::rotateBrick()
 		switch ( brick.orient )
 		{
 		case 0:
+			//  0    3
+			// 123  02
+			//       1
 			if ( (brick.pt[2].y < 19) &&
-				 (grid[brick.pt[1].x][brick.pt[1].y-1] == WHITE) && //  0  1
-				 (grid[brick.pt[2].x][brick.pt[2].y+1] == WHITE) && // 123 20
-				 (grid[brick.pt[3].x][brick.pt[3].y+1] == WHITE) && //     3
-				 (grid[brick.pt[3].x][brick.pt[3].y-1] == WHITE) )
+				 (grid[brick.pt[2].x][brick.pt[2].y+1] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[1].x][brick.pt[1].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x += 1; brick.pt[0].y += 1;
-				brick.pt[1].y -= 1;
-				brick.pt[3].y += 1;
+				brick.pt[0].x -= 1; brick.pt[0].y += 1;
+				brick.pt[1].y += 1;
+				brick.pt[3].y -= 1;
 				brick.pt[1].x = brick.pt[3].x = brick.pt[2].x;
 				brick.orient = 1;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[1].x][brick.pt[1].y]
@@ -745,15 +777,15 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 1:
-			if ( (brick.pt[2].x > 0) &&
-				 (grid[brick.pt[1].x+1][brick.pt[1].y] == WHITE) && // 1
-				 (grid[brick.pt[2].x-1][brick.pt[2].y] == WHITE) && // 20 321
-				 (grid[brick.pt[3].x-1][brick.pt[3].y] == WHITE) && // 3   0
-				 (grid[brick.pt[3].x+1][brick.pt[3].y] == WHITE) )
+			//  3
+			// 02  321
+			//  1   0
+			if ( (brick.pt[2].x < 9) &&
+				 (grid[brick.pt[2].x+1][brick.pt[2].y] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[1].x][brick.pt[1].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x -= 1; brick.pt[0].y += 1;
+				brick.pt[0].x += 1; brick.pt[0].y += 1;
 				brick.pt[1].x += 1;
 				brick.pt[3].x -= 1;
 				brick.pt[1].y = brick.pt[3].y = brick.pt[2].y;
@@ -764,16 +796,16 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 2:
-			if ( (grid[brick.pt[1].x][brick.pt[1].y+1] == WHITE) && //      3
-				 (grid[brick.pt[2].x][brick.pt[2].y-1] == WHITE) && // 321 02
-				 (grid[brick.pt[3].x][brick.pt[3].y-1] == WHITE) && //  0   1
-				 (grid[brick.pt[3].x][brick.pt[3].y+1] == WHITE) )
+			//      1
+			// 321  20
+			//  0   3
+			if ( (grid[brick.pt[2].x][brick.pt[2].y-1] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[1].x][brick.pt[1].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x -= 1; brick.pt[0].y -= 1;
-				brick.pt[1].y += 1;
-				brick.pt[3].y -= 1;
+				brick.pt[0].x += 1; brick.pt[0].y -= 1;
+				brick.pt[1].y -= 1;
+				brick.pt[3].y += 1;
 				brick.pt[1].x = brick.pt[3].x = brick.pt[2].x;
 				brick.orient = 3;
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[1].x][brick.pt[1].y]
@@ -782,15 +814,15 @@ void FallingBricksChildWindow::rotateBrick()
 			break;
 
 		case 3:
-			if ( (brick.pt[2].x < 9) &&
-				 (grid[brick.pt[1].x-1][brick.pt[1].y] == WHITE) && //  3  0
-				 (grid[brick.pt[2].x+1][brick.pt[2].y] == WHITE) && // 02 123
-				 (grid[brick.pt[3].x+1][brick.pt[3].y] == WHITE) && //  1
-				 (grid[brick.pt[3].x-1][brick.pt[3].y] == WHITE) )
+			// 1    0
+			// 20  123
+			// 3
+			if ( (brick.pt[2].x > 0) &&
+				 (grid[brick.pt[2].x-1][brick.pt[2].y] == WHITE) )
 			{
 				grid[brick.pt[0].x][brick.pt[0].y]       = grid[brick.pt[1].x][brick.pt[1].y]
 					= grid[brick.pt[3].x][brick.pt[3].y] = WHITE;
-				brick.pt[0].x += 1; brick.pt[0].y -= 1;
+				brick.pt[0].x -= 1; brick.pt[0].y -= 1;
 				brick.pt[1].x -= 1;
 				brick.pt[3].x += 1;
 				brick.pt[1].y = brick.pt[3].y = brick.pt[2].y;

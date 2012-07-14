@@ -1,4 +1,4 @@
-Falling Bricks plugin version 1.1
+Falling Bricks plugin version 1.2
 =================================
 
 Summary
